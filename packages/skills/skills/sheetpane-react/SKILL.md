@@ -86,11 +86,19 @@ return <sheetpane-excel ref={sheet} pane="r1" mode="edit" src="/people.xlsx" />;
 
 ## Typing the JSX
 
-Until the package ships typings (work item W-37),
-copy [`examples/react/src/elements.d.ts`](https://github.com/arpitarya/sheetpane/blob/main/examples/react/src/elements.d.ts):
-it declares both tags in `React.JSX.IntrinsicElements` with their attributes,
-properties and `onsheetpane-…` props. Add a line there for any event prop you
-use that it does not list.
+The package ships the typing (generated from its `custom-elements.json`).
+Add one file to the app, e.g. `src/sheetpane.d.ts`:
+
+```ts
+import type {} from '@sheetpane/grid/jsx';
+```
+
+Both tags then type-check in `React.JSX.IntrinsicElements`: every attribute
+(`mode`, `header-row`, `theme`…), every settable property (`file`, `rules`,
+`columns`, `validate`…) and an `onsheetpane-…` prop per event with its
+payload (`e.detail.ref`). The same entry exports `SheetpaneExcelEventMap`
+for typing your own handlers. The repo's demo uses exactly this:
+[`examples/react/src/sheetpane.d.ts`](https://github.com/arpitarya/sheetpane/blob/main/examples/react/src/sheetpane.d.ts).
 
 ## Pitfalls
 

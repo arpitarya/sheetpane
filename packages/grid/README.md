@@ -46,6 +46,11 @@ export function Review({ file }: { file: File }) {
 }
 ```
 
+**Typed JSX:** add `import type {} from '@sheetpane/grid/jsx';` once — e.g. in
+a `sheetpane.d.ts` beside your sources — and both tags, their attributes,
+properties and `onsheetpane-…` props are typed, payloads included
+(`e.detail.ref`). See [Typings and editor support](#typings-and-editor-support).
+
 **React 18** sets attributes only: use a `ref` for properties and events.
 
 ```tsx
@@ -86,6 +91,102 @@ The primitive under all of them, for a hook of your own:
 ```ts
 const units = useSheetpane(sheet, (store) => store.value('Holdings', 'F3'), null);
 ```
+
+## Vue, Svelte, Solid, Angular
+
+The elements are standard custom elements, so every framework renders them
+once `import '@sheetpane/grid'` has run in the browser. No wrapper package;
+an `import type` line types them.
+
+**Vue 3** — tell the compiler the tags are custom elements, then bind
+properties with `.prop` and listen with `@`:
+
+```js
+// vite.config.js
+vue({ template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('sheetpane-') } } })
+```
+
+```vue
+<script setup lang="ts">
+import '@sheetpane/grid';
+import type {} from '@sheetpane/grid/vue';   // GlobalComponents: props and @sheetpane-… typed
+</script>
+<template>
+  <sheetpane-excel pane="q3" mode="edit" :file.prop="file" @sheetpane-change="(e) => log(e.detail.ref)" />
+  <sheetpane-errors pane="q3" @sheetpane-errors="(e) => save(e.detail.errors)" />
+</template>
+```
+
+**Svelte** — `import type {} from '@sheetpane/grid/svelte';` once (e.g. in
+`src/app.d.ts`); Svelte 5 listens with `onsheetpane-change={…}`, Svelte 4 with
+`on:sheetpane-change={…}`; both set properties when the element has one.
+
+```svelte
+<sheetpane-excel pane="q3" mode="edit" file={file} onsheetpane-change={(e) => log(e.detail.ref)}></sheetpane-excel>
+```
+
+**Solid** — `import type {} from '@sheetpane/grid/solid';` once. Solid sets a
+custom element's props as properties, so write an attribute that has no
+property with `attr:`, and listen with `on:`:
+
+```tsx
+<sheetpane-excel attr:pane="q3" attr:header-row="2" mode="edit" prop:file={file()} on:sheetpane-change={(e) => log(e.detail.ref)} />
+```
+
+**Angular** — no package and no typings to import: add
+`CUSTOM_ELEMENTS_SCHEMA` to the component that renders the tags, bind
+properties with `[…]` and events with `(…)`:
+
+```ts
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import '@sheetpane/grid';
+
+@Component({
+  selector: 'app-review',
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `
+    <sheetpane-excel pane="q3" mode="edit" [file]="file" (sheetpane-change)="onChange($event)"></sheetpane-excel>
+    <sheetpane-errors pane="q3" (sheetpane-errors)="save($event.detail.errors)"></sheetpane-errors>`,
+})
+export class ReviewComponent { file: File | null = null; onChange(e: Event) { console.log((e as CustomEvent).detail); } save(errors: unknown[]) {} }
+```
+
+**Next.js and other SSR** — the import is safe on the server (the elements
+just do not register); render the tags in a client component.
+
+## Typings and editor support
+
+| file | for |
+|---|---|
+| `@sheetpane/grid/custom-elements.json` | the [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (schema 2.1.0): every attribute, property, method, event (with its payload type), slot, CSS part and `--sp-*` property; `package.json`'s `customElements` points at it |
+| `@sheetpane/grid/jsx` | React 19 — `React.JSX.IntrinsicElements` |
+| `@sheetpane/grid/vue` | Vue 3 — `GlobalComponents` (Volar / vue-tsc) |
+| `@sheetpane/grid/svelte` | Svelte 4 and 5 — `SvelteHTMLElements` |
+| `@sheetpane/grid/solid` | Solid — `JSX.IntrinsicElements` |
+| `@sheetpane/grid/vscode.html-custom-data.json` | VS Code: tags, attributes and their values in `.html` |
+| `@sheetpane/grid/vscode.css-custom-data.json` | VS Code: the `--sp-*` properties in `.css` |
+| `@sheetpane/grid/web-types.json` | JetBrains IDEs (WebStorm, IntelliJ) — read automatically through `package.json`'s `web-types` |
+
+Each typing entry is types only (`import type {} from '…'`); the framework is
+never a dependency. Each also exports the element types it builds on —
+`SheetpaneExcelEventMap`, `SheetpaneExcelAttributes`,
+`SheetpaneExcelProperties` and the same for `SheetpaneErrors` — for typing
+your own wrappers.
+
+**VS Code** — point the workspace settings at the editor data:
+
+```json
+// .vscode/settings.json
+{
+  "html.customData": ["./node_modules/@sheetpane/grid/dist/vscode.html-custom-data.json"],
+  "css.customData": ["./node_modules/@sheetpane/grid/dist/vscode.css-custom-data.json"]
+}
+```
+
+All of it is generated from the element sources and their TSDoc
+(`scripts/build-manifest.mjs`, run by the build); a test fails when the
+committed manifest drifts from the elements.
 
 ## `<sheetpane-excel>`
 

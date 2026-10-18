@@ -38,7 +38,8 @@ describe('SR-LAW-8 — every package is publishable, in lockstep (B-023)', () =>
       expect(p.dependencies ?? {}).toEqual({});
       return;
     }
-    expect(p.files).toEqual(dir === 'fixtures' ? ['dist', 'files'] : ['dist']);
+    // @sheetpane/grid also ships custom-elements.json at its root, where the `customElements` field points (W-37)
+    expect(p.files).toEqual(dir === 'fixtures' ? ['dist', 'files'] : dir === 'grid' ? ['dist', 'custom-elements.json'] : ['dist']);
     for (const [entry, target] of Object.entries<any>(p.exports)) {
       if (typeof target === 'string') continue; // a stylesheet
       expect(target.types, `${dir} ${entry}`).toMatch(/^\.\/dist\/.*\.d\.ts$/);

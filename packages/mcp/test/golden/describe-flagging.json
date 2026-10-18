@@ -1,0 +1,30 @@
+{
+  "matches": [
+    {
+      "kind": "attribute",
+      "element": "sheetpane-excel",
+      "name": "flagging",
+      "description": "`on` (the default) or `off`: no Flag issue anywhere.",
+      "type": {
+        "text": "'on' | 'off'"
+      },
+      "default": "'on'",
+      "fieldName": "flagging",
+      "record": "https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md"
+    },
+    {
+      "kind": "member",
+      "memberKind": "field",
+      "element": "sheetpane-excel",
+      "name": "flagging",
+      "privacy": "public",
+      "type": {
+        "text": "'on' | 'off'"
+      },
+      "description": "`flagging=\"off\"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read.",
+      "attribute": "flagging",
+      "reflects": true,
+      "record": "https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md"
+    }
+  ]
+}

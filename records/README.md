@@ -179,6 +179,7 @@ directions.
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |
 | `scripts/serve.mjs` | SR-BUILD | the demos' static server |
 | `scripts/build-site.mjs` | SR-BUILD | the live playground's static site (W-44) |
+| `scripts/build-manifest.mjs`, `packages/grid/custom-elements.json` | SR-BUILD · SR-GRID | the manifest, editor data and framework typings, generated at grid build (W-37) |
 | `test/tsdoc.test.ts`, `test/tsdoc-walk.ts` | SR-BUILD | the TSDoc check (W-36, decision 7a) |
 | `test/worklog.test.ts` | SR-WORK-SESSION | the worklog gate: no entry inside a code fence (decision 13) |
 | `scripts/build-llms.mjs` | SR-BUILD | writes `llms.txt` and `llms-full.txt` (W-38) |

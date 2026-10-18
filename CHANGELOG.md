@@ -26,6 +26,10 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **`custom-elements.json` and typings** (W-37): `@sheetpane/grid` ships the
+  Custom Elements Manifest, VS Code and JetBrains editor data, and type-only
+  entries `@sheetpane/grid/jsx`, `/vue`, `/svelte`, `/solid` — no host writes
+  its own element typings. Angular: `CUSTOM_ELEMENTS_SCHEMA` (README).
 - **`@sheetpane/mcp`** (W-39): `npx -y @sheetpane/mcp` — an MCP server
   (2026-07-28, stateless; 2025 clients too) with deterministic, read-only
   tools: inspect a workbook, draft and check a rules file, explain an SP

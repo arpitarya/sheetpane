@@ -1,0 +1,19 @@
+{
+  "//": "W-37: the framework typings, type-checked by test/manifest.test.ts. React is the real @types/react (examples/react's); Vue, Svelte and Solid are not installed in the repo, so stubs/ stands in for the parts of their types the typings touch.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": [],
+    "paths": {
+      "@sheetpane/grid": ["../../packages/grid/src/index.ts"],
+      "@sheetpane/grid/*": ["../../packages/grid/src/frameworks/*.d.ts"],
+      "react": ["../../examples/react/node_modules/@types/react/index.d.ts"],
+      "react/*": ["../../examples/react/node_modules/@types/react/*"],
+      "vue": ["./stubs/vue.d.ts"],
+      "svelte/elements": ["./stubs/svelte-elements.d.ts"],
+      "solid-js": ["./stubs/solid-js.d.ts"]
+    }
+  },
+  "include": ["*.ts", "*.tsx"]
+}

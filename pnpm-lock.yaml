@@ -236,6 +236,10 @@ importers:
       '@sheetpane/skills':
         specifier: workspace:*
         version: link:../skills
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
 
   packages/images:
     dependencies:

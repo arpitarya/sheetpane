@@ -16,11 +16,11 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Create `packages/skills` — files only, no runtime code — and make every other package depend on it | installing any sheetpane package brings the agent docs along, at the same version | ⏳ |
-| 2 | Write 23 skills in the one `SKILL.md` format all three tools read | one copy of each skill, three tools served | ⏳ |
-| 3 | Add each tool's entry files: a `CLAUDE.md` block, an `AGENTS.md` block, a Kiro steering file, agent files | each tool knows the skills exist and when to reach for them | ⏳ |
-| 4 | Ship an `install` command that copies them into the host repo's `.claude/`, `.kiro/` and `.agents/` folders | none of the three tools reads `node_modules`; this puts the files where they look | ⏳ |
-| 5 | A check that every API name in every skill exists in the packages' exports | the skills can't drift from the code | ⏳ |
+| 1 | Create `packages/skills` — files only, no runtime code — and make every other package depend on it | installing any sheetpane package brings the agent docs along, at the same version | ✅ |
+| 2 | Write 23 skills in the one `SKILL.md` format all three tools read | one copy of each skill, three tools served | ✅ |
+| 3 | Add each tool's entry files: a `CLAUDE.md` block, an `AGENTS.md` block, a Kiro steering file, agent files | each tool knows the skills exist and when to reach for them | ✅ |
+| 4 | Ship an `install` command that copies them into the host repo's `.claude/`, `.kiro/` and `.agents/` folders | none of the three tools reads `node_modules`; this puts the files where they look | ✅ |
+| 5 | A check that every API name in every skill exists in the packages' exports | the skills can't drift from the code | ✅ |
 
 Skills 17–23 added the same day (*"File work item for everything else"*).
 
@@ -110,7 +110,7 @@ Each skill: a `description` naming when to use it **and when not**; steps or a d
 |---|---|---|
 | 1 · package | `packages/skills` in the workspace; `@sheetpane/skills` in `dependencies` of export, import, grid and all eight plugins; it depends on nothing; `pack-check` shows only `skills/`, `entry/`, `bin/` | ✅ `packages/skills` (no dependencies, no build); a dependency of export, import, grid and the eight plugins; `pack-check` shows `skills/`, `entry/`, `bin/` and the manifest only |
 | 2 · skills 1–8, 10–17, 19–23 | written to the shape above; frontmatter `name` + `description` only (± `license`, `metadata`); name = folder; description ≤ 250 chars; `SKILL.md` ≤ 200 lines | ✅ written to the shape: frontmatter `name` = folder, `description` ≤ 250 with its "not for", `license`, `metadata.audience`; every `SKILL.md` ≤ 200 lines; records linked on GitHub |
-| 3 · skills 9 and 18 | `sheetpane-rules-file` lands with or after W-33; `sheetpane-frameworks` with or after W-37; skill 12 cites W-40's codes once they exist | ⏳ skill 9 (rules file) ✅ (W-33 landed); skill 12 cites W-40's codes ✅; **skill 18 is a stub until W-37** |
+| 3 · skills 9 and 18 | `sheetpane-rules-file` lands with or after W-33; `sheetpane-frameworks` with or after W-37; skill 12 cites W-40's codes once they exist | ✅ skill 9 (rules file) after W-33; skill 12 cites W-40's codes; skill 18 `sheetpane-frameworks` written with W-37 (Vue, Svelte, Solid, Angular, Next.js, the typed entries) |
 | 4 · entry files | `CLAUDE.md` / `AGENTS.md` blocks (≤ 30 lines: what sheetpane is, the laws a host meets, which skill for what); Kiro steering with `fileMatch`; Claude subagent; Kiro custom agent with `skill://` resources; `agents/openai.yaml` on skills that need tools | ✅ `entry/claude.md`, `entry/agents.md` (20 lines between the markers), `entry/kiro-steering.md` (`fileMatch`), `entry/claude-agent.md` and `entry/kiro-agent.json` (`sheetpane-integrator`, `skill://` resources) |
 | 5 · installer | `install` / `uninstall`, the flags above, marker-bounded edits, no `postinstall`, `--dry-run` lists every path; `@sheetpane/grid` exposes `sheetpane-skills` | ✅ `install` / `uninstall`, every flag, marked-block edits only, refusal without `--force`, `.sheetpane-skills.json`, no `postinstall`, `--dry-run` lists every path; `@sheetpane/grid` exposes `sheetpane-skills` (`dist/skills-bin.js`, runs `--help`) |
 | 6 · drift check | a test reads every skill and fails on: an element attribute, property, method or event not in the packages' public types; a record link that doesn't resolve; a description over 250 chars; a `name` ≠ folder; a frontmatter key outside the common subset | ✅ `test/skills.test.ts`: frontmatter subset, name = folder, ≤ 250, a "not for", ≤ 200 lines, links resolve, events / attributes / members exist in the elements' source |

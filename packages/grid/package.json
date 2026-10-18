@@ -25,13 +25,40 @@
     },
     "./style.css": "./dist/style.css",
     "./rules.schema.json": "./dist/rules.schema.json",
-    "./llms.txt": "./dist/llms.txt"
+    "./llms.txt": "./dist/llms.txt",
+    "./jsx": {
+      "source": "./src/frameworks/jsx.d.ts",
+      "types": "./dist/frameworks/jsx.d.ts",
+      "import": "./dist/frameworks/jsx.js"
+    },
+    "./vue": {
+      "source": "./src/frameworks/vue.d.ts",
+      "types": "./dist/frameworks/vue.d.ts",
+      "import": "./dist/frameworks/vue.js"
+    },
+    "./svelte": {
+      "source": "./src/frameworks/svelte.d.ts",
+      "types": "./dist/frameworks/svelte.d.ts",
+      "import": "./dist/frameworks/svelte.js"
+    },
+    "./solid": {
+      "source": "./src/frameworks/solid.d.ts",
+      "types": "./dist/frameworks/solid.d.ts",
+      "import": "./dist/frameworks/solid.js"
+    },
+    "./custom-elements.json": "./custom-elements.json",
+    "./vscode.html-custom-data.json": "./dist/vscode.html-custom-data.json",
+    "./vscode.css-custom-data.json": "./dist/vscode.css-custom-data.json",
+    "./web-types.json": "./dist/web-types.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "custom-elements.json"
   ],
+  "customElements": "custom-elements.json",
+  "web-types": "./dist/web-types.json",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node ../../scripts/build-grid-css.mjs",
+    "build": "tsc -p tsconfig.build.json && node ../../scripts/build-grid-css.mjs && node ../../scripts/build-manifest.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -48,10 +75,33 @@
       },
       "./style.css": "./dist/style.css",
       "./rules.schema.json": "./dist/rules.schema.json",
-      "./llms.txt": "./dist/llms.txt"
+      "./llms.txt": "./dist/llms.txt",
+      "./jsx": {
+        "types": "./dist/frameworks/jsx.d.ts",
+        "import": "./dist/frameworks/jsx.js"
+      },
+      "./vue": {
+        "types": "./dist/frameworks/vue.d.ts",
+        "import": "./dist/frameworks/vue.js"
+      },
+      "./svelte": {
+        "types": "./dist/frameworks/svelte.d.ts",
+        "import": "./dist/frameworks/svelte.js"
+      },
+      "./solid": {
+        "types": "./dist/frameworks/solid.d.ts",
+        "import": "./dist/frameworks/solid.js"
+      },
+      "./custom-elements.json": "./custom-elements.json",
+      "./vscode.html-custom-data.json": "./dist/vscode.html-custom-data.json",
+      "./vscode.css-custom-data.json": "./dist/vscode.css-custom-data.json",
+      "./web-types.json": "./dist/web-types.json"
     }
   },
   "bin": {
     "sheetpane-skills": "./dist/skills-bin.js"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0"
   }
 }

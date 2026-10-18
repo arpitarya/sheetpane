@@ -34,7 +34,7 @@ W-39 asks for an MCP server agents can query: six deterministic, read-only tools
 
 ## References
 
-- [SR-MCP](../../records/0119_MCP.md) · [W-39](../open/W-39-mcp-server.md)
+- [SR-MCP](../../records/0119_MCP.md) · [W-39](../../archive/open/W-39-mcp-server.md)
 - [MCP 2026-07-28 schema](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2026-07-28/schema.ts)
 
 ## Reopen-trigger

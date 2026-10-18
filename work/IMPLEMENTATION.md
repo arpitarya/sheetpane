@@ -11,6 +11,8 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-39 | `@sheetpane/mcp`: a hand-written stdio MCP server (2026-07-28 stateless + 2025 `initialize`), six deterministic read-only tools, SP-7001…7007; registered by `sheetpane-skills install`; `@sheetpane/import` reads `.xlsx` in Node | closed | `packages/mcp/test/mcp.node.test.ts` (18, 16 goldens), `test/skills.test.ts`, `packages/import/test/minixml.test.ts` |
+| 2026-10-18 | W-37 | `custom-elements.json`, VS Code / JetBrains editor data and React / Vue / Svelte / Solid typings generated from the source; Angular documented; `examples/react` uses `@sheetpane/grid/jsx` | closed | `test/manifest.test.ts` (17) |
 | 2026-10-18 | W-36 | TSDoc on every public export of 13 packages (summary, `@param`/`@returns`, elements' Attributes, `@fires`, `@example`, `@see`); a check reading the built `.d.ts` and type-checking every `@example` | closed | `test/tsdoc.test.ts` (17) |
 | 2026-10-18 | W-38 | `llms.txt` and `llms-full.txt` generated from the READMEs, docs, laws, records and skills; in the repo root and the grid's `dist/`; links pinned to the release tag; a freshness test | closed | `test/llms.test.ts` (3) |
 | 2026-10-18 | W-41 | `@sheetpane/testing`: one driver API for Playwright and Vitest browser mode on committed `data-sp-*` hooks (SR-GRID 9a), Download read back as values (Node too), `toHaveCell` / `toHaveError`; demo-check's review steps use it | closed | `--project testing --project node` (9) · demo-check 49 ✓ |

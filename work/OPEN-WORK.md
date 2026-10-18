@@ -32,16 +32,7 @@ here. Read that record before changing anything below it.
 
 ### build
 
-
-
-- 🟡 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Built: 22 of 23 skills, entry files, installer, drift check (SR-SKILLS); skill 18 waits on W-37, DoD 8 (a prompt in each tool) is the decider's. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
-
-
-- 🟢 **W-37** `agent` · Ship `custom-elements.json` for the elements; generate VS Code / JetBrains editor data and React, Vue, Svelte, Solid typings from it; a test keeps the manifest equal to the code. Filed by Arpit (Cowork). [detail](open/W-37-custom-elements-manifest.md)
-
-
-- 🟡 **W-39** `agent` · New package `@sheetpane/mcp`: a stdio MCP server with deterministic tools (describe the API, inspect a workbook, draft and check rules, explain an error code); registered for Claude, Kiro and Codex by the skills installer. Built: the server, five of six tools with goldens, the installer entry, SR-MCP; `describe_api` is built and answers once W-37's manifest lands — waiting on W-37. Filed by Arpit (Cowork). [detail](open/W-39-mcp-server.md)
-
+- 🟡 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Built: all 23 skills, entry files, installer (with the MCP entry), drift check (SR-SKILLS); DoD 8 (a prompt in each tool) is the decider's. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
 
 - 🟢 **W-43** `agent` · `npm create sheetpane` scaffolds a working host (vanilla, React, Next.js, Vue, Angular, Svelte): grid + errors in a tab, sample and rules files, one test, skills installed; CI builds every template. Filed by Arpit (Cowork). [detail](open/W-43-create-sheetpane.md)
 
@@ -57,12 +48,8 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
 
-
-
 ### record update
 
 ### research
-
-
 
 ---

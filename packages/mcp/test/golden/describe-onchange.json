@@ -1,0 +1,24 @@
+{
+  "matches": [
+    {
+      "kind": "event",
+      "element": "sheetpane-excel",
+      "name": "sheetpane-change",
+      "type": {
+        "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>"
+      },
+      "description": "`{ sheet, ref, kind, was, now }` for each change, undo and redo included.",
+      "record": "https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md"
+    },
+    {
+      "kind": "event",
+      "element": "sheetpane-errors",
+      "name": "sheetpane-change",
+      "type": {
+        "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>"
+      },
+      "description": "`{ sheet, ref, kind, was, now }` when a cell changes from here (\"Also change the cell\", undo, redo).",
+      "record": "https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md"
+    }
+  ]
+}

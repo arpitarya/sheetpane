@@ -49,15 +49,21 @@ export function describeApi(raw: string): Record<string, unknown> {
     for (const [list, kind] of KINDS) {
       for (const e of d[list] ?? []) {
         const hit = e.name === name || (kind === 'attribute' && e.name === lower) || (kind === 'member' && (e as { attribute?: string }).attribute === lower);
-        if (hit) matches.push({ kind, element: d.tagName, ...e, record });
+        if (hit) {
+          const { kind: memberKind, ...rest } = e as Entry & { kind?: string };
+          matches.push({ kind, ...(memberKind ? { memberKind } : {}), element: d.tagName, ...rest, record });
+        }
       }
     }
   }
   const pid = lower.replace(/^@sheetpane\//, '');
   for (const p of plugins) if (p.id === pid) matches.push({ kind: 'plugin', ...p, use: `<sheetpane-excel plugins="${p.id}"> after import '${p.package}'`, record: REPO + p.record });
+  // an element first: `sheetpane-errors` is a tag and an event
+  matches.sort((a, b) => Number(b.kind === 'element') - Number(a.kind === 'element'));
   if (matches.length) return { matches };
   if (!elements.length) return { matches: [], error: 'The custom-elements manifest is missing from this install — reinstall @sheetpane/mcp.' };
   const all = new Set<string>([...elements.flatMap((d) => [d.tagName!, ...KINDS.flatMap(([l]) => (d[l] ?? []).map((e) => e.name))]), ...plugins.map((p) => p.package)]);
-  const near = [...all].filter((n) => n.toLowerCase().includes(lower) || lower.includes(n.toLowerCase().replace(/^--sp-|^sheetpane-/, ''))).sort().slice(0, 10);
+  // near: a name holding what was asked, or a name (four letters or more, prefix aside) the ask holds
+  const near = [...all].filter((n) => { const k = n.toLowerCase(), bare = k.replace(/^--sp-|^sheetpane-|^@sheetpane\//, ''); return (lower.length >= 3 && k.includes(lower)) || (bare.length >= 4 && lower.includes(bare)); }).sort().slice(0, 10);
   return { matches: [], error: `sheetpane has no public name “${raw}”.`, ...(near.length ? { near } : {}) };
 }

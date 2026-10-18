@@ -86,6 +86,21 @@ async function golden(file: string, name: string, args: Record<string, unknown>)
 }
 
 describe('each tool on the showcase and the rules sample — golden outputs (DoD 3–8, 10)', () => {
+  it('describe_api: an attribute, an event (with on), a token, a method, a part, a plugin, an element', async () => {
+    await golden('describe-flagging', 'describe_api', { name: 'flagging' });
+    await golden('describe-onchange', 'describe_api', { name: 'onsheetpane-change' });
+    await golden('describe-accent', 'describe_api', { name: '--sp-accent' });
+    await golden('describe-plugin', 'describe_api', { name: '@sheetpane/charts' });
+    const el = JSON.parse((await callTool('describe_api', { name: '<sheetpane-errors>' })).content[0]!.text);
+    expect(el.matches[0]).toMatchObject({ kind: 'element', element: 'sheetpane-errors', class: 'SheetpaneErrors' });
+    const m = JSON.parse((await callTool('describe_api', { name: 'export' })).content[0]!.text);
+    expect(m.matches[0]).toMatchObject({ kind: 'member', memberKind: 'method', element: 'sheetpane-excel', name: 'export' });
+    const near = JSON.parse((await callTool('describe_api', { name: 'exportFile' })).content[0]!.text);
+    expect(near.near).toEqual(['export', 'file', 'sheetpane-export']);
+    const none = JSON.parse((await callTool('describe_api', { name: 'flagg' })).content[0]!.text);
+    expect(none.matches).toEqual([]);
+    expect(none.near).toContain('flagging');
+  });
   it('inspect_workbook: showcase.xlsx', () => golden('inspect-showcase', 'inspect_workbook', { path: `${F}/showcase.xlsx` }));
   it('inspect_workbook: a semicolon CSV', () => golden('inspect-semicolon', 'inspect_workbook', { path: `${F}/csv/semicolon.csv` }));
   it('inspect_workbook: merged and hidden sheets', async () => {

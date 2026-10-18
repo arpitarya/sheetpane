@@ -43,6 +43,8 @@ const index = [
   '## Elements',
   line(`records/${COMPONENTS.find((f) => f.includes('GRID'))}`, 'SR-GRID', 'the sheet, the store, the plugin host, events, rules, test hooks'),
   line(`records/${COMPONENTS.find((f) => f.includes('ERRORS'))}`, 'SR-ERRORS', 'the error list and the New error form'),
+  line('packages/grid/custom-elements.json', 'custom-elements.json', 'both elements as a Custom Elements Manifest: attributes, properties, methods, events with payload types, slots, parts, --sp-* properties'),
+  line(`${pkgReadme('grid')}#vue-svelte-solid-angular`, 'Vue, Svelte, Solid, Angular', 'the elements in each framework; typings @sheetpane/grid/jsx, /vue, /svelte, /solid'),
   line(pkgReadme('import'), '@sheetpane/import', 'read .xlsx / .csv into a JavaScript workbook'),
   line(pkgReadme('export'), '@sheetpane/export', 'write .xlsx / .csv, patch the original, download()'),
   '',

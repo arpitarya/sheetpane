@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8]
 timestamp: 2026-10-18T11:40:00Z
 content_sha: ""
@@ -81,7 +81,10 @@ pnpm and a justfile; the testing verdict chose the runner.
    strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
 5. **Source condition:** every `exports` entry carries a `source` condition
    pointing at `src/`, so type-check and tests read sibling packages without a
-   build. `publishConfig.exports` drops it from the published manifest.
+   build. `publishConfig.exports` drops it from the published manifest. The
+   grid's framework typings (W-37) are generated `.d.ts` files
+   committed in `src/frameworks/`: `source` points at the `.d.ts`, the build
+   copies them into `dist/frameworks/` with an empty `.js` for `import`.
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
    Node; every other package runs in browser mode on Playwright, and so do
    `@sheetpane/export`'s `*.browser.test.ts` files (project `export-browser`,
@@ -107,7 +110,14 @@ pnpm and a justfile; the testing verdict chose the runner.
    except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
    reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
-   dependency of every other package (W-35, SR-SKILLS).
+   dependency of every other package (W-35, SR-SKILLS) — and
+   `@sheetpane/grid`, which ships `custom-elements.json` beside `dist` (W-37).
+   Grid's build is `tsc` → `build-grid-css.mjs` → `build-manifest.mjs` (the
+   manifest, the editor data, the framework typings; no dependency); grid has
+   `@types/react` as a dev dependency so the React augmentation type-checks in
+   the workspace. `test/types/` type-checks a usage per framework — React
+   against the real `@types/react`, Vue, Svelte and Solid against stubs (none
+   is installed in the repo); the root `tsconfig.json` excludes it.
 7a. **TSDoc (W-36):** every symbol reachable from a package's `exports`
     carries TSDoc that survives into the built `.d.ts` (`removeComments`
     stays off): a summary; for a function `@param` per top-level parameter

@@ -1,0 +1,1173 @@
+{
+  "schemaVersion": "2.1.0",
+  "readme": "README.md",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "dist/excel/element.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "SheetpaneExcel",
+          "customElement": true,
+          "tagName": "sheetpane-excel",
+          "summary": "`<sheetpane-excel>` — the sheet: views and edits a `.xlsx` or `.csv` file held in the pane's in-memory workbook (SR-GRID decisions 9–22e).",
+          "description": "`<sheetpane-excel>` — the sheet: views and edits a `.xlsx` or `.csv` file held in the pane's in-memory workbook (SR-GRID decisions 9–22e). Every change stays in memory and `export()` writes a copy of the upload with it (SR-LAW-6); a `<sheetpane-errors>` on the same `pane` reads the same store, so the two are always in step (SR-LAW-7). It registers on import.\n\nSee SR-GRID: https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md",
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "attributes": [
+            {
+              "name": "pane",
+              "description": "The pane id shared with other elements; none gives the element its own store.",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "src",
+              "description": "A URL (read with a GET; nothing is sent), a data URL or base64.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "src"
+            },
+            {
+              "name": "mode",
+              "description": "`view` (the default) or `edit`.",
+              "type": {
+                "text": "'view' | 'edit'"
+              },
+              "default": "'view'",
+              "fieldName": "mode"
+            },
+            {
+              "name": "display",
+              "description": "`tab` (the default) or `popup` (a modal dialog, shown by `open`).",
+              "type": {
+                "text": "'tab' | 'popup'"
+              },
+              "default": "'tab'"
+            },
+            {
+              "name": "open",
+              "description": "Shows the pop-up.",
+              "type": {
+                "text": "boolean"
+              },
+              "fieldName": "open"
+            },
+            {
+              "name": "author",
+              "description": "Written into the errors this element's user flags.",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "plugins",
+              "description": "Space-separated registered plugin ids; fixed per pane.",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "theme",
+              "description": "`light` (the default), `dark` or `auto`.",
+              "type": {
+                "text": "'light' | 'dark' | 'auto'"
+              },
+              "default": "'light'",
+              "fieldName": "theme"
+            },
+            {
+              "name": "header-row",
+              "description": "The 1-based row holding column titles (default 1).",
+              "type": {
+                "text": "number"
+              },
+              "default": "1"
+            },
+            {
+              "name": "on-invalid",
+              "description": "`flag` (the default) or `block`: what a failing column rule does.",
+              "type": {
+                "text": "'flag' | 'block'"
+              },
+              "default": "'flag'",
+              "fieldName": "onInvalid"
+            },
+            {
+              "name": "rules-src",
+              "description": "A URL to a rules file (read with a GET).",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "flagging",
+              "description": "`on` (the default) or `off`: no Flag issue anywhere.",
+              "type": {
+                "text": "'on' | 'off'"
+              },
+              "default": "'on'",
+              "fieldName": "flagging"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "workbook",
+              "privacy": "public",
+              "type": {
+                "text": "WorkbookStore | undefined"
+              },
+              "description": "The pane's store; assigning one replaces the `pane` lookup and applies this element's `mode` to it."
+            },
+            {
+              "kind": "field",
+              "name": "errors",
+              "privacy": "public",
+              "type": {
+                "text": "SheetpaneError[]"
+              },
+              "description": "A copy of the pane's errors; assigning restores a saved review, like `setErrors()`."
+            },
+            {
+              "kind": "field",
+              "name": "errorTypes",
+              "privacy": "public",
+              "type": {
+                "text": "readonly ErrorType[]"
+              },
+              "description": "The types offered in the Flag issue form; an empty list falls back to `DEFAULT_ERROR_TYPES`."
+            },
+            {
+              "kind": "field",
+              "name": "file",
+              "privacy": "public",
+              "type": {
+                "text": "File | Blob | ArrayBuffer | Uint8Array | null"
+              },
+              "description": "Loads a file, like `load()`; `null` does nothing."
+            },
+            {
+              "kind": "field",
+              "name": "mode",
+              "privacy": "public",
+              "type": {
+                "text": "Mode"
+              },
+              "description": "The pane's mode, `view` or `edit`; setting it sets the `mode` attribute.",
+              "attribute": "mode",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "theme",
+              "privacy": "public",
+              "type": {
+                "text": "Theme"
+              },
+              "description": "`light` (the default), `dark`, or `auto` (follows `prefers-color-scheme`) — colour only; the file's own colours never change (W-29).",
+              "attribute": "theme",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "rules",
+              "privacy": "public",
+              "type": {
+                "text": "unknown"
+              },
+              "description": "A rules file (W-33) as an object: `{ version: 1, sheets: { \"*\": …, \"Accounts\": { headerRow, columns, cells } } }`. Also `rules-src`."
+            },
+            {
+              "kind": "field",
+              "name": "flagging",
+              "privacy": "public",
+              "type": {
+                "text": "'on' | 'off'"
+              },
+              "description": "`flagging=\"off\"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read.",
+              "attribute": "flagging",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "columns",
+              "privacy": "public",
+              "type": {
+                "text": "ColumnRules | undefined"
+              },
+              "description": "Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`)."
+            },
+            {
+              "kind": "field",
+              "name": "validate",
+              "privacy": "public",
+              "type": {
+                "text": "ValidateFn | undefined"
+              },
+              "description": "`validate(ctx, signal)`, sync or async: `null`, or `{ severity, message, expected? }`."
+            },
+            {
+              "kind": "field",
+              "name": "onInvalid",
+              "privacy": "public",
+              "type": {
+                "text": "OnInvalid"
+              },
+              "description": "The default for every rule: `flag` (store and add an error) or `block` (refuse the value). Also the `on-invalid` attribute.",
+              "attribute": "on-invalid",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "open",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether the pop-up is shown (the `open` attribute).",
+              "attribute": "open",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "src",
+              "privacy": "public",
+              "type": {
+                "text": "string | null"
+              },
+              "description": "The `src` attribute; `null`, `undefined` or `''` removes it.",
+              "attribute": "src",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "load",
+              "privacy": "public",
+              "description": "Reads a file into the pane: a File, Blob, bytes, a URL, or base64.",
+              "parameters": [
+                {
+                  "name": "src",
+                  "type": {
+                    "text": "string | File | Blob | ArrayBuffer | Uint8Array"
+                  }
+                },
+                {
+                  "name": "name",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "Promise<void>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "export",
+              "privacy": "public",
+              "description": "Every change applied; the upload untouched. Also dispatches `sheetpane-export`.",
+              "parameters": [
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "Readonly<Record<string, unknown>>"
+                  }
+                },
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ format?: 'xlsx' | 'csv'; sheet?: string }"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "Promise<Blob>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "select",
+              "privacy": "public",
+              "description": "Selects a cell and scrolls to it.",
+              "parameters": [
+                {
+                  "name": "sheet",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "ref",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getErrors",
+              "privacy": "public",
+              "description": "A copy of the pane's errors, to save a review.",
+              "return": {
+                "type": {
+                  "text": "SheetpaneError[]"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "setErrors",
+              "privacy": "public",
+              "description": "Restores a saved review; not a user action, so the undo stack is cleared.",
+              "parameters": [
+                {
+                  "name": "list",
+                  "type": {
+                    "text": "SheetpaneError[]"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "undo",
+              "privacy": "public",
+              "description": "Undoes the pane's last step.",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "redo",
+              "privacy": "public",
+              "description": "Redoes the last undone step.",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "column",
+              "privacy": "public",
+              "description": "The column a payload names: index, letter and the title from the header row (`header-row`, default 1).",
+              "parameters": [
+                {
+                  "name": "sheet",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "ref",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "{ index: number; letter: string; header: string }"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "shortcuts",
+              "privacy": "public",
+              "description": "The grid's keys, then every plugin control's shortcut (W-14 DoD 8).",
+              "return": {
+                "type": {
+                  "text": "{ keys: string; what: string }[]"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderNow",
+              "privacy": "public",
+              "description": "Renders now (tests and the first frame).",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "geometryFor",
+              "privacy": "public",
+              "description": "Geometry as plugins see it: pixels at 100 % zoom from A1's top-left.",
+              "parameters": [
+                {
+                  "name": "sheet",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "Geometry | undefined"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "sheetpane-load",
+              "type": {
+                "text": "CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>"
+              },
+              "description": "`{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`."
+            },
+            {
+              "name": "sheetpane-change",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>"
+              },
+              "description": "`{ sheet, ref, kind, was, now }` for each change, undo and redo included."
+            },
+            {
+              "name": "sheetpane-errors",
+              "type": {
+                "text": "CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>"
+              },
+              "description": "`{ errors, plugins }` when the pane's errors change."
+            },
+            {
+              "name": "sheetpane-select",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>"
+              },
+              "description": "`{ sheet, ref, column, value }` when the selection moves."
+            },
+            {
+              "name": "sheetpane-sheet",
+              "type": {
+                "text": "CustomEvent<{ sheet: string }>"
+              },
+              "description": "`{ sheet }` when the selection moves to another sheet."
+            },
+            {
+              "name": "sheetpane-mode",
+              "type": {
+                "text": "CustomEvent<{ mode: Mode }>"
+              },
+              "description": "`{ mode }` when the pane switches between View and Edit."
+            },
+            {
+              "name": "sheetpane-history",
+              "type": {
+                "text": "CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>"
+              },
+              "description": "`{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`."
+            },
+            {
+              "name": "sheetpane-editstart",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>"
+              },
+              "description": "`{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only."
+            },
+            {
+              "name": "sheetpane-input",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; draft: string; was: unknown }>"
+              },
+              "description": "`{ sheet, ref, column, draft, was }` as the cell-bar draft is typed."
+            },
+            {
+              "name": "sheetpane-beforechange",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; was: unknown; now: unknown }>"
+              },
+              "description": "`{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused."
+            },
+            {
+              "name": "sheetpane-editcancel",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string }>"
+              },
+              "description": "`{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it."
+            },
+            {
+              "name": "sheetpane-export",
+              "type": {
+                "text": "CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; original?: boolean }>"
+              },
+              "description": "`{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing."
+            },
+            {
+              "name": "sheetpane-close",
+              "type": {
+                "text": "CustomEvent<Record<string, never>>"
+              },
+              "description": "`{}` when the pop-up closes."
+            }
+          ],
+          "slots": [
+            {
+              "name": "format-row",
+              "description": "Host controls for the format row (Edit only); the row shows when a plugin or this slot puts something in it."
+            }
+          ],
+          "cssParts": [
+            {
+              "name": "root",
+              "description": "The sheet's frame: toolbar, cell bar, format row, grid, sheet tabs and status line."
+            },
+            {
+              "name": "toolbar",
+              "description": "The top bar: file, View/Edit, counts, find, zoom, undo, redo, freeze, Download."
+            },
+            {
+              "name": "cellbar",
+              "description": "The cell bar: the reference, the value being edited and the docked selection actions."
+            },
+            {
+              "name": "format-row",
+              "description": "The format row (Edit): plugin controls and the `format-row` slot."
+            },
+            {
+              "name": "status",
+              "description": "The status line under the sheet tabs."
+            },
+            {
+              "name": "dialog",
+              "description": "The modal `<dialog>` the root moves into when `display=\"popup\"`."
+            }
+          ],
+          "cssProperties": [
+            {
+              "name": "--sp-ground",
+              "description": "The ground behind panels: toolbar, cell bar, status line. Dark theme: `#16171A`.",
+              "default": "#F6F6F4"
+            },
+            {
+              "name": "--sp-surface",
+              "description": "Panels, buttons and inputs. Dark theme: `#262729`.",
+              "default": "#FFFFFF"
+            },
+            {
+              "name": "--sp-sunken",
+              "description": "Sunken fills: segmented controls, chips, tracks. Dark theme: `#3A3B3D`.",
+              "default": "#EFEFEB"
+            },
+            {
+              "name": "--sp-line",
+              "description": "Hairline borders. Dark theme: `#47484A`.",
+              "default": "#E2E2DD"
+            },
+            {
+              "name": "--sp-line-strong",
+              "description": "Borders of controls. Dark theme: `#6B6C6D`.",
+              "default": "#CBCBC5"
+            },
+            {
+              "name": "--sp-cell",
+              "description": "The cell background. Dark theme: `#262729`.",
+              "default": "#FFFFFF"
+            },
+            {
+              "name": "--sp-head",
+              "description": "Row and column headers. Dark theme: `#313234`.",
+              "default": "#F3F3F0"
+            },
+            {
+              "name": "--sp-grid",
+              "description": "Cell gridlines. Dark theme: `#3E3F41`.",
+              "default": "#E6E6E1"
+            },
+            {
+              "name": "--sp-ink",
+              "description": "Body text. Dark theme: `#F6F6F4`.",
+              "default": "#16171A"
+            },
+            {
+              "name": "--sp-ink-2",
+              "description": "Secondary text. Dark theme: `#C9C9C8`.",
+              "default": "#45484F"
+            },
+            {
+              "name": "--sp-ink-3",
+              "description": "Muted text and icons. Dark theme: `#A1A1A1`.",
+              "default": "#63666E"
+            },
+            {
+              "name": "--sp-accent",
+              "description": "Selection, focus ring and primary buttons. Dark theme: `#8C9EDE`.",
+              "default": "#2346C8"
+            },
+            {
+              "name": "--sp-accent-ink",
+              "description": "Accent text and pressed primary buttons. Dark theme: `#B7C1E7`.",
+              "default": "#1A36A0"
+            },
+            {
+              "name": "--sp-accent-soft",
+              "description": "The selected range and active rows. Dark theme: `#1A254E`.",
+              "default": "#EBEEFB"
+            },
+            {
+              "name": "--sp-pass",
+              "description": "Resolved, passing. Dark theme: `#86B399`.",
+              "default": "#16703E"
+            },
+            {
+              "name": "--sp-pass-soft",
+              "description": "Resolved, passing — the tint. Dark theme: `#163225`.",
+              "default": "#E6F2EA"
+            },
+            {
+              "name": "--sp-fail",
+              "description": "Errors. Dark theme: `#D2827B`.",
+              "default": "#B42318"
+            },
+            {
+              "name": "--sp-fail-soft",
+              "description": "Errors — the tint. Dark theme: `#451B19`.",
+              "default": "#FBE9E7"
+            },
+            {
+              "name": "--sp-warn",
+              "description": "Warnings. Dark theme: `#CAB692`.",
+              "default": "#875600"
+            },
+            {
+              "name": "--sp-warn-soft",
+              "description": "Warnings — the tint. Dark theme: `#412F10`.",
+              "default": "#FBF0D9"
+            },
+            {
+              "name": "--sp-changed",
+              "description": "The changed-cell mark. Dark theme: `#D39449`.",
+              "default": "#C46A00"
+            },
+            {
+              "name": "--sp-changed-soft",
+              "description": "The changed-cell mark — the tint. Dark theme: `#4A3012`.",
+              "default": "#FDF1E3"
+            },
+            {
+              "name": "--sp-note",
+              "description": "Notes. Dark theme: `#AA9DDE`.",
+              "default": "#6B55CC"
+            },
+            {
+              "name": "--sp-ref-1",
+              "description": "The first reference colour (formula ranges, plugins). Dark theme: `#8C9EDE`.",
+              "default": "#2346C8"
+            },
+            {
+              "name": "--sp-ref-2",
+              "description": "The second reference colour. Dark theme: `#AA9DDE`.",
+              "default": "#6B55CC"
+            },
+            {
+              "name": "--sp-ref-3",
+              "description": "The third reference colour. Dark theme: `#D8A262`.",
+              "default": "#C46A00"
+            },
+            {
+              "name": "--sp-on-solid",
+              "description": "Text on solid fills: pins, badges, primary buttons. Dark theme: `#16171A`.",
+              "default": "#FFFFFF"
+            },
+            {
+              "name": "--sp-hit",
+              "description": "Find hits. Dark theme: `#4A3D12`.",
+              "default": "#FFF4C2"
+            },
+            {
+              "name": "--sp-hit-current",
+              "description": "The current find hit. Dark theme: `#7A5F12`.",
+              "default": "#FFE07A"
+            },
+            {
+              "name": "--sp-r-sm",
+              "description": "Small radius.",
+              "default": "4px"
+            },
+            {
+              "name": "--sp-r",
+              "description": "Radius.",
+              "default": "6px"
+            },
+            {
+              "name": "--sp-r-lg",
+              "description": "Large radius (panels).",
+              "default": "10px"
+            },
+            {
+              "name": "--sp-r-xl",
+              "description": "Extra-large radius (the pop-up).",
+              "default": "14px"
+            },
+            {
+              "name": "--sp-shadow",
+              "description": "Menus, callouts and pop-overs. Dark theme: `0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.45)`.",
+              "default": "0 1px 2px rgba(22,23,26,.06),0 6px 20px rgba(22,23,26,.08)"
+            },
+            {
+              "name": "--sp-shadow-lg",
+              "description": "The pop-up dialog. Dark theme: `0 24px 64px rgba(0,0,0,.6)`.",
+              "default": "0 24px 64px rgba(22,23,26,.22)"
+            },
+            {
+              "name": "--sp-cell-font-size",
+              "description": "The cell text size (SR-GRID decision 15).",
+              "default": ".93em"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SheetpaneExcel",
+          "declaration": {
+            "name": "SheetpaneExcel",
+            "module": "dist/excel/element.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sheetpane-excel",
+          "declaration": {
+            "name": "SheetpaneExcel",
+            "module": "dist/excel/element.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/errors/element.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "name": "SheetpaneErrors",
+          "customElement": true,
+          "tagName": "sheetpane-errors",
+          "summary": "`<sheetpane-errors>` — the error list and the Flag issue form, on the same in-memory workbook as `<sheetpane-excel>` (SR-ERRORS).",
+          "description": "`<sheetpane-errors>` — the error list and the Flag issue form, on the same in-memory workbook as `<sheetpane-excel>` (SR-ERRORS). It keeps no private copy: every render reads the pane's store, so the two are always in step (SR-LAW-7). It registers on import.\n\nSee SR-ERRORS: https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md",
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "attributes": [
+            {
+              "name": "pane",
+              "description": "The pane id shared with the sheet; none gives the element its own store.",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "readonly",
+              "description": "Hides the form, Resolve, Delete, Undo and Redo (a sign-off screen).",
+              "type": {
+                "text": "boolean"
+              },
+              "fieldName": "readOnly"
+            },
+            {
+              "name": "author",
+              "description": "Written into the errors this element's user adds.",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "plugins",
+              "description": "Space-separated registered plugin ids; fixed per pane.",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "theme",
+              "description": "`light` (the default), `dark` or `auto`.",
+              "type": {
+                "text": "'light' | 'dark' | 'auto'"
+              },
+              "default": "'light'",
+              "fieldName": "theme"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "workbook",
+              "privacy": "public",
+              "type": {
+                "text": "WorkbookStore | undefined"
+              },
+              "description": "The pane's store; assigning one replaces the `pane` lookup."
+            },
+            {
+              "kind": "field",
+              "name": "errors",
+              "privacy": "public",
+              "type": {
+                "text": "SheetpaneError[]"
+              },
+              "description": "A copy of the pane's errors; assigning restores a saved review, like `setErrors()`."
+            },
+            {
+              "kind": "field",
+              "name": "errorTypes",
+              "privacy": "public",
+              "type": {
+                "text": "readonly ErrorType[]"
+              },
+              "description": "The types offered in the form; an empty list falls back to `DEFAULT_ERROR_TYPES`."
+            },
+            {
+              "kind": "field",
+              "name": "readOnly",
+              "privacy": "public",
+              "type": {
+                "text": "boolean"
+              },
+              "description": "Whether the list is read-only (the `readonly` attribute).",
+              "attribute": "readonly",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "theme",
+              "privacy": "public",
+              "type": {
+                "text": "Theme"
+              },
+              "description": "`light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29).",
+              "attribute": "theme",
+              "reflects": true
+            },
+            {
+              "kind": "method",
+              "name": "getErrors",
+              "privacy": "public",
+              "description": "A copy of the pane's errors, to save a review.",
+              "return": {
+                "type": {
+                  "text": "SheetpaneError[]"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "setErrors",
+              "privacy": "public",
+              "description": "Restores a saved review. `plugins` (from the saved `sheetpane-errors` envelope) shows a notice when it differs from this pane's set.",
+              "parameters": [
+                {
+                  "name": "list",
+                  "type": {
+                    "text": "SheetpaneError[]"
+                  }
+                },
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ plugins?: string[] }"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "renderNow",
+              "privacy": "public",
+              "description": "Renders now (tests and the first frame).",
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            }
+          ],
+          "events": [
+            {
+              "name": "sheetpane-errors",
+              "type": {
+                "text": "CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>"
+              },
+              "description": "`{ errors, plugins }` when the pane's errors change — the envelope to save a review."
+            },
+            {
+              "name": "sheetpane-change",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>"
+              },
+              "description": "`{ sheet, ref, kind, was, now }` when a cell changes from here (\"Also change the cell\", undo, redo)."
+            },
+            {
+              "name": "sheetpane-select",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string }>"
+              },
+              "description": "`{ sheet, ref }` when picking a row selects its cell."
+            },
+            {
+              "name": "sheetpane-history",
+              "type": {
+                "text": "CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>"
+              },
+              "description": "`{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`."
+            },
+            {
+              "name": "sheetpane-reveal",
+              "type": {
+                "text": "CustomEvent<{ error: SheetpaneError }>"
+              },
+              "description": "`{ error }` on Show in sheet, so the host can switch tab or open the pop-up."
+            }
+          ],
+          "slots": [],
+          "cssParts": [
+            {
+              "name": "root",
+              "description": "The panel's frame: the header, the form, the filters and the list."
+            }
+          ],
+          "cssProperties": [
+            {
+              "name": "--sp-ground",
+              "description": "The ground behind panels: toolbar, cell bar, status line. Dark theme: `#16171A`.",
+              "default": "#F6F6F4"
+            },
+            {
+              "name": "--sp-surface",
+              "description": "Panels, buttons and inputs. Dark theme: `#262729`.",
+              "default": "#FFFFFF"
+            },
+            {
+              "name": "--sp-sunken",
+              "description": "Sunken fills: segmented controls, chips, tracks. Dark theme: `#3A3B3D`.",
+              "default": "#EFEFEB"
+            },
+            {
+              "name": "--sp-line",
+              "description": "Hairline borders. Dark theme: `#47484A`.",
+              "default": "#E2E2DD"
+            },
+            {
+              "name": "--sp-line-strong",
+              "description": "Borders of controls. Dark theme: `#6B6C6D`.",
+              "default": "#CBCBC5"
+            },
+            {
+              "name": "--sp-cell",
+              "description": "The cell background. Dark theme: `#262729`.",
+              "default": "#FFFFFF"
+            },
+            {
+              "name": "--sp-head",
+              "description": "Row and column headers. Dark theme: `#313234`.",
+              "default": "#F3F3F0"
+            },
+            {
+              "name": "--sp-grid",
+              "description": "Cell gridlines. Dark theme: `#3E3F41`.",
+              "default": "#E6E6E1"
+            },
+            {
+              "name": "--sp-ink",
+              "description": "Body text. Dark theme: `#F6F6F4`.",
+              "default": "#16171A"
+            },
+            {
+              "name": "--sp-ink-2",
+              "description": "Secondary text. Dark theme: `#C9C9C8`.",
+              "default": "#45484F"
+            },
+            {
+              "name": "--sp-ink-3",
+              "description": "Muted text and icons. Dark theme: `#A1A1A1`.",
+              "default": "#63666E"
+            },
+            {
+              "name": "--sp-accent",
+              "description": "Selection, focus ring and primary buttons. Dark theme: `#8C9EDE`.",
+              "default": "#2346C8"
+            },
+            {
+              "name": "--sp-accent-ink",
+              "description": "Accent text and pressed primary buttons. Dark theme: `#B7C1E7`.",
+              "default": "#1A36A0"
+            },
+            {
+              "name": "--sp-accent-soft",
+              "description": "The selected range and active rows. Dark theme: `#1A254E`.",
+              "default": "#EBEEFB"
+            },
+            {
+              "name": "--sp-pass",
+              "description": "Resolved, passing. Dark theme: `#86B399`.",
+              "default": "#16703E"
+            },
+            {
+              "name": "--sp-pass-soft",
+              "description": "Resolved, passing — the tint. Dark theme: `#163225`.",
+              "default": "#E6F2EA"
+            },
+            {
+              "name": "--sp-fail",
+              "description": "Errors. Dark theme: `#D2827B`.",
+              "default": "#B42318"
+            },
+            {
+              "name": "--sp-fail-soft",
+              "description": "Errors — the tint. Dark theme: `#451B19`.",
+              "default": "#FBE9E7"
+            },
+            {
+              "name": "--sp-warn",
+              "description": "Warnings. Dark theme: `#CAB692`.",
+              "default": "#875600"
+            },
+            {
+              "name": "--sp-warn-soft",
+              "description": "Warnings — the tint. Dark theme: `#412F10`.",
+              "default": "#FBF0D9"
+            },
+            {
+              "name": "--sp-changed",
+              "description": "The changed-cell mark. Dark theme: `#D39449`.",
+              "default": "#C46A00"
+            },
+            {
+              "name": "--sp-changed-soft",
+              "description": "The changed-cell mark — the tint. Dark theme: `#4A3012`.",
+              "default": "#FDF1E3"
+            },
+            {
+              "name": "--sp-note",
+              "description": "Notes. Dark theme: `#AA9DDE`.",
+              "default": "#6B55CC"
+            },
+            {
+              "name": "--sp-ref-1",
+              "description": "The first reference colour (formula ranges, plugins). Dark theme: `#8C9EDE`.",
+              "default": "#2346C8"
+            },
+            {
+              "name": "--sp-ref-2",
+              "description": "The second reference colour. Dark theme: `#AA9DDE`.",
+              "default": "#6B55CC"
+            },
+            {
+              "name": "--sp-ref-3",
+              "description": "The third reference colour. Dark theme: `#D8A262`.",
+              "default": "#C46A00"
+            },
+            {
+              "name": "--sp-on-solid",
+              "description": "Text on solid fills: pins, badges, primary buttons. Dark theme: `#16171A`.",
+              "default": "#FFFFFF"
+            },
+            {
+              "name": "--sp-hit",
+              "description": "Find hits. Dark theme: `#4A3D12`.",
+              "default": "#FFF4C2"
+            },
+            {
+              "name": "--sp-hit-current",
+              "description": "The current find hit. Dark theme: `#7A5F12`.",
+              "default": "#FFE07A"
+            },
+            {
+              "name": "--sp-r-sm",
+              "description": "Small radius.",
+              "default": "4px"
+            },
+            {
+              "name": "--sp-r",
+              "description": "Radius.",
+              "default": "6px"
+            },
+            {
+              "name": "--sp-r-lg",
+              "description": "Large radius (panels).",
+              "default": "10px"
+            },
+            {
+              "name": "--sp-r-xl",
+              "description": "Extra-large radius (the pop-up).",
+              "default": "14px"
+            },
+            {
+              "name": "--sp-shadow",
+              "description": "Menus, callouts and pop-overs. Dark theme: `0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.45)`.",
+              "default": "0 1px 2px rgba(22,23,26,.06),0 6px 20px rgba(22,23,26,.08)"
+            },
+            {
+              "name": "--sp-shadow-lg",
+              "description": "The pop-up dialog. Dark theme: `0 24px 64px rgba(0,0,0,.6)`.",
+              "default": "0 24px 64px rgba(22,23,26,.22)"
+            },
+            {
+              "name": "--sp-cell-font-size",
+              "description": "The cell text size (SR-GRID decision 15).",
+              "default": ".93em"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SheetpaneErrors",
+          "declaration": {
+            "name": "SheetpaneErrors",
+            "module": "dist/errors/element.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "sheetpane-errors",
+          "declaration": {
+            "name": "SheetpaneErrors",
+            "module": "dist/errors/element.js"
+          }
+        }
+      ]
+    }
+  ]
+}

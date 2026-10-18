@@ -1,0 +1,20 @@
+{
+  "matches": [
+    {
+      "kind": "css-property",
+      "element": "sheetpane-excel",
+      "name": "--sp-accent",
+      "description": "Selection, focus ring and primary buttons. Dark theme: `#8C9EDE`.",
+      "default": "#2346C8",
+      "record": "https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md"
+    },
+    {
+      "kind": "css-property",
+      "element": "sheetpane-errors",
+      "name": "--sp-accent",
+      "description": "Selection, focus ring and primary buttons. Dark theme: `#8C9EDE`.",
+      "default": "#2346C8",
+      "record": "https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md"
+    }
+  ]
+}

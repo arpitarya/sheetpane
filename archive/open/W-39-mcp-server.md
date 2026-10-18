@@ -17,7 +17,7 @@ ball: agent
 | step | what we do | what it gives us | state |
 |---|---|---|---|
 | 1 | Build a stdio MCP server, tools only, to the 2026-07-28 spec | agents query sheetpane instead of inventing attributes | ✅ |
-| 2 | Tools: `describe_api`, `inspect_workbook`, `draft_rules`, `check_rules`, `explain_code`, `find_skill` | answers computed from the manifest, the workbook and the schema — never generated | ⏳ `describe_api` built; it answers once W-37 ships the manifest |
+| 2 | Tools: `describe_api`, `inspect_workbook`, `draft_rules`, `check_rules`, `explain_code`, `find_skill` | answers computed from the manifest, the workbook and the schema — never generated | ✅ |
 | 3 | Register it from `sheetpane-skills install` for Claude Code, Kiro and Codex | one command sets it up | ✅ |
 
 **Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
@@ -34,14 +34,14 @@ ball: agent
 |---|---|---|
 | 1 · package | `packages/mcp`, bin `sheetpane-mcp`; depends on `@sheetpane/import`, `@sheetpane/grid` (data files only: manifest, rules schema) and `@sheetpane/skills` | ✅ `packages/mcp`, bin `sheetpane-mcp`; runtime deps import, grid (its rules checker and code registry), skills; the build copies ERRORS.md, the manifest and a plugin table into `dist/` |
 | 2 · protocol | stdio; the 2026-07-28 revision (stateless core); tool input schemas valid JSON Schema 2020-12; clients on the previous revision handled if the spec allows; checked with the MCP Inspector | ✅ stdio; 2026-07-28 stateless (`server/discover`, `_meta` version, `resultType`, cacheable `tools/list`, −32022) and 2025 `initialize`; schemas 2020-12. **Not** run in the MCP Inspector (interactive) — a spawned-server test stands in |
-| 3 · `describe_api(name)` | attribute, property, method, event, CSS token or plugin → its manifest entry, TSDoc and record link | ⏳ built (`api.ts`, reads `custom-elements.json` + the plugin table); its golden waits on W-37 |
+| 3 · `describe_api(name)` | attribute, property, method, event, CSS token or plugin → its manifest entry, TSDoc and record link | ✅ `api.ts` reads `custom-elements.json` (W-37) and the plugin table; elements first, near names on a miss; goldens |
 | 4 · `inspect_workbook(path)` | sheets, dimensions, header-row guess, titles, inferred column types, merges, which plugins the file would use — via `@sheetpane/import` in Node | ✅ via `@sheetpane/import`, which now reads `.xlsx` in Node (`minixml.ts`, SR-IMPORT 8; SP-1008 retired) |
 | 5 · `draft_rules(path, sheet?)` | a W-33 rules file from headers and inferred types (`required` where no blanks, `type`, `oneOf` for ≤ 12 distinct values); always marked a draft | ✅ `draft: true`; a draft checks clean against its own file (tested) |
 | 6 · `check_rules(json, path?)` | validates against the rules schema; with a workbook, lists sheets and titles the file names but the workbook lacks | ✅ the grid's `checkDocument` (the rules schema's hand check) + SP-6022/6023/6024 against a workbook |
 | 7 · `explain_code(code)` | the [W-40](W-40-error-codes.md) entry: meaning, cause, fix, link | ✅ registry + `docs/ERRORS.md` |
 | 8 · `find_skill(task)` | keyword match over the skills' descriptions → name and path (no model) | ✅ name ×3 + description words, the "Not for" clause excluded |
 | 9 · registration | [W-35](W-35-agent-skills-package.md)'s installer adds the server for Claude Code (`.mcp.json`), Kiro and Codex (their MCP config files, paths confirmed at build) | ✅ `sheetpane-skills install`: `.mcp.json`, `.kiro/settings/mcp.json`, `.codex/config.toml` (paths confirmed: Kiro docs, OpenAI Codex docs); `--no-mcp` |
-| 10 · tests | each tool on the showcase workbook and rules sample; golden outputs; a malformed file is a tool error, never a crash | ✅ `packages/mcp/test/mcp.node.test.ts` (17) with 12 goldens; malformed files, missing paths and bad args are tool errors with SP codes |
+| 10 · tests | each tool on the showcase workbook and rules sample; golden outputs; a malformed file is a tool error, never a crash | ✅ `packages/mcp/test/mcp.node.test.ts` (18) with 16 goldens; malformed files, missing paths and bad args are tool errors with SP codes |
 | 11 · record | new record SR-MCP; SR-BUILD; ownership row | ✅ SR-MCP (0119); SR-SKILLS 4a; SR-IMPORT 8; SR-TESTING 5; SR-CODES 7xxx (SP-7001…7007); register + ownership; compare doc |
 
 ## Blockers

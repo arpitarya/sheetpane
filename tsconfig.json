@@ -10,5 +10,8 @@
   "include": [
     "test",
     "vitest.config.ts"
+  ],
+  "exclude": [
+    "test/types"
   ]
 }
