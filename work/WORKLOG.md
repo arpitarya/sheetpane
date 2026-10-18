@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — the consumer-tooling and grid run: W-36–W-43, W-45–W-47, W-49 closed; two more gates  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *"implement all work items as fast as possible make sure everything is implemented correctly and close all the work items one by one implement everything keep committing keep pushing"*; then *"continue"* (twice).
+- **Done:** closed and pushed W-36 TSDoc + check (`04f9e36`), W-37 manifest, editor data, framework typings (`9b28465`), W-39 `@sheetpane/mcp` (`8d2a344`, `9b28465`; `@sheetpane/import` reads `.xlsx` in Node, SP-1008 retired), W-43 `create-sheetpane` (`7c9eada`), W-45 commands, hooks, Claude plugin (`d0a29b3`), W-46 range selection (`b0f7291`), W-47 resizing (`0010151`), W-49 hide and show + `@sheetpane/visibility` (`d7e2704`); W-44's starters and links built (`a24c135`), waiting on the decider. Agents built W-36 (three), W-37, W-43, W-45 and W-49's file layer; each verified here before closing. Cowork's W-46/W-47 filing and its W-35 close / W-48 filing committed as written (`0bbedc5`, `0010151`).
+- **Decided / left open:** read in — sizes (W-47) and reveal / expand (W-49) are view settings, never changes; markers live outside the grid's rows (axe); MCP is hand-written, tools only (compare doc); the file layer's `outline` maps are complete sets. Left for the decider: W-44 (enable Pages, first release), W-30, W-48; Cowork's law L10 and B-035 are uncommitted for Arpit's review. Not done: opening downloads in Excel / LibreOffice (W-30's lane), the plugin eval (W-48).
+- **Mistakes:** a script truncated CHANGELOG.md in `b0f7291` (restored in `7c9eada`); a helper emptied `work/IMPLEMENTATION.md` in the working tree — rebuilt from HEAD, **Cowork's uncommitted L10 row rebuilt from the 180 characters last seen: Cowork, please confirm its wording**; `git add -A <dir>` swept an agent's new files (caught by the guard); `git mv` left W-45's ticks out (added in `d7e2704`); `llms-full.txt` built before two records were staged (`772afa8`). Gates: the worklog-fence test (`0bbedc5`) and the shrink guard (`d0a29b3`), each in the change that recorded its second strike.
+- **Next:** the decider — W-44 (Pages + the first release), W-30, W-48, and reviewing L10; no agent item is open.
+
+---
+
 ## 2026-10-18 — W-35 closed without the tool trial; W-48 filed; W-45 unblocked  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"The testing of skills create a separate work item for it. I'll do it later on. Do not block work item 35 for it."*

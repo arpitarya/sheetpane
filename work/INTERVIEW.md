@@ -69,22 +69,22 @@ board and an item file disagreed, the board was changed.
 
 ## 2 · In flight, and the immediate next step
 
-*Updated 2026-10-18 (Claude Code, the consumer-tooling run).* **Built and
-closed:** every agent item through W-34, then W-33 (rules file), W-36 (TSDoc +
-check), W-38 (llms.txt), W-40 (SP codes), W-41 (`@sheetpane/testing`), W-42
-(`@sheetpane/fixtures`). **Built, open:** W-35 (`@sheetpane/skills`; skill 18
-waits on W-37, DoD 8 is the decider's) and W-39 (`@sheetpane/mcp`; its
-`describe_api` answers once W-37's manifest lands). `@sheetpane/import` now
-reads `.xlsx` in Node (`minixml.ts`; SP-1008 retired). W-44 DoD 1 (the Pages
-playground) is built.
+*Updated 2026-10-19 (Claude Code, end of the consumer-tooling and grid run).*
+**Every agent item is closed:** the core through W-34, then W-33 (rules
+file), W-35 (skills; its tool trial is W-48), W-36 (TSDoc), W-37 (manifest,
+typings), W-38 (llms.txt), W-39 (MCP; `@sheetpane/import` reads `.xlsx` in
+Node), W-40 (SP codes), W-41 (testing), W-42 (fixtures), W-43
+(`create-sheetpane`), W-45 (commands, hooks, Claude plugin), W-46 (range
+selection), W-47 (resizing), W-49 (hide and show, `@sheetpane/visibility`).
+W-44 is built and waits on the decider (enable Pages, first release).
 
-- **In flight:** W-37 (custom-elements manifest, editor data, framework
-  typings) — with an agent; when it lands, regenerate `llms*.txt`, close W-37,
-  add the `describe_api` golden and close W-39, finish W-35 skill 18.
-- **Next in Claude Code:** W-46 (smooth range selection — waits only on
-  W-37's edits to `element.ts` settling), then W-47; W-43 (`create-sheetpane`,
-  needs W-37's typings); W-44's StackBlitz links (after W-43); W-45 (after
-  W-35 and W-39 close).
+- **Owed by the decider:** W-44, W-30 (real-app files), W-48 (the skills,
+  hooks and plugin in each tool), and reviewing Cowork's law L10 + B-035
+  (uncommitted; its IMPLEMENTATION row was rebuilt by Claude Code — confirm).
+- **Know before you build on the grid:** row tops are a prefix sum (`rowAt`,
+  W-47) in which hidden rows are 0 px (W-49); selection is a layer, never
+  per cell (W-46); sizes, reveal and outline expand are view settings;
+  `menus` puts a `selbar` control in the cell, header or tab menu.
 - **What every plugin left owed:** Excel-saved fixtures and opening sheetpane's
   output in Excel / LibreOffice — all gathered in W-30's DoD 3; schema
   validation (B-033); plugin-contract gaps (B-034); plugin detail in core
