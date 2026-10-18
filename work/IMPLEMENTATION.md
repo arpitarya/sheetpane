@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-32 | Plugin gallery in both demos: Review + Vanilla, a tab per plugin, All plugins, on one generated showcase workbook; lazy-mounted panes; demo-check asserts every tab; demo-packed packs all plugins | closed | `just demo-check` (47 ✓) · `just demo-packed` (47 ✓) |
 | 2026-10-18 | W-31 | Selection actions docked at the cell bar's end and on right-click / Shift+F10 / Menu (no floating bar); one Download button (original bytes when untouched); a given workbook takes the element's mode; CHANGELOG created | closed | `packages/grid/test/actions.test.ts` (11) · demo-check (23 ✓) |
 | 2026-10-18 | W-19 | `@sheetpane/condfmt`: conditional formatting drawn after styles — cell, text, duplicate, top/bottom, average rules, colour scales, data bars, expressions via formulas; live, cached; hover legend and rule count; core: `shiftFormula` re-exported by the grid, formulas build for CF expressions | closed | `just test-pkg condfmt` (44) |
 | 2026-10-18 | W-28 | React hook recipes (useWorkbook, useSelection, useCellEdit, useChanges, useErrors, useSheetpaneEvent, useColumnRules, useSheetpane) on useSyncExternalStore; used in the React demo | closed | `react-recipes` project (7 tests) · demo-check's React steps |

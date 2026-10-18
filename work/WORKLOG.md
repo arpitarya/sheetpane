@@ -24,6 +24,26 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — Download as a neutral split button: canvas redrawn, synced, W-34 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *Download shouldn't be blue — match the theme; default to the uploaded format; a ▾ beside it offering .xlsx or .csv. Add it to the mockups, download them, create a work item.*
+- **Done:** canvas v50: `Sheetpane` (interactive: click ▾), `PluginKit`, `Selection-And-Download`, `Plugin-Decisions`, `sp-plugins.css`, `canvas.json`. Synced into `work/reference/design/boards/` (hashes match v50). W-34 filed (🟢).
+- **Decided / left open:** read in: CSV from an .xlsx is the current sheet; the upload's format is marked *default* in the menu; plugin export options sit under a separator in the same menu.
+- **Mistakes:** none.
+- **Next:** W-34 in Claude Code.
+
+---
+
+## 2026-10-18 — predefined errors from a rules file: W-33 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"some kind of file which says … this is a valid value and this is invalid value … it shows up on right-hand side section … I don't want any flag issues or to pop up … controlled through a prop … which would be the best file, YAML, TOML, or JSON?"*
+- **Done:** W-33 filed (🟢; W-31 landed during filing, `f09b1fa`): a versioned JSON rules document (per sheet, `*`, column titles, cells and ranges; `equals`, `noneOf`, `note` added to SR-GRID 22a's words) with a shipped JSON Schema, linked by `rules` / `rules-src`, compiled into W-27's `host-rules` engine; `flagging="off"` removes Flag issue, the composer and the callout card; a Rules file tab added to W-32's gallery. Not committed.
+- **Decided / left open:** read in: JSON (no runtime dependency, exact types, schema autocomplete); YAML/TOML stay host-side. Prop names `rules`, `rules-src`, `flagging` are the filer's — rename before building if wanted. `rules-src` follows B-030.
+- **Mistakes:** none.
+- **Next:** W-32, then W-33, in Claude Code.
+
+---
+
 ## 2026-10-18 — plugin gallery for the demos: W-32 filed  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"For demo items, I want HTML and React to have multiple tabs with vanilla grid, with different different plugins … and with all plugins … File a work item for this."*

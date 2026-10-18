@@ -44,21 +44,75 @@ importers:
 
   examples/html:
     dependencies:
+      '@ironcalc/wasm':
+        specifier: 0.9.0
+        version: 0.9.0
+      '@sheetpane/charts':
+        specifier: workspace:*
+        version: link:../../packages/charts
+      '@sheetpane/comments':
+        specifier: workspace:*
+        version: link:../../packages/comments
+      '@sheetpane/condfmt':
+        specifier: workspace:*
+        version: link:../../packages/condfmt
       '@sheetpane/export':
         specifier: workspace:*
         version: link:../../packages/export
+      '@sheetpane/formulas':
+        specifier: workspace:*
+        version: link:../../packages/formulas
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../../packages/grid
+      '@sheetpane/images':
+        specifier: workspace:*
+        version: link:../../packages/images
       '@sheetpane/import':
         specifier: workspace:*
         version: link:../../packages/import
+      '@sheetpane/numfmt':
+        specifier: workspace:*
+        version: link:../../packages/numfmt
+      '@sheetpane/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
+      '@sheetpane/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
+      numfmt:
+        specifier: 4.0.1
+        version: 4.0.1
 
   examples/react:
     dependencies:
+      '@sheetpane/charts':
+        specifier: workspace:*
+        version: link:../../packages/charts
+      '@sheetpane/comments':
+        specifier: workspace:*
+        version: link:../../packages/comments
+      '@sheetpane/condfmt':
+        specifier: workspace:*
+        version: link:../../packages/condfmt
+      '@sheetpane/formulas':
+        specifier: workspace:*
+        version: link:../../packages/formulas
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../../packages/grid
+      '@sheetpane/images':
+        specifier: workspace:*
+        version: link:../../packages/images
+      '@sheetpane/numfmt':
+        specifier: workspace:*
+        version: link:../../packages/numfmt
+      '@sheetpane/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
+      '@sheetpane/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       react:
         specifier: 19.3.1
         version: 19.3.1

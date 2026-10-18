@@ -85,6 +85,25 @@ holdings workbook (`=F12*G12`, the fee-rate rule 0.00%–2.00%, a chart over
 E3:E15 and H3:H15); pin 9 on E7 exists only on the Images board; the Pane-Sync
 host's tab badge is the host's, not the component's.
 
+## Keeping this folder in sync with the canvas
+
+**Arpit, 2026-10-18:** *"Whenever the designs are updated, sync it with the repo. That means download the latest components in the repo."*
+
+Every session that changes the canvas (the frontmatter's `source`) finishes the
+same session by syncing this folder — it is part of the design change, not a
+follow-up:
+
+1. Download every `project/` file of the canvas — boards, `canvas.json`, the
+   CSS files — into [`boards/`](boards/), overwriting.
+2. A board removed from the canvas is moved to `archive/` (L1), never deleted.
+3. A new board gets a row in the tables above; set `snapshot:` in the
+   frontmatter and bump this file's row in SR-WORK-REGISTRY §3.
+4. Name the changed boards in the session's WORKLOG entry.
+
+**Check:** every file in `boards/` hashes the same as the canvas's `project/`
+file of the same name, and no canvas file is missing here. Last synced:
+2026-10-18 19:25 IST (canvas version 50).
+
 ## Decisions the canvas records (Arpit, 2026-10-18)
 
 - **One npm package, two components** — `SheetPaneExcel` and `SheetPaneErrors`,

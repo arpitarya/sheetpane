@@ -9,6 +9,55 @@ const [htmlDir = 'examples/html', reactDir = 'examples/react/dist'] = process.ar
 const results = [];
 const check = (ok, what) => { results.push(`${ok ? '✓' : '✗'} ${what}`); if (!ok) process.exitCode = 1; };
 
+// W-32: every gallery tab opens the showcase on its own pane, and shows its plugin's mark (absent in Vanilla).
+async function gallery(page, name) {
+  const tab = async (label, id, sheet) => {
+    await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: label, exact: true }).click();
+    const panel = page.locator(`[role=tabpanel][data-tab="${id}"]`);
+    const x = panel.locator('sheetpane-excel');
+    await x.locator(`.tab[data-sheet="${sheet}"][aria-selected="true"]`).waitFor({ timeout: 15000 });
+    await x.locator('#c1_1').waitFor();
+    return { x, e: panel.locator('sheetpane-errors') };
+  };
+  const text = (loc) => loc.evaluate((el) => el.textContent);
+  const items = (e) => e.locator('.item').count();
+  check((await page.locator('[role=tabpanel] sheetpane-excel').count()) === 0, `${name}: no gallery grid is created before its tab opens`);
+  // Vanilla: the plain grid — no format, fill, rule, picture or chart
+  let t = await tab('Vanilla', 'vanilla', 'Numbers');
+  check((await text(t.x.locator('#c5_1'))) === '1.25' && (await t.x.locator('.olay').count()) === 0 && (await items(t.e)) === 0, `${name}: Vanilla shows the plain grid (1.25, no overlay, no errors)`);
+  t = await tab('Number formats', 'numfmt', 'Numbers');
+  check((await text(t.x.locator('#c5_1'))) === '1 1/4', `${name}: Number formats shows 1 1/4`);
+  t = await tab('Styles', 'styles', 'Styles');
+  check((await t.x.locator('#c1_1').evaluate((el) => getComputedStyle(el).backgroundColor)) === 'rgb(255, 242, 204)', `${name}: Styles draws the yellow fill`);
+  t = await tab('Formulas', 'formulas', 'Formulas');
+  await t.x.locator('#c1_1').click();
+  await t.x.locator('input.cell').fill('2000');
+  await t.x.locator('input.cell').press('Enter');
+  await t.x.locator('#c5_1').filter({ hasText: '8400' }).waitFor({ timeout: 15000 });
+  check(true, `${name}: Formulas recalculates B6 after an edit to B2`);
+  t = await tab('Validation', 'validation', 'Validation');
+  await t.e.locator('.item').nth(1).waitFor();
+  check((await items(t.e)) === 2, `${name}: Validation lists the two broken rules`);
+  t = await tab('Conditional formats', 'condfmt', 'CondFmt');
+  check((await t.x.locator('#c1_1').evaluate((el) => el.style.backgroundImage)).includes('linear-gradient'), `${name}: Conditional formats draws a data bar`);
+  t = await tab('Images', 'images', 'Images');
+  await t.x.locator('.olay img').waitFor({ timeout: 10000 });
+  check(true, `${name}: Images draws the picture`);
+  t = await tab('Charts', 'charts', 'Charts');
+  await t.x.locator('.olay svg[data-values]').nth(1).waitFor({ timeout: 10000 });
+  check(true, `${name}: Charts draws both charts`);
+  t = await tab('Comments', 'comments', 'Comments');
+  await t.e.locator('.item').nth(1).waitFor();
+  const msgs = await t.x.evaluate((el) => el.workbook.getErrors().filter((x) => x.author === 'file').map((x) => x.message).join(' | '));
+  check((await items(t.e)) === 2 && msgs.includes('Checked against the custodian file') && msgs.includes('Is this the September price?'), `${name}: Comments lists the file's note and thread`);
+  t = await tab('All plugins', 'all', 'Numbers');
+  await t.e.locator('.item').nth(3).waitFor({ timeout: 15000 });
+  check((await text(t.x.locator('#c5_1'))) === '1 1/4' && (await items(t.e)) >= 4, `${name}: All plugins — formats, rules and comments on one pane`);
+  t = await tab('Formulas', 'formulas', 'Formulas');
+  check((await text(t.x.locator('#c1_1'))) === '2000' && (await page.locator('[role=tabpanel] sheetpane-excel').count()) === 10, `${name}: a tab opened again keeps its edits; ten grids, one per opened tab`);
+  await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
+}
+
 async function run(name, dir, spa) {
   const { server, url } = await serve(dir, 0, spa);
   const browser = await chromium.launch();
@@ -33,7 +82,7 @@ async function run(name, dir, spa) {
     await errors.locator('[data-act=resolve]').click();
     await excel.locator('.pin.resolved').waitFor();
     check((await excel.locator('.pin').first().textContent()) === '✓', `${name}: resolved in the list → the pin turns ✓`);
-    // edit a cell → Export downloads a file with the change
+    // edit a cell → Download hands back a file with the change
     await excel.locator('#c7_1').click();
     await excel.locator('input.cell').fill('Edited in the demo');
     await excel.locator('input.cell').press('Enter');
@@ -41,7 +90,7 @@ async function run(name, dir, spa) {
     const bytes = new Uint8Array(await readFile(await dl.path()));
     const sheet = readZip(bytes).find((e) => e.name === 'xl/worksheets/sheet1.xml');
     const xml = fromUtf8(await inflateEntry(bytes, sheet));
-    check(xml.includes('<t>Edited in the demo</t>') && dl.suggestedFilename().endsWith('.xlsx'), `${name}: Export downloads ${dl.suggestedFilename()} carrying the edit`);
+    check(xml.includes('<t>Edited in the demo</t>') && dl.suggestedFilename().endsWith('.xlsx'), `${name}: Download hands back ${dl.suggestedFilename()} carrying the edit`);
     // the host's font, switched live
     await page.selectOption('select[aria-label="Page font"]', { label: 'Georgia' });
     await page.waitForTimeout(100);
@@ -76,6 +125,7 @@ async function run(name, dir, spa) {
     await page.setInputFiles('input[type=file]', { name: 'holdings.xls', mimeType: 'application/vnd.ms-excel', buffer: Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]) });
     await excel.locator('.state').filter({ hasText: 'Can’t open this file' }).waitFor();
     check(true, `${name}: a .xls is refused with "Can’t open this file"`);
+    await gallery(page, name);
     check(errorsSeen.length === 0, `${name}: no page errors${errorsSeen.length ? ` (${errorsSeen.join('; ')})` : ''}`);
   } catch (e) {
     check(false, `${name}: ${e.message.split('\n')[0]}`);

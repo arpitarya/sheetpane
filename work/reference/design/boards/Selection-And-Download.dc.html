@@ -27,7 +27,7 @@ body{margin:0}
 <header class="stack" style="gap: 8px">
 <span class="over">Change · Arpit, 2026-10-18 · applies to every board</span>
 <h1 class="h1">Nothing floats over the cells, and there is one way to download</h1>
-<p class="muted" style="max-width: 1040px">The floating selection bar appeared on every click and hid the text under it. Its actions now sit at the right end of the cell bar, the same place every time, and right-click opens the same list. “Export” and “Download the original” are now one <b>Download .xlsx</b> button.</p>
+<p class="muted" style="max-width: 1040px">The floating selection bar appeared on every click and hid the text under it. Its actions now sit at the right end of the cell bar, the same place every time, and right-click opens the same list. “Export” and “Download the original” are now one neutral <b>Download</b> button in the upload's format, with ▾ for .xlsx or .csv.</p>
 </header>
 
 <div class="bd-frame">
@@ -85,14 +85,20 @@ body{margin:0}
 </div>
 <div>
 <div class="spx spx-bare" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
-<button class="spx-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx</button>
-<span class="xs faint">View</span>
-<button class="spx-btn spx-btn-p" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx</button>
-<span class="xs faint">Edit, no changes</span>
-<button class="spx-btn spx-btn-p" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx<span class="spx-dln">3</span></button>
-<span class="xs faint">Edit, 3 changes</span>
+<span class="spx-anchor spx-split"><button class="spx-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx</button><button class="spx-btn spx-btn-i spx-split-more" type="button" aria-label="Choose download format"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 12px; height: 12px"><path d="M6 9l6 6 6-6"/></svg></button></span>
+<span class="xs faint">.xlsx upload</span>
+<span class="spx-anchor spx-split"><button class="spx-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx<span class="spx-dln">3</span></button><button class="spx-btn spx-btn-i spx-split-more" type="button" aria-label="Choose download format"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 12px; height: 12px"><path d="M6 9l6 6 6-6"/></svg></button></span>
+<span class="xs faint">3 changes</span>
+<span class="spx-anchor spx-split"><button class="spx-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .csv</button><button class="spx-btn spx-btn-i spx-split-more" type="button" aria-label="Choose download format"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 12px; height: 12px"><path d="M6 9l6 6 6-6"/></svg></button></span>
+<span class="xs faint">.csv upload</span>
 </div>
-<span class="xs muted">One button in both modes. No changes: the file exactly as opened. Changes: the file with them, the count on the button, and the tooltip says so. The upload itself is never changed. `.csv` files say Download .csv.</span>
+<div class="spx spx-bare" style="position: relative; height: 150px">
+<div class="spx-menu" role="menu" aria-label="Download as" style="left: 0; top: 4px; width: 330px; position: absolute">
+<button class="spx-mi hov" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Download as .xlsx <span class="spx-chip" style="height: 17px; font-size: 10px">default</span></span><span class="ds">Same format as the upload · every sheet, merges kept</span></span></button>
+<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Download as .csv</span><span class="ds">This sheet only (Holdings) · values, no merges or formatting</span></span></button>
+</div>
+</div>
+<span class="xs muted">One neutral button, styled like the rest of the toolbar — no blue. The main part downloads in the <b>format that was uploaded</b>: no changes → the file as opened; changes → with them, count on the button. <b>▾</b> opens “Download as .xlsx / .csv”; the upload's format is marked <i>default</i>. CSV is the current sheet only. In Edit and View alike.</span>
 </div>
 </section>
 </div>

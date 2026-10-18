@@ -25,3 +25,5 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 - Plugins: `@sheetpane/numfmt`, `formulas`, `styles`, `validation`,
   `condfmt`, `images`, `charts`, `comments` (W-15–W-22).
 - React hook recipes in `examples/react` (W-28).
+- A plugin gallery in both demos: Vanilla, a tab per plugin and All plugins on
+  one showcase workbook (W-32).

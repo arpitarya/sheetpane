@@ -281,3 +281,8 @@
 .spx-acts .spx-btn .spx-kbd{margin-left:2px}
 .spx-dln{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:2px;border-radius:9px;background:color-mix(in srgb,var(--sp-surface) 25%,transparent);font-size:10.5px;font-weight:600}
 .spx-btn:not(.spx-btn-p) .spx-dln{background:var(--sp-sunken);color:var(--sp-ink-2)}
+
+/* Download: one neutral split button — main part = the uploaded format, ▾ = choose the format */
+.spx-split{gap:0}
+.spx-split>.spx-btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+.spx-split>.spx-split-more{width:24px;margin-left:-1px;border-top-left-radius:0;border-bottom-left-radius:0;color:var(--sp-ink-2)}

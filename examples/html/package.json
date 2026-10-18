@@ -1,11 +1,21 @@
 {
   "name": "sheetpane-example-html",
   "private": true,
-  "description": "sheetpane in a plain index.html \u2014 no framework, no build step of its own (W-09).",
+  "description": "sheetpane in a plain index.html — no framework, no build step of its own (W-09).",
   "type": "module",
   "dependencies": {
+    "@ironcalc/wasm": "0.9.0",
+    "@sheetpane/charts": "workspace:*",
+    "@sheetpane/comments": "workspace:*",
+    "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/export": "workspace:*",
+    "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",
-    "@sheetpane/import": "workspace:*"
+    "@sheetpane/images": "workspace:*",
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/numfmt": "workspace:*",
+    "@sheetpane/styles": "workspace:*",
+    "@sheetpane/validation": "workspace:*",
+    "numfmt": "4.0.1"
   }
 }

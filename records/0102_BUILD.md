@@ -118,11 +118,26 @@ pnpm and a justfile; the testing verdict chose the runner.
     packages' `dist/`, served by `scripts/serve.mjs`) and `examples/react`
     (Vite + React 19) are workspace members that depend on the packages by
     name and import only their public exports. `scripts/demo-check.mjs` uses
-    both in Chromium (flag, resolve, edit + Export read back, font, pop-up,
+    both in Chromium (flag, resolve, edit + Download read back, font, pop-up,
     CSV, refusal; in React also the hooks strip and the column rules) —
     `just demo-check`, on every push; `scripts/demo-packed.mjs`
-    installs both from `pnpm pack` tarballs outside the workspace and runs the
-    same check — `just demo-packed`, nightly.
+    installs both from `pnpm pack` tarballs (every package, the eight plugins
+    included) outside the workspace and runs the same check — `just
+    demo-packed`, nightly.
+11a. **The plugin gallery (W-32):** both demos carry a second tab row —
+    Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
+    Validation · Conditional formats · Images · Charts · Comments · All
+    plugins. Every gallery tab opens one showcase workbook
+    (`examples/shared/make-showcase.mjs` → `showcase.xlsx` in both demos,
+    zipped by `writeZip`, hand-built, not Excel-saved; `just showcase`) on its
+    own `pane`, mounted when the tab first opens and kept after; a plugin's
+    peer loads with it (condfmt with styles, charts with images). Both demos
+    depend on all eight plugins, and the HTML import map lists them with
+    `numfmt` (its ESM build, `dist/index.mjs`) and `@ironcalc/wasm`.
+    `demo-check` asserts per tab: Vanilla plain (1.25, no overlay, no errors);
+    1 1/4; the yellow fill; B6 recalculated; two rule errors; a data bar; the
+    picture; both charts; the note and the thread; all of them together; lazy
+    mounting and edits kept.
 
 ### Consequences
 

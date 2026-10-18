@@ -4,12 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sheetpane — plain HTML demo</title>
-<!-- The package is loaded as published: its dist/ files, resolved by an import map. No framework, no build step. -->
+<!-- The packages are loaded as published: their dist/ files, resolved by an import map. No framework, no build step.
+     numfmt's "default" export is CommonJS; a browser needs its ESM build, dist/index.mjs. -->
 <script type="importmap">
 { "imports": {
   "@sheetpane/grid": "./node_modules/@sheetpane/grid/dist/index.js",
   "@sheetpane/export": "./node_modules/@sheetpane/export/dist/index.js",
-  "@sheetpane/import": "./node_modules/@sheetpane/import/dist/index.js"
+  "@sheetpane/import": "./node_modules/@sheetpane/import/dist/index.js",
+  "@sheetpane/numfmt": "./node_modules/@sheetpane/numfmt/dist/index.js",
+  "@sheetpane/numfmt/ui": "./node_modules/@sheetpane/numfmt/dist/ui.js",
+  "@sheetpane/styles": "./node_modules/@sheetpane/styles/dist/index.js",
+  "@sheetpane/styles/ui": "./node_modules/@sheetpane/styles/dist/ui.js",
+  "@sheetpane/formulas": "./node_modules/@sheetpane/formulas/dist/index.js",
+  "@sheetpane/formulas/ui": "./node_modules/@sheetpane/formulas/dist/ui.js",
+  "@sheetpane/validation": "./node_modules/@sheetpane/validation/dist/index.js",
+  "@sheetpane/validation/ui": "./node_modules/@sheetpane/validation/dist/ui.js",
+  "@sheetpane/condfmt": "./node_modules/@sheetpane/condfmt/dist/index.js",
+  "@sheetpane/condfmt/ui": "./node_modules/@sheetpane/condfmt/dist/ui.js",
+  "@sheetpane/images": "./node_modules/@sheetpane/images/dist/index.js",
+  "@sheetpane/charts": "./node_modules/@sheetpane/charts/dist/index.js",
+  "@sheetpane/charts/ui": "./node_modules/@sheetpane/charts/dist/ui.js",
+  "@sheetpane/comments": "./node_modules/@sheetpane/comments/dist/index.js",
+  "numfmt": "./node_modules/numfmt/dist/index.mjs",
+  "@ironcalc/wasm": "./node_modules/@ironcalc/wasm/wasm.js"
 } }
 </script>
 <style>
@@ -27,6 +44,13 @@
   main > .side { width: 360px; flex: none; }
   sheetpane-excel, sheetpane-errors { height: calc(100vh - 120px); }
   [hidden] { display: none !important; }
+  .gallery { display: flex; gap: 2px; padding: 0 24px; background: #fff; border-bottom: 1px solid #E5E7EB; overflow-x: auto; }
+  .gallery button { font: inherit; font-size: 13px; padding: 9px 10px; border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer; color: #4B5563; white-space: nowrap; }
+  .gallery button[aria-selected="true"] { color: #111827; border-bottom-color: #2346C8; }
+  .blurb { margin: 10px 24px 0; font-size: 13px; color: #45484F; }
+  .pair { display: flex; gap: 16px; padding: 12px 24px 16px; }
+  .pair sheetpane-excel { flex: 1; min-width: 0; height: calc(100vh - 170px); }
+  .pair sheetpane-errors { width: 340px; flex: none; height: calc(100vh - 170px); }
 </style>
 </head>
 <body>
@@ -51,7 +75,11 @@
       <button id="popup">Open in a pop-up</button>
     </div>
   </header>
-  <main>
+  <!-- The plugin gallery (W-32): one showcase workbook in every tab, each tab its own pane. -->
+  <nav class="gallery" role="tablist" aria-label="Plugin gallery" id="gallery"></nav>
+  <p class="blurb" id="blurb" hidden></p>
+  <div id="galleryPanels"></div>
+  <main id="review">
     <section class="sheet" id="sheetCol">
       <sheetpane-excel id="excel" pane="demo" mode="edit" author="Demo reviewer" src="./sample.xlsx"></sheetpane-excel>
     </section>
@@ -65,6 +93,62 @@
 
 <script type="module">
   import '@sheetpane/grid';
+  // Importing a plugin registers it for the page; the `plugins` attribute turns it on per element.
+  import '@sheetpane/numfmt/ui';
+  import '@sheetpane/styles/ui';
+  import '@sheetpane/formulas/ui';
+  import '@sheetpane/validation/ui';
+  import '@sheetpane/condfmt/ui';
+  import '@sheetpane/images';
+  import '@sheetpane/charts/ui';
+  import '@sheetpane/comments';
+
+  const TABS = [
+    { id: 'review', label: 'Review' },
+    { id: 'vanilla', label: 'Vanilla', plugins: '', sheet: 'Numbers', blurb: 'The grid alone: values as stored (Numbers!B6 reads 1.25), saved formula results marked stale after an edit, no fills, rules, pictures or charts.' },
+    { id: 'numfmt', label: 'Number formats', plugins: 'numfmt', sheet: 'Numbers', blurb: 'numfmt — every Excel number format: B5 is red by its sign, B6 reads 1 1/4. In Edit, the format row sets a format.' },
+    { id: 'styles', label: 'Styles', plugins: 'styles', sheet: 'Styles', blurb: 'styles — fills, fonts, borders and alignment from the file; in Edit, the format row restyles the selection.' },
+    { id: 'formulas', label: 'Formulas', plugins: 'formulas', sheet: 'Formulas', blurb: 'formulas — edit B2 and the total in B6 and B7 recalculate (IronCalc, loaded on the first formula).' },
+    { id: 'validation', label: 'Validation', plugins: 'validation', sheet: 'Validation', blurb: 'validation — the file’s own rules: B4 (Bogus) and C3 (-2) are listed as workbook-rule errors; Status cells get a list arrow.' },
+    { id: 'condfmt', label: 'Conditional formats', plugins: 'styles condfmt', sheet: 'CondFmt', blurb: 'condfmt (needs styles) — a colour scale in A, data bars in B, a red fill over 50 in C; edit a number and the colours follow.' },
+    { id: 'images', label: 'Images', plugins: 'images', sheet: 'Images', blurb: 'images — the picture anchored to B3:E9, scaled with zoom.' },
+    { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'charts (needs images) — a column and a line chart drawn at their anchors; Show source cells selects the data.' },
+    { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'comments — the note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
+    { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
+  ];
+  const gallery = document.getElementById('gallery'), panels = document.getElementById('galleryPanels'), blurb = document.getElementById('blurb');
+  gallery.innerHTML = TABS.map((t, i) => `<button role="tab" id="tab-${t.id}" data-tab="${t.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${t.label}</button>`).join('');
+  const opened = new Map();
+  /** A tab's grid is created when the tab is first opened, then kept (its edits stay in memory). */
+  function panel(t) {
+    if (opened.has(t.id)) return opened.get(t.id);
+    const div = document.createElement('div');
+    div.className = 'pair'; div.dataset.tab = t.id; div.setAttribute('role', 'tabpanel'); div.setAttribute('aria-labelledby', `tab-${t.id}`);
+    const x = document.createElement('sheetpane-excel'), e = document.createElement('sheetpane-errors');
+    for (const el of [x, e]) { el.setAttribute('pane', `gallery-${t.id}`); el.setAttribute('author', 'Demo reviewer'); if (t.plugins) el.setAttribute('plugins', t.plugins); }
+    x.setAttribute('mode', 'edit');
+    x.addEventListener('sheetpane-load', () => x.select(t.sheet, 'A1'), { once: true });
+    x.setAttribute('src', './showcase.xlsx');
+    div.append(x, e);
+    panels.append(div);
+    opened.set(t.id, div);
+    return div;
+  }
+  function openTab(id, focus = false) {
+    for (const b of gallery.querySelectorAll('[role=tab]')) { const on = b.dataset.tab === id; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); }
+    const t = TABS.find((x) => x.id === id);
+    document.getElementById('review').hidden = id !== 'review';
+    blurb.hidden = id === 'review'; blurb.textContent = t.blurb ?? '';
+    for (const p of opened.values()) p.hidden = true;
+    if (id !== 'review') panel(t).hidden = false;
+  }
+  gallery.addEventListener('click', (e) => { const b = e.target.closest('[role=tab]'); if (b) openTab(b.dataset.tab); });
+  // APG tabs: arrows move between tabs, Home/End to the ends
+  gallery.addEventListener('keydown', (e) => {
+    const ids = TABS.map((t) => t.id), i = ids.indexOf(e.target.dataset.tab);
+    const j = e.key === 'ArrowRight' ? (i + 1) % ids.length : e.key === 'ArrowLeft' ? (i - 1 + ids.length) % ids.length : e.key === 'Home' ? 0 : e.key === 'End' ? ids.length - 1 : -1;
+    if (j >= 0) { e.preventDefault(); openTab(ids[j], true); }
+  });
 
   const $ = (id) => document.getElementById(id);
   const excel = $('excel'), errors = $('errors'), pop = $('pop');

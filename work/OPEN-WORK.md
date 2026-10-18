@@ -32,7 +32,8 @@ here. Read that record before changing anything below it.
 ### build
 
 
-- 🟢 **W-32** `agent` · Plugin tabs in both demos (HTML and React): Vanilla, one tab per plugin, All plugins — one showcase workbook in every tab; `demo-check` asserts each tab. Filed by Arpit (Cowork). [detail](open/W-32-plugin-gallery-demos.md)
+- 🟢 **W-33** `agent` · A rules file (JSON, per sheet / column / cell) checked on render; failures only in the errors panel; `flagging="off"` hides Flag issue and pop-ups; a Rules file demo tab. Its demo tab goes into W-32's gallery. Filed by Arpit (Cowork). [detail](open/W-33-rules-file.md)
+- 🟢 **W-34** `agent` · Download as a neutral split button (not blue): the main part in the uploaded format, ▾ for Download as .xlsx or .csv. Filed by Arpit (Cowork). [detail](open/W-34-download-split-button.md)
 
 ### testing
 

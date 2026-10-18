@@ -11,14 +11,14 @@ declare module 'react' {
     interface IntrinsicElements {
       'sheetpane-excel': ExcelBase & {
         pane?: string; mode?: 'view' | 'edit'; display?: 'tab' | 'popup'; open?: boolean; author?: string; src?: string;
-        'header-row'?: string; theme?: 'light' | 'dark' | 'auto'; 'on-invalid'?: 'flag' | 'block';
+        'header-row'?: string; theme?: 'light' | 'dark' | 'auto'; 'on-invalid'?: 'flag' | 'block'; plugins?: string;
         file?: File | Blob | null;
         'onsheetpane-change'?: On<{ sheet: string; ref: string; kind: string; was: unknown; now: unknown }>;
         'onsheetpane-close'?: On<object>;
         'onsheetpane-load'?: On<{ status: string; name?: string }>;
       };
       'sheetpane-errors': Base & {
-        pane?: string; author?: string; readonly?: boolean;
+        pane?: string; author?: string; readonly?: boolean; plugins?: string;
         'onsheetpane-errors'?: On<{ errors: SheetpaneError[]; plugins: string[] }>;
         'onsheetpane-reveal'?: On<{ error: SheetpaneError }>;
       };

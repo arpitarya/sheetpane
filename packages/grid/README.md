@@ -218,7 +218,9 @@ moved.
 Features beyond review — every Excel number format, live formulas, cell
 styles, data validation, conditional formatting, pictures, charts, comments —
 are separate packages that plug into six hooks and six slots. With none
-installed the grid is the plain review tool.
+installed the grid is the plain review tool. **See each one on the same
+workbook:** the demos' plugin gallery (`just demo-html` or `just demo-react`)
+has a tab per plugin, plus Vanilla and All plugins.
 
 ```js
 import '@sheetpane/numfmt';     // registers "numfmt"

@@ -21,6 +21,14 @@ body{margin:0}
 .cb-menu .mi .k{margin-left:auto;font:400 11px/1 var(--mono);color:var(--ink-3)}
 .dl-n{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:2px;border-radius:9px;background:rgba(255,255,255,.22);font:600 10.5px/1 var(--mono)}
 .btn:not(.btn-p) .dl-n{background:var(--sunken);color:var(--ink-2)}
+.dl-split{display:inline-flex;align-items:stretch}
+.dl-split .dl-main{border-top-right-radius:0;border-bottom-right-radius:0}
+.dl-split .dl-more{width:26px;margin-left:-1px;border-top-left-radius:0;border-bottom-left-radius:0}
+.dl-menu{min-width:280px}
+.dl-menu .mi{align-items:flex-start}
+.dl-menu .tx{display:flex;flex-direction:column;gap:2px}
+.dl-menu .dd{font:400 12px/1.35 var(--sans);color:var(--ink-3)}
+.dl-def{margin-left:8px;font:500 10.5px/1 var(--mono);padding:2px 5px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
 </style>
 </helmet>
 <section class="{{rootCls}}" style="{{rootStyle}}" aria-label="{{fileName}}">
@@ -48,7 +56,19 @@ body{margin:0}
 <sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
 <span class="xs faint">{{changesLabel}}</span>
 </sc-if>
-<button class="{{dlCls}}" type="button" onClick="{{doExport}}" title="{{dlTitle}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>{{exportLabel}}<sc-if value="{{hasChanges}}" hint-placeholder-val="{{false}}"><span class="dl-n" aria-label="{{nChanges}} changes included">{{nChanges}}</span></sc-if></button>
+<span class="dl-split" role="group" aria-label="Download">
+<button class="btn btn-sm dl-main" type="button" onClick="{{doExport}}" title="{{dlTitle}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>{{exportLabel}}<sc-if value="{{hasChanges}}" hint-placeholder-val="{{false}}"><span class="dl-n" aria-label="{{nChanges}} changes included">{{nChanges}}</span></sc-if></button>
+<span class="cb-anchor">
+<button class="btn btn-sm btn-i dl-more" type="button" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="{{dlOpen}}" title="Download as .xlsx or .csv" onClick="{{toggleDl}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{dlOpen}}" hint-placeholder-val="{{false}}">
+<div class="menu cb-menu dl-menu" role="menu" aria-label="Download as" style="right: 0; top: 32px">
+<sc-for list="{{dlFormats}}" as="f" hint-placeholder-count="2">
+<button class="mi" type="button" role="menuitem" onClick="{{f.pick}}"><span class="tx"><span class="tt">{{f.name}}<sc-if value="{{f.isDefault}}" hint-placeholder-val="{{false}}"><span class="dl-def">default</span></sc-if></span><span class="dd">{{f.desc}}</span></span></button>
+</sc-for>
+</div>
+</sc-if>
+</span>
+</span>
 <sc-if value="{{isPopup}}" hint-placeholder-val="{{false}}">
 <button class="btn btn-sm btn-g btn-i" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 </sc-if>
@@ -417,10 +437,20 @@ class Component extends DCLogic {
       },
       changesLabel: nChanges === 0 ? 'No changes yet' : nChanges + (nChanges === 1 ? ' change' : ' changes') + ' in memory',
       exportLabel: file === 'csv' ? 'Download .csv' : 'Download .xlsx',
-      dlCls: isEdit ? 'btn btn-sm btn-p' : 'btn btn-sm',
-      dlTitle: nChanges ? 'Download with your ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' · the upload is never changed' : 'Download the file as it was opened',
+      dlTitle: (nChanges ? 'Download with your ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' · the upload is never changed' : 'Download the file as it was opened') + ' · ▾ for another format',
       hasChanges: nChanges > 0, nChanges: nChanges,
-      doExport: function () { set({ exportNote: nChanges ? 'Downloaded with ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' — latest values' : 'Downloaded — same as the original' }); },
+      dlOpen: !!S.dlOpen,
+      toggleDl: function () { set({ dlOpen: !S.dlOpen, moreOpen: false, ctx: false }); },
+      dlFormats: (file === 'csv' ? ['csv', 'xlsx'] : ['xlsx', 'csv']).map(function (f) {
+        var same = f === file;
+        var desc = f === 'xlsx'
+          ? (same ? 'Same format as the upload · every sheet, merges kept' : 'Converted from the .csv · one sheet')
+          : (same ? 'Same format as the upload' : 'This sheet only (' + sheet + ') · values, no merges or formatting');
+        return { name: 'Download as .' + f, desc: desc, isDefault: same, pick: function () {
+          set({ dlOpen: false, exportNote: 'Downloaded .' + f + (same ? '' : ' (converted)') + (nChanges ? ' with ' + nChanges + (nChanges === 1 ? ' change' : ' changes') : '') });
+        } };
+      }),
+      doExport: function () { set({ dlOpen: false, exportNote: nChanges ? 'Downloaded .' + file + ' with ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' — latest values' : 'Downloaded .' + file + ' — same as the original' }); },
       memNote: S.exportNote ? S.exportNote : (nChanges ? '· ' + nChanges + (nChanges === 1 ? ' cell change' : ' cell changes') + ' kept in memory until you export' : '')
     };
   }

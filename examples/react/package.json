@@ -1,7 +1,7 @@
 {
   "name": "sheetpane-example-react",
   "private": true,
-  "description": "sheetpane inside a React 19 app (Vite) \u2014 the custom elements used natively (W-09).",
+  "description": "sheetpane inside a React 19 app (Vite) — the custom elements used natively (W-09).",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@sheetpane/charts": "workspace:*",
+    "@sheetpane/comments": "workspace:*",
+    "@sheetpane/condfmt": "workspace:*",
+    "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",
+    "@sheetpane/images": "workspace:*",
+    "@sheetpane/numfmt": "workspace:*",
+    "@sheetpane/styles": "workspace:*",
+    "@sheetpane/validation": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

@@ -87,7 +87,7 @@ Documents rot silently; a trigger and a date make staleness visible.
 |---|---|---|---|
 | `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — layout line: a pnpm workspace run by just (W-10) |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-31 filed (🟢) |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-34 filed (🟢) |
 | `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-032 (plugins cannot add event detail) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 plugin boards in the design snapshot; §2 two new decider rulings; closures and the events-and-rules verdict |
@@ -101,15 +101,15 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109), SR-STYLES (0110), SR-FORMULAS (0111), SR-COMMENTS (0112), SR-CHARTS (0113), SR-CONDFMT (0114) |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
-| `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — Selection-And-Download board; Sheetpane and PluginKit redrawn (W-31) |
+| `work/reference/design/README.md` | the design canvas changes — synced the same session (§Keeping this folder in sync) | 2026-10-18 | 2026-10-18 — synced to canvas v50 (Download split button) |
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
-| `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — theme, Column rules, React hooks (recipes), right-click actions, one Download (W-27–W-31) |
+| `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — Plugins points at the demos’ gallery (W-32); theme, Column rules, React hooks, right-click actions, one Download (W-27–W-31) |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |
 | `README.md` | the packages, the commands or the demos change | 2026-10-18 | 2026-10-18 — created: packages, demos, commands |
 | `packages/images/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the images plugin |
 | `packages/validation/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the validation plugin |
 | `packages/numfmt/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the numfmt plugin |
-| `CHANGELOG.md` | a public-facing change lands | 2026-10-18 | 2026-10-18 — created: W-31 (one Download, docked actions) and the Unreleased additions |
+| `CHANGELOG.md` | a public-facing change lands | 2026-10-18 | 2026-10-18 — W-31 (one Download, docked actions); the Unreleased additions incl. the plugin gallery (W-32) |
 
 ---
 

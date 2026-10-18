@@ -61,14 +61,19 @@ body{margin:0;font-family:'IBM Plex Sans',ui-sans-serif,sans-serif}
 <sc-if value="{{isEdit}}" hint-placeholder-val="{{true}}">
 <sc-if value="{{wide}}" hint-placeholder-val="{{true}}"><span class="spx-xs spx-faint">{{changesLabel}}</span></sc-if>
 </sc-if>
-<span class="spx-anchor">
-<button class="{{dlCls}}" type="button" aria-haspopup="{{exportMenu}}" aria-expanded="{{openExport}}" title="{{dlTitle}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx<sc-if value="{{hasChanges}}" hint-placeholder-val="{{false}}"><span class="spx-dln">{{nChanges}}</span></sc-if><sc-if value="{{exportMenu}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 11px; height: 11px"><path d="M6 9l6 6 6-6"/></svg></sc-if></button>
+<span class="spx-anchor spx-split" role="group" aria-label="Download">
+<button class="spx-btn" type="button" title="{{dlTitle}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx<sc-if value="{{hasChanges}}" hint-placeholder-val="{{false}}"><span class="spx-dln">{{nChanges}}</span></sc-if></button>
+<button class="spx-btn spx-btn-i spx-split-more" type="button" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="{{openExport}}" title="Download as .xlsx or .csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 12px; height: 12px"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{mk.dlsplit}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.dlsplit}}</span></sc-if>
 <sc-if value="{{openExport}}" hint-placeholder-val="{{false}}">
-<div class="spx-menu" role="menu" aria-label="Export" style="right: 0; top: 32px; width: 320px">
-<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Download .xlsx</span><span class="ds">With your changes · the upload is never changed</span></span></button>
+<div class="spx-menu" role="menu" aria-label="Download as" style="right: 0; top: 32px; width: 320px">
+<button class="spx-mi hov" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Download as .xlsx <span class="spx-chip" style="height: 17px; font-size: 10px">default</span></span><span class="ds">Same format as the upload · every sheet, merges kept</span></span></button>
+<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Download as .csv</span><span class="ds">This sheet only (Holdings) · values, no merges or formatting</span></span></button>
+<sc-if value="{{exportMenu}}" hint-placeholder-val="{{false}}">
 <div class="spx-msep"></div>
 <div class="spx-mhd">Added by comments</div>
-<button class="spx-mi hov" type="button" role="menuitemcheckbox" aria-checked="true"><span class="ck" aria-hidden="true">✓</span><span class="tx"><span>Write review as Excel comments ✓</span><span class="ds">Each error becomes a threaded comment on its cell. File notes stay as they were.</span></span><sc-if value="{{mk.expline}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.expline}}</span></sc-if></button>
+<button class="spx-mi" type="button" role="menuitemcheckbox" aria-checked="true"><span class="ck" aria-hidden="true">✓</span><span class="tx"><span>Write review as Excel comments ✓</span><span class="ds">Each error becomes a threaded comment on its cell. File notes stay as they were.</span></span><sc-if value="{{mk.expline}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.expline}}</span></sc-if></button>
+</sc-if>
 </div>
 </sc-if>
 </span>
@@ -545,10 +550,10 @@ class Component extends DCLogic {
       wide: !narrow, narrow: narrow, slots: slots, has: has,
       isEdit: isEdit, isView: !isEdit, viewCls: isEdit ? '' : 'on', editCls: isEdit ? 'on' : '',
       cnt: cnt,
-      mk: { undo: mk('undo'), freeze: mk('freeze'), expline: mk('expline'), fmtsel: mk('fmtsel'), dec: mk('dec'), text: mk('text'), color: mk('color'), fill: mk('fill'), borders: mk('borders'), align: mk('align'), wrap: mk('wrap'), clear: mk('clear'), more: mk('more'), sbbold: mk('sbbold'), sbmerge: mk('sbmerge'), acts: mk('acts') },
+      mk: { undo: mk('undo'), freeze: mk('freeze'), expline: mk('expline'), fmtsel: mk('fmtsel'), dec: mk('dec'), text: mk('text'), color: mk('color'), fill: mk('fill'), borders: mk('borders'), align: mk('align'), wrap: mk('wrap'), clear: mk('clear'), more: mk('more'), sbbold: mk('sbbold'), sbmerge: mk('sbmerge'), acts: mk('acts'), dlsplit: mk('dlsplit') },
       showUndo: isEdit && p.core !== 'today',
       showFreeze: isEdit && p.core !== 'today', openFreeze: open === 'freeze',
-      exportMenu: !!has.comments, openExport: open === 'export' && !!has.comments,
+      exportMenu: !!has.comments, openExport: open === 'export',
       changesLabel: S.changes ? S.changes + (S.changes === 1 ? ' change' : ' changes') + ' in memory' : 'No changes yet',
       showFr: showFr, frCls: 'spx-fr' + (slots ? ' spx-slot' : ''), frGhost: slots && !showFr && isEdit,
       fmtVal: S.fmtVal, openNumfmt: open === 'numfmt', fmts: fmts,

@@ -1,6 +1,7 @@
 import '@sheetpane/grid';
 import type { ColumnRules, SheetpaneError, SheetpaneExcel } from '@sheetpane/grid';
 import { useRef, useState } from 'react';
+import { GalleryPanels, GalleryTabs } from './PluginGallery';
 import { useCellEdit, useChanges, useColumnRules, useErrors, useSelection, useSheetpaneEvent, useWorkbook, type SheetRef } from './sheetpane-hooks';
 
 const FONTS = { System: 'system-ui, sans-serif', Georgia: 'Georgia, serif', Courier: "'Courier New', monospace" } as const;
@@ -50,6 +51,9 @@ export function App() {
   const [last, setLast] = useState('');
   const [rulesOn, setRulesOn] = useState(false);
   const sheet = useRef<SheetpaneExcel>(null);
+  const [demo, setDemo] = useState('review');
+  const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
+  const openDemo = (id: string) => { setDemo(id); setOpened((o) => (o.has(id) ? o : new Set([...o, id]))); };
 
   return (
     <div style={{ fontFamily: FONTS[font], minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#16171A' }}>
@@ -70,7 +74,9 @@ export function App() {
           <label><input type="checkbox" checked={rulesOn} onChange={(e) => setRulesOn(e.target.checked)} /> Check columns</label>
         </div>
       </header>
-      <main style={{ flex: 1, display: 'flex', gap: 16, padding: '16px 24px' }}>
+      <GalleryTabs active={demo} onOpen={openDemo} />
+      <GalleryPanels active={demo} opened={opened} />
+      <main hidden={demo !== 'review'} style={{ flex: 1, display: demo === 'review' ? 'flex' : 'none', gap: 16, padding: '16px 24px' }}>
         <section hidden={view === 'errors'} style={{ flex: 1, minWidth: 0 }}>
           <sheetpane-excel ref={sheet} pane="react-demo" mode="edit" author="Demo reviewer" src={file ? undefined : src} file={file}
             header-row={!file && src.endsWith('.xlsx') ? '2' : '1'}

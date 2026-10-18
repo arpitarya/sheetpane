@@ -62,7 +62,11 @@ demo-html: build
 demo-react: build
     pnpm --filter sheetpane-example-react dev
 
-# open both demos in Chromium and use them: flag, resolve, edit, export, font, pop-up, CSV, refusal (W-09)
+# rewrite the plugin gallery's workbook in both demos (W-32; hand-built, not Excel-saved)
+showcase: build
+    node examples/shared/make-showcase.mjs
+
+# open both demos in Chromium and use them: flag, resolve, edit, download, font, pop-up, CSV, refusal (W-09), every gallery tab (W-32)
 demo-check: build
     node scripts/demo-check.mjs examples/html examples/react/dist
 
