@@ -33,9 +33,11 @@ entry.**
   `<sheetpane-excel>` (view and edit, W-01) and `<sheetpane-errors>` (W-02),
   one package, **always in sync** (L7) through one in-memory workbook (L6, L9).
   Depends on `@sheetpane/export` and `@sheetpane/import`.
-- **`@sheetpane/import`** (`packages/import`, not created yet; working name) —
-  `.xlsx` or `.csv` in, the `Workbook` object out; the reader, moved out of
-  grid by Arpit's ruling (W-13).
+- **`@sheetpane/import`** (`packages/import`) — `.xlsx` or `.csv` in, the
+  `Workbook` object out, in a page or in Node (W-13, W-39).
+- **Consumer tooling** — `@sheetpane/skills` (W-35), `@sheetpane/mcp` (W-39),
+  `@sheetpane/testing` (W-41), `@sheetpane/fixtures` (W-42), `llms.txt`
+  (W-38), SP error codes (W-40).
 - **Demo apps** — a React app and a plain `index.html` that consume the
   package as a dependency (W-09).
 - **Eight plugin packages** (`packages/numfmt` `formulas` `styles` `validation`
@@ -67,16 +69,22 @@ board and an item file disagreed, the board was changed.
 
 ## 2 · In flight, and the immediate next step
 
-*Updated 2026-10-18 (Claude Code, end of the build run).* **Built and closed:**
-every agent item through W-34 except W-33 and W-35 — the core (W-01–W-04, W-09,
-W-10, W-12–W-14, W-23, W-24, W-26, W-27, W-29, W-31, W-34), the eight plugins
-(W-15–W-22, records SR-NUMFMT, SR-FORMULAS, SR-STYLES, SR-VALIDATION,
-SR-CONDFMT, SR-IMAGES, SR-CHARTS, SR-COMMENTS), the React hook recipes (W-28)
-and the demos' plugin gallery (W-32). The full suite is ~600 tests (Node +
-Chromium; WebKit and Firefox nightly); `demo-check` and `demo-packed` pass.
+*Updated 2026-10-18 (Claude Code, the consumer-tooling run).* **Built and
+closed:** every agent item through W-34, then W-33 (rules file), W-36 (TSDoc +
+check), W-38 (llms.txt), W-40 (SP codes), W-41 (`@sheetpane/testing`), W-42
+(`@sheetpane/fixtures`). **Built, open:** W-35 (`@sheetpane/skills`; skill 18
+waits on W-37, DoD 8 is the decider's) and W-39 (`@sheetpane/mcp`; its
+`describe_api` answers once W-37's manifest lands). `@sheetpane/import` now
+reads `.xlsx` in Node (`minixml.ts`; SP-1008 retired). W-44 DoD 1 (the Pages
+playground) is built.
 
-- **Next in Claude Code:** W-33 (a JSON rules file feeding W-27's engine,
-  `flagging="off"`, a Rules file gallery tab), then W-35 (`@sheetpane/skills`).
+- **In flight:** W-37 (custom-elements manifest, editor data, framework
+  typings) — with an agent; when it lands, regenerate `llms*.txt`, close W-37,
+  add the `describe_api` golden and close W-39, finish W-35 skill 18.
+- **Next in Claude Code:** W-46 (smooth range selection — waits only on
+  W-37's edits to `element.ts` settling), then W-47; W-43 (`create-sheetpane`,
+  needs W-37's typings); W-44's StackBlitz links (after W-43); W-45 (after
+  W-35 and W-39 close).
 - **What every plugin left owed:** Excel-saved fixtures and opening sheetpane's
   output in Excel / LibreOffice — all gathered in W-30's DoD 3; schema
   validation (B-033); plugin-contract gaps (B-034); plugin detail in core
