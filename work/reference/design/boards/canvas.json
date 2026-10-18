@@ -1,35 +1,210 @@
 {
   "v": 3,
-  "createdOnFiles": {"v": 1, "at": "2026-10-18T08:35:00Z"},
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-18T08:35:00Z"
+  },
   "title": "sheetpane — Excel viewer & editor package",
-  "launch": {"view": "canvas"},
+  "launch": {
+    "view": "canvas"
+  },
   "pages": [],
   "boards": {
-    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1760, "title": "sheetpane — one package, two linked components: modes, placements, API"},
-    "Sheetpane.dc.html": {"x": 1520, "y": 0, "w": 1240, "h": 700, "title": "<SheetPaneExcel> — the sheet", "is_interactive": true},
-    "Errors.dc.html": {"x": 2840, "y": 0, "w": 380, "h": 700, "title": "<SheetPaneErrors> — the errors", "is_interactive": true},
-    "Host-Tab-View.dc.html": {"x": 0, "y": 2300, "w": 1440, "h": 940, "title": "In a tab · View (Excel only)", "expand": "fill", "is_interactive": true},
-    "Host-Tab-Edit.dc.html": {"x": 1520, "y": 2300, "w": 1440, "h": 940, "title": "In a tab · Edit — Excel in the tab, Errors in the page's side column", "expand": "fill", "is_interactive": true},
-    "Host-Linked-Tabs.dc.html": {"x": 3040, "y": 2300, "w": 1440, "h": 940, "title": "Linked across tabs — Errors in one tab, Excel in another", "expand": "fill", "is_interactive": true},
-    "Host-Popup-View.dc.html": {"x": 0, "y": 3780, "w": 1440, "h": 900, "title": "In a pop-up · View (.csv)", "expand": "fill", "is_interactive": true},
-    "Host-Popup-Edit.dc.html": {"x": 1520, "y": 3780, "w": 1440, "h": 900, "title": "In a pop-up · Edit — both components side by side", "expand": "fill", "is_interactive": true},
-    "View-Upload.dc.html": {"x": 0, "y": 5220, "w": 1440, "h": 980, "title": "Load an .xlsx or .csv + states", "expand": "fill"},
-    "Edit-Examples.dc.html": {"x": 1520, "y": 5220, "w": 1440, "h": 1080, "title": "Edit · error types, with examples"},
-    "PluginKit.dc.html": {"x": 3040, "y": 6900, "w": 1344, "h": 602, "title": "Plugin kit — the grid every plugin board mounts (tweak scene, plugins, theme)"},
-    "Baseline-NoPlugins.dc.html": {"x": 1520, "y": 6900, "w": 1440, "h": 1400, "title": "1 · Baseline-NoPlugins — today's grid, six slots outlined"},
-    "Plugin-Numfmt.dc.html": {"x": 0, "y": 8420, "w": 1440, "h": 1320, "title": "2 · Plugin-Numfmt — format menu, decimals, raw value in the cell bar"},
-    "Plugin-Formulas.dc.html": {"x": 1520, "y": 8420, "w": 1440, "h": 1540, "title": "3 · Plugin-Formulas — fx, reference outlines, ⟳, stats, stale"},
-    "Plugin-Styles.dc.html": {"x": 3040, "y": 8420, "w": 1440, "h": 1580, "title": "4 · Plugin-Styles — format row groups, selbar quick buttons, states"},
-    "Plugin-Validation.dc.html": {"x": 0, "y": 10120, "w": 1440, "h": 1340, "title": "5 · Plugin-Validation — list arrows, ⚠ workbook author, rule text"},
-    "Plugin-CondFmt.dc.html": {"x": 1520, "y": 10120, "w": 1440, "h": 1260, "title": "6 · Plugin-CondFmt — scale, bars, cellIs fill, hover legend"},
-    "Plugin-Images.dc.html": {"x": 3040, "y": 10120, "w": 1440, "h": 1620, "title": "7 · Plugin-Images — anchored picture, EMF frame, pin on top"},
-    "Plugin-Charts.dc.html": {"x": 0, "y": 11860, "w": 1440, "h": 1520, "title": "8 · Plugin-Charts — stage 1 frame + source cells, stage 2 drawn"},
-    "Plugin-Comments.dc.html": {"x": 1520, "y": 11860, "w": 1440, "h": 1320, "title": "9 · Plugin-Comments — file notes, threads, export as Excel comments"},
-    "Core-FreezePanes.dc.html": {"x": 3040, "y": 11860, "w": 1440, "h": 1460, "title": "10 · Core-FreezePanes — Freeze ▾, dividers, scrolled with headers held"},
-    "All-Plugins.dc.html": {"x": 0, "y": 13500, "w": 1440, "h": 2420, "title": "11 · All-Plugins — every slot filled · 1440, 1024, dark"},
-    "Pane-Sync.dc.html": {"x": 1520, "y": 13500, "w": 1440, "h": 2000, "title": "12 · Pane-Sync — edit in one tab, warning in the other"},
-    "Slot-Map.dc.html": {"x": 0, "y": 6900, "w": 1440, "h": 1120, "title": "Slot map — six slots × eight plugins + core"},
-    "Plugin-Decisions.dc.html": {"x": 4464, "y": 6900, "w": 1440, "h": 1360, "title": "Decisions the brief did not settle"}
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1760,
+      "title": "sheetpane — one package, two linked components: modes, placements, API"
+    },
+    "Sheetpane.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1240,
+      "h": 700,
+      "title": "<SheetPaneExcel> — the sheet",
+      "is_interactive": true
+    },
+    "Errors.dc.html": {
+      "x": 2840,
+      "y": 0,
+      "w": 380,
+      "h": 700,
+      "title": "<SheetPaneErrors> — the errors",
+      "is_interactive": true
+    },
+    "Host-Tab-View.dc.html": {
+      "x": 0,
+      "y": 2300,
+      "w": 1440,
+      "h": 940,
+      "title": "In a tab · View (Excel only)",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Host-Tab-Edit.dc.html": {
+      "x": 1520,
+      "y": 2300,
+      "w": 1440,
+      "h": 940,
+      "title": "In a tab · Edit — Excel in the tab, Errors in the page's side column",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Host-Linked-Tabs.dc.html": {
+      "x": 3040,
+      "y": 2300,
+      "w": 1440,
+      "h": 940,
+      "title": "Linked across tabs — Errors in one tab, Excel in another",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Host-Popup-View.dc.html": {
+      "x": 0,
+      "y": 3780,
+      "w": 1440,
+      "h": 900,
+      "title": "In a pop-up · View (.csv)",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Host-Popup-Edit.dc.html": {
+      "x": 1520,
+      "y": 3780,
+      "w": 1440,
+      "h": 900,
+      "title": "In a pop-up · Edit — both components side by side",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "View-Upload.dc.html": {
+      "x": 0,
+      "y": 5220,
+      "w": 1440,
+      "h": 980,
+      "title": "Load an .xlsx or .csv + states",
+      "expand": "fill"
+    },
+    "Edit-Examples.dc.html": {
+      "x": 1520,
+      "y": 5220,
+      "w": 1440,
+      "h": 1080,
+      "title": "Edit · error types, with examples"
+    },
+    "PluginKit.dc.html": {
+      "x": 3040,
+      "y": 6900,
+      "w": 1344,
+      "h": 602,
+      "title": "Plugin kit — the grid every plugin board mounts (tweak scene, plugins, theme)"
+    },
+    "Baseline-NoPlugins.dc.html": {
+      "x": 1520,
+      "y": 6900,
+      "w": 1440,
+      "h": 1400,
+      "title": "1 · Baseline-NoPlugins — today's grid, six slots outlined"
+    },
+    "Plugin-Numfmt.dc.html": {
+      "x": 0,
+      "y": 8420,
+      "w": 1440,
+      "h": 1320,
+      "title": "2 · Plugin-Numfmt — format menu, decimals, raw value in the cell bar"
+    },
+    "Plugin-Formulas.dc.html": {
+      "x": 1520,
+      "y": 8420,
+      "w": 1440,
+      "h": 1540,
+      "title": "3 · Plugin-Formulas — fx, reference outlines, ⟳, stats, stale"
+    },
+    "Plugin-Styles.dc.html": {
+      "x": 3040,
+      "y": 8420,
+      "w": 1440,
+      "h": 1580,
+      "title": "4 · Plugin-Styles — format row groups, selbar quick buttons, states"
+    },
+    "Plugin-Validation.dc.html": {
+      "x": 0,
+      "y": 10120,
+      "w": 1440,
+      "h": 1340,
+      "title": "5 · Plugin-Validation — list arrows, ⚠ workbook author, rule text"
+    },
+    "Plugin-CondFmt.dc.html": {
+      "x": 1520,
+      "y": 10120,
+      "w": 1440,
+      "h": 1260,
+      "title": "6 · Plugin-CondFmt — scale, bars, cellIs fill, hover legend"
+    },
+    "Plugin-Images.dc.html": {
+      "x": 3040,
+      "y": 10120,
+      "w": 1440,
+      "h": 1620,
+      "title": "7 · Plugin-Images — anchored picture, EMF frame, pin on top"
+    },
+    "Plugin-Charts.dc.html": {
+      "x": 0,
+      "y": 11860,
+      "w": 1440,
+      "h": 1520,
+      "title": "8 · Plugin-Charts — stage 1 frame + source cells, stage 2 drawn"
+    },
+    "Plugin-Comments.dc.html": {
+      "x": 1520,
+      "y": 11860,
+      "w": 1440,
+      "h": 1320,
+      "title": "9 · Plugin-Comments — file notes, threads, export as Excel comments"
+    },
+    "Core-FreezePanes.dc.html": {
+      "x": 3040,
+      "y": 11860,
+      "w": 1440,
+      "h": 1460,
+      "title": "10 · Core-FreezePanes — Freeze ▾, dividers, scrolled with headers held"
+    },
+    "All-Plugins.dc.html": {
+      "x": 0,
+      "y": 13500,
+      "w": 1440,
+      "h": 2420,
+      "title": "11 · All-Plugins — every slot filled · 1440, 1024, dark"
+    },
+    "Pane-Sync.dc.html": {
+      "x": 1520,
+      "y": 13500,
+      "w": 1440,
+      "h": 2000,
+      "title": "12 · Pane-Sync — edit in one tab, warning in the other"
+    },
+    "Slot-Map.dc.html": {
+      "x": 0,
+      "y": 6900,
+      "w": 1440,
+      "h": 1120,
+      "title": "Slot map — six slots × eight plugins + core"
+    },
+    "Plugin-Decisions.dc.html": {
+      "x": 4464,
+      "y": 6900,
+      "w": 1440,
+      "h": 1360,
+      "title": "Decisions the brief did not settle"
+    },
+    "Selection-And-Download.dc.html": {
+      "x": 3300,
+      "y": 0,
+      "w": 1440,
+      "h": 1380,
+      "title": "Change — selection actions docked in the cell bar; one Download button"
+    }
   },
   "order": [
     "Main.dc.html",
@@ -56,14 +231,45 @@
     "All-Plugins.dc.html",
     "Pane-Sync.dc.html",
     "Slot-Map.dc.html",
-    "Plugin-Decisions.dc.html"
+    "Plugin-Decisions.dc.html",
+    "Selection-And-Download.dc.html"
   ],
   "notes": {
-    "t-top": {"x": 0, "y": -300, "text": "sheetpane — <SheetPaneExcel> + <SheetPaneErrors> · .xlsx and .csv", "kind": "title1", "maxW": 3220},
-    "t-tab": {"x": 0, "y": 2020, "text": "Placed in tabs of the host app", "kind": "title1", "maxW": 4480},
-    "t-pop": {"x": 0, "y": 3500, "text": "Placed in a pop-up over the host app", "kind": "title1", "maxW": 2960},
-    "t-more": {"x": 0, "y": 4940, "text": "Loading, states, and what Edit can call out", "kind": "title1", "maxW": 2960},
-    "t-plug": {"x": 0, "y": 6600, "text": "Plugins — six slots, eight plugins, one core addition", "kind": "title1", "maxW": 5904}
+    "t-top": {
+      "x": 0,
+      "y": -300,
+      "text": "sheetpane — <SheetPaneExcel> + <SheetPaneErrors> · .xlsx and .csv",
+      "kind": "title1",
+      "maxW": 3220
+    },
+    "t-tab": {
+      "x": 0,
+      "y": 2020,
+      "text": "Placed in tabs of the host app",
+      "kind": "title1",
+      "maxW": 4480
+    },
+    "t-pop": {
+      "x": 0,
+      "y": 3500,
+      "text": "Placed in a pop-up over the host app",
+      "kind": "title1",
+      "maxW": 2960
+    },
+    "t-more": {
+      "x": 0,
+      "y": 4940,
+      "text": "Loading, states, and what Edit can call out",
+      "kind": "title1",
+      "maxW": 2960
+    },
+    "t-plug": {
+      "x": 0,
+      "y": 6600,
+      "text": "Plugins — six slots, eight plugins, one core addition",
+      "kind": "title1",
+      "maxW": 5904
+    }
   },
   "designSystems": []
 }

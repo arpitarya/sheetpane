@@ -23,12 +23,12 @@ body{margin:0}
 <div class="ps" style="width: 1440px; min-height: 1360px; padding: 48px; gap: 24px">
 <header class="stack" style="gap: 8px">
 <span class="over">Decisions the brief did not settle · reconciled with the repo's work items</span>
-<h1 class="h1">19 calls — what matches the spec, what changed, what needs your ruling</h1>
+<h1 class="h1">20 calls — what matches the spec, what changed, what needs your ruling</h1>
 <p class="muted" style="max-width: 1040px">Checked against <span class="mono small">work/open/W-14…W-24</span> and the plugins verdict. Where the boards contradicted an item file, the boards were fixed — the item file is the spec. Three calls need Arpit; they are in the repo's inbox.</p>
 <div class="row" style="gap: 8px; flex-wrap: wrap"><span class="chip chip-fail">✕ needs a ruling</span><span class="chip chip-warn">! work item updated</span><span class="chip chip-pass">✓ board fixed to spec</span><span class="chip">· matches spec</span></div>
 </header>
 <section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
-<sc-for list="{{items}}" as="d" hint-placeholder-count="19">
+<sc-for list="{{items}}" as="d" hint-placeholder-count="20">
 <article class="dc">
 <span class="num">{{d.n}}</span>
 <span class="t">{{d.t}}</span>
@@ -53,7 +53,8 @@ class Component extends DCLogic {
       ['fixed', 'W-21', 'Charts stage 2 draws five types', 'Bar, column (clustered, stacked), line, pie, scatter. Earlier boards said three.'],
       ['fixed', 'tokens.ts', 'Corner mark uses --sp-changed', 'The code\'s token for a changed cell is --sp-changed (#C46A00), not accent. The kit now uses it, with a cell-colour halo.'],
       ['item', 'W-19', 'Condfmt gains a ./ui', 'W-19 said no UI. The boards add a hover legend (“Conditional: greater than 1000”) and a status count so colour never carries meaning alone (brief + W-17 DoD 7). Added to W-19\'s DoD.'],
-      ['item', 'W-14', 'Selection bar: plugin buttons after the core ones', 'Flag issue | Copy ref · Copy value | plugin buttons. Placing them right beside Flag issue would shift Copy ref. Added to W-14 DoD 3.'],
+      ['item', 'W-31', 'Selection actions are docked, not floating', 'Arpit, 2026-10-18: the floating bar covered the text. Now: Flag issue · plugin buttons · ⋯ (Copy ref, Copy value) at the right of the cell bar; right-click or Shift+F10 opens the same list. Nothing sits over the cells.'],
+      ['item', 'W-31', 'One download button', 'Export and Download original were two ways to the same file. One button, Download .xlsx, in View and Edit: as opened when nothing changed, with the changes when something did (a count shows how many).'],
       ['item', 'W-14', 'Where marks sit inside a cell', 'Person pin top-left · workbook ⚠ pin 18 px in from the right · corner mark top-right with halo · note mark bottom-right · ⟳ / ≈ left. Added to W-14.'],
       ['item', 'W-14', 'Narrow widths: More ▾ is core', 'Toolbar sheds first; then format-row groups move into More ▾ from the right. Number format and Text never move. Added to W-14.'],
       ['item', 'W-19', 'Review marks over rule fills', 'In Edit a severity ring is drawn over a conditional fill; the fill stays.'],

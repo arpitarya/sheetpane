@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — selection bar docked, one Download button: canvas redrawn, W-31 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"whenever we click on a cell, there is always this bar … it hides the text behind it. Is there an other way to display it? Then there are two ways to download … It should only be one."*
+- **Done:** design canvas: the floating selection bar replaced by actions docked at the right of the cell bar (Flag issue · plugin buttons · ⋯ Copy ref / Copy value) plus a right-click menu; Export and Download-the-original merged into one **Download .xlsx** (both modes; original when unchanged, a change count otherwise). Interactive `Sheetpane` board, `PluginKit` and five plugin boards updated; new board `Selection-And-Download` (before/after). Snapshot refreshed in `work/reference/design/boards/`. W-31 filed (🟢) for the grid, SR-GRID decisions 10 and 13. Not committed.
+- **Decided / left open:** read in: the `selbar` slot keeps its id and moves into the cell bar; the download button is labelled Download, not Export.
+- **Mistakes:** none.
+- **Next:** W-31 in Claude Code.
+
+---
+
 ## 2026-10-18 — W-09 closed; iPhone download check to backlog B-031  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *for W-09, put the iPhone download check in the backlog; not testing it now.*

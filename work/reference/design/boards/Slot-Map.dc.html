@@ -37,11 +37,11 @@ body{margin:0}
 <div style="position: absolute; left: 64px; top: 172px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--ink-3); letter-spacing: .06em; text-transform: uppercase">&lt;sheetpane-excel&gt;</div>
 <div class="sc sc-core" style="left: 80px; top: 212px; width: 408px; height: 40px"><span>Toolbar · core <span class="xs faint">(36 px)</span></span></div>
 <div class="sc sc-slot" style="left: 80px; top: 260px; width: 408px; height: 40px"><span>format-row <span class="xs" style="font-weight: 400">· Edit only · 32 px · drawn only if filled</span></span></div>
-<div class="sc sc-slot" style="left: 80px; top: 308px; width: 408px; height: 40px"><span>cellbar <span class="xs" style="font-weight: 400">· ref + value</span></span></div>
+<div class="sc sc-slot" style="left: 80px; top: 308px; width: 232px; height: 40px"><span>cellbar <span class="xs" style="font-weight: 400">· ref + value</span></span></div>
+<div class="sc sc-slot" style="left: 320px; top: 308px; width: 168px; height: 40px"><span>selbar <span class="xs" style="font-weight: 400">· docked actions</span></span></div>
 <div style="position: absolute; left: 80px; top: 356px; width: 408px; height: 300px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; background: repeating-linear-gradient(0deg, transparent 0 27px, #E6E6E1 27px 28px)"></div>
 <div class="sc sc-slot" style="left: 92px; top: 368px; width: 384px; height: 276px; align-items: flex-start; padding-top: 10px; background: rgba(107,85,204,.05)"><span>overlay <span class="xs" style="font-weight: 400">· sheet space · scrolls with cells</span></span></div>
 <div class="sc sc-slot" style="left: 120px; top: 440px; width: 120px; height: 36px; background: #FFFFFF"><span>cell</span></div>
-<div class="sc" style="left: 236px; top: 540px; width: 228px; height: 36px; background: #16171A; color: #FFFFFF; outline: 1.5px dashed #6B55CC; outline-offset: 2px; font-weight: 600"><span>selbar <span class="xs" style="font-weight: 400; opacity: .8">· Edit only · after core buttons</span></span></div>
 <div class="sc sc-core" style="left: 80px; top: 664px; width: 408px; height: 32px"><span>Sheet tabs · core</span></div>
 <div class="sc sc-slot" style="left: 80px; top: 704px; width: 408px; height: 36px"><span>status <span class="xs" style="font-weight: 400">· after core text</span></span></div>
 <div class="sc sc-core" style="left: 64px; top: 820px; width: 440px; height: 52px; border-style: dashed"><span>&lt;sheetpane-errors&gt; · not a slot: rows come from the shared pane (issue sources)</span></div>
@@ -69,7 +69,7 @@ class Component extends DCLogic {
     var P = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'core'];
     var R = [
       { slot: 'format-row', sub: 'Edit only', m: { numfmt: 'Format menu · .0← .00→', styles: 'Text · Colour · Fill · Borders · Align · Wrap · Clear', core: 'More ▾ when narrow' } },
-      { slot: 'selbar', sub: 'Edit only', m: { styles: 'Bold · Fill · Merge / Unmerge' } },
+      { slot: 'selbar', sub: 'docked in the cell bar', m: { styles: 'Bold · Fill · Merge / Unmerge' } },
       { slot: 'cellbar', sub: 'View + Edit', m: { numfmt: 'Raw value · format chip', formulas: 'fx + formula', styles: 'Style chip', validation: 'Rule chip', charts: 'Source chip', core: '≈ may be stale' } },
       { slot: 'status', sub: 'View + Edit', m: { formulas: 'Sum · Avg · Count · ⟳ n', validation: 'n warnings', condfmt: 'n rules', images: 'n pictures', charts: 'Chart source', core: 'Frozen rows · cols' } },
       { slot: 'cell', sub: 'View + Edit', m: { formulas: '⟳ · #REF!', styles: 'File fills, colours, borders', validation: 'List arrow', condfmt: 'Scale · bars · fills', comments: 'Note mark', core: '≈ · freeze divider' } },

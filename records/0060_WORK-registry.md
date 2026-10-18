@@ -87,7 +87,7 @@ Documents rot silently; a trigger and a date make staleness visible.
 |---|---|---|---|
 | `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — layout line: a pnpm workspace run by just (W-10) |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-18, W-15 closed |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-31 filed (🟢) |
 | `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-032 (plugins cannot add event detail) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 plugin boards in the design snapshot; §2 two new decider rulings; closures and the events-and-rules verdict |
@@ -98,10 +98,10 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |
 | `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — plugin, hook, slot, derived cell, column rules |
 | `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — B-030; the law checks that now run |
-| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109), SR-STYLES (0110), SR-FORMULAS (0111), SR-COMMENTS (0112), SR-CHARTS (0113) |
+| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109), SR-STYLES (0110), SR-FORMULAS (0111), SR-COMMENTS (0112), SR-CHARTS (0113), SR-CONDFMT (0114) |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
-| `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — refreshed: fifteen plugin boards, PluginKit, sp-plugins.css, reconciled with W-14–W-24 |
+| `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — Selection-And-Download board; Sheetpane and PluginKit redrawn (W-31) |
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
 | `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — the editing events table |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |

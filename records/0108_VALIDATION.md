@@ -75,7 +75,8 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
-   cell) and defined names; anything else skips the rule and counts it.
+   cell, through `@sheetpane/export`'s `shiftFormula`, re-exported by the
+   grid) and defined names; anything else skips the rule and counts it.
 5. **Values:** number rules need a number (`whole` an integer); text dates are
    not parsed; `textLength` uses the stored value's length; a list matches
    text ignoring case and a number by value. Blank cells pass with

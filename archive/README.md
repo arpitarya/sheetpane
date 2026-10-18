@@ -27,6 +27,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 
 | file | closed | where the live answer lives now |
 |---|---|---|
+| `W-19-condfmt.md` | 2026-10-18 | [SR-CONDFMT](../records/0114_CONDFMT.md) |
 | `W-28-react-hooks.md` | 2026-10-18 | [`packages/grid/README.md`](../packages/grid/README.md) §React hooks · [`examples/react/src/sheetpane-hooks.ts`](../examples/react/src/sheetpane-hooks.ts) |
 | `W-27-host-column-rules.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 22–22c |
 | `W-21-charts.md` | 2026-10-18 | [SR-CHARTS](../records/0113_CHARTS.md) |

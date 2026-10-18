@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-19 | `@sheetpane/condfmt`: conditional formatting drawn after styles — cell, text, duplicate, top/bottom, average rules, colour scales, data bars, expressions via formulas; live, cached; hover legend and rule count; core: `shiftFormula` re-exported by the grid, formulas build for CF expressions | closed | `just test-pkg condfmt` (44) |
 | 2026-10-18 | W-28 | React hook recipes (useWorkbook, useSelection, useCellEdit, useChanges, useErrors, useSheetpaneEvent, useColumnRules, useSheetpane) on useSyncExternalStore; used in the React demo | closed | `react-recipes` project (7 tests) · demo-check's React steps |
 | 2026-10-18 | W-27 | Column rules by title: JSON vocabulary + `validate(ctx, signal)` as a built-in `validate` provider (`author: host`), input/commit/load phases, flag or block, header notes, rules re-settable after load; Column rules filter | closed | `packages/grid/test/rules.test.ts` (17) · 250,000 rows × 4 rules in 1.3 s, longest frame gap 44 ms |
 | 2026-10-18 | W-21 | `@sheetpane/charts`: chart frames at their anchors (title, type, series, Show source cells, data-changed tag) and own-SVG bar/column/line/pie/doughnut/scatter from caches or live cells; core: geometry past the drawn columns, grid widens to drawings, overlay `role`/live `alt`/`passThrough` | closed | `just test-pkg charts` (43) · grid's overlay and geometry tests |

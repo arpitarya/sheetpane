@@ -31,7 +31,7 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — W-17 closed 2026-10-18. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
+- 🟢 **W-31** `agent` · Dock the selection actions in the cell bar (no floating bar; right-click opens them too) and keep one Download button in place of Export + Download original. Filed by Arpit (Cowork). [detail](open/W-31-docked-actions-one-download.md)
 
 ### testing
 

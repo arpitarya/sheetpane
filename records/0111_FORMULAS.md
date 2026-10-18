@@ -101,7 +101,9 @@ W-16 asked for recalculation on the plugins verdict's single-provider
    synchronously, through a scratch cell (the sheet's last cell) set,
    evaluated, read and cleared — the workbook is never touched. It serves
    `@sheetpane/validation`'s `custom` rules (SR-VALIDATION decision 3); a
-   workbook with a `custom` rule builds the model even without a formula.
+   workbook with a `custom` validation rule, or a conditional-format
+   expression, formula operand or formula threshold (W-19), builds the model
+   even without a formula cell.
    `undefined` until the model is built or while a recalculation is queued.
 
 ### Consequences

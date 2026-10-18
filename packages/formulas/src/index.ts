@@ -57,6 +57,15 @@ export function sameValue(a: Cell, b: Cell): boolean {
 const engineCannot = (v: Cell) => typeof v === 'string' && (ENGINE_ERRORS.has(v) || v === '#NAME?' || v === '#SPILL!');
 
 interface Addr { sheet: string; ref: string; si: number; row: number; col: number }
+/** A literal operand (`1000`, `"Active"`, `TRUE`) needs no engine; anything else is a formula. */
+const LITERAL = /^\s*(?:[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?|"(?:[^"]|"")*"|TRUE|FALSE)\s*$/i;
+/** Rules that call `evaluate()`: custom validation (W-18), conditional-format expressions, formula operands and formula thresholds (W-19). */
+const needsEvaluate = (s: BookSheet): boolean =>
+  s.dataValidations.some((d) => d.type === 'custom') ||
+  s.conditionalFormats.some((cf) => cf.rules.some((r) =>
+    r.type === 'expression' ||
+    (r.type === 'cellIs' && r.formulas.some((f) => !LITERAL.test(f))) ||
+    [...(r.colorScale?.cfvo ?? []), ...(r.dataBar?.cfvo ?? [])].some((v) => v.type === 'formula')));
 /** The cell `evaluate()` borrows: the sheet's last cell, which no workbook sheetpane opens reaches. */
 const SCRATCH_ROW = 1_048_575, SCRATCH_COL = 16_383;
 
@@ -228,8 +237,8 @@ class Engine {
     this.reset();
     this.book = book;
     const formulas = this.currentFormulas(book);
-    // nothing to calculate — no formula and no custom validation rule to evaluate: the engine is not even loaded
-    if (!formulas.size && !book.sheets.some((s) => s.dataValidations.some((d) => d.type === 'custom'))) return [];
+    // nothing to calculate — no formula, and no rule that asks `evaluate()`: the engine is not even loaded
+    if (!formulas.size && !book.sheets.some(needsEvaluate)) return [];
     const lib = await loadEngine(this.o.wasm);
     if (this.book !== book) return [];
     this.formulas = formulas;

@@ -77,6 +77,7 @@ a control's slot and plugin; they never ship.
 | [`Core-FreezePanes`](boards/Core-FreezePanes.dc.html) | Freeze ▾ (Edit), dividers, scrolled with headers held | W-24 |
 | [`All-Plugins`](boards/All-Plugins.dc.html) | every slot filled at 1440, at 1024 (More ▾ overflow) and in dark | W-14 |
 | [`Pane-Sync`](boards/Pane-Sync.dc.html) | an edit in one host tab raises a workbook warning in the other | W-18, W-02 (L7) |
+| [`Selection-And-Download`](boards/Selection-And-Download.dc.html) | the change of 2026-10-18 evening: selection actions docked in the cell bar (no floating bar), right-click menu, one Download button — before and after | W-31 |
 | [`Plugin-Decisions`](boards/Plugin-Decisions.dc.html) | the 19 calls the brief left open — which match the spec, which changed an item, which need a ruling | — |
 
 **Prototype-only on these boards:** the sample references are adapted to the

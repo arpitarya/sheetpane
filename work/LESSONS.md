@@ -11,6 +11,23 @@ named here only as the failure that produced it. A lesson whose remedy is
 
 ---
 
+## 2026-10-18 — a failed `git add` still let the commit run (`aae714d`)
+
+**What happened.** Closing W-17 and W-29, `git add` listed the item files
+under `work/open/`, which `close.py` had already moved with `git mv`. The
+pathspec failed, `git add` staged nothing, and the next command — chained with
+`;`, not `&&` — committed and pushed only the two renames under the full
+message. The content followed in `a5b6df5`.
+
+**What caught it.** `git show --stat HEAD` after the push: two files, zero
+lines.
+
+**The remedy (judgment).** Chain `git add … && git commit …` so a failed
+stage stops the commit, and name a moved item by its new path
+(`archive/open/…`). Check `git diff --cached --stat` before committing.
+
+---
+
 ## 2026-10-18 — `git add -A` committed another session's items
 
 **What happened.** Claude Code committed W-03 with `git add -A` while a Cowork

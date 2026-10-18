@@ -60,20 +60,18 @@ body{margin:0;font-family:'IBM Plex Sans',ui-sans-serif,sans-serif}
 <select class="spx-input" aria-label="Zoom"><option>100 %</option><option>75 %</option><option>125 %</option></select>
 <sc-if value="{{isEdit}}" hint-placeholder-val="{{true}}">
 <sc-if value="{{wide}}" hint-placeholder-val="{{true}}"><span class="spx-xs spx-faint">{{changesLabel}}</span></sc-if>
+</sc-if>
 <span class="spx-anchor">
-<button class="spx-btn spx-btn-p" type="button" aria-haspopup="{{exportMenu}}" aria-expanded="{{openExport}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Export .xlsx<sc-if value="{{exportMenu}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 11px; height: 11px"><path d="M6 9l6 6 6-6"/></svg></sc-if></button>
+<button class="{{dlCls}}" type="button" aria-haspopup="{{exportMenu}}" aria-expanded="{{openExport}}" title="{{dlTitle}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx<sc-if value="{{hasChanges}}" hint-placeholder-val="{{false}}"><span class="spx-dln">{{nChanges}}</span></sc-if><sc-if value="{{exportMenu}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 11px; height: 11px"><path d="M6 9l6 6 6-6"/></svg></sc-if></button>
 <sc-if value="{{openExport}}" hint-placeholder-val="{{false}}">
 <div class="spx-menu" role="menu" aria-label="Export" style="right: 0; top: 32px; width: 320px">
-<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Export .xlsx</span><span class="ds">Latest values · the upload is never changed</span></span></button>
-<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Export .csv</span><span class="ds">This sheet only · no review notes</span></span></button>
+<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Download .xlsx</span><span class="ds">With your changes · the upload is never changed</span></span></button>
 <div class="spx-msep"></div>
 <div class="spx-mhd">Added by comments</div>
 <button class="spx-mi hov" type="button" role="menuitemcheckbox" aria-checked="true"><span class="ck" aria-hidden="true">✓</span><span class="tx"><span>Write review as Excel comments ✓</span><span class="ds">Each error becomes a threaded comment on its cell. File notes stay as they were.</span></span><sc-if value="{{mk.expline}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.expline}}</span></sc-if></button>
 </div>
 </sc-if>
 </span>
-</sc-if>
-<button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="Download the original"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button>
 </div>
 
 <sc-if value="{{showFr}}" hint-placeholder-val="{{false}}">
@@ -174,7 +172,23 @@ body{margin:0;font-family:'IBM Plex Sans',ui-sans-serif,sans-serif}
 <span class="{{cb.valCls}}" aria-label="Value of {{selRef}}"><sc-for list="{{cb.tokens}}" as="t" hint-placeholder-count="1"><span class="{{t.cls}}">{{t.t}}</span></sc-for><sc-if value="{{cb.empty}}" hint-placeholder-val="{{false}}"><span class="spx-faint">(empty)</span></sc-if><sc-if value="{{cb.editing}}" hint-placeholder-val="{{false}}"><span class="spx-caret" aria-hidden="true"></span></sc-if></span>
 <sc-if value="{{cb.valMk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{cb.valMk}}</span></sc-if>
 <sc-for list="{{cb.chips}}" as="c" hint-placeholder-count="1"><span class="{{c.cls}}">{{c.t}}</span><sc-if value="{{c.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{c.mk}}</span></sc-if></sc-for>
-<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="right: 10px; top: 9px">cellbar</span></sc-if>
+<sc-if value="{{showActs}}" hint-placeholder-val="{{false}}">
+<span class="spx-sp"></span>
+<div class="{{actsCls}}" role="group" aria-label="Actions for {{selRef}}">
+<sc-if value="{{showFlag}}" hint-placeholder-val="{{false}}"><button class="spx-btn" type="button" title="Flag issue · F · or right-click the cell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue<span class="spx-kbd">F</span></button></sc-if>
+<sc-if value="{{sbStyles}}" hint-placeholder-val="{{false}}">
+<span class="spx-sep" aria-hidden="true"></span>
+<button class="spx-fb" type="button" aria-pressed="{{fo.b}}" aria-label="Bold" title="Bold · Mod+B"><span class="lt spx-tB">B</span></button>
+<button class="spx-fb sw" type="button" aria-label="Fill colour" title="Fill colour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l6-6 7 7-6 6z"/><path d="M8 4l3 2"/><path d="M20 15s1.5 2 1.5 3a1.5 1.5 0 0 1-3 0c0-1 1.5-3 1.5-3z"/></svg><span class="bar" style="{{fillBarSt}}"></span></button>
+<sc-if value="{{mk.sbbold}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.sbbold}}</span></sc-if>
+<sc-if value="{{sbMerge}}" hint-placeholder-val="{{false}}"><button class="spx-fb" type="button" title="Merge cells"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8M11 9l-3 3 3 3M13 9l3 3-3 3"/></svg><span>Merge</span></button><sc-if value="{{mk.sbmerge}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.sbmerge}}</span></sc-if></sc-if>
+</sc-if>
+<button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="More actions: Copy ref, Copy value" title="More · Copy ref, Copy value · or right-click the cell"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+<sc-if value="{{mk.acts}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.acts}}</span></sc-if>
+<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="right: 0; top: -12px">selbar · selection actions, docked</span></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="left: 12px; top: -9px">cellbar</span></sc-if>
 </div>
 
 <div class="{{gwCls}}">
@@ -203,22 +217,6 @@ body{margin:0;font-family:'IBM Plex Sans',ui-sans-serif,sans-serif}
 
 <sc-for list="{{pins}}" as="p" hint-placeholder-count="0"><button class="{{p.cls}}" type="button" aria-label="{{p.al}}" style="{{p.st}}">{{p.label}}<sc-if value="{{p.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk spx-mk-tr">{{p.mk}}</span></sc-if></button></sc-for>
 
-<sc-if value="{{showSelbar}}" hint-placeholder-val="{{false}}">
-<div class="{{sbCls}}" role="toolbar" aria-label="Selection" style="{{sbSt}}">
-<button class="on" type="button" title="Flag issue · F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue <span class="kb">F</span></button>
-<span class="sbsep" aria-hidden="true"></span>
-<button type="button">Copy ref</button>
-<button type="button">Copy value</button>
-<sc-if value="{{sbStyles}}" hint-placeholder-val="{{false}}">
-<span class="sbsep" aria-hidden="true"></span>
-<button type="button" aria-pressed="{{fo.b}}" aria-label="Bold" title="Bold · Mod+B"><span style="font-weight: 700">B</span></button>
-<button type="button" aria-label="Fill colour" title="Fill colour"><span class="swb" style="{{fillSwSt}}"></span>Fill</button>
-<sc-if value="{{mk.sbbold}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="align-self: center">{{mk.sbbold}}</span></sc-if>
-<sc-if value="{{sbMerge}}" hint-placeholder-val="{{false}}"><button type="button" title="Merge cells"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8M11 9l-3 3 3 3M13 9l3 3-3 3"/></svg>Merge</button><sc-if value="{{mk.sbmerge}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="align-self: center">{{mk.sbmerge}}</span></sc-if></sc-if>
-</sc-if>
-<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="left: 0; top: -20px">selbar</span></sc-if>
-</div>
-</sc-if>
 </div>
 <sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="right: 10px; top: 32px">overlay · sheet space (pins, find highlights)</span></sc-if>
 </div>
@@ -547,7 +545,7 @@ class Component extends DCLogic {
       wide: !narrow, narrow: narrow, slots: slots, has: has,
       isEdit: isEdit, isView: !isEdit, viewCls: isEdit ? '' : 'on', editCls: isEdit ? 'on' : '',
       cnt: cnt,
-      mk: { undo: mk('undo'), freeze: mk('freeze'), expline: mk('expline'), fmtsel: mk('fmtsel'), dec: mk('dec'), text: mk('text'), color: mk('color'), fill: mk('fill'), borders: mk('borders'), align: mk('align'), wrap: mk('wrap'), clear: mk('clear'), more: mk('more'), sbbold: mk('sbbold'), sbmerge: mk('sbmerge') },
+      mk: { undo: mk('undo'), freeze: mk('freeze'), expline: mk('expline'), fmtsel: mk('fmtsel'), dec: mk('dec'), text: mk('text'), color: mk('color'), fill: mk('fill'), borders: mk('borders'), align: mk('align'), wrap: mk('wrap'), clear: mk('clear'), more: mk('more'), sbbold: mk('sbbold'), sbmerge: mk('sbmerge'), acts: mk('acts') },
       showUndo: isEdit && p.core !== 'today',
       showFreeze: isEdit && p.core !== 'today', openFreeze: open === 'freeze',
       exportMenu: !!has.comments, openExport: open === 'export' && !!has.comments,
@@ -563,7 +561,10 @@ class Component extends DCLogic {
       paneSt: 'left:' + paneL + 'px;top:' + paneT + 'px;width:' + (GW - paneL) + 'px;height:' + (GH - paneT) + 'px',
       ovs: ovs, pins: pins,
       showSelbar: showSelbar, sbCls: 'spx-sb' + (slots ? ' spx-slot' : ''), sbSt: sbSt,
-      sbStyles: !!has.styles, sbMerge: !!has.styles && !!S.range,
+      sbStyles: !!has.styles && isEdit && !S.editing, sbMerge: !!has.styles && !!S.range,
+      showActs: !!active && dataCell && !S.editing, showFlag: isEdit && dataCell && !S.editing, actsCls: 'spx-acts' + (slots ? ' spx-slot' : ''),
+      dlCls: 'spx-btn' + (isEdit ? ' spx-btn-p' : ''), hasChanges: S.changes > 0, nChanges: S.changes,
+      dlTitle: S.changes ? 'Download with your ' + S.changes + (S.changes === 1 ? ' change' : ' changes') + ' · the upload is never changed' : 'Download the file as it was opened',
       hasTabs: true, tabCnt: tabCnt,
       stCls: 'spx-st' + (slots ? ' spx-slot' : ''), memNote: memNote,
       status: S.status.map(function (s) { return { t: s.t, cls: s.cls || 'pl', mk: s.mk || '' }; })

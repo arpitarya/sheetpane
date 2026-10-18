@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Selection actions and download</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.ba{display:grid;grid-template-columns:120px 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.ba>div{padding:14px 16px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-size:13px;line-height:1.45;display:flex;flex-direction:column;gap:8px}
+.ba>div.h{font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:var(--ground)}
+.ba>div.rl{font-weight:600}
+.mock{position:relative;height:120px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#FFFFFF}
+.mock .ln{position:absolute;left:0;right:0;height:1px;background:#E6E6E1}
+.mock .tx{position:absolute;font-size:12px;color:var(--ink)}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1380px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Change · Arpit, 2026-10-18 · applies to every board</span>
+<h1 class="h1">Nothing floats over the cells, and there is one way to download</h1>
+<p class="muted" style="max-width: 1040px">The floating selection bar appeared on every click and hid the text under it. Its actions now sit at the right end of the cell bar, the same place every time, and right-click opens the same list. “Export” and “Download the original” are now one <b>Download .xlsx</b> button.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">After · Edit · E5 selected — the grid is clear; actions at the right of the cell bar</span>
+<dc-import name="PluginKit" mode="edit" scene="baseline" marks="acts" height="602" hint-size="100%,602px"></dc-import>
+</div>
+
+<section class="ba" aria-label="Before and after">
+<div class="h"></div><div class="h">Before</div><div class="h">After</div>
+<div class="rl">Selection actions</div>
+<div>
+<div class="mock" aria-hidden="true">
+<span class="ln" style="top: 28px"></span><span class="ln" style="top: 56px"></span><span class="ln" style="top: 84px"></span>
+<span class="tx" style="left: 12px; top: 34px">Dividend Growth ETF</span><span class="tx" style="left: 190px; top: 34px">DIVG</span>
+<span class="tx" style="left: 12px; top: 62px">Global Equity Fund</span><span class="tx" style="left: 190px; top: 62px">GLEQ</span>
+<div class="selbar" style="left: 60px; top: 50px"><button class="on" type="button" tabindex="-1">Flag issue</button><span class="sep"></span><button type="button" tabindex="-1">Copy ref</button><button type="button" tabindex="-1">Copy value</button></div>
+</div>
+<span class="xs muted">A dark bar on every click, over the row below — “Global Equity Fund” is hidden.</span>
+</div>
+<div>
+<div class="spx spx-bare">
+<div class="spx-cb" style="border: 1px solid var(--line); border-radius: 6px; background: var(--surface)">
+<span class="spx-ref">E5</span><span class="spx-val ro">DIVG</span><span class="spx-sp"></span>
+<span class="spx-acts"><button class="spx-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue<span class="spx-kbd">F</span></button><button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="More actions"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></span>
+</div>
+</div>
+<span class="xs muted">Docked in the cell bar: <b>Flag issue</b>, then any plugin buttons (Bold, Fill, Merge), then <b>⋯</b> for Copy ref and Copy value. Same place on every click. Flag issue is Edit only; ⋯ works in View too.</span>
+</div>
+
+<div class="rl">Right-click</div>
+<div><span class="xs muted">Nothing — the browser's menu.</span></div>
+<div>
+<div class="spx spx-bare" style="position: relative; height: 130px">
+<div class="spx-menu" role="menu" aria-label="Actions for E5" style="left: 0; top: 0; width: 240px; position: absolute">
+<button class="spx-mi hov" type="button" role="menuitem"><span>Flag issue</span><span class="k">F</span></button>
+<div class="spx-msep"></div>
+<button class="spx-mi" type="button" role="menuitem"><span>Copy ref</span><span class="k">E5</span></button>
+<button class="spx-mi" type="button" role="menuitem"><span>Copy value</span><span class="k">Ctrl+C</span></button>
+</div>
+</div>
+<span class="xs muted">Right-click a cell — or Shift+F10 / the Menu key — for the same actions, opening just under the cell. Esc closes it. Plugin actions join the list after Copy value.</span>
+</div>
+
+<div class="rl">Keyboard</div>
+<div><span class="xs muted">F flags, Ctrl+C copies.</span></div>
+<div><span class="xs muted">Unchanged: <b>F</b> flags the active cell, <b>Ctrl/⌘+C</b> copies its value. Tooltips name both.</span></div>
+
+<div class="rl">Download</div>
+<div>
+<div class="spx spx-bare" style="display: flex; gap: 6px; align-items: center">
+<button class="spx-btn spx-btn-p" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Export .xlsx</button>
+<button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="Download the original"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button>
+</div>
+<span class="xs muted">Two buttons with the same icon: Export (Edit only) and Download the original. Which one do I want?</span>
+</div>
+<div>
+<div class="spx spx-bare" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+<button class="spx-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx</button>
+<span class="xs faint">View</span>
+<button class="spx-btn spx-btn-p" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx</button>
+<span class="xs faint">Edit, no changes</span>
+<button class="spx-btn spx-btn-p" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Download .xlsx<span class="spx-dln">3</span></button>
+<span class="xs faint">Edit, 3 changes</span>
+</div>
+<span class="xs muted">One button in both modes. No changes: the file exactly as opened. Changes: the file with them, the count on the button, and the tooltip says so. The upload itself is never changed. `.csv` files say Download .csv.</span>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1380}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -96,9 +96,15 @@ importers:
 
   packages/condfmt:
     devDependencies:
+      '@sheetpane/formulas':
+        specifier: workspace:*
+        version: link:../formulas
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid
+      '@sheetpane/styles':
+        specifier: workspace:*
+        version: link:../styles
 
   packages/export:
     devDependencies:

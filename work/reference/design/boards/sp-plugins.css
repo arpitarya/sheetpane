@@ -275,3 +275,9 @@
 .bd-frame{display:flex;flex-direction:column;gap:8px;min-width:0}
 .bd-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:10px}
 .bd-diff{display:inline-flex;align-items:center;gap:6px;font:500 11px/1 var(--mono);padding:4px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent-ink)}
+
+/* selection actions, docked at the right of the cell bar (replaces the floating bar) */
+.spx-acts{display:inline-flex;align-items:center;gap:3px;position:relative;flex:none}
+.spx-acts .spx-btn .spx-kbd{margin-left:2px}
+.spx-dln{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:2px;border-radius:9px;background:color-mix(in srgb,var(--sp-surface) 25%,transparent);font-size:10.5px;font-weight:600}
+.spx-btn:not(.spx-btn-p) .spx-dln{background:var(--sp-sunken);color:var(--sp-ink-2)}

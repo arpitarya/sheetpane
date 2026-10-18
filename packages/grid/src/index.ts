@@ -10,6 +10,8 @@ export { WorkbookStore, createWorkbook, parseInput, formulaRefs, key as cellKey,
 export { acquirePane, releasePane, paneStore } from './pane/registry.js';
 export { describeRule, RULE_TYPE, type ColumnRule, type ColumnRules, type ColumnRulesConfig, type OnInvalid, type RuleContext, type RuleOutcome, type RulePhase, type RuleResult, type ValidateFn } from './pane/rules.js';
 export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored } from './pane/types.js';
+// for plugins whose rules are written against a range's top-left (validation, condfmt): the one implementation
+export { shiftFormula } from '@sheetpane/export';
 export type { SheetpaneError, Severity, Mode, ChangeKind, ChangeEntry, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType } from './pane/types.js';
 export { registerPlugin, registeredPluginIds, pluginsFromIds, checkPlugins, mergeDecorations, controlsFor, type PluginFactory } from './plugins/host.js';
 export { HOOKS, SLOTS, SINGLE_PROVIDER, STYLE_PROPS } from './plugins/types.js';

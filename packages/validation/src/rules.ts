@@ -1,7 +1,7 @@
 // The rule engine: a sheet's `<dataValidations>` compiled once per workbook, then
 // checked against the store's current values. No DOM, no dependency — the types
 // come from @sheetpane/grid, the values from the store a hook is handed.
-import type { CellContext, PluginContext, WorkbookStore } from '@sheetpane/grid';
+import { shiftFormula, type CellContext, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
 
 export type Book = PluginContext['book'];
 export type Sheet = CellContext['sheet'];
@@ -99,15 +99,8 @@ export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 
   return undefined;
 }
 
-/** Shifts the relative row and column parts of every A1 reference in a formula (strings left alone). */
-export function shiftFormula(f: string, dr: number, dc: number): string {
-  if (!dr && !dc) return f;
-  return f.split(/("(?:[^"]|"")*")/).map((part, i) => (i % 2 ? part : part.replace(/(?<![\w.$!'])(\$?)([A-Za-z]{1,3})(\$?)(\d+)(?![\w(])/g, (whole, ac: string, col: string, ar: string, row: string) => {
-    const c = ac ? col : colLetters(colIndex(col) + dc), r = ar ? Number(row) : Number(row) + dr;
-    if (r < 1 || colIndex(c) < 0) return whole;
-    return `${ac}${c.toUpperCase()}${ar}${r}`;
-  }))).join('');
-}
+/** Shifting relative references is @sheetpane/export's `shiftFormula`, re-exported by the grid peer. */
+export { shiftFormula };
 
 // ── compiled rules ────────────────────────────────────────────────────────
 export interface Rule {

@@ -13,6 +13,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
 <style>
 body{margin:0}
+.cb-acts{display:inline-flex;align-items:center;gap:4px}
+.cb-acts .btn .kbd{margin-left:2px;padding:2px 4px;font-size:10px}
+.cb-anchor{position:relative;display:inline-flex}
+.cb-menu{min-width:220px;z-index:20}
+.cb-menu .mi{align-items:center;padding:7px 10px}
+.cb-menu .mi .k{margin-left:auto;font:400 11px/1 var(--mono);color:var(--ink-3)}
+.dl-n{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;margin-left:2px;border-radius:9px;background:rgba(255,255,255,.22);font:600 10.5px/1 var(--mono)}
+.btn:not(.btn-p) .dl-n{background:var(--sunken);color:var(--ink-2)}
 </style>
 </helmet>
 <section class="{{rootCls}}" style="{{rootStyle}}" aria-label="{{fileName}}">
@@ -39,9 +47,8 @@ body{margin:0}
 <select class="input" style="height: 28px; font-size: 12px" aria-label="Zoom"><option>100 %</option><option>75 %</option><option>125 %</option></select>
 <sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
 <span class="xs faint">{{changesLabel}}</span>
-<button class="btn btn-sm btn-p" type="button" onClick="{{doExport}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>{{exportLabel}}</button>
 </sc-if>
-<button class="btn btn-sm btn-g btn-i" type="button" aria-label="Download the original"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button>
+<button class="{{dlCls}}" type="button" onClick="{{doExport}}" title="{{dlTitle}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>{{exportLabel}}<sc-if value="{{hasChanges}}" hint-placeholder-val="{{false}}"><span class="dl-n" aria-label="{{nChanges}} changes included">{{nChanges}}</span></sc-if></button>
 <sc-if value="{{isPopup}}" hint-placeholder-val="{{false}}">
 <button class="btn btn-sm btn-g btn-i" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
 </sc-if>
@@ -55,6 +62,21 @@ body{margin:0}
 <sc-if value="{{selChanged}}" hint-placeholder-val="{{false}}"><span class="chip chip-info" style="height: 22px">Changed · was {{selWas}}</span><sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}"><button class="btn btn-sm btn-g" type="button" onClick="{{revertCell}}">Revert</button></sc-if></sc-if>
 <sc-if value="{{selHasIssue}}" hint-placeholder-val="{{false}}"><span class="chip {{selIssue.chip}}" style="height: 22px">{{selIssue.g}} Error {{selIssue.n}}</span></sc-if>
 <sc-if value="{{linkedComposing}}" hint-placeholder-val="{{false}}"><span class="chip chip-info" style="height: 22px">Describe it in the Errors panel</span></sc-if>
+<sc-if value="{{showActions}}" hint-placeholder-val="{{false}}">
+<span class="spacer"></span>
+<div class="cb-acts" role="group" aria-label="Actions for {{selRef}}">
+<sc-if value="{{showFlag}}" hint-placeholder-val="{{false}}"><button class="btn btn-sm" type="button" onClick="{{startCompose}}" title="Flag issue · F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue <span class="kbd">F</span></button></sc-if>
+<span class="cb-anchor">
+<button class="btn btn-sm btn-g btn-i" type="button" aria-label="More actions for {{selRef}}" aria-haspopup="menu" aria-expanded="{{moreOpen}}" title="More actions · right-click a cell" onClick="{{toggleMore}}"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+<sc-if value="{{moreOpen}}" hint-placeholder-val="{{false}}">
+<div class="menu cb-menu" role="menu" aria-label="More actions" style="right: 0; top: 34px">
+<button class="mi" type="button" role="menuitem" onClick="{{copyRef}}"><span class="tt">Copy ref</span><span class="k">{{selRef}}</span></button>
+<button class="mi" type="button" role="menuitem" onClick="{{copyValue}}"><span class="tt">Copy value</span><span class="k">Ctrl+C</span></button>
+</div>
+</sc-if>
+</span>
+</div>
+</sc-if>
 </div>
 
 <div class="sp-body">
@@ -63,7 +85,7 @@ body{margin:0}
 <div style="position: relative; width: max-content">
 <div class="srow ch"><span class="rh"></span><sc-for list="{{cols}}" as="c" hint-placeholder-count="10"><span style="{{c.w}}">{{c.l}}</span></sc-for></div>
 <sc-for list="{{rows}}" as="r" hint-placeholder-count="20">
-<div class="srow"><span class="rh"><span class="g {{r.gc}}">{{r.g}}</span>{{r.n}}</span><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="10"><button type="button" class="{{c.cls}}" style="{{c.w}}" aria-label="{{c.al}}" onClick="{{c.pick}}">{{c.v}}</button></sc-for></div>
+<div class="srow"><span class="rh"><span class="g {{r.gc}}">{{r.g}}</span>{{r.n}}</span><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="10"><button type="button" class="{{c.cls}}" style="{{c.w}}" aria-label="{{c.al}}" onClick="{{c.pick}}" onContextMenu="{{c.ctx}}" onKeyDown="{{c.key}}">{{c.v}}</button></sc-for></div>
 </sc-for>
 
 <sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
@@ -74,12 +96,11 @@ body{margin:0}
 <span class="sp-pin" aria-hidden="true" style="{{pendingPos}}">{{nextN}}</span>
 </sc-if>
 
-<sc-if value="{{showSelbar}}" hint-placeholder-val="{{false}}">
-<div class="selbar" role="toolbar" aria-label="Selection" style="{{selbarPos}}">
-<button class="on" type="button" onClick="{{startCompose}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue <span class="kbd" style="background: transparent; color: #fff; border-color: rgba(255,255,255,.35)">F</span></button>
-<span class="sep" aria-hidden="true"></span>
-<button type="button">Copy ref</button>
-<button type="button">Copy value</button>
+<sc-if value="{{ctxOpen}}" hint-placeholder-val="{{false}}">
+<div class="menu cb-menu" role="menu" aria-label="Actions for {{selRef}}" style="{{ctxPos}}">
+<sc-if value="{{showFlag}}" hint-placeholder-val="{{false}}"><button class="mi" type="button" role="menuitem" onClick="{{startCompose}}"><span class="tt">Flag issue</span><span class="k">F</span></button><div class="mi-sep"></div></sc-if>
+<button class="mi" type="button" role="menuitem" onClick="{{copyRef}}"><span class="tt">Copy ref</span><span class="k">{{selRef}}</span></button>
+<button class="mi" type="button" role="menuitem" onClick="{{copyValue}}"><span class="tt">Copy value</span><span class="k">Ctrl+C</span></button>
 </div>
 </sc-if>
 
@@ -229,12 +250,21 @@ class Component extends DCLogic {
       if (!i.done && (!rowWorst[i.row] || rank[i.sev] > rank[rowWorst[i.row]])) rowWorst[i.row] = i.sev;
     });
 
+    function openCompose(ref) { set({ sel: ref, composing: true, ctx: false, moreOpen: false, why: '', want: '', type: 'value', sev: 'error', applyFix: false }); }
+    function cellKey(ref, dataRow) {
+      return function (e) {
+        var k = e && e.key;
+        if ((k === 'f' || k === 'F') && isEdit && dataRow && !e.metaKey && !e.ctrlKey) { e.preventDefault(); openCompose(ref); }
+        else if (k === 'ContextMenu' || (k === 'F10' && e.shiftKey)) { e.preventDefault(); set({ sel: ref, ctx: true, moreOpen: false }); }
+        else if (k === 'Escape') { set({ ctx: false, moreOpen: false }); }
+      };
+    }
     var nRows = Math.max(20, (b - 1) + sh.data.length + 3);
     var rows = [];
     for (var r = 1; r <= nRows; r++) {
       var cells = [];
       if (sh.title && r === 1) {
-        cells.push({ v: sh.title, w: 'width:' + (GW - 52) + 'px', cls: 'c-merge' + (sel === 'A1' ? ' c-sel' : ''), al: 'A1 to ' + L[nc - 1] + '1, merged: ' + sh.title, pick: function () { set({ sel: 'A1', composing: false }); } });
+        cells.push({ v: sh.title, w: 'width:' + (GW - 52) + 'px', cls: 'c-merge' + (sel === 'A1' ? ' c-sel' : ''), al: 'A1 to ' + L[nc - 1] + '1, merged: ' + sh.title, pick: function () { set({ sel: 'A1', composing: false, ctx: false, moreOpen: false }); }, ctx: function (e) { if (e && e.preventDefault) e.preventDefault(); set({ sel: 'A1', composing: false, ctx: true, moreOpen: false }); }, key: cellKey('A1', false) });
       } else {
         for (var c = 0; c < nc; c++) {
           (function (r, c) {
@@ -245,7 +275,8 @@ class Component extends DCLogic {
             if (changes[k] !== undefined) cls.push('c-edited');
             if (ref === sel) cls.push('c-sel');
             else if (selIssue && selIssue.wholeRow && r === selIssue.row) cls.push('c-range');
-            cells.push({ v: v, w: 'width:' + sh.W[c] + 'px', cls: cls.join(' '), al: ref + (v ? ' ' + v : ' empty'), pick: function () { set({ sel: ref, composing: false }); } });
+            var dataRow = r >= b && r < b + sh.data.length;
+            cells.push({ v: v, w: 'width:' + sh.W[c] + 'px', cls: cls.join(' '), al: ref + (v ? ' ' + v : ' empty'), pick: function () { set({ sel: ref, composing: false, ctx: false, moreOpen: false }); }, ctx: function (e) { if (e && e.preventDefault) e.preventDefault(); set({ sel: ref, composing: false, ctx: true, moreOpen: false }); }, key: cellKey(ref, dataRow) });
           })(r, c);
         }
       }
@@ -266,9 +297,11 @@ class Component extends DCLogic {
     });
 
     var isData = selRow >= b && selRow < b + sh.data.length;
-    var showSelbar = isEdit && !selIssue && !composing && isData;
-    var sbTop = selRow <= b + 1 ? top(selRow) + 32 : top(selRow) - 40;
-    var sbLeft = Math.max(52, Math.min((X[selCol] || 52) - 40, GW - 330));
+    var showActions = isData && !composing;
+    var showFlag = isEdit && isData && !selIssue && !composing;
+    var ctxOpen = !!S.ctx && !composing && isData;
+    var ctxTop = top(selRow) + 30;
+    var ctxPos = 'top:' + ctxTop + 'px;left:' + Math.max(56, Math.min((X[selCol] || 52) + 8, GW - 240)) + 'px';
     var maxN = issues.reduce(function (m, i) { return Math.max(m, i.n); }, 0);
 
     function sidePos(colKey, w, rowN, boxW, boxH) {
@@ -347,8 +380,12 @@ class Component extends DCLogic {
       rows: rows, pins: pins,
       showPending: composing && isData, nextN: maxN + 1,
       pendingPos: 'top:' + (top(selRow) - 8) + 'px;left:' + ((X[selCol] || 52) - 6) + 'px;background:#fff;color:var(--accent);box-shadow:0 0 0 1.5px var(--accent)',
-      showSelbar: showSelbar, selbarPos: 'top:' + sbTop + 'px;left:' + sbLeft + 'px',
-      startCompose: function () { set({ composing: true, why: '', want: '', type: 'value', sev: 'error', applyFix: false }); },
+      showActions: showActions, showFlag: showFlag, moreOpen: !!S.moreOpen && showActions,
+      toggleMore: function () { set({ moreOpen: !S.moreOpen, ctx: false }); },
+      ctxOpen: ctxOpen, ctxPos: ctxPos,
+      copyRef: function () { var t = sel; try { if (navigator.clipboard) navigator.clipboard.writeText(t).catch(function () {}); } catch (err) {} set({ ctx: false, moreOpen: false, exportNote: 'Copied ' + t }); },
+      copyValue: function () { var t = shown(sheet, sel); try { if (navigator.clipboard) navigator.clipboard.writeText(t).catch(function () {}); } catch (err) {} set({ ctx: false, moreOpen: false, exportNote: 'Copied the value of ' + sel }); },
+      startCompose: function () { openCompose(sel); },
       showCallout: !!co, co: co || { pos: '', g: '', gc: '', type: '', range: '', found: '', want: '', why: '', meta: '', doneLabel: '' },
       prev: go(-1), next: go(1),
       toggleDone: function () { if (!selIssue) return; set({ issues: issues.map(function (i) { if (i.n !== selIssue.n) return i; var o = {}; Object.keys(i).forEach(function (k) { o[k] = i[k]; }); o.done = !i.done; return o; }) }); },
@@ -379,8 +416,11 @@ class Component extends DCLogic {
         set({ changes: ch, exportNote: '' });
       },
       changesLabel: nChanges === 0 ? 'No changes yet' : nChanges + (nChanges === 1 ? ' change' : ' changes') + ' in memory',
-      exportLabel: file === 'csv' ? 'Export .csv' : 'Export .xlsx',
-      doExport: function () { set({ exportNote: 'Exported with ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' — latest values' }); },
+      exportLabel: file === 'csv' ? 'Download .csv' : 'Download .xlsx',
+      dlCls: isEdit ? 'btn btn-sm btn-p' : 'btn btn-sm',
+      dlTitle: nChanges ? 'Download with your ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' · the upload is never changed' : 'Download the file as it was opened',
+      hasChanges: nChanges > 0, nChanges: nChanges,
+      doExport: function () { set({ exportNote: nChanges ? 'Downloaded with ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' — latest values' : 'Downloaded — same as the original' }); },
       memNote: S.exportNote ? S.exportNote : (nChanges ? '· ' + nChanges + (nChanges === 1 ? ' cell change' : ' cell changes') + ' kept in memory until you export' : '')
     };
   }
