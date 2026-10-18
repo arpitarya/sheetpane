@@ -90,9 +90,9 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-34 filed (🟢) |
 | `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-032 (plugins cannot add event detail) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
-| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 plugin boards in the design snapshot; §2 two new decider rulings; closures and the events-and-rules verdict |
+| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — end of the build run: what is closed, W-33 and W-35 next, what every plugin left owed |
 | `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — W-18, W-15 landed |
-| `work/LESSONS.md` | a failure teaches something durable | 2026-10-18 | 2026-10-18 — git add -A committed another session's items |
+| `work/LESSONS.md` | a failure teaches something durable | 2026-10-18 | 2026-10-18 — the rename-only commit, twice; the gate |
 | `work/MACHINE.md` | a surface breaks in a way the code did not cause | 2026-10-18 | 2026-10-18 — Firefox does not launch on macOS 27 |
 | `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — the contract verdict's decision 9 rewritten (undo built) |
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |

@@ -67,17 +67,20 @@ board and an item file disagreed, the board was changed.
 
 ## 2 · In flight, and the immediate next step
 
-*Updated 2026-10-18 (Claude Code).* **Built and closed:** W-10 (pnpm + just),
-W-04 (toolchain, CI), W-03 (export), W-12 (download), W-13 (import), W-01
-(the sheet + the pane's store), W-02 (errors), W-14 (plugin host), W-23
-(undo), W-24 (freeze). Records SR-BUILD, SR-EXPORT, SR-DOWNLOAD (proposed),
-SR-IMPORT, SR-GRID, SR-ERRORS. `just check` runs ~200 tests (Node + Chromium;
-WebKit and Firefox nightly).
+*Updated 2026-10-18 (Claude Code, end of the build run).* **Built and closed:**
+every agent item through W-34 except W-33 and W-35 — the core (W-01–W-04, W-09,
+W-10, W-12–W-14, W-23, W-24, W-26, W-27, W-29, W-31, W-34), the eight plugins
+(W-15–W-22, records SR-NUMFMT, SR-FORMULAS, SR-STYLES, SR-VALIDATION,
+SR-CONDFMT, SR-IMAGES, SR-CHARTS, SR-COMMENTS), the React hook recipes (W-28)
+and the demos' plugin gallery (W-32). The full suite is ~600 tests (Node +
+Chromium; WebKit and Firefox nightly); `demo-check` and `demo-packed` pass.
 
-- **Next in Claude Code:** W-09 (demo apps), W-26 (editing events — W-25's
-  verdict), then the plugins W-15 numfmt, W-16 formulas, W-17 styles, W-18
-  validation, W-20 images; W-19 after W-17, W-21 after W-20; W-27 and W-28
-  after W-26.
+- **Next in Claude Code:** W-33 (a JSON rules file feeding W-27's engine,
+  `flagging="off"`, a Rules file gallery tab), then W-35 (`@sheetpane/skills`).
+- **What every plugin left owed:** Excel-saved fixtures and opening sheetpane's
+  output in Excel / LibreOffice — all gathered in W-30's DoD 3; schema
+  validation (B-033); plugin-contract gaps (B-034); plugin detail in core
+  events (B-032).
 - **Owed by the decider:** W-30 (files from Excel, Google Sheets, LibreOffice,
   Numbers, when convenient); B-030 (SR-LAW-6's
   veto command flags the `src` loader's GET); the `@sheetpane` npm org before
@@ -86,9 +89,13 @@ WebKit and Firefox nightly).
   (`comments({ write })` on by default, `export({ comments: false })`);
   SR-DOWNLOAD accepted. W-09 closed; its iPhone check is backlog B-031 (not now).
 - **Know before you build on the grid:** the store is `packages/grid/src/pane/store.ts`
-  (one commit path: undo, derive, validate, events); plugins are plain objects
-  on six hooks (SR-GRID decisions 17–20); zoom scales geometry, not a
-  transform (SR-GRID Alternatives).
+  (one commit path: undo, derive, validate, events; `style`/`numFmt` changes
+  in their own slot; column rules are a built-in `validate` provider in
+  `pane/rules.ts`); plugins are plain objects on six hooks plus optional
+  `controls` and `exportOptions` (SR-GRID decisions 17–20); zoom scales
+  geometry, not a transform (SR-GRID Alternatives). **Commit with `git add
+  … && git commit`, never through a pipe** — the commit-msg hook now refuses a
+  rename-only commit (SR-WORK-SESSION decision 13).
 
 ## 3 · Standing constraints
 

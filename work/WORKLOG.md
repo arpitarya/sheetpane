@@ -13,6 +13,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 **Entry format:**
 
 ```
+## 2026-10-18 — every agent item built and closed (W-15–W-29, W-31, W-32, W-34); a commit gate after two strikes  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *"implement all work items as fast as possible make sure everything is implemented correctly and close all the work items one by one implement everything keep committing keep pushing"*; then *"continue"*.
+- **Done:** closed with records — W-03, W-04, W-10, W-13, W-01, W-02, W-14, W-23, W-24 (earlier in the session); W-09, W-26, W-20, W-18 (SR-VALIDATION), W-15 (SR-NUMFMT), W-17 (SR-STYLES, `a5b6df5`), W-29 (dark theme), W-16 (SR-FORMULAS) and W-22 (SR-COMMENTS, `912745c`), W-21 (SR-CHARTS, `a00bdc7`), W-27 (column rules, `e82b1bc`), W-28 (React hook recipes, `ec878ff`), W-19 (SR-CONDFMT, `33baabd`), W-31 (docked actions, one Download, `f09b1fa`), W-32 (plugin gallery, `066b2f2`), W-34 (Download split button, `af152c5`). Plugins W-15–W-22 were built by subagents; their core gaps were fixed in the grid (per-kind change slots, derive `clear`, overlay role/name/pass-through, geometry past the drawn columns, restore adoption by content, `shiftFormula` re-exported, `evaluate()` for custom rules and CF expressions). Records 0110–0114 written; `CHANGELOG.md` created; `docs/ARCHITECTURE.md`, the grid README, the registry kept current. Full suite 590+ tests; `demo-check` 47 ✓; `demo-packed` 47 ✓ from tarballs. `CLAUDE.md`: its layout line changed in W-10 (earlier in the session); nothing since.
+- **Decided / left open:** read in — W-29 contrast pairs follow what the CSS draws (`ink-3` never sits on `sunken`); W-27's block only for a JSON rule or a synchronous result; W-34's `Plugin.exportOptions` as a new optional plugin field (not a hook or slot); a file formula back at its saved value clears its derived entry. Deviations recorded in each item: Excel-saved fixtures and opening our output in Excel/LibreOffice moved to W-30; schema validation backlog B-033; plugin-contract gaps backlog B-034.
+- **Mistakes:** `git add -A` swept the Cowork session's items into `206c093` (lesson). **Twice** a failed `git add` let a commit run with only an item file's move (`aae714d`, then `42a3769` through a pipe) — content followed in `a5b6df5` and `af152c5`. Second strike → **gate** (SR-WORK-SESSION decision 13): `scripts/rename-only-guard.sh`, run first by the commit-msg hook, refuses a rename-only commit unless the message says `rename only`.
+- **Next:** W-33 (rules file) and W-35 (agent skills package) in Claude Code; W-30 when Arpit has the files.
+
+---
+
 ## YYYY-MM-DD — <one-line title>  ·  <surface> (<model>)
 
 - **Asked:** *<the ask>*

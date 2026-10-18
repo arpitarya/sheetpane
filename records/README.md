@@ -88,6 +88,7 @@ on.
 | where | what it does |
 |---|---|
 | `scripts/sr-guard.sh` | a `commit-msg` hook: refuses a commit that changes an owned component without staging its owning record and every describer — unless the message carries `no SR affected` on its own line. Install: `ln -sf ../../scripts/sr-guard.sh .git/hooks/commit-msg` |
+| `scripts/rename-only-guard.sh` | run first by the same hook: refuses a commit made only of pure renames unless the message says `rename only` on its own line (SR-WORK-SESSION decision 13) |
 | `records/RULE-SINCE` | the baseline commit sha from which the rule applies, for a CI replay once one exists |
 
 **The escape hatch is a claim in git history under your name**, not a silent
@@ -152,6 +153,7 @@ directions.
 | component | owner | note |
 |---|---|---|
 | `scripts/sr-guard.sh` | SR-WORK-OWNERSHIP | the guard is the executable form of decisions 3 and 6 |
+| `scripts/rename-only-guard.sh` | SR-WORK-SESSION | decision 13's gate for commits that carry only a move (run first by the commit-msg hook) |
 | `scripts/check-open-work-inbox.py` | SR-WORK-OPEN-QUEUE | rule 45a's check |
 | `.claude/hooks/guard-open-work-inbox.sh` | SR-WORK-OPEN-QUEUE | rule 45a, in-session |
 | `.claude/hooks/inject-inbox.sh` | SR-WORK-BLOCKERS | decision 7 |

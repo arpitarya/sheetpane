@@ -26,6 +26,12 @@ lines.
 stage stops the commit, and name a moved item by its new path
 (`archive/open/…`). Check `git diff --cached --stat` before committing.
 
+**It happened again the same day (`42a3769`, W-34):** `git add … 2>&1 | grep …`
+— the pipe's exit status was grep's, so the failed add was invisible and the
+`&&` chain after it ran. Second strike → a gate (SR-WORK-SESSION decision
+13): `scripts/rename-only-guard.sh` now refuses a commit of nothing but
+renames unless its message says `rename only`. Never pipe `git add`.
+
 ---
 
 ## 2026-10-18 — `git add -A` committed another session's items

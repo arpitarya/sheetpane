@@ -24,6 +24,9 @@ staged="$(git --no-optional-locks diff --cached --name-only)"
 msg_file="${1:?sr-guard.sh must run as a commit-msg hook with the message file as \$1}"
 [ -f "$msg_file" ] || exit 0
 
+# SR-WORK-SESSION decision 13: a commit of nothing but renames is refused first.
+"$ROOT/scripts/rename-only-guard.sh" "$msg_file"
+
 if grep -qiE '^[[:space:]]*(no[ -]sr[ -]affected|\[no-sr\])[[:space:]]*$' "$msg_file"; then
   exit 0
 fi

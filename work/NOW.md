@@ -3,4 +3,4 @@ type: Pointer
 description: "One line: the current state and the immediate next step. Overwritten every session."
 ---
 
-Claude Code, 2026-10-18: W-15–W-18, W-20–W-22, W-26–W-29 closed and pushed; W-19 (condfmt) is being built by a subagent. Next: close W-19; then only W-30 (Arpit's files) is open. Also (Cowork): W-31 filed — selection actions docked in the cell bar, one Download button. Also (Cowork): W-32 filed — plugin-gallery tabs in both demos; build after W-31. Also (Cowork): W-33 filed — JSON rules file, errors only in the panel, flagging="off", 🟢 (W-31 landed). Also (Cowork): W-35 filed — @sheetpane/skills, 16 skills for Claude, Kiro, Codex.
+Claude Code, 2026-10-18: every agent item through W-34 is closed and pushed (W-30 is Arpit's files); a rename-only commit gate added. Next: W-33 (rules file), then W-35 (agent skills package).
