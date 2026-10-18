@@ -7,7 +7,7 @@ description: "The worklog entry, the interview kept current, the one-line NOW, t
 status: accepted
 date: 2026-10-18
 feature: session continuity
-owns: [.claude/hooks/require-progress.sh, scripts/rename-only-guard.sh]
+owns: [.claude/hooks/require-progress.sh, scripts/rename-only-guard.sh, test/worklog.test.ts]
 laws: [L0]
 timestamp: 2026-10-18T08:40:00Z
 content_sha: ""
@@ -90,7 +90,10 @@ session re-derives the state, or guesses it.
   refused unless its message says `rename only` — `scripts/rename-only-guard.sh`,
   run first by the commit-msg hook (`scripts/sr-guard.sh`); the class it
   closes is the worklog's twice-recorded "a failed `git add` let the commit
-  run" (`aae714d`, `42a3769`).
+  run" (`aae714d`, `42a3769`). The second: `test/worklog.test.ts` fails when a
+  dated entry sits inside a code fence — two sessions wrote theirs inside the
+  "Entry format" template block, where it rendered as code (moved out
+  2026-10-18).
 - **Judgment today:** every other decision — the worklog entry (1), the
   interview (3), two strikes (13).
 

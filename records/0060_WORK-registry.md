@@ -87,7 +87,7 @@ Documents rot silently; a trigger and a date make staleness visible.
 |---|---|---|---|
 | `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — layout line: a pnpm workspace run by just (W-10) |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-34 filed (🟢) |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-46 (🟢) and W-47 (🟡) filed |
 | `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-032 (plugins cannot add event detail) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — end of the build run: what is closed, W-33 and W-35 next, what every plugin left owed |
