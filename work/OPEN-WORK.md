@@ -31,8 +31,7 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-10** `agent` · Move the monorepo from npm workspaces to pnpm and add a `justfile` as the one place to run install, build, test and typecheck. Filed by Arpit (Cowork). [detail](open/W-10-pnpm-and-justfile.md)
-- 🟡 **W-04** `agent` · Make the monorepo build and test — the skeleton landed; toolchain, CI and lockstep publishing are left — waiting on W-10. Filed by Arpit (Cowork). [detail](open/W-04-monorepo-toolchain.md)
+- 🟢 **W-04** `agent` · Make the monorepo build and test — skeleton and pnpm/just landed; build, tests, CI and lockstep publishing are left. Filed by Arpit (Cowork). [detail](open/W-04-monorepo-toolchain.md)
 - 🟡 **W-03** `agent` · Build `@sheetpane/export`: `toXlsx`, `patchXlsx`, `toCsv`, `download`, no runtime dependencies — waiting on W-04. Filed by Arpit (Cowork). [detail](open/W-03-export-package.md)
 - 🟡 **W-12** `agent` · Build the downloader SR-DOWNLOAD specifies, in `@sheetpane/export`: `download(data, filename)` saves export output as `.xlsx` or `.csv` — waiting on W-04. Filed by Arpit (Cowork). [detail](open/W-12-downloader.md)
 - 🟡 **W-13** `agent` · Build `@sheetpane/import`: `.xlsx` or `.csv` in, the JavaScript `Workbook` object out, for `@sheetpane/grid` — waiting on W-04, W-03. Filed by Arpit (Cowork). [detail](open/W-13-import-package.md)

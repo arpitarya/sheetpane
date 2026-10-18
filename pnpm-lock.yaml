@@ -1,0 +1,85 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/charts:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/comments:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/condfmt:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/export: {}
+
+  packages/formulas:
+    dependencies:
+      '@ironcalc/wasm':
+        specifier: 0.9.0
+        version: 0.9.0
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/grid:
+    dependencies:
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
+
+  packages/images:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/numfmt:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+      numfmt:
+        specifier: 4.0.1
+        version: 4.0.1
+
+  packages/styles:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/validation:
+    dependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+packages:
+
+  '@ironcalc/wasm@0.9.0':
+    resolution: {integrity: sha512-0MfpTc5CAxd9vBKCe1UR2I4LrD9c1AYCeNpsg/R+mxvts4GDG8YppR7OzcRab/Eu3JF1v1sBdjJGpGnArrHOJw==}
+
+  numfmt@4.0.1:
+    resolution: {integrity: sha512-P+C1JTxlTO0thySpEGxUR72Z7mnpIH73Dw2Xdw9QGhtlZdB4k1u0owNUTpNiT1dsw9jQCgpQa3gjRaXo8lhdXw==}
+
+snapshots:
+
+  '@ironcalc/wasm@0.9.0': {}
+
+  numfmt@4.0.1: {}

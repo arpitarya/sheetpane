@@ -1,0 +1,3 @@
+# The pnpm workspace — every package under packages/ (W-10; owned by W-04 until the build record exists).
+packages:
+  - packages/*

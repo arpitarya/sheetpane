@@ -116,7 +116,7 @@ work/        THE SHARED MEMORY between sessions — start at work/README.md
 records/     THE STANDING RECORDS — the register, the template, the laws, the WORK records
 docs/        WHAT THE PROJECT IS — the architecture and the glossary
 archive/     THE ONE ARCHIVE — everything retired, mirroring the live tree
-packages/    THE CODE — npm workspaces: export/ (@sheetpane/export) and sheetpane/ (the UI)
+packages/    THE CODE — a pnpm workspace: export, import, grid (the UI) and the plugins; `just` runs it
 scripts/     the commit guard and the inbox check
 .claude/     hooks and their wiring
 ```

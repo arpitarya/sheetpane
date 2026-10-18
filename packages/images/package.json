@@ -15,7 +15,7 @@
     "dist"
   ],
   "peerDependencies": {
-    "@sheetpane/grid": "0.0.0"
+    "@sheetpane/grid": "workspace:*"
   },
   "dependencies": {}
 }

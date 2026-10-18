@@ -85,20 +85,20 @@ Documents rot silently; a trigger and a date make staleness visible.
 
 | Document | Update trigger | Last verified | Notes |
 |---|---|---|---|
-| `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — L2–L9 pointer lines; `packages/` in the layout; the architecture row |
+| `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — layout line: a pnpm workspace run by just (W-10) |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-14–W-24 filed (plugin host, eight plugins, undo, freeze panes) |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-10 closed; W-04 re-balled green |
 | `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-027 promoted to W-23; B-028 (live pivots) added |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
-| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 the eight plugin packages and the core/plugin split; §2 the plugin build order |
-| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — eight plugin package skeletons landed |
+| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 pnpm workspace |
+| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — W-10 landed |
 | `work/LESSONS.md` | a failure teaches something durable | 2026-10-18 | 2026-10-18 — first lesson: two sessions, one tree |
 | `work/MACHINE.md` | a surface breaks in a way the code did not cause | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — plugins verdict filed (sixth doc) |
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — first proposal: live pivot tables (B-028) |
 | `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — plugin, hook, slot, derived cell |
 | `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — plugins row, dependency direction, layout and build order for eight plugin packages; the SVG still shows two packages (W-13 DoD 10) |
-| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — Ownership rows for `packages/grid/src/plugins/` and the eight plugin packages (W-14–W-22) |
+| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — Ownership rows for pnpm-lock.yaml, pnpm-workspace.yaml, justfile (W-10) |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — created: specs and design snapshot for W-01–W-08 |
 | `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — created: snapshot of the canvas |

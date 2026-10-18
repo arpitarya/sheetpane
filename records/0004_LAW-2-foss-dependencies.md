@@ -97,7 +97,7 @@ decider ruled on 2026-10-18 that every dependency is free and open source.
 **Reopen this decision if:** any resolved dependency carries a licence that is
 not on the OSI-approved list.
 
-**How to check it:** `test -f package-lock.json && npx --yes license-checker-rseidelsohn --summary || echo "no dependencies yet"`
+**How to check it:** `test -f pnpm-lock.yaml && pnpm licenses list --prod || echo "no dependencies yet"`
 
 ---
 

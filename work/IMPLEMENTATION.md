@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-10 | pnpm workspace (`pnpm-workspace.yaml`, `pnpm-lock.yaml`, `packageManager pnpm@10.28.2`), `workspace:*` links, root `justfile`; npm workspaces and `package-lock.json` removed | closed | clean-copy `pnpm install --frozen-lockfile && just --list && just check` exit 0 |
 | 2026-10-18 | — | `docs/ARCHITECTURE.md` and `docs/architecture.svg` — the map of packages, elements, workbook, flows, contract, laws, build order | landed | the files; the SVG rendered and checked in Chromium |
 | 2026-10-18 | W-11 | the testing verdict — Vitest (Node + browser mode on Playwright), fixtures, goldens, property tests, a11y, perf, sync, coverage | closed — the decider's "resolve all the blockers" ruling of 2026-10-18 | `work/compare/testing.compare.md` |
 | 2026-10-18 | W-05 · W-06 · W-07 · W-08 | four compare docs with verdicts: reading, grid, workbook-and-error contract, export shape; ten `unruled` backlog rows ruled into their laws | closed — the decider's "resolve all the blockers" ruling of 2026-10-18 | `work/compare/*.compare.md`; the rulings in SR-LAW-2 … SR-LAW-8 Consequences |

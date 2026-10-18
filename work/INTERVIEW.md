@@ -25,7 +25,7 @@ entry.**
 ## 1 · State of play
 
 *Updated 2026-10-18.* Laws L2–L9 are filed (see §3). sheetpane is an
-**npm-workspaces monorepo** with two packages and no feature code yet:
+**pnpm-workspace monorepo** (W-10; `just` runs it) with these packages:
 
 - **`@sheetpane/export`** (`packages/export`) — a JavaScript object in, `.xlsx`
   or `.csv` out; no runtime dependencies (W-03).

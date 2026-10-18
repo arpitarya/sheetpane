@@ -4,13 +4,20 @@
   "description": "View and edit .xlsx and .csv files inside any web page: the <sheetpane-excel> and <sheetpane-errors> web components, always in sync through one in-memory workbook.",
   "license": "MIT",
   "type": "module",
-  "sideEffects": ["*.css"],
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
     "./style.css": "./dist/style.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
-    "@sheetpane/export": "0.0.0"
+    "@sheetpane/export": "workspace:*"
   }
 }

@@ -145,8 +145,10 @@ directions.
 | `.claude/hooks/stop-if-blocked.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/session-lock.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/require-progress.sh` | SR-WORK-SESSION | decision 5 |
-| `package.json` | W-04 | the monorepo root — npm workspaces; until the build record exists |
-| `package-lock.json` | W-04 | the workspace lockfile |
+| `package.json` | W-04 | the private monorepo root; until the build record exists |
+| `pnpm-lock.yaml` | W-04 | the workspace lockfile |
+| `pnpm-workspace.yaml` | W-04 | the pnpm workspace — `packages/*` |
+| `justfile` | W-04 | the one place to run install, build, test, typecheck, check |
 | `tsconfig.base.json` | W-04 | the shared TypeScript settings |
 | `packages/export/` | W-03 | `@sheetpane/export`; until its component record exists |
 | `packages/grid/` | W-01 | `@sheetpane/grid`, the UI package — the sheet and the pane; until its component record exists |

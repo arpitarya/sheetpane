@@ -44,13 +44,13 @@ one command each, in CI as well as locally, before any feature code lands.
 
 **Why npm workspaces (superseded):** it ships with Node and adds no tool to
 install. **Arpit overruled this on 2026-10-18: pnpm, plus a justfile — W-10.**
-The table above shows step 1 as it landed, before that switch.
+The table above shows step 1 as it landed, before that switch. **W-10 landed it:** `pnpm-workspace.yaml` (`packages/*`), `pnpm-lock.yaml` (the lockfile; `package-lock.json` is gone), a root `justfile`; root scripts fan out with `pnpm -r --if-present`.
 
 ## Definition of done
 
 | DoD | what | state |
 |---|---|---|
-| 1 · skeleton | the layout above; `npm install` resolves both workspaces | ✅ |
+| 1 · skeleton | the layout above; `pnpm install --frozen-lockfile` resolves every workspace package (W-10) | ✅ |
 | 2 · build | each package builds to `dist/` with `.d.ts`; `@sheetpane/grid` builds `dist/style.css` from the Proof tokens | ⏳ |
 | 3 · test | **Vitest**, one root config, two projects — `export` in Node, `grid` in browser mode on Playwright (Chromium per push; Firefox and WebKit nightly); no jsdom; coverage reported, 90 % lines gating `export` ([`testing.compare.md`](../compare/testing.compare.md)) | ⏳ |
 | 4 · typecheck | `just typecheck` (`pnpm -r typecheck`) is strict and green | ⏳ |
