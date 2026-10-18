@@ -37,8 +37,8 @@ test-browsers:
 typecheck:
     pnpm -r --if-present typecheck
 
-# typecheck, test and build — what CI runs
-check: typecheck test build
+# build, typecheck and test — what CI runs (the examples type-check against the built dist/, as a host app does)
+check: build typecheck test
 
 # pack every package as npm would publish it and check the tarballs
 pack-check: build
@@ -53,7 +53,7 @@ release version:
     git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)
     node scripts/release.mjs {{version}}
     just check pack-check
-    git add -A packages llms.txt llms-full.txt examples/starters
+    git add -A packages llms.txt llms-full.txt examples/starters plugins .claude-plugin
     git commit -m "release v{{version}}" -m "no SR affected"
     git tag -a v{{version}} -m "v{{version}}"
     git push origin HEAD v{{version}}

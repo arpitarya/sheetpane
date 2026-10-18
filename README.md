@@ -155,7 +155,7 @@ Requires **Node 20+**, **pnpm 10** and [**just**](https://just.systems).
 | `just demo-react` | the React 19 demo at http://127.0.0.1:5174 |
 | `just demo-check` | both demos driven end to end in Chromium |
 | `just pack-check` | every package packed as npm would publish it, and checked |
-| `just release <version>` | bump every package together, check, tag, publish |
+| `just release <version>` | bump every package together, check, tag; CI publishes |
 
 **How the project is run.** Every rule lives in one record under
 [`records/`](records/README.md); the live queue is

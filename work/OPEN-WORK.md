@@ -22,7 +22,7 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| 🔴 **W-44** — enable GitHub Pages (Settings → Pages → Source: *GitHub Actions*) and publish the first release (`just release <version>`): the playground deploys from the tag and the StackBlitz starters can install; an agent then checks both load and closes W-44 | 2026-10-18 | 0 d |
+| 🔴 **W-44** — the `v0.1.0` tag publishes every package from CI (`release.yml`). Two settings only the decider can make: add the **`NPM_TOKEN`** repository secret (an npm granular token, read-write on `@sheetpane/*` and `create-sheetpane`; `gh secret set NPM_TOKEN`) and enable GitHub Pages (Settings → Pages → Source: *GitHub Actions*); then re-run the tag's `release` and `pages` runs. An agent then checks npm, the playground and the starters load and closes W-44 | 2026-10-18 | 0 d |
 | ↳ **blocks:** W-44 (closing only — everything is built) | | |
 
 ---
@@ -31,7 +31,7 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — waiting on the decider: Pages enabled and the first release published, then an agent checks both load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
+- 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — and the release pipeline (`release.yml`, SR-BUILD 9); `v0.1.0` tagged. Waiting on the decider: the `NPM_TOKEN` secret and Pages enabled, the tag's runs re-run, then an agent checks npm, the playground and the starters load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
 ### testing
 

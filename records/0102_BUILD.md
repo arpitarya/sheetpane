@@ -33,20 +33,20 @@ WebKit nightly). No simulated DOM.
 ```mermaid
 flowchart LR
     C["clean clone"] --> I["pnpm install --frozen-lockfile"]
-    I --> T["typecheck: tsc per package, strict"]
+    I --> B["build: tsc → dist/ + .d.ts; grid style.css"]
+    B --> T["typecheck: tsc per package, strict"]
     T --> V["test: Vitest — Node + Chromium, coverage"]
-    V --> B["build: tsc → dist/ + .d.ts; grid style.css"]
-    B --> P["pack-check: tarballs as npm sees them"]
-    P --> R["release: one version, tag, pnpm publish"]
+    V --> P["pack-check: tarballs as npm sees them"]
+    P --> R["release: one version, tag; CI publishes"]
 ```
 
 <details>
 <summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
 
 ```text
-   clean clone -> pnpm install --frozen-lockfile -> typecheck (tsc, strict)
-     -> test (Vitest: Node + Chromium, coverage) -> build (tsc -> dist/, style.css)
-     -> pack-check (tarballs as npm sees them) -> release (one version, tag, publish)
+   clean clone -> pnpm install --frozen-lockfile -> build (tsc -> dist/, style.css)
+     -> typecheck (tsc, strict) -> test (Vitest: Node + Chromium, coverage)
+     -> pack-check (tarballs as npm sees them) -> release (one version, tag; CI publishes)
 ```
 
 </details>
@@ -79,6 +79,9 @@ pnpm and a justfile; the testing verdict chose the runner.
 4. **Type-check:** `tsc --noEmit` per package over `src/` and `test/`, and
    at the root over `test/` and `vitest.config.ts`; `tsconfig.base.json` is
    strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
+   The examples are the exception to decision 5: they type-check against the
+   built `dist/`, as a host app does, so `just check` builds first (a clean
+   clone failed every CI run while it type-checked first).
 5. **Source condition:** every `exports` entry carries a `source` condition
    pointing at `src/`, so type-check and tests read sibling packages without a
    build. `publishConfig.exports` drops it from the published manifest. The
@@ -155,7 +158,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     playground (`https://arpitarya.github.io/sheetpane/`, decision 8) and the
     starters.
 9. **Release:** `just release <version>` — clean tree required; every package
-   set to the version (`scripts/release.mjs`); `just check pack-check`; a
+   set to the version (`scripts/release.mjs`, which then rebuilds the
+   starters, the Claude Code plugin and `llms.txt`); `just check pack-check`; a
    commit and an annotated tag `v<version>`, both pushed. Nothing is published
    from a laptop: the tag runs `.github/workflows/release.yml`, which fails
    unless every package carries the tag's version, runs `just check`,

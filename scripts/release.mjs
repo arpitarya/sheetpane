@@ -12,7 +12,9 @@ for (const dir of readdirSync(join(root, 'packages'))) {
   writeFileSync(f, JSON.stringify(p, null, 2) + '\n');
   console.log(`${p.name} → ${v}`);
 }
-// llms.txt pins its links to the release tag: rewrite it for the new version (W-38)
-execFileSync('node', [join(root, 'scripts/build-llms.mjs')], { stdio: 'inherit' });
 // the StackBlitz starters name the new version and their links the new tag (W-44)
 execFileSync('node', [join(root, 'scripts/build-starters.mjs')], { stdio: 'inherit' });
+// the Claude Code plugin carries @sheetpane/skills' version (W-45)
+execFileSync('node', [join(root, 'scripts/build-plugin.mjs')], { stdio: 'inherit' });
+// llms.txt pins its links to the release tag: rewrite it for the new version, last — it inlines the rest (W-38)
+execFileSync('node', [join(root, 'scripts/build-llms.mjs')], { stdio: 'inherit' });

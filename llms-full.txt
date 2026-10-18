@@ -164,7 +164,7 @@ Requires **Node 20+**, **pnpm 10** and [**just**](https://just.systems).
 | `just demo-react` | the React 19 demo at http://127.0.0.1:5174 |
 | `just demo-check` | both demos driven end to end in Chromium |
 | `just pack-check` | every package packed as npm would publish it, and checked |
-| `just release <version>` | bump every package together, check, tag, publish |
+| `just release <version>` | bump every package together, check, tag; CI publishes |
 
 **How the project is run.** Every rule lives in one record under
 [`records/`](records/README.md); the live queue is
@@ -4728,7 +4728,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     playground (`https://arpitarya.github.io/sheetpane/`, decision 8) and the
     starters.
 9. **Release:** `just release <version>` — clean tree required; every package
-   set to the version (`scripts/release.mjs`); `just check pack-check`; a
+   set to the version (`scripts/release.mjs`, which then rebuilds the
+   starters, the Claude Code plugin and `llms.txt`); `just check pack-check`; a
    commit and an annotated tag `v<version>`, both pushed. Nothing is published
    from a laptop: the tag runs `.github/workflows/release.yml`, which fails
    unless every package carries the tag's version, runs `just check`,
