@@ -65,7 +65,7 @@ describe('ui: format-row (DoD 4)', () => {
     const { el, store } = await pane();
     store.select({ sheet: 'Data', ref: 'A1' }); await frame();
     await choose(el, 'percentage');
-    expect(store.changeOf('Data', 'A1')).toMatchObject({ kind: 'numFmt', was: '#,##0.00', now: '0.00%' });
+    expect(store.changeOf('Data', 'A1', 'numFmt')).toMatchObject({ kind: 'numFmt', was: '#,##0.00', now: '0.00%' });
     expect(store.text('Data', 'A1')).toBe('123450.00%');
     expect($(el, '#c0_0').textContent).toContain('123450.00%');
     expect($(el, '.changed').textContent).toBe('Changed · was 1,234.50');
@@ -73,7 +73,7 @@ describe('ui: format-row (DoD 4)', () => {
     expect($(el, '.val').textContent).toBe('123450.00%');
     store.undo(); await frame();
     expect(store.text('Data', 'A1')).toBe('1,234.50');
-    expect(store.changeOf('Data', 'A1')).toBeUndefined();
+    expect(store.changeOf('Data', 'A1', 'numFmt')).toBeUndefined();
   });
 
   it('the presets give Excel’s defaults', async () => {
@@ -92,17 +92,20 @@ describe('ui: format-row (DoD 4)', () => {
     store.select({ sheet: 'Data', ref: 'A1', range: 'A1:B5' }); await frame();
     await choose(el, 'currency');
     const changed = [...store.getSnapshot().changes.keys()].sort();
-    expect(changed).toEqual(['Data!A1', 'Data!A2', 'Data!A3', 'Data!A5', 'Data!B1']); // A4 is blank: no change
+    expect(changed).toEqual(['Data!#numFmt:A1', 'Data!#numFmt:A2', 'Data!#numFmt:A3', 'Data!#numFmt:A5', 'Data!#numFmt:B1']); // A4 is blank: no change
     expect(store.text('Data', 'B1')).toBe('$9.00 ');
   });
 
-  it('a cell the user has edited keeps its edit: a format does not replace the one change the grid keeps per cell', async () => {
+  it('a cell the user has edited keeps its edit and takes the format: each kind has its own slot (SR-GRID 3)', async () => {
     const { el, store } = await pane();
     store.setCell('Data', 'A3', '99');
     store.select({ sheet: 'Data', ref: 'A3', range: 'A3:A3' }); await frame();
     await choose(el, 'percentage');
     expect(store.changeOf('Data', 'A3')).toMatchObject({ kind: 'value', now: 99 });
-    expect(store.text('Data', 'A3')).toBe('99');
+    expect(store.changeOf('Data', 'A3', 'numFmt')).toMatchObject({ kind: 'numFmt', now: '0.00%' });
+    expect(store.text('Data', 'A3')).toBe('9900.00%');
+    store.revert('Data', 'A3'); // Revert takes back every kind on the cell, as one step
+    expect(store.changesAt('Data', 'A3')).toEqual([]);
   });
 
   it('Custom… asks for a code, applies it, and refuses an invalid one', async () => {
@@ -138,7 +141,7 @@ describe('ui: format-row (DoD 4)', () => {
     await click(el, 'numfmt-dec-more'); expect(store.text('Data', 'A2')).toBe('25.6%');
     store.select({ sheet: 'Data', ref: 'A5' }); await frame();
     await click(el, 'numfmt-dec-more'); expect(store.text('Data', 'A5')).toBe('3/15/2023');
-    expect(store.changeOf('Data', 'A5')).toBeUndefined();
+    expect(store.changeOf('Data', 'A5', 'numFmt')).toBeUndefined();
     // a range: each cell moves from its own format
     store.select({ sheet: 'Data', ref: 'A1', range: 'A1:A2' }); await frame();
     await click(el, 'numfmt-dec-more');

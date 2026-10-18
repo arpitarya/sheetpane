@@ -82,6 +82,10 @@ export interface ControlDescriptor {
   shortcut?: string;
   mode: Mode | 'both';
   isActive?(snap: Snapshot, sel: Selection): boolean;
+  /** Greyed out and not runnable for this selection (Merge on one cell, the format row on a CSV). */
+  disabled?(snap: Snapshot, sel: Selection): boolean;
+  /** A label that follows the selection (Merge ↔ Unmerge); `label` otherwise. */
+  labelFor?(snap: Snapshot, sel: Selection): string;
   run?(store: WorkbookStore, sel: Selection): void;
   /** `status` slot: the text to show; `cell` slot: whether the cell carries the mark. */
   text?(snap: Snapshot, sel: Selection): string;

@@ -84,8 +84,9 @@ installed — the plugins verdict's `format` hook.
    decimals; a choice applies to the selection's numeric cells as **one undo
    step** (`setChanges`), each a `numFmt` change whose `was` is the file's own
    code; Custom… asks for a code (`ui({ ask })`, default `prompt`) and
-   refuses an invalid one. Cells holding a value edit are skipped: the change
-   map holds one change per cell. The cell bar keeps showing the raw value.
+   refuses an invalid one. The change lives in the cell's `numFmt` slot
+   (`sheet!#numFmt:A1`, SR-GRID decision 3), so a value edit and a format on
+   one cell are two changes. The cell bar keeps showing the raw value.
 9. **Export:** `exportPatch` appends deduplicated `<numFmt>` (new ids from
    max(163, existing) + 1; a built-in code uses its id) and `<xf>` entries — a
    copy of the cell's old xf with the new `numFmtId` — and repoints each
@@ -100,8 +101,7 @@ installed — the plugins verdict's `format` hook.
   in the core subset; two are fixed (month-only codes, serial 0) and three
   are recorded as limits in SR-IMPORT.
 - **Owed:** expected values captured from Excel itself (the table follows
-  Excel's documented output) — W-30; a value edit and a format on the same
-  cell (one change per cell, SR-GRID decision 3) — to be lifted with W-17.
+  Excel's documented output) — W-30.
 - **The reading verdict's "1 in 100" trigger** compares misreads; the one
   fixture cell where the subset and the library differ (`[$€-407]#,##0.00`)
   is a code the subset declines and shows raw, not a misread.

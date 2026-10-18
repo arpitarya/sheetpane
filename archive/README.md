@@ -27,6 +27,8 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 
 | file | closed | where the live answer lives now |
 |---|---|---|
+| `W-17-styles.md` | 2026-10-18 | [SR-STYLES](../records/0110_STYLES.md) |
+| `W-29-dark-theme-and-slot-tokens.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 15a–15b |
 | `W-15-numfmt.md` | 2026-10-18 | [SR-NUMFMT](../records/0109_NUMFMT.md); Excel-captured values in W-30 |
 | `W-18-validation.md` | 2026-10-18 | [SR-VALIDATION](../records/0108_VALIDATION.md); an Excel-saved fixture in W-30 |
 | `W-20-images.md` | 2026-10-18 | [SR-IMAGES](../records/0107_IMAGES.md); real-app pictures in W-30 |

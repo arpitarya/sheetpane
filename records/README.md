@@ -131,6 +131,7 @@ Start from `TEMPLATE.md`.
 | [0107](0107_IMAGES.md) | **SR-IMAGES** | `@sheetpane/images` — pictures drawn through the overlay hook | accepted | yes |
 | [0108](0108_VALIDATION.md) | **SR-VALIDATION** | `@sheetpane/validation` — the workbook's own rules as errors | accepted | yes |
 | [0109](0109_NUMFMT.md) | **SR-NUMFMT** | `@sheetpane/numfmt` — every Excel number format | accepted | yes |
+| [0110](0110_STYLES.md) | **SR-STYLES** | `@sheetpane/styles` — cell styles, the format row | accepted | yes |
 
 ---
 
@@ -176,8 +177,8 @@ directions.
 | `packages/grid/` | SR-GRID | `@sheetpane/grid` — the store, the sheet, the plugin host, undo, freeze |
 | `packages/grid/src/errors/` | SR-ERRORS | `<sheetpane-errors>` — a different element from the sheet |
 | `packages/numfmt/` | SR-NUMFMT | `@sheetpane/numfmt` — number formats |
+| `packages/styles/` | SR-STYLES | `@sheetpane/styles` — cell styles |
 | `packages/formulas/` | W-16 | `@sheetpane/formulas`, a plugin; until its component record exists |
-| `packages/styles/` | W-17 | `@sheetpane/styles`, a plugin; until its component record exists |
 | `packages/validation/` | SR-VALIDATION | `@sheetpane/validation` — workbook rules as errors |
 | `packages/condfmt/` | W-19 | `@sheetpane/condfmt`, a plugin; until its component record exists |
 | `packages/images/` | SR-IMAGES | `@sheetpane/images` — pictures, view only |

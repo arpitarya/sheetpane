@@ -30,6 +30,13 @@ export const HISTORY_CAP = 500;
 const BLANK = '(blank)';
 
 export const key = (sheet: string, ref: string) => `${sheet}!${ref}`;
+
+/** Kinds that sit beside a cell's value in their own slot: `sheet!#style:A1`, `sheet!#numFmt:A1`. */
+export const SLOTTED_KINDS: readonly ChangeKind[] = ['style', 'numFmt'];
+/** The change-map ref of a kind for a cell: `A1` for value and formula, `#style:A1` for style … */
+export const kindRef = (ref: string, kind: ChangeKind) => (ref.startsWith('#') || !SLOTTED_KINDS.includes(kind) ? ref : `#${kind}:${ref}`);
+/** The cell a change-map ref belongs to: `#style:A1` → `A1`. */
+export const baseRef = (ref: string) => ref.replace(/^#(?:style|numFmt):/, '');
 export function splitKey(k: string): { sheet: string; ref: string } {
   const i = k.lastIndexOf('!');
   return { sheet: k.slice(0, i), ref: k.slice(i + 1) };
@@ -135,7 +142,14 @@ export class WorkbookStore {
     return { value: s.rows[p.row]?.[p.col] ?? null, text: s.text[p.row]?.[p.col] ?? '' };
   }
 
-  changeOf(sheet: string, ref: string): ChangeEntry | undefined { return this.snap.changes.get(key(sheet, ref)); }
+  /** A cell's change of one kind (default: its value). */
+  changeOf(sheet: string, ref: string, kind?: ChangeKind): ChangeEntry | undefined { return this.snap.changes.get(key(sheet, kind ? kindRef(ref, kind) : ref)); }
+  /** Every change a cell carries — its value and each slotted kind. */
+  changesAt(sheet: string, ref: string): ChangeEntry[] {
+    const out: ChangeEntry[] = [];
+    for (const r of [ref, ...SLOTTED_KINDS.map((k) => kindRef(ref, k))]) { const c = this.snap.changes.get(key(sheet, r)); if (c) out.push(c); }
+    return out;
+  }
 
   /** The current value: a user change, else a derived value, else the upload. */
   value(sheet: string, ref: string): Cell {
@@ -212,7 +226,7 @@ export class WorkbookStore {
   // ── the one commit path ──────────────────────────────────────────────────
   private commit(next: Undoable, keys: string[], origin: Origin, events: StoreEvent[], o: { coalesce?: string; record?: boolean; extra?: Partial<Snapshot> } = {}): void {
     const before: Undoable = { changes: this.snap.changes, errors: this.snap.errors };
-    for (const k of keys) this.textCache.delete(k);
+    for (const k of keys) { this.textCache.delete(k); const { sheet, ref } = splitKey(k); this.textCache.delete(key(sheet, baseRef(ref))); }
     const errors = this.withMatches(next.errors, next.changes);
     if (o.record !== false) {
       const last = this.undoStack[this.undoStack.length - 1];
@@ -287,7 +301,9 @@ export class WorkbookStore {
 
   /** Sets any change-map entry a plugin owns (`style`, `numFmt`, `merge`, `freeze`). `now === undefined` removes it. */
   setChange(sheet: string, ref: string, kind: ChangeKind, now: unknown, was: unknown, origin?: Origin): void {
-    const k = key(sheet, ref);
+    const slot = kindRef(ref, kind);
+    ref = baseRef(slot);
+    const k = key(sheet, slot);
     const changes = new Map(this.snap.changes);
     const prev = changes.get(k);
     if (now === undefined || same(now, was)) changes.delete(k);
@@ -300,22 +316,27 @@ export class WorkbookStore {
     const changes = new Map(this.snap.changes);
     const keys: string[] = [], events: StoreEvent[] = [];
     for (const c of list) {
-      const k = key(c.sheet, c.ref), prev = changes.get(k);
+      const k = key(c.sheet, kindRef(c.ref, c.kind)), prev = changes.get(k);
       if (c.now === undefined || same(c.now, c.was)) { if (!prev) continue; changes.delete(k); }
-      else changes.set(k, { kind: c.kind, was: prev ? prev.was : c.was, now: c.now });
+      else { if (prev && same(prev.now, c.now)) continue; changes.set(k, { kind: c.kind, was: prev ? prev.was : c.was, now: c.now }); }
       keys.push(k);
-      events.push({ type: 'change', origin, sheet: c.sheet, ref: c.ref, kind: c.kind, was: prev ? prev.now : c.was, now: c.now ?? c.was });
+      events.push({ type: 'change', origin, sheet: c.sheet, ref: baseRef(c.ref), kind: c.kind, was: prev ? prev.now : c.was, now: c.now ?? c.was });
     }
     if (keys.length) this.commit({ changes, errors: this.snap.errors }, keys, origin, events);
   }
 
   /** Reverts one cell (or any change-map key) to the upload; undoable. */
   revert(sheet: string, ref: string, origin?: Origin): void {
-    const k = key(sheet, ref), prev = this.snap.changes.get(k);
-    if (!prev) return;
+    const refs = ref.startsWith('#') ? [ref] : [ref, ...SLOTTED_KINDS.map((k) => kindRef(ref, k))];
     const changes = new Map(this.snap.changes);
-    changes.delete(k);
-    this.commit({ changes, errors: this.snap.errors }, [k], origin, [{ type: 'change', origin, sheet, ref, kind: prev.kind, was: prev.now, now: prev.was }]);
+    const keys: string[] = [], events: StoreEvent[] = [];
+    for (const r of refs) {
+      const k = key(sheet, r), prev = changes.get(k);
+      if (!prev) continue;
+      changes.delete(k); keys.push(k);
+      events.push({ type: 'change', origin, sheet, ref: baseRef(r), kind: prev.kind, was: prev.now, now: prev.was });
+    }
+    if (keys.length) this.commit({ changes, errors: this.snap.errors }, keys, origin, events);
   }
 
   // ── merged ranges: core, changed by plugins as kind `merge` (key `sheet!#merge:A1:C1`, now true | false) ──
@@ -452,8 +473,9 @@ export class WorkbookStore {
     const events: StoreEvent[] = [{ type: 'history', origin, reason }];
     const cur = this.snap.changes;
     for (const k of new Set([...h.keys, ...[...cur.keys()].filter((x) => cur.get(x) !== state.changes.get(x))])) {
-      this.textCache.delete(k);
       const { sheet, ref } = splitKey(k);
+      this.textCache.delete(k);
+      this.textCache.delete(key(sheet, baseRef(ref)));
       const a = cur.get(k), b = state.changes.get(k);
       if (a !== b) events.push({ type: 'change', origin, sheet, ref, kind: (b ?? a)!.kind, was: a ? a.now : b!.was, now: b ? b.now : a!.was });
     }

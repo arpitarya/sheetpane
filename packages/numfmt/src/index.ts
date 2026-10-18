@@ -24,7 +24,7 @@ export interface NumfmtPlugin extends Plugin {
 
 /** The code a cell shows with: the user's `numFmt` change, else the style's `numFmtId`. */
 export function cellCode(c: CellContext, locale: string): string {
-  const ch = c.store.changeOf(c.sheet.name, c.ref);
+  const ch = c.store.changeOf(c.sheet.name, c.ref, 'numFmt');
   if (ch?.kind === 'numFmt' && typeof ch.now === 'string') return ch.now;
   return originalCode(c.book, c.styleIndex, locale);
 }
@@ -80,8 +80,9 @@ export function numfmt(options: NumfmtOptions = {}): NumfmtPlugin {
       for (const [k, ch] of ctx.store.getSnapshot().changes) {
         if (ch.kind !== 'numFmt' || typeof ch.now !== 'string') continue;
         const bang = k.lastIndexOf('!');
-        const sheet = k.slice(0, bang), ref = k.slice(bang + 1);
-        if (ref.startsWith('#')) continue;
+        const sheet = k.slice(0, bang), slot = k.slice(bang + 1);
+        if (!slot.startsWith('#numFmt:')) continue;
+        const ref = slot.slice('#numFmt:'.length);
         const s = ctx.book.sheets.find((x) => x.name === sheet);
         if (!s) continue;
         edits.push({ sheet, ref, was: s.styleIndex[ref] ?? 0, code: ch.now });

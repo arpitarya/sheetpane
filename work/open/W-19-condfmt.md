@@ -45,7 +45,7 @@ A plugin that renders the conditional formats a workbook carries. It is a second
 
 ## Blockers
 
-Waiting on **W-17** (styles — the allow-list and the ordering it comes after).
+None. W-17 closed 2026-10-18 ([SR-STYLES](../../records/0110_STYLES.md) — the allow-list and the colour/dxf helpers are exported).
 
 ## Record affected
 

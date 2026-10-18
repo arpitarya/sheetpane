@@ -60,8 +60,8 @@ the store and the contract are the contract verdict's and
 ### Decision
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
-   `author`, `plugins`; properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`; methods `getErrors()`, `setErrors(list, { plugins? })`; events
+   `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
+   `readOnly`, `theme`; methods `getErrors()`, `setErrors(list, { plugins? })`; events
    `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it

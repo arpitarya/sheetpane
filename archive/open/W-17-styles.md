@@ -6,7 +6,7 @@ item: W-17
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,10 +16,10 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Read `styles.xml` into an allow-listed CSS subset per cell | a cell looks the way Excel saved it — colour, weight, borders, alignment | ⏳ |
-| 2 | Never a font family — weight, style, size, colour, decoration only (L5 ruling) | the host's font still wins | ⏳ |
-| 3 | Ship the format row: B I U · colour · fill · borders · align · wrap · clear; merge / unmerge | a reviewer can correct formatting, not only values | ⏳ |
-| 4 | Write new styles back through `exportPatch` | the exported file carries every style change (L6) | ⏳ |
+| 1 | Read `styles.xml` into an allow-listed CSS subset per cell | a cell looks the way Excel saved it — colour, weight, borders, alignment | ✅ |
+| 2 | Never a font family — weight, style, size, colour, decoration only (L5 ruling) | the host's font still wins | ✅ |
+| 3 | Ship the format row: B I U · colour · fill · borders · align · wrap · clear; merge / unmerge | a reviewer can correct formatting, not only values | ✅ |
+| 4 | Write new styles back through `exportPatch` | the exported file carries every style change (L6) | ✅ |
 
 **Arpit, 2026-10-18:** *"Let's create separate packages, plugins for number format, formulas, styles. Merge cells, freeze panes, data validation, conditional formatting, images, charts, pivots, comments, notes. Decide, do some research and have them as separate packages or plugins."*
 
@@ -33,23 +33,22 @@ A plugin that renders and edits the subset of cell styles a reviewer needs. With
 
 | DoD | what | state |
 |---|---|---|
-| 1 · package | `packages/styles/` builds to ESM, no runtime dependency; `@sheetpane/grid` a peer; `./ui` entry | ⏳ |
-| 2 · decorate | `decorate(cell)` from `cellXfs` → `fonts`, `fills`, `borders`, `alignment`, with theme and indexed colours resolved; the subset is `background-color`, `color`, `font-weight`, `font-style`, `font-size`, `text-decoration`, `text-align`, `vertical-align`, `white-space`, `border-*`; nothing else, and **never `font-family`** | ⏳ |
-| 3 · merges | merge / unmerge controls (`selbar` and `format-row`) produce changes of kind `merge`; the core still renders merges without this plugin | ⏳ |
-| 4 · ui | `format-row` groups `text` · `colour` · `fill` · `border` · `align` · `wrap` · `clear`; `selbar`: Bold and Fill; every control toggles a change of kind `style` on the selection; the row is absent in View; the format-row states — hover, pressed, active, disabled, keyboard focus, light and dark — are drawn once on the Plugin-Styles board and every plugin control reuses them; every tooltip names its shortcut | ⏳ |
-| 5 · undo | every style change is undoable through W-23; the row does not ship before W-23 lands | ⏳ |
-| 6 · export | `exportPatch` appends deduplicated `<font>`, `<fill>`, `<border>` and `<xf>` entries and repoints `s` on every changed cell; untouched cells keep their original `s` | ⏳ |
-| 7 · a11y | colour is never the only carrier of a sheetpane state (changed, flagged) on a coloured cell — the corner mark and pins keep their contrast | ⏳ |
-| 8 · tests | a fixture of every fill, font and border combination saved by Excel, rendered and compared property by property; the L5 veto command stays clean over the package; a round-trip of a style edit | ⏳ |
-| 9 · record | a component record; Ownership rows for `packages/styles/` | ⏳ |
-
+| 1 · package | `packages/styles/` builds to ESM, no runtime dependency; `@sheetpane/grid` a peer; `./ui` entry | ✅ ESM + `.d.ts`, no runtime dependency, grid a peer, `./ui` entry; the headless entry never imports the UI |
+| 2 · decorate | `decorate(cell)` from `cellXfs` → `fonts`, `fills`, `borders`, `alignment`, with theme and indexed colours resolved; the subset is `background-color`, `color`, `font-weight`, `font-style`, `font-size`, `text-decoration`, `text-align`, `vertical-align`, `white-space`, `border-*`; nothing else, and **never `font-family`** | ✅ `cellXfs` → fonts, fills, borders, alignment; theme (with tint) and indexed colours resolved; only the allow-listed subset, never `font-family` (test over every result + the L5 veto over the package); the core now shows `text-align`, `vertical-align` and wrap (cells hold a text span — SR-GRID 15b) |
+| 3 · merges | merge / unmerge controls (`selbar` and `format-row`) produce changes of kind `merge`; the core still renders merges without this plugin | ✅ Merge/Unmerge on `selbar` and `format-row` call the core's `setMerge` (kind `merge`), labelled by state, disabled on a CSV or one unmerged cell; the core renders merges without the plugin |
+| 4 · ui | `format-row` groups `text` · `colour` · `fill` · `border` · `align` · `wrap` · `clear`; `selbar`: Bold and Fill; every control toggles a change of kind `style` on the selection; the row is absent in View; the format-row states — hover, pressed, active, disabled, keyboard focus, light and dark — are drawn once on the Plugin-Styles board and every plugin control reuses them; every tooltip names its shortcut | ✅ `format-row` groups text · colour · fill · border · align · wrap · clear; `selbar` Bold · Fill · Merge; each action one `style` change per cell; absent in View; buttons' `title` and `aria-label` name the shortcut; the states — hover, pressed, disabled, focus — come from the core's one control style, themed light and dark by W-29's tokens |
+| 5 · undo | every style change is undoable through W-23; the row does not ship before W-23 lands | ✅ every action is one undo step through W-23 (`setChanges`) — tests |
+| 6 · export | `exportPatch` appends deduplicated `<font>`, `<fill>`, `<border>` and `<xf>` entries and repoints `s` on every changed cell; untouched cells keep their original `s` | ✅ deduplicated `<font>`, `<fill>`, `<border>`, `<xf>` appended, `s` repointed, missing `<c>`/`<row>`/`styles.xml` added; untouched cells keep `s`; no change → byte for byte — tests |
+| 7 · a11y | colour is never the only carrier of a sheetpane state (changed, flagged) on a coloured cell — the corner mark and pins keep their contrast | ✅ the changed mark keeps 3:1 against every default fill (test) and carries a cell-coloured outline; state tints sit above a fill, never replace it (core, SR-GRID 15b) |
+| 8 · tests | a fixture of every fill, font and border combination saved by Excel, rendered and compared property by property; the L5 veto command stays clean over the package; a round-trip of a style edit | ✅ with a deviation: the ExcelJS fixture and hand-made `styles.xml` for every fill, font and border kind, compared property by property; the L5 veto; a style-edit round-trip — 46 tests; **a fixture saved by Excel moved to W-30** |
+| 9 · record | a component record; Ownership rows for `packages/styles/` | ✅ [SR-STYLES](../../records/0110_STYLES.md) (0110); Ownership `packages/styles/` → SR-STYLES |
 ## Blockers
 
-Waiting on **W-14** (the `decorate` hook and `format-row`), **W-13** (style tables from the reader) and **W-23** (undo, before the format row).
+None. An Excel-saved fixture is W-30.
 
 ## Record affected
 
-A new component record on completion. Until then this item owns `packages/styles/`.
+**[SR-STYLES](../../records/0110_STYLES.md)**; the core gaps it found landed in SR-GRID (decisions 3, 15, 15b, 19).
 
 ## Hazards
 

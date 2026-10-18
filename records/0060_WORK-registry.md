@@ -98,7 +98,7 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |
 | `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — plugin, hook, slot, derived cell, column rules |
 | `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — B-030; the law checks that now run |
-| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109) |
+| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109), SR-STYLES (0110) |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
 | `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — refreshed: fifteen plugin boards, PluginKit, sp-plugins.css, reconciled with W-14–W-24 |

@@ -3,6 +3,7 @@
 // copy of errors or workbook data; no "linked" chip, no export footer.
 import { cellRef, colName, parseRange, parseRef } from '@sheetpane/export';
 import { pluginsFromIds } from '../plugins/host.js';
+import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
 import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
@@ -16,7 +17,7 @@ const CSS = `${BASE_CSS}
 .hd .t{font-weight:600}
 .filters{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--sp-line)}
 .filters button{height:26px;padding:0 10px;border:1px solid var(--sp-line-strong);border-radius:999px;background:var(--sp-surface);color:var(--sp-ink-2);font-size:12px;font-weight:500;cursor:pointer}
-.filters button[aria-pressed=true]{background:var(--sp-ink);border-color:var(--sp-ink);color:#fff}
+.filters button[aria-pressed=true]{background:var(--sp-ink);border-color:var(--sp-ink);color:var(--sp-cell)}
 .filters .sep{width:1px;background:var(--sp-line);margin:2px 4px}
 .scrollarea{flex:1;min-height:0;overflow:auto}
 .empty{padding:24px 16px;color:var(--sp-ink-3);font-size:13px;text-align:center}
@@ -24,7 +25,7 @@ const CSS = `${BASE_CSS}
 .issue{display:flex;gap:10px;padding:10px 12px;align-items:flex-start;width:100%;border:0;background:none;text-align:left;cursor:pointer;color:var(--sp-ink);font:inherit}
 .issue:hover{background:var(--sp-ground)}
 .item.on .issue{background:var(--sp-accent-soft)}
-.issue .n{font-size:11px;font-weight:700;min-width:22px;height:20px;border-radius:10px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;flex:none}
+.issue .n{font-size:11px;font-weight:700;min-width:22px;height:20px;border-radius:10px;color:var(--sp-on-solid);display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;flex:none}
 .n.error{background:var(--sp-fail)}.n.warning{background:var(--sp-warn)}.n.note{background:var(--sp-accent)}.n.resolved{background:var(--sp-pass)}
 .issue .bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .issue .ty{font-weight:600;font-size:13px}
@@ -44,11 +45,11 @@ const CSS = `${BASE_CSS}
 .kv dt{color:var(--sp-ink-3)}.kv dd{margin:0;overflow-wrap:anywhere}
 .tchips{display:flex;flex-wrap:wrap;gap:6px}
 .tchip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--sp-line-strong);border-radius:999px;background:var(--sp-surface);color:var(--sp-ink-2);font-size:12px;font-weight:500;cursor:pointer}
-.tchip[aria-pressed=true]{background:var(--sp-ink);border-color:var(--sp-ink);color:#fff}
+.tchip[aria-pressed=true]{background:var(--sp-ink);border-color:var(--sp-ink);color:var(--sp-cell)}
 .field{display:flex;flex-direction:column;gap:4px}
 .field>span{font-size:12px;font-weight:500;color:var(--sp-ink-2)}
 .ex{padding:10px;border-radius:var(--sp-r);background:var(--sp-ground);border:1px dashed var(--sp-line-strong);font-size:12px;color:var(--sp-ink-2);display:flex;flex-direction:column;gap:4px}
-.notice{margin:8px 12px 0;padding:8px 10px;border-radius:var(--sp-r);background:var(--sp-warn-soft);border:1px solid #EAD4A3;font-size:12px}
+.notice{margin:8px 12px 0;padding:8px 10px;border-radius:var(--sp-r);background:var(--sp-warn-soft);border:1px solid var(--sp-warn);font-size:12px}
 `;
 
 const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
@@ -83,6 +84,9 @@ export class SheetpaneErrors extends ElementBase {
   set errorTypes(t: readonly ErrorType[]) { this._errorTypes = t.length ? t : DEFAULT_ERROR_TYPES; this.formKey = ''; this.schedule(); }
   get readOnly(): boolean { return this.hasAttribute('readonly'); }
   set readOnly(v: boolean) { this.toggleAttribute('readonly', v); }
+  /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
+  get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
+  set theme(t: Theme) { this.setAttribute('theme', t); }
 
   getErrors(): SheetpaneError[] { return this.errors; }
   /** Restores a saved review. `plugins` (from the saved `sheetpane-errors` envelope) shows a notice when it differs from this pane's set. */

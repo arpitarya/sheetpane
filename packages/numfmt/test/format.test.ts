@@ -104,9 +104,9 @@ describe('user changes (DoD 4, 5)', () => {
     const store = await load([{ ref: 'A1', value: 0.256, code: '0%' }]);
     store.setChange('Data', 'A1', 'numFmt', '0.000%', '0%');
     expect(store.text('Data', 'A1')).toBe('25.600%');
-    expect(store.changeOf('Data', 'A1')).toMatchObject({ kind: 'numFmt', was: '0%', now: '0.000%' });
+    expect(store.changeOf('Data', 'A1', 'numFmt')).toMatchObject({ kind: 'numFmt', was: '0%', now: '0.000%' });
     store.setChange('Data', 'A1', 'numFmt', '0%', '0%');
-    expect(store.changeOf('Data', 'A1')).toBeUndefined();
+    expect(store.changeOf('Data', 'A1', 'numFmt')).toBeUndefined();
     expect(store.text('Data', 'A1')).toBe('26%');
     store.setChange('Data', 'A1', 'numFmt', '0.0', '0%');
     store.undo();

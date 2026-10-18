@@ -10,6 +10,7 @@ import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookSto
 import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
+import type { Theme } from '../tokens.js';
 import { COL_VIRTUAL_AFTER, HEAD_H, ROWHEAD_W, ROW_H, colAt, mergeAt, sheetGeometry, visibleWindow, type SheetGeometry } from './geometry.js';
 import { EXCEL_CSS } from './styles.js';
 
@@ -77,6 +78,9 @@ export class SheetpaneExcel extends ElementBase {
   set file(f: File | Blob | ArrayBuffer | Uint8Array | null) { if (f) void this.load(f); }
   get mode(): Mode { return this._store?.getSnapshot().mode ?? ((this.getAttribute('mode') as Mode) || 'view'); }
   set mode(m: Mode) { this.setAttribute('mode', m); }
+  /** `light` (the default), `dark`, or `auto` (follows `prefers-color-scheme`) — colour only; the file's own colours never change (W-29). */
+  get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
+  set theme(t: Theme) { this.setAttribute('theme', t); }
   get open(): boolean { return this.hasAttribute('open'); }
   set open(v: boolean) { this.toggleAttribute('open', v); }
   get src(): string | null { return this.getAttribute('src'); }
@@ -472,7 +476,7 @@ export class SheetpaneExcel extends ElementBase {
     const k = e.key;
     let handled = true;
     const ctl = s.plugins.flatMap((p) => p.controls ?? []).find((c) => c.shortcut && c.run && (c.mode === 'both' || c.mode === snap.mode) && this.matchesShortcut(e, c.shortcut));
-    if (ctl) { ctl.run!(s, snap.selection); e.preventDefault(); return; }
+    if (ctl && !ctl.disabled?.(snap, snap.selection)) { ctl.run!(s, snap.selection); e.preventDefault(); return; }
     if (e.altKey && k === 'ArrowDown' && edit) {
       const ctx = s.cellContext(snap.selection.sheet, snap.selection.ref);
       const mc = ctx && controlsFor(s.plugins, 'cell', 'edit').find((c) => c.cellOptions && c.choose && c.appliesTo?.(ctx));
@@ -673,7 +677,9 @@ export class SheetpaneExcel extends ElementBase {
     const b = (e.target as Element).closest<HTMLElement>('[data-control]');
     if (!b || b.tagName === 'SELECT') return;
     const c = this._store!.plugins.flatMap((p) => p.controls ?? []).find((x) => x.id === b.dataset.control);
-    c?.run?.(this._store!, this._store!.getSnapshot().selection);
+    const snap = this._store!.getSnapshot();
+    if (c?.disabled?.(snap, snap.selection)) return;
+    c?.run?.(this._store!, snap.selection);
   }
   private runCellControl(mk: HTMLElement): void {
     const s = this._store!;
@@ -764,9 +770,10 @@ export class SheetpaneExcel extends ElementBase {
     q.merge.hidden = !merge;
     if (merge) q.merge.textContent = `Merged ${cellRef(merge.top, merge.left)}:${cellRef(merge.bottom, merge.right)} · centred`;
     const ch = s.changeOf(sel.sheet, sel.ref);
-    q.changed.hidden = !ch;
-    q.revert.hidden = !ch || !edit;
-    if (ch) q.changed.textContent = `Changed · was ${s.original(sel.sheet, sel.ref).text || '(blank)'}`;
+    const fmt = s.changesAt(sel.sheet, sel.ref).filter((c) => c !== ch);
+    q.changed.hidden = !ch && !fmt.length;
+    q.revert.hidden = (!ch && !fmt.length) || !edit;
+    if (ch || fmt.length) q.changed.textContent = `Changed · was ${s.original(sel.sheet, sel.ref).text || '(blank)'}`; // the board's wording for any change to the cell
     const err = edit ? this.errorAt(sel.sheet, sel.ref) : undefined;
     q.issue.hidden = !err;
     if (err) { q.issue.className = `chip ${err.status === 'resolved' ? 'chip-pass' : err.severity === 'error' ? 'chip-fail' : err.severity === 'warning' ? 'chip-warn' : 'chip-info'}`; q.issue.textContent = `${err.status === 'resolved' ? '✓' : SEVERITY[err.severity].glyph} Error ${errNum(err)}`; }
@@ -810,7 +817,10 @@ export class SheetpaneExcel extends ElementBase {
         return `${sep}<select class="input" data-control="${esc(c.id)}" aria-label="${esc(c.label)}" title="${esc(c.label)}" style="height:28px;font-size:12px">${c.options(snap, snap.selection).map((o) => `<option value="${esc(o.value)}"${o.value === cur ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
       }
       const active = c.isActive?.(snap, snap.selection);
-      return `${sep}<button type="button" class="${cls}" data-control="${esc(c.id)}" aria-label="${esc(c.label)}${c.shortcut ? ` (${esc(c.shortcut)})` : ''}" title="${esc(c.label)}"${active !== undefined ? ` aria-pressed="${active}"` : ''}>${c.icon ?? ''}${c.icon ? '' : esc(c.label)}</button>`;
+      const label = c.labelFor?.(snap, snap.selection) ?? c.label;
+      const named = `${label}${c.shortcut ? ` (${c.shortcut})` : ''}`;
+      const off = c.disabled?.(snap, snap.selection) ?? false;
+      return `${sep}<button type="button" class="${cls}" data-control="${esc(c.id)}" aria-label="${esc(named)}" title="${esc(named)}"${active !== undefined ? ` aria-pressed="${active}"` : ''}${off ? ' disabled' : ''}>${c.icon ?? ''}${c.icon ? '' : esc(label)}</button>`;
     }).join('');
   }
 
@@ -883,7 +893,7 @@ export class SheetpaneExcel extends ElementBase {
       else if (selR && r >= selR.top && r <= selR.bottom && c >= selR.left && c <= selR.right) cls.push('inrange');
       if (hitSet.has(ref)) cls.push('hit');
       if (curHit && curHit.sheet === sheet.name && curHit.ref === ref) cls.push('cur');
-      if (s.changeOf(sheet.name, ref)) cls.push('chg');
+      if (s.changesAt(sheet.name, ref).length) cls.push('chg');
       const mk = marks.get(`${r},${c}`);
       if (mk) cls.push(mk);
       const stale = s.mayBeStale(sheet.name, ref);
@@ -891,15 +901,22 @@ export class SheetpaneExcel extends ElementBase {
       if (snap.derived.has(`${sheet.name}!${ref}`) && !s.changeOf(sheet.name, ref)) cls.push('derived');
       const w = m ? X(m.right + 1) - X(m.left) : W(c);
       const h = m ? (m.bottom - m.top + 1) * RH : RH;
-      let style = frozenCol ? `left:${RW + X(c)}px;width:${W(c)}px;height:${RH}px;line-height:${RH}px;flex:none` : `left:${RW + X(c)}px;width:${w}px;height:${h}px;line-height:${m ? 'normal' : `${RH}px`}`;
-      if (decorating) { const d = s.decorate(sheet.name, ref); for (const [k2, v2] of Object.entries(d)) style += `;${k2}:${v2}`; }
+      let style = frozenCol ? `left:${RW + X(c)}px;width:${W(c)}px;height:${RH}px;flex:none` : `left:${RW + X(c)}px;width:${w}px;height:${h}px`;
+      if (decorating) {
+        const d = s.decorate(sheet.name, ref);
+        for (const [k2, v2] of Object.entries(d)) {
+          // cells are a column of one text line: vertical alignment is the column's justify-content
+          if (k2 === 'vertical-align') style += `;justify-content:${v2 === 'top' ? 'flex-start' : v2 === 'bottom' ? 'flex-end' : 'center'}`;
+          else style += `;${k2}:${v2}`;
+        }
+      }
       let extra = '';
       if (cellControls.length) {
         const ctx = s.cellContext(sheet.name, ref);
         for (const cc of cellControls) if (ctx && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
       }
       const title = stale ? ' title="May be stale — Excel recalculates on open"' : text.length > 24 ? ` title="${esc(text)}"` : '';
-      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" aria-colindex="${c + 2}" aria-selected="${r === selP.row && c === selP.col}" style="${style}"${title}>${esc(text)}${extra}</div>`;
+      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" aria-colindex="${c + 2}" aria-selected="${r === selP.row && c === selP.col}" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
     };
     const rowHead = (r: number) => {
       const w = rowWorst.get(r);

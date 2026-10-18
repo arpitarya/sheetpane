@@ -32,10 +32,8 @@ here. Read that record before changing anything below it.
 ### build
 
 - 🟢 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments, on by default, host can switch off. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
-- 🟢 **W-29** `agent` · Dark theme for the grid and the `--sp-*` tokens the plugin slots draw with; dark values accepted, `theme` defaults to light. Filed by Arpit (Cowork). [detail](open/W-29-dark-theme-and-slot-tokens.md)
 - 🟢 **W-16** `agent` · Build `@sheetpane/formulas`: live recalculation through IronCalc (WASM, lazy), `fx` cell bar, status sums. Filed by Arpit (Cowork). [detail](open/W-16-formulas.md)
-- 🟢 **W-17** `agent` · Build `@sheetpane/styles`: fill, weight, colour, borders, alignment rendered and edited; the format row. Filed by Arpit (Cowork). [detail](open/W-17-styles.md)
-- 🟡 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — waiting on W-17. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
+- 🟢 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — W-17 closed 2026-10-18. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
 - 🟢 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
 - 🟢 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
 - 🟢 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as recipes in the README and React demo. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)

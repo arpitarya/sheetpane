@@ -6,7 +6,7 @@ item: W-29
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,10 +16,10 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Arpit accepts or changes the dark values, and says whether dark follows the computer's setting on its own | the dark colours are decided, not guessed | ✅ 2026-10-18 |
-| 2 | Add the tokens the slots need to `tokens.ts`: cell, header, grid line, three reference colours, text-on-solid | plugin controls and marks draw from tokens, never from hex | ⏳ |
-| 3 | Ship the dark set on both elements | a host app in dark mode gets a dark grid | ⏳ |
-| 4 | Keep the file's own colours exactly as saved | a conditional fill or a styled cell is data, never re-themed | ⏳ |
+| 1 | Arpit accepts or changes the dark values, and says whether dark follows the computer's setting on its own | the dark colours are decided, not guessed | ✅ |
+| 2 | Add the tokens the slots need to `tokens.ts`: cell, header, grid line, three reference colours, text-on-solid | plugin controls and marks draw from tokens, never from hex | ✅ |
+| 3 | Ship the dark set on both elements | a host app in dark mode gets a dark grid | ✅ |
+| 4 | Keep the file's own colours exactly as saved | a conditional fill or a styled cell is data, never re-themed | ✅ |
 
 **Arpit, 2026-10-18 (design brief):** *"Compact: toolbar 36 px, format row 32 px, cells 28 px at 100 %. Proof tokens only (--sp-*). Light and dark."*
 
@@ -36,21 +36,20 @@ The proposed values are in [`sp-plugins.css`](../reference/design/boards/sp-plug
 | DoD | what | state |
 |---|---|---|
 | 1 · ruling | the decider's answer to step 1 is written here: the dark values as accepted, and `auto` (follow `prefers-color-scheme`) on or off by default | ✅ Arpit, 2026-10-18: **dark values accepted** as drawn in `sp-plugins.css` `.spx-dark`; **`auto` is off by default**: `theme` defaults to `light`, and a host opts in with `theme=\"auto\"` or `theme=\"dark\"` (the grid can't know the host page's theme) |
-| 2 · tokens | `TOKENS` gains `cell`, `head`, `grid`, `ref-1`, `ref-2`, `ref-3`, `on-solid`; the grid's own CSS uses them instead of literals (`#FFFFFF`, `#F3F3F0`, `#E6E6E1`) | ⏳ |
-| 3 · dark | a dark set for every token, applied by a `theme` attribute on both elements (`light` · `dark` · `auto`, **default `light`**); a host can still override any `--sp-*` on the element | ⏳ |
-| 4 · file colours | colours that come from the workbook (styles, condfmt, chart fills) render as saved in both themes; only sheetpane's chrome and marks change | ⏳ |
-| 5 · contrast | in both themes: text 4.5:1 on its ground, severity glyphs, pins, the changed mark and focus rings 3:1 against the cell — checked by a test over the token table | ⏳ |
-| 6 · fallback | `color-mix()` is not required at runtime: the dark set ships as computed hex | ⏳ |
-| 7 · tests | a snapshot of the no-plugin grid in each theme; the contrast test; L5's veto command stays clean (no font in any token) | ⏳ |
-| 8 · record | W-01's component record gains the theme attribute and the token list | ⏳ |
-
+| 2 · tokens | `TOKENS` gains `cell`, `head`, `grid`, `ref-1`, `ref-2`, `ref-3`, `on-solid`; the grid's own CSS uses them instead of literals (`#FFFFFF`, `#F3F3F0`, `#E6E6E1`) | ✅ `TOKENS` gains `cell`, `head`, `grid`, `note`, `ref-1`…`ref-3`, `on-solid`, `hit`, `hit-current`; the grid's and the error list's CSS name no colour literal (checked by a script over both stylesheets) |
+| 3 · dark | a dark set for every token, applied by a `theme` attribute on both elements (`light` · `dark` · `auto`, **default `light`**); a host can still override any `--sp-*` on the element | ✅ `DARK_TOKENS` for every colour; `theme` attribute and property on both elements, `light` default, `dark`, `auto` (`prefers-color-scheme`); a host `--sp-*` on the element still wins — `theme.test.ts` |
+| 4 · file colours | colours that come from the workbook (styles, condfmt, chart fills) render as saved in both themes; only sheetpane's chrome and marks change | ✅ a `decorate` fill and colour render as saved in dark (test); state tints are now `::before` overlays above the fill, never instead of it (SR-GRID 15b) |
+| 5 · contrast | in both themes: text 4.5:1 on its ground, severity glyphs, pins, the changed mark and focus rings 3:1 against the cell — checked by a test over the token table | ✅ a test over the token table, both themes: ink/ink-2/ink-3 4.5:1 on cell, surface, head and ground (ink and ink-2 on sunken — ink-3 never sits there); status inks on their soft grounds; accent, pass, fail, warn, changed, note and ref-1…3 3:1 on the cell and with `on-solid` on them; text on find hits |
+| 6 · fallback | `color-mix()` is not required at runtime: the dark set ships as computed hex | ✅ the dark set is hex; a test refuses `color-mix` in `TOKENS_CSS` |
+| 7 · tests | a snapshot of the no-plugin grid in each theme; the contrast test; L5's veto command stays clean (no font in any token) | ✅ with a deviation: computed-colour checks of the no-plugin grid in each theme instead of a pixel snapshot (pixels vary by machine); the contrast test; no font in any token (test + L5's veto command) |
+| 8 · record | W-01's component record gains the theme attribute and the token list | ✅ [SR-GRID](../../records/0105_GRID.md) decisions 15, 15a, 15b; SR-ERRORS decision 1 names `theme` |
 ## Blockers
 
-None. The ruling is in (DoD 1); W-01 and W-14 have closed (SR-GRID).
+None.
 
 ## Record affected
 
-W-01's component record (the theme attribute, the token list). Until it lands: **no SR affected**.
+**[SR-GRID](../../records/0105_GRID.md)** decisions 15a (theme, token list) and 15b (cell layout); [SR-ERRORS](../../records/0106_ERRORS.md) decision 1.
 
 ## Hazards
 

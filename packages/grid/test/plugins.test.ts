@@ -128,6 +128,8 @@ describe('the six hooks (W-14 DoD 1, 4, 5)', () => {
     el.workbook!.setCell('Holdings', 'A3', 'x', { origin: el });
     expect(kinds).toEqual(['style', 'value']);
     expect(el.workbook!.changeOf('Holdings', 'A3')!.kind).toBe('value');
+    expect(el.workbook!.changeOf('Holdings', 'A3', 'style')).toMatchObject({ kind: 'style', now: { b: true } }); // its own slot
+    expect(el.workbook!.changesAt('Holdings', 'A3')).toHaveLength(2);
   });
 });
 
@@ -149,7 +151,7 @@ describe('the six slots (W-14 DoD 3, 8)', () => {
     expect($(el, '.selbar [data-control=ui-sel]')).not.toBeNull();
     $(el, '.grid').focus();
     await userEvent.keyboard('{Control>}b{/Control}');
-    expect(s.changeOf('Holdings', 'B3')!.kind).toBe('style');
+    expect(s.changeOf('Holdings', 'B3', 'style')!.kind).toBe('style');
     ($(el, '.help') as HTMLButtonElement).click();
     await frame();
     expect($(el, '.card.help').textContent).toContain('Mod+B');
