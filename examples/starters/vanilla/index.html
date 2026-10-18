@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>vanilla</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <strong>vanilla</strong>
+      <span id="open-errors" class="count">no open errors</span>
+      <button id="popup" type="button">Open in a pop-up</button>
+    </header>
+    <!-- One pane, three places: the sheet and its errors side by side, and the same sheet in a pop-up. -->
+    <main class="review">
+      <sheetpane-excel pane="review" mode="edit" author="You" src="/showcase.xlsx" rules-src="/showcase.rules.json"></sheetpane-excel>
+      <sheetpane-errors pane="review" author="You"></sheetpane-errors>
+    </main>
+    <sheetpane-excel id="popup-sheet" pane="review" mode="edit" author="You" display="popup"></sheetpane-excel>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

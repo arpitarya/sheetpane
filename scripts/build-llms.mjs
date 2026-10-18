@@ -16,7 +16,7 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 const url = (p) => `${BASE}/${p}`;
 const titleOf = (p) => (/^#\s+(.+)$/m.exec(read(p))?.[1] ?? p).replace(/[`*]/g, '');
 const descOf = (p) => (/^description:\s*"?([^"\n]+)"?$/m.exec(read(p))?.[1] ?? '').trim();
-const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'fixtures', 'testing', 'skills', 'create-sheetpane'];
+const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'fixtures', 'testing', 'skills', 'mcp', 'create-sheetpane'];
 const PLUGINS = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments'];
 const records = readdirSync(join(root, 'records')).filter((f) => /^\d{4}_.*\.md$/.test(f)).sort();
 const LAWS = records.filter((f) => /^000\d_|^0010_|^0011_/.test(f));
@@ -39,6 +39,11 @@ const index = [
   line(pkgReadme('grid'), '@sheetpane/grid', 'the elements: attributes, properties, events, column rules, rules file, React hooks, styling'),
   line('docs/ARCHITECTURE.md', 'Architecture', 'packages, elements, the one workbook, the flows'),
   line('CHANGELOG.md', 'Changelog', 'what changed, breaking changes first'),
+  '',
+  '## Try it',
+  `- [Live playground](https://arpitarya.github.io/sheetpane/): the plugin gallery in plain HTML; \`/react/\` in React (deployed from each release)`,
+  line('examples/starters/README.md', 'Starters', 'each create-sheetpane template, with an Open in StackBlitz link'),
+  line(pkgReadme('create-sheetpane'), 'create-sheetpane', '`npm create sheetpane@latest`: a working app in one command'),
   '',
   '## Elements',
   line(`records/${COMPONENTS.find((f) => f.includes('GRID'))}`, 'SR-GRID', 'the sheet, the store, the plugin host, events, rules, test hooks'),
@@ -64,6 +69,7 @@ const index = [
   '',
   '## Skills',
   line(pkgReadme('skills'), '@sheetpane/skills', 'npx sheetpane-skills install — skills for Claude Code, Kiro and Codex'),
+  line(pkgReadme('mcp'), '@sheetpane/mcp', 'npx -y @sheetpane/mcp — an MCP server: describe the API, inspect a workbook, draft and check a rules file, explain an SP code, find a skill'),
   ...skills.map((s) => line(`packages/skills/skills/${s}/SKILL.md`, s, (/^description:\s*(.+)$/m.exec(read(`packages/skills/skills/${s}/SKILL.md`))?.[1] ?? '').trim())),
   '',
   '## Records',

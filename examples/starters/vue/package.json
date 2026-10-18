@@ -1,0 +1,25 @@
+{
+  "name": "vue",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/sample.mjs && vite --port 5173 --strictPort --host 127.0.0.1",
+    "build": "node scripts/sample.mjs && vue-tsc --noEmit && vite build",
+    "preview": "vite preview --port 5173 --strictPort --host 127.0.0.1",
+    "test": "npm run build && playwright test"
+  },
+  "dependencies": {
+    "@sheetpane/grid": "0.0.0",
+    "vue": "3.5.44"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@sheetpane/fixtures": "0.0.0",
+    "@sheetpane/testing": "0.0.0",
+    "@vitejs/plugin-vue": "6.0.10",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vue-tsc": "3.3.13"
+  }
+}

@@ -74,6 +74,10 @@ site: build
 llms:
     node scripts/build-llms.mjs
 
+# the StackBlitz starters: each create-sheetpane template scaffolded into examples/starters (W-44)
+starters:
+    node scripts/build-starters.mjs
+
 # rewrite @sheetpane/fixtures' files and manifest (W-42; hand-built, not Excel-saved)
 fixtures: build
     node packages/fixtures/scripts/make.mjs

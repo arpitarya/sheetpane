@@ -30,6 +30,13 @@ outside the project except the two engines two plugins use.
 
 ## Try it
 
+**In the browser:** the [live playground](https://arpitarya.github.io/sheetpane/) — the plugin gallery in plain HTML,
+and in React at [`/react/`](https://arpitarya.github.io/sheetpane/react/) — is deployed from each release; and every
+starter template opens in StackBlitz from [`examples/starters`](examples/starters/README.md)
+(both run once the release is published).
+
+**On your machine:**
+
 ```sh
 pnpm install
 just demo-html     # the plain index.html demo — http://127.0.0.1:5173

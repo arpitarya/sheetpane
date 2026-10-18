@@ -10,6 +10,11 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 - [Architecture](https://github.com/arpitarya/sheetpane/blob/main/docs/ARCHITECTURE.md): packages, elements, the one workbook, the flows
 - [Changelog](https://github.com/arpitarya/sheetpane/blob/main/CHANGELOG.md): what changed, breaking changes first
 
+## Try it
+- [Live playground](https://arpitarya.github.io/sheetpane/): the plugin gallery in plain HTML; `/react/` in React (deployed from each release)
+- [Starters](https://github.com/arpitarya/sheetpane/blob/main/examples/starters/README.md): each create-sheetpane template, with an Open in StackBlitz link
+- [create-sheetpane](https://github.com/arpitarya/sheetpane/blob/main/packages/create-sheetpane/README.md): `npm create sheetpane@latest`: a working app in one command
+
 ## Elements
 - [SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md): the sheet, the store, the plugin host, events, rules, test hooks
 - [SR-ERRORS](https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md): the error list and the New error form
@@ -41,6 +46,7 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 
 ## Skills
 - [@sheetpane/skills](https://github.com/arpitarya/sheetpane/blob/main/packages/skills/README.md): npx sheetpane-skills install — skills for Claude Code, Kiro and Codex
+- [@sheetpane/mcp](https://github.com/arpitarya/sheetpane/blob/main/packages/mcp/README.md): npx -y @sheetpane/mcp — an MCP server: describe the API, inspect a workbook, draft and check a rules file, explain an SP code, find a skill
 - [sheetpane](https://github.com/arpitarya/sheetpane/blob/main/packages/skills/skills/sheetpane/SKILL.md): Use first for any sheetpane task in a host app - a decision table pointing to the right sheetpane skill (embedding, loading, errors, events, rules, plugins, theming, testing, frameworks, troubleshooting). Not needed once you know which skill applies.
 - [sheetpane-a11y](https://github.com/arpitarya/sheetpane/blob/main/packages/skills/skills/sheetpane-a11y/SKILL.md): Use when making a host's sheetpane page accessible - the grid's keyboard contract, labelling the host tab or dialog, focus when the pop-up closes, colour never alone. Not for the grid's own internals.
 - [sheetpane-backend](https://github.com/arpitarya/sheetpane/blob/main/packages/skills/skills/sheetpane-backend/SKILL.md): Use when a host saves the reviewed file and the review on a server and restores them later - the exported blob, getErrors()/setErrors() JSON, restoring after sheetpane-load, a file that changed since. Not for client-only use.

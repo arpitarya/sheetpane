@@ -38,6 +38,10 @@ together).
 The folder must be new or empty; nothing outside it is written. No
 dependencies, no `postinstall`.
 
+Every template is also in the repository, scaffolded by this CLI, with an
+**Open in StackBlitz** link: [`examples/starters`](https://github.com/arpitarya/sheetpane/blob/main/examples/starters/README.md)
+(they install from npm, so they run once the version is published).
+
 The spec is the record SR-CREATE; the repo checks every template on each push
 with `just create-check` (scaffold, install from the packed tarballs, build,
 test).

@@ -22,8 +22,8 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-
-*Empty since 2026-10-18 — W-35 DoD 8 became W-48 (`arpit` lane) on the decider's ruling. The iPhone download check is backlog B-031; the real-app files are W-30 (`arpit` lane).*
+| 🔴 **W-44** — enable GitHub Pages (Settings → Pages → Source: *GitHub Actions*) and publish the first release (`just release <version>`): the playground deploys from the tag and the StackBlitz starters can install; an agent then checks both load and closes W-44 | 2026-10-18 | 0 d |
+| ↳ **blocks:** W-44 (closing only — everything is built) | | |
 
 ---
 
@@ -31,7 +31,7 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
+- 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — waiting on the decider: Pages enabled and the first release published, then an agent checks both load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
 - 🟢 **W-45** `agent` · Invocable commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), hooks that check a rules file on save (Claude Code, Kiro), and the agent set as a Claude Code plugin + marketplace.. Filed by Arpit (Cowork). [detail](open/W-45-agent-commands-hooks-plugin.md)
 

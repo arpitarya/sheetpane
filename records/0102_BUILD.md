@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8]
 timestamp: 2026-10-18T11:40:00Z
 content_sha: ""
@@ -142,6 +142,17 @@ pnpm and a justfile; the testing verdict chose the runner.
    every file its import map names copied in, the React gallery at `/react/`
    with a relative base, the version in both headers, no third-party script)
    — checks it with `demo-check`, and deploys it to GitHub Pages.
+8b. **Starters and links (W-44):** `scripts/build-starters.mjs` (`just
+    starters`) scaffolds every `create-sheetpane` template with the CLI itself
+    into `examples/starters/<template>` (not workspace members) with an index
+    of **Open in StackBlitz** links pinned like `llms.txt` (`v<version>`, `main`
+    before the first release); `release.mjs` reruns it; `test/starters.test.ts`
+    fails when they are stale and checks each has `dev` and `build`. StackBlitz
+    installs from npm, so a starter runs once its version is published — the
+    test checks the folders, not StackBlitz. The root README, the grid and
+    `create-sheetpane` READMEs, `llms.txt` and the setup skill link the live
+    playground (`https://arpitarya.github.io/sheetpane/`, decision 8) and the
+    starters.
 9. **Release:** `just release <version>` — clean tree required; every package
    set to the version (`scripts/release.mjs`); `just check pack-check`; a
    commit and tag `v<version>`; `pnpm -r publish --access public`; push with

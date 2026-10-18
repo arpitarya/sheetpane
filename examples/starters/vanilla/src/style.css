@@ -1,0 +1,8 @@
+/* No font is set here: the page and the sheet use the browser's default until you set one. */
+body { margin: 0; background: #f6f6f4; color: #16171a; }
+.bar { display: flex; align-items: center; gap: 16px; padding: 12px 24px; background: #fff; border-bottom: 1px solid #e5e7eb; }
+.bar .count { color: #63666e; font-size: 0.875rem; }
+.bar button { margin-left: auto; font: inherit; padding: 6px 12px; cursor: pointer; }
+.review { display: flex; gap: 16px; padding: 16px 24px; height: calc(100vh - 90px); box-sizing: border-box; }
+.review sheetpane-excel { flex: 1; min-width: 0; height: 100%; }
+.review sheetpane-errors { flex: none; width: 360px; height: 100%; }

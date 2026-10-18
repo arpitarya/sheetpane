@@ -33,13 +33,13 @@ One URL shows the latest release's gallery; one click per template opens an edit
 | DoD | what | state |
 |---|---|---|
 | 1 · deploy | a GitHub Actions job on release tags builds both demos and publishes them to GitHub Pages (`/` the HTML gallery, `/react/` the React one), version in the header | ✅ `.github/workflows/pages.yml`: on a `v*` tag (or by hand) `just site` builds `site/` — the HTML gallery at `/` with every file its import map names copied in, the React gallery at `/react/` (relative base) — runs `demo-check` on the site itself (49 ✓ locally), then `actions/deploy-pages`; the version in both headers. **Enabling Pages (Settings → Pages → GitHub Actions) is the decider's**, once |
-| 2 · StackBlitz | a `stackblitz.com/github/arpitarya/sheetpane/tree/<tag>/…` link per template, checked to load in CI | ⏳ |
-| 3 · links | package READMEs, `llms.txt` ([W-38](W-38-llms-txt.md)), the setup skill | ⏳ |
-| 4 · record | SR-BUILD (the deploy job) | ⏳ |
+| 2 · StackBlitz | a `stackblitz.com/github/arpitarya/sheetpane/tree/<tag>/…` link per template, checked to load in CI | ✅ built: `examples/starters/<t>` scaffolded by the CLI (`just starters`, rerun by `release.mjs`), an index with a `stackblitz.com/github/arpitarya/sheetpane/tree/<ref>/examples/starters/<t>` link each; `test/starters.test.ts` checks freshness and each folder. **Not** loaded in CI: StackBlitz installs from npm, so they load once a version is published — checked then |
+| 3 · links | package READMEs, `llms.txt` ([W-38](W-38-llms-txt.md)), the setup skill | ✅ root README ("Try it"), grid README, `create-sheetpane` README, `llms.txt` ("Try it"), the setup skill |
+| 4 · record | SR-BUILD (the deploy job) | ✅ SR-BUILD decisions 8 (the deploy job) and 8b (starters and links) |
 
 ## Blockers
 
-None for DoD 1 and 3; DoD 2 after [W-43](W-43-create-sheetpane.md).
+**The decider:** enable GitHub Pages (Settings → Pages → Source: GitHub Actions) and publish the first release. Then an agent checks that the playground loads at https://arpitarya.github.io/sheetpane/ and that each starter loads in StackBlitz, and closes this item. Everything else is built (W-43 landed).
 
 ## Record affected
 

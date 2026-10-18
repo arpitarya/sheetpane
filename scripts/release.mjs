@@ -14,3 +14,5 @@ for (const dir of readdirSync(join(root, 'packages'))) {
 }
 // llms.txt pins its links to the release tag: rewrite it for the new version (W-38)
 execFileSync('node', [join(root, 'scripts/build-llms.mjs')], { stdio: 'inherit' });
+// the StackBlitz starters name the new version and their links the new tag (W-44)
+execFileSync('node', [join(root, 'scripts/build-starters.mjs')], { stdio: 'inherit' });
