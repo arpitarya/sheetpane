@@ -39,7 +39,7 @@ was W-13 DoD 9; W-13 closed without it.
 |---|---|---|
 | 1 · files | one small workbook saved from each app, with the same content: a merged title row; columns Name, Email, Age, Status; a date; a formula; a second sheet; the header row frozen (View → Freeze). Arpit's own data, no third-party files. Google Sheets: File → Download → .xlsx; Numbers: File → Export To → Excel | ⏳ Arpit |
 | 2 · record | each file in `packages/import/test/fixtures/` with a row in `FIXTURES.md` (made by, how, licence) | ⏳ |
-| 3 · tests | `read()` on each file: values, display text (dates, percent), merges, the formula's cached value, both sheets, **a frozen header row** (W-24 DoD 6), **a picture** whose frame sits where Excel shows it (W-20 DoD 6); `<sheetpane-excel>` opens each (W-01 DoD 13); failures fixed in the owning package with its record in the same change | ⏳ |
+| 3 · tests | `read()` on each file: values, display text (dates, percent), merges, the formula's cached value, both sheets, **a frozen header row** (W-24 DoD 6), **a picture** whose frame sits where Excel shows it (W-20 DoD 6); **number formats** shown as Excel shows them (W-15 DoD 7); **validation rules** of every type (W-18 DoD 7); `<sheetpane-excel>` opens each (W-01 DoD 13); failures fixed in the owning package with its record in the same change | ⏳ |
 | 4 · trigger | misread cells counted across the fixtures and written into SR-IMPORT; over 1 in 100 reopens the reading verdict | ⏳ |
 | 5 · missing app | an app Arpit doesn't have is a backlog row, not a reason to keep this item open | ⏳ |
 

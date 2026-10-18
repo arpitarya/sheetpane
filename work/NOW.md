@@ -3,4 +3,4 @@ type: Pointer
 description: "One line: the current state and the immediate next step. Overwritten every session."
 ---
 
-W-01, W-02, W-14, W-23, W-24 closed (Claude Code, 2026-10-18); real-app fixtures are W-30. Next: W-09 demos, W-26 events, then the plugins W-15…W-22.
+Claude Code, 2026-10-18: W-09, W-26, W-20 closed; W-18 built by a subagent — fixing the core gaps it found; W-15, W-16, W-17 being built by subagents. Next: close W-18, then W-15–W-17, W-19, W-21, W-22, W-27, W-28, W-29.

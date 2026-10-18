@@ -232,6 +232,7 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
       type: str(e, 'type') ?? 'none',
       allowBlank: bool(e, 'allowBlank'),
       showErrorMessage: bool(e, 'showErrorMessage'),
+      showDropDown: bool(e, 'showDropDown'),
     };
     for (const k of ['operator', 'errorStyle', 'errorTitle', 'error', 'promptTitle', 'prompt'] as const) { const v = str(e, k); if (v !== undefined) dv[k] = v; }
     const f1 = formula('formula1'), f2 = formula('formula2');

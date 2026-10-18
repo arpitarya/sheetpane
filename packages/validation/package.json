@@ -9,7 +9,12 @@
     "directory": "packages/validation"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/ui.js",
+    "./src/index.ts",
+    "./src/ui.ts"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -37,6 +42,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@sheetpane/export": "workspace:*",
     "@sheetpane/grid": "workspace:*"
   },
   "publishConfig": {

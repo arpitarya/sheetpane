@@ -5,7 +5,7 @@ import { cellRef, colName, parseRange, parseRef } from '@sheetpane/export';
 import { pluginsFromIds } from '../plugins/host.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { DEFAULT_ERROR_TYPES, SEVERITY, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 
@@ -250,16 +250,16 @@ export class SheetpaneErrors extends ElementBase {
     const list = errors
       .filter((e) => (this.filter === 'all' || e.severity === this.filter) && (this.authorFilter === 'all' || this.authorKind(e) === this.authorFilter))
       .sort((a, b) => (a.status === b.status ? errNum(a) - errNum(b) : a.status === 'open' ? -1 : 1));
-    const types = new Map(this._errorTypes.map((t) => [t.id, t.name]));
+    const types = new Map([...Object.entries(BUILTIN_TYPE_NAMES), ...this._errorTypes.map((t) => [t.id, t.name] as [string, string])]);
     const sel = snap.selection;
     const html = list.length ? list.map((e) => {
       const r = parseRange(e.range);
       const on = this.expanded === e.id || (!!r && e.sheet === sel.sheet && parseRef(sel.ref) && r.top === parseRef(sel.ref)!.row && r.left <= parseRef(sel.ref)!.col && r.right >= parseRef(sel.ref)!.col);
       const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : ''].filter(Boolean);
-      const ro = this.readOnly || e.author === 'file';
+      const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
-      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author, time].filter(Boolean).join(' · '))}</span><div class="acts"><button type="button" class="btn" data-act="reveal">Show in sheet</button>${ro ? '' : `<button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
+      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? 'Column rule' : e.author, time].filter(Boolean).join(' · '))}</span><div class="acts"><button type="button" class="btn" data-act="reveal">Show in sheet</button>${ro ? '' : `<button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
       return `<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${esc(e.sheet)} ${esc(e.range)}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span><span class="ba"><span class="found">${esc(e.found)}</span> → <span class="want">${esc(e.expected || '—')}</span></span><span class="m">${esc(e.range)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');

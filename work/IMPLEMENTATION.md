@@ -11,6 +11,8 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-15 | `@sheetpane/numfmt`: every Excel number format through numfmt 4.0.1, locales, 1904, fallback count, format dropdown and ± decimals (one undo step), export of new formats; SR-NUMFMT (0109); core subset: month-only codes and serial 0 fixed | closed | 42 tests (Sonnet subagent, verified by the coordinator) |
+| 2026-10-18 | W-18 | `@sheetpane/validation`: the workbook's rules (all types, lists, x14, custom via formulas) as workbook-authored warnings; list arrow; skipped-rule count; SR-VALIDATION (0108); core: read-only machine errors, ⚠ pins, cross-sheet re-validation, Alt+↓ | closed | 29 tests (built by an Opus subagent, verified by the coordinator) + 3 core tests |
 | 2026-10-18 | W-20 | `@sheetpane/images`: overlay of anchored pictures, lazy media, EMF frame, click-to-select; SR-IMAGES (0107) | closed | 29 tests (Chromium; WebKit locally); built by a Sonnet subagent, verified by the coordinator |
 | 2026-10-18 | W-26 | editing and position events (select, editstart, input, beforechange, change, editcancel, sheet) with the column title; draft-and-commit cell bar; paste | closed | `events.test.ts` (6) + grid suite 74, Chromium |
 | 2026-10-18 | W-09 | demo apps: `examples/html` (index.html + import map), `examples/react` (Vite + React 19); `scripts/demo-check.mjs`, `demo-packed.mjs`, `serve.mjs`; root README; CI runs the demo check | landed — open on DoD 10 (iPhone, the decider's) | 20/20 checks in Chromium from the workspace and from `pnpm pack` tarballs; found and fixed two grid bugs (bundlers dropped the registration; `src = undefined`) |

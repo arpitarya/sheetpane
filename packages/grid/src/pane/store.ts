@@ -140,8 +140,9 @@ export class WorkbookStore {
   /** The current value: a user change, else a derived value, else the upload. */
   value(sheet: string, ref: string): Cell {
     const k = key(sheet, ref), c = this.snap.changes.get(k);
-    if (c && (c.kind === 'value' || c.kind === 'formula')) return c.now as Cell;
     const d = this.snap.derived.get(k);
+    if (c && c.kind === 'value') return c.now as Cell;
+    if (c && c.kind === 'formula') return d ? d.value : (c.now as Cell); // a typed formula reads as its result once derived
     return d ? d.value : this.original(sheet, ref).value;
   }
 
@@ -152,7 +153,8 @@ export class WorkbookStore {
     if (hit !== undefined) return hit;
     const c = this.snap.changes.get(k);
     let t: string;
-    if (c && (c.kind === 'value' || c.kind === 'formula')) t = this.format(sheet, ref, c.now as Cell);
+    if (c && c.kind === 'value') t = this.format(sheet, ref, c.now as Cell);
+    else if (c && c.kind === 'formula') { const d = this.snap.derived.get(k); t = d ? d.text : this.format(sheet, ref, c.now as Cell); }
     else {
       const d = this.snap.derived.get(k);
       if (d) t = d.text;
@@ -225,7 +227,7 @@ export class WorkbookStore {
     this.set({ ...o.extra, changes: next.changes, errors }, events);
     const sheets = [...new Set(keys.map((k) => splitKey(k).sheet))];
     if (sheets.length) {
-      this.runValidate(sheets, origin);
+      this.runValidate(this.allSheets(), origin);
       const cells = keys.map(splitKey).filter((c) => !c.ref.startsWith('#')).map((c) => ({ ...c, value: this.value(c.sheet, c.ref) }));
       if (cells.length) void this.runDerive({ kind: 'change', cells });
     }
@@ -291,6 +293,20 @@ export class WorkbookStore {
     if (now === undefined || same(now, was)) changes.delete(k);
     else changes.set(k, { kind, was: prev ? prev.was : was, now });
     this.commit({ changes, errors: this.snap.errors }, [k], origin, [{ type: 'change', origin, sheet, ref, kind, was: prev ? prev.now : was, now: now ?? was }]);
+  }
+
+  /** Many plugin-kind changes as one undo step (a format applied to a range). `now === undefined` removes. */
+  setChanges(list: { sheet: string; ref: string; kind: ChangeKind; now: unknown; was: unknown }[], origin?: Origin): void {
+    const changes = new Map(this.snap.changes);
+    const keys: string[] = [], events: StoreEvent[] = [];
+    for (const c of list) {
+      const k = key(c.sheet, c.ref), prev = changes.get(k);
+      if (c.now === undefined || same(c.now, c.was)) { if (!prev) continue; changes.delete(k); }
+      else changes.set(k, { kind: c.kind, was: prev ? prev.was : c.was, now: c.now });
+      keys.push(k);
+      events.push({ type: 'change', origin, sheet: c.sheet, ref: c.ref, kind: c.kind, was: prev ? prev.now : c.was, now: c.now ?? c.was });
+    }
+    if (keys.length) this.commit({ changes, errors: this.snap.errors }, keys, origin, events);
   }
 
   /** Reverts one cell (or any change-map key) to the upload; undoable. */
@@ -445,7 +461,7 @@ export class WorkbookStore {
     this.set({ changes: state.changes, errors: this.withMatches(state.errors, state.changes) }, events);
     const sheets = [...new Set(h.keys.map((k) => splitKey(k).sheet))];
     if (sheets.length) {
-      this.runValidate(sheets, origin);
+      this.runValidate(this.allSheets(), origin);
       const cells = h.keys.map(splitKey).filter((c) => !c.ref.startsWith('#')).map((c) => ({ ...c, value: this.value(c.sheet, c.ref) }));
       if (cells.length) void this.runDerive({ kind: 'change', cells });
     }
@@ -466,7 +482,11 @@ export class WorkbookStore {
       this.textCache.delete(k);
     }
     this.set({ derived, errors: this.withMatches(this.snap.errors, this.snap.changes) });
+    this.runValidate(this.allSheets(), undefined); // rules may read the recalculated cells
   }
+
+  /** A rule may read another sheet (a list range, an operand), so validation re-runs on every sheet. */
+  private allSheets(): string[] { return this.snap.book?.sheets.map((x) => x.name) ?? []; }
 
   private runValidate(sheets: string[], origin: Origin): void {
     const vs = this.plugins.filter((p) => p.provides.includes('validate'));
@@ -488,8 +508,9 @@ export class WorkbookStore {
             this.pluginErrors.set(k, e.id);
             errors.push(e);
             changed = true;
-          } else if (errors[at]!.author === 'workbook' && errors[at]!.status === 'resolved') {
-            errors[at] = { ...errors[at]!, status: 'open', message: d.message, expected: d.expected };
+          } else if (errors[at]!.author !== 'file' && (errors[at]!.status === 'resolved' || errors[at]!.found !== d.found || errors[at]!.message !== d.message)) {
+            // a machine-authored error follows the cell: reopened, and its found / message refreshed
+            errors[at] = { ...errors[at]!, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found };
             changed = true;
           }
         }
@@ -497,7 +518,7 @@ export class WorkbookStore {
         for (const [k, id] of this.pluginErrors) {
           if (!k.startsWith(`${p.id}|${sheet}|`) || seen.has(k)) continue;
           const at = errors.findIndex((e) => e.id === id);
-          if (at >= 0 && errors[at]!.author === 'workbook' && errors[at]!.status === 'open') { errors[at] = { ...errors[at]!, status: 'resolved' }; changed = true; }
+          if (at >= 0 && (errors[at]!.author === 'workbook' || errors[at]!.author === 'host') && errors[at]!.status === 'open') { errors[at] = { ...errors[at]!, status: 'resolved' }; changed = true; }
         }
       }
     }

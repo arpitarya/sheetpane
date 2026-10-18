@@ -27,6 +27,11 @@ describe('the subset (reading verdict decision 2)', () => {
     expect(formatCode(5, '#.##')).toBe('5.');
     expect(formatCode(1234567, '#,##0,')).toBe('1,235');
   });
+  it('month-only codes and serial 0 (found by the numfmt plugin\'s table)', () => {
+    expect(formatCode(45000, 'mmmm')).toBe('March');
+    expect(formatCode(45000, 'mmm yyyy')).toBe('Mar 2023');
+    expect(formatCode(0, 'm/d/yyyy')).toBe('1/0/1900');
+  });
   it('the 1900 leap-year bug and the 1904 system', () => {
     expect(formatCode(1, 'm/d/yyyy')).toBe('1/1/1900');
     expect(formatCode(60, 'm/d/yyyy')).toBe('2/29/1900');

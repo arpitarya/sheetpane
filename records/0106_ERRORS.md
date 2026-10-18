@@ -89,7 +89,9 @@ the store and the contract are the contract verdict's and
 6. **`errorTypes`** defaults to the seven types and Other from the board
    `Edit-Examples` (`DEFAULT_ERROR_TYPES`, SR-GRID).
 7. **`readonly`** hides the form, Resolve, Delete, Undo and Redo — a sign-off
-   screen. Errors authored `file` are always read-only.
+   screen. Errors authored `workbook`, `file` or `host` are always read-only
+   (SR-GRID decision 19b) and named from `BUILTIN_TYPE_NAMES` when the
+   host's `errorTypes` does not name their type.
 8. **A saved review** restored with a different plugin set shows the
    "formatted differently" notice (plugins verdict decision 3).
 9. **Undo / Redo** buttons and Ctrl/⌘+Z, Ctrl+Y, ⌘+Shift+Z act on the pane's

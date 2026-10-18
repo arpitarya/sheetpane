@@ -59,7 +59,7 @@ function sections(code: string): string[] {
   return out;
 }
 
-const isDateSection = (s: string) => /\[(h+|m+|s+)\]|[ydhs]|AM\/PM/i.test(s.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/\[[^\]]*\]/g, (m) => (/^\[(h+|m+|s+)\]$/i.test(m) ? m : '')));
+const isDateSection = (s: string) => /\[(h+|m+|s+)\]|[ydhs]|AM\/PM|^[^0#?]*m[^0#?]*$/i.test(s.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/\[[^\]]*\]/g, (m) => (/^\[(h+|m+|s+)\]$/i.test(m) ? m : '')));
 
 /** A serial date as calendar parts (UTC), honouring the 1900 leap-year bug and the 1904 system. */
 export function serialToParts(serial: number, date1904: boolean) {
@@ -68,6 +68,7 @@ export function serialToParts(serial: number, date1904: boolean) {
   if (secs >= 86400) { days += 1; secs -= 86400; }
   let y: number, mo: number, d: number, wd: number;
   if (!date1904 && days === 60) { y = 1900; mo = 1; d = 29; wd = 3; }
+  else if (!date1904 && days === 0) { y = 1900; mo = 0; d = 0; wd = 6; } // Excel shows serial 0 as 1/0/1900
   else {
     const base = date1904 ? Date.UTC(1904, 0, 1) : days < 60 ? Date.UTC(1899, 11, 31) : Date.UTC(1899, 11, 30);
     const t = new Date(base + days * 86400000);

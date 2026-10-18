@@ -103,6 +103,12 @@ export const DEFAULT_ERROR_TYPES: readonly ErrorType[] = [
   { id: 'other', name: 'Other', severity: 'warning', why: 'Say in plain words what you saw — “10× the tier rate” beats “wrong”.', expected: '' },
 ];
 
+/** Names for the types plugins and the core write, shown when the host's `errorTypes` does not name them. */
+export const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = { validation: 'Workbook rule', comment: 'Comment', 'column-rule': 'Column rule' };
+
+/** Errors the workbook, the file or a host rule wrote: shown, never resolved or deleted by hand. */
+export const machineAuthored = (author: string) => author === 'workbook' || author === 'file' || author === 'host';
+
 export const SEVERITY: Record<Severity, { name: string; glyph: string; help: string }> = {
   error: { name: 'Error', glyph: '✕', help: 'Must be fixed before this file is accepted.' },
   warning: { name: 'Warning', glyph: '!', help: 'Needs a second look; may be fine.' },

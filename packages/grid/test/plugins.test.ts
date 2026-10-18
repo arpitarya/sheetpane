@@ -308,3 +308,65 @@ describe('core support the plugins build on', () => {
     expect(plain.changeOf('Holdings', 'H3')!.kind).toBe('value');
   });
 });
+
+describe('core fixes the plugin builds asked for', () => {
+  const rule: Plugin = { id: 'rule', provides: ['validate'], validate: (sheet, ctx) => {
+    if (sheet !== 'Holdings') return [];
+    const limit = Number(ctx.store.value('Fee tiers', 'C3')); // reads another sheet
+    const v = ctx.store.value('Holdings', 'H3');
+    return typeof v === 'number' && v > limit ? [{ sheet, range: 'H3', type: 'validation', severity: 'warning', found: ctx.store.text(sheet, 'H3'), expected: `≤ ${limit}`, message: 'over the cap', author: 'workbook' }] : [];
+  } };
+  it('workbook errors: read-only in both elements, a square ⚠ pin at the right edge, a built-in type name', async () => {
+    const excel = document.createElement('sheetpane-excel') as SheetpaneExcel;
+    const errors = document.createElement('sheetpane-errors') as SheetpaneErrors;
+    const s = createWorkbook({ plugins: [rule] });
+    excel.workbook = errors.workbook = s;
+    excel.setAttribute('mode', 'edit');
+    document.body.append(excel, errors);
+    await s.load(await sampleXlsx(), 's.xlsx');
+    s.setMode('edit');
+    s.setCell('Fee tiers', 'C3', '100000'); // H3 = 322080 is now over the cap on the other sheet
+    s.select({ sheet: 'Holdings', ref: 'H3' });
+    await frame();
+    expect(s.getErrors()).toMatchObject([{ range: 'H3', status: 'open', found: '322080' }]);
+    const pin = $(excel, '.pin.square');
+    expect(pin.textContent).toBe('⚠');
+    expect(pin.getBoundingClientRect().right).toBeCloseTo(cellEl(excel, 2, 7)!.getBoundingClientRect().right, -1);
+    expect($(excel, '.callout [data-act=resolve]')).toBeNull();
+    expect($(excel, '.callout').textContent).toContain('Workbook rule');
+    ($(errors, '.issue') as HTMLButtonElement).click();
+    await frame();
+    expect($(errors, '[data-act=resolve]')).toBeNull();
+    expect($(errors, '.ty').textContent).toBe('Workbook rule');
+    s.setCell('Holdings', 'H3', '400000');
+    expect(s.getErrors()[0]!.found).toBe('400000'); // found follows the cell for machine-authored errors
+    s.setCell('Fee tiers', 'C3', '500000');
+    expect(s.getErrors()[0]!.status).toBe('resolved'); // an edit on the other sheet re-validates
+  });
+  it('a typed formula reads as its derived result', async () => {
+    const calc: Plugin = { id: 'calc', provides: ['derive'], derive: (input) => input.kind === 'change' ? input.cells.filter((c) => c.ref === 'H3').map((c) => ({ sheet: c.sheet, ref: c.ref, value: 42, text: '42' })) : [] };
+    const s = createWorkbook({ plugins: [calc] });
+    await s.load(await sampleXlsx(), 's.xlsx');
+    s.setCell('Holdings', 'H3', '=F3*G3');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(s.value('Holdings', 'H3')).toBe(42);
+    expect(s.text('Holdings', 'H3')).toBe('42');
+    expect(s.changeOf('Holdings', 'H3')!.now).toBe('=F3*G3');
+  });
+  it('Alt+↓ opens a cell menu and arrows move through it', async () => {
+    const p: Plugin = { id: 'list2', provides: [], controls: [{ id: 'list2-arrow', slot: 'cell', group: 'v', label: 'Choose', mode: 'edit', appliesTo: (c) => c.ref === 'B3', cellOptions: () => ['one', 'two'], choose: (s, sel, v) => s.setCell(sel.sheet, sel.ref, v) }] };
+    const el = await mountExcel({ mode: 'edit' });
+    const s = createWorkbook({ plugins: [p] });
+    el.workbook = s;
+    await s.load(await sampleXlsx(), 's.xlsx');
+    s.setMode('edit');
+    el.select('Holdings', 'B3');
+    await frame();
+    $(el, '.grid').focus();
+    await userEvent.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    await frame();
+    expect(shadow(el).activeElement?.textContent).toBe('one');
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    expect(s.text('Holdings', 'B3')).toBe('two');
+  });
+});

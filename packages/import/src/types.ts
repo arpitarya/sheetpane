@@ -33,6 +33,8 @@ export interface DataValidation {
   operator?: string;
   allowBlank: boolean;
   showErrorMessage: boolean;
+  /** OOXML's inverted flag: `true` means Excel HIDES the in-cell list arrow. */
+  showDropDown: boolean;
   errorStyle?: string;
   errorTitle?: string;
   error?: string;

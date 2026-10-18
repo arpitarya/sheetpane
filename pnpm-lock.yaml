@@ -168,6 +168,9 @@ importers:
 
   packages/validation:
     devDependencies:
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid

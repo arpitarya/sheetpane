@@ -93,7 +93,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    commands (`test/commands.ts`), `armDownload` and `takeDownload`, let a test
    catch a real download through Playwright. Dev-only readers
    for read-back tests (ExcelJS, PapaParse, fflate) are dev dependencies of
-   the package that uses them. Coverage (v8) is reported on every run; 90 % lines on
+   the package that uses them; so is any `@sheetpane/*` package a test
+   imports (`workspace:*`). Coverage (v8) is reported on every run; 90 % lines on
    `packages/export/src/**` fails the run.
 7. **Package checks** (`test/packages.test.ts`): each package is public,
    `@sheetpane/<dir>`, MIT, ESM with types; one version across all (lockstep);

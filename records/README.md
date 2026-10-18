@@ -129,6 +129,8 @@ Start from `TEMPLATE.md`.
 | [0105](0105_GRID.md) | **SR-GRID** | `@sheetpane/grid` — the pane's workbook store, `<sheetpane-excel>`, the plugin host, undo, freeze panes | accepted | yes |
 | [0106](0106_ERRORS.md) | **SR-ERRORS** | `<sheetpane-errors>` — the error list and the New error form | accepted | yes |
 | [0107](0107_IMAGES.md) | **SR-IMAGES** | `@sheetpane/images` — pictures drawn through the overlay hook | accepted | yes |
+| [0108](0108_VALIDATION.md) | **SR-VALIDATION** | `@sheetpane/validation` — the workbook's own rules as errors | accepted | yes |
+| [0109](0109_NUMFMT.md) | **SR-NUMFMT** | `@sheetpane/numfmt` — every Excel number format | accepted | yes |
 
 ---
 
@@ -173,10 +175,10 @@ directions.
 | `packages/import/` | SR-IMPORT | `@sheetpane/import` — the reader |
 | `packages/grid/` | SR-GRID | `@sheetpane/grid` — the store, the sheet, the plugin host, undo, freeze |
 | `packages/grid/src/errors/` | SR-ERRORS | `<sheetpane-errors>` — a different element from the sheet |
-| `packages/numfmt/` | W-15 | `@sheetpane/numfmt`, a plugin; until its component record exists |
+| `packages/numfmt/` | SR-NUMFMT | `@sheetpane/numfmt` — number formats |
 | `packages/formulas/` | W-16 | `@sheetpane/formulas`, a plugin; until its component record exists |
 | `packages/styles/` | W-17 | `@sheetpane/styles`, a plugin; until its component record exists |
-| `packages/validation/` | W-18 | `@sheetpane/validation`, a plugin; until its component record exists |
+| `packages/validation/` | SR-VALIDATION | `@sheetpane/validation` — workbook rules as errors |
 | `packages/condfmt/` | W-19 | `@sheetpane/condfmt`, a plugin; until its component record exists |
 | `packages/images/` | SR-IMAGES | `@sheetpane/images` — pictures, view only |
 | `packages/charts/` | W-21 | `@sheetpane/charts`, a plugin; until its component record exists |

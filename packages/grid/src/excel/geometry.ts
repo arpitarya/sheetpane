@@ -26,7 +26,9 @@ export interface SheetGeometry {
 export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? []): SheetGeometry {
   const dataCols = s.rows.reduce((m, r) => Math.max(m, r.length), 0);
   const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
-  const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1));
+  const ruled = [...(s.dataValidations ?? []).flatMap((v) => v.sqref), ...(s.conditionalFormats ?? []).flatMap((f) => f.sqref)]
+    .map((r) => parseRange(r)?.right ?? -1).filter((c) => c >= 0 && c < dataCols + 26);
+  const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1), ...ruled.map((c) => c + 1));
   const rows = Math.max(s.rows.length + 3, 20, ...merges.map((m) => m.bottom + 1));
   const dflt = s.defaultColWidth !== undefined ? charsToPx(s.defaultColWidth) : DEFAULT_COL_PX;
   const fileWidths = s.columnWidths ?? [];

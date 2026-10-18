@@ -7,7 +7,7 @@ import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { DEFAULT_ERROR_TYPES, SEVERITY, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import { COL_VIRTUAL_AFTER, HEAD_H, ROWHEAD_W, ROW_H, colAt, mergeAt, sheetGeometry, visibleWindow, type SheetGeometry } from './geometry.js';
@@ -343,7 +343,10 @@ export class SheetpaneExcel extends ElementBase {
     q.scroller.addEventListener('dblclick', (e) => { if ((e.target as Element).closest('.c') && this.mode === 'edit') this.editCell(); });
     q.grid.addEventListener('keydown', (e) => this.onKey(e));
     q.overlay.addEventListener('click', (e) => this.onOverlayClick(e));
-    q.overlay.addEventListener('keydown', (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.addFromComposer(); } if (e.key === 'Escape') { e.stopPropagation(); s().compose(null); this.q.grid.focus({ preventScroll: true }); } });
+    q.overlay.addEventListener('keydown', (e) => {
+      const opt = (e.target as HTMLElement).closest?.('.menu [data-act=pick-option]') as HTMLElement | null;
+      if (opt && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); ((e.key === 'ArrowDown' ? opt.nextElementSibling : opt.previousElementSibling) as HTMLElement | null)?.focus(); return; }
+      if (opt && e.key === 'Escape') { e.stopPropagation(); this.menu = undefined; this.schedule(); this.q.grid.focus({ preventScroll: true }); return; } if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.addFromComposer(); } if (e.key === 'Escape') { e.stopPropagation(); s().compose(null); this.q.grid.focus({ preventScroll: true }); } });
     q.overlay.addEventListener('input', (e) => this.onComposerInput(e));
     q.overlay.addEventListener('change', (e) => this.onComposerInput(e));
     q.plugFrow.addEventListener('click', (e) => this.runControl(e));
@@ -470,6 +473,11 @@ export class SheetpaneExcel extends ElementBase {
     let handled = true;
     const ctl = s.plugins.flatMap((p) => p.controls ?? []).find((c) => c.shortcut && c.run && (c.mode === 'both' || c.mode === snap.mode) && this.matchesShortcut(e, c.shortcut));
     if (ctl) { ctl.run!(s, snap.selection); e.preventDefault(); return; }
+    if (e.altKey && k === 'ArrowDown' && edit) {
+      const ctx = s.cellContext(snap.selection.sheet, snap.selection.ref);
+      const mc = ctx && controlsFor(s.plugins, 'cell', 'edit').find((c) => c.cellOptions && c.choose && c.appliesTo?.(ctx));
+      if (mc && ctx) { this.menu = { control: mc.id, sheet: snap.selection.sheet, ref: snap.selection.ref, options: mc.cellOptions!(ctx) }; this.focusMenu = true; this.schedule(); e.preventDefault(); return; }
+    }
     if (mod && (k === 'z' || k === 'Z')) { if (e.shiftKey) s.redo(this); else s.undo(this); }
     else if (mod && (k === 'y' || k === 'Y')) s.redo(this);
     else if (mod && (k === 'c' || k === 'C')) void navigator.clipboard?.writeText(s.text(snap.selection.sheet, snap.selection.ref)).catch(() => {});
@@ -678,6 +686,7 @@ export class SheetpaneExcel extends ElementBase {
     c?.run?.(s, sel);
   }
   private menu: { control: string; sheet: string; ref: string; options: string[] } | undefined;
+  private focusMenu = false;
 
   // ── rendering ────────────────────────────────────────────────────────────
   private schedule(): void {
@@ -961,7 +970,9 @@ export class SheetpaneExcel extends ElementBase {
         if (!r || r.top > win.r1 + 40) continue;
         const p = at(r.top, r.left);
         const on = r.top === selP.row && selP.col >= r.left && selP.col <= r.right;
-        parts.push(`<button type="button" class="pin ${e.status === 'resolved' ? 'resolved' : e.severity}${on ? ' on' : ''}" data-pin="${esc(e.id)}" aria-label="Error ${errNum(e)}, ${esc(e.range)}, ${SEVERITY[e.severity].name}${e.status === 'resolved' ? ', resolved' : ''}" style="top:${p.y - 8}px;left:${p.x - 6}px">${e.status === 'resolved' ? '✓' : errNum(e)}</button>`);
+        const mach = machineAuthored(e.author);
+        const left = mach ? RW + X(r.right + 1) - 18 : p.x - 6;
+        parts.push(`<button type="button" class="pin ${e.status === 'resolved' ? 'resolved' : e.severity}${on ? ' on' : ''}${mach ? ' square' : ''}" data-pin="${esc(e.id)}" aria-label="${mach ? `${esc(BUILTIN_TYPE_NAMES[e.type] ?? e.type)}` : `Error ${errNum(e)}`}, ${esc(e.range)}, ${SEVERITY[e.severity].name}${e.status === 'resolved' ? ', resolved' : ''}" style="top:${p.y - 8}px;left:${left}px">${e.status === 'resolved' ? '✓' : mach ? '⚠' : errNum(e)}</button>`);
       }
     }
     const composing = snap.composing;
@@ -1000,6 +1011,7 @@ export class SheetpaneExcel extends ElementBase {
       const keepComposer = card.startsWith('<div class="card composer"') && cardEl.dataset.key === this.composerKey && this.composerKey !== '';
       if (!keepComposer) {
         cardEl.innerHTML = card; cardEl.dataset.html = card;
+        if (this.focusMenu && card.startsWith('<div class="card menu"')) { this.focusMenu = false; (cardEl.querySelector('button') as HTMLElement | null)?.focus(); }
         if (card.startsWith('<div class="card composer"')) { this.composerKey = `${sel.sheet}!${sel.ref}|${this.draft.type}|${this.draft.severity}`; cardEl.dataset.key = this.composerKey; (cardEl.querySelector('textarea') as HTMLElement | null)?.focus(); }
       }
     }
@@ -1030,9 +1042,9 @@ export class SheetpaneExcel extends ElementBase {
     const s = this._store!, sv = SEVERITY[e.severity], t = this._errorTypes.find((x) => x.id === e.type);
     const tags = [e.matchesExpected ? '<span class="chip chip-pass">matches suggestion</span>' : '', s.isStale(e) ? '<span class="chip">stale</span>' : ''].join('');
     const meta = [sv.name, e.author || '', e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '', e.cellChanged ? 'cell changed' : ''].filter(Boolean).join(' · ');
-    const ro = e.author === 'file';
+    const ro = machineAuthored(e.author);
     return `<div class="card callout" role="group" aria-label="Error details" style="top:${top}px;left:${left}px;width:300px">
-<div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : sv.glyph}</span><span class="t">${esc(t?.name ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
+<div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
 <div class="bd"><dl class="fe"><dt>Found</dt><dd><span class="found">${esc(e.found)}</span></dd><dt>Should be</dt><dd><span class="want">${esc(e.expected || '—')}</span></dd></dl>${e.message ? `<p style="margin:0;font-size:13px">${esc(e.message)}</p>` : ''}${tags ? `<div style="display:flex;gap:6px">${tags}</div>` : ''}<span class="xs faint">${esc(meta)}</span></div>
 ${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button></div>`}</div>`;
   }

@@ -86,7 +86,10 @@ carry over unchanged; the plugins verdict added what plugins read.
 4. **Display:** a number is formatted when its style's format is a built-in
    id 0–4, 9–22, 37–40, 45–49, or a custom code whose tokens are only
    `0 # , . % y m d h s AM/PM / - : space "literal"` (and `\` escapes,
-   sections); otherwise `text` is the stored `<v>` exactly. Dates honour the
+   sections); otherwise `text` is the stored `<v>` exactly. Known limits of
+   the subset, measured against `numfmt` (SR-NUMFMT): scaling commas after the
+   decimals (`0.0,,`), digit masks split by literals (`00-00-00`), the padding
+   of `# ??/??`. Dates honour the
    1900 leap-year bug and the 1904 system. `General` shows up to 10
    significant digits, scientific past 1e11.
 5. **CSV:** delimiter detected among `,` `;` tab from the first 20 records

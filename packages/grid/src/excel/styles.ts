@@ -95,6 +95,7 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .pin{position:absolute;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:0;font-size:10px;font-weight:700;line-height:18px;color:#fff;text-align:center;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(22,23,26,.3);cursor:pointer;font-variant-numeric:tabular-nums}
 .pin.error{background:var(--sp-fail)}.pin.warning{background:var(--sp-warn)}.pin.note{background:var(--sp-accent)}.pin.resolved{background:var(--sp-pass)}
 .pin.on{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--sp-ink)}
+.pin.square{border-radius:3px;min-width:16px;height:16px;line-height:16px;padding:0 2px}
 .pin.pending{background:#fff;color:var(--sp-accent);box-shadow:0 0 0 1.5px var(--sp-accent)}
 .badge{position:absolute;font-size:11px;padding:2px 6px;border-radius:4px;background:var(--sp-sunken);color:var(--sp-ink-2);border:1px dashed var(--sp-line-strong);white-space:nowrap}
 .olay{position:absolute;overflow:hidden}
