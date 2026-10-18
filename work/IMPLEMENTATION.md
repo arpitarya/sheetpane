@@ -11,6 +11,8 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-22 | `@sheetpane/comments`: notes and threads read as `file` errors; the review written as threaded comments + legacy notes + VML + persons, on by default with `write:false` / `export({comments:false})`; core: restore adopts errors by content, not id | closed | `just test-pkg comments` (26) · grid's restore test |
+| 2026-10-18 | W-16 | `@sheetpane/formulas`: IronCalc recalculation on `derive` (lazy WASM), typed formulas, `<f>`/`<v>` export, cell-bar formula, ⟳/↻/≈ marks, `evaluate()` for custom rules; core: `store.formula()`/`input()`, derive `clear`, read-only text controls | closed | `just test-pkg formulas` (34) · validation's custom-rule test |
 | 2026-10-18 | W-17 | `@sheetpane/styles`: decorate from cellXfs (theme/indexed colours, never a font family), the format row and selbar, merges via core, styles.xml export; core: per-kind change slots, controls `disabled`/`labelFor`, cell text span | closed | `just test-pkg styles` (46 tests) |
 | 2026-10-18 | W-29 | Dark theme (`theme` light · dark · auto on both elements), hex `DARK_TOKENS`, slot tokens; the grid CSS names no colour literal; cells hold their text in a span, tints sit above fills | closed | `packages/grid/test/theme.test.ts` (contrast table, computed colours, decorate fill kept) |
 | 2026-10-18 | W-15 | `@sheetpane/numfmt`: every Excel number format through numfmt 4.0.1, locales, 1904, fallback count, format dropdown and ± decimals (one undo step), export of new formats; SR-NUMFMT (0109); core subset: month-only codes and serial 0 fixed | closed | 42 tests (Sonnet subagent, verified by the coordinator) |

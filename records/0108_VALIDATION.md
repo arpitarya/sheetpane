@@ -71,7 +71,8 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    eight operators (default `between`, inclusive); `list` from a literal, a
    range, another sheet's range, a defined name, or the x14 form; `custom`
    only through a `derive` provider exposing a synchronous `evaluate(formula,
-   { sheet, ref })`, relative references shifted per cell.
+   { sheet, ref })`, relative references shifted per cell —
+   `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
    cell) and defined names; anything else skips the rule and counts it.
@@ -97,13 +98,13 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
 
 ### Consequences
 
-- **Enforced today:** `just test-pkg validation` — 29 tests (every type and
+- **Enforced today:** `just test-pkg validation` — 30 tests (every type and
   operator, list sources, x14, relative operands, live limits, resolve /
   reopen / undo, the arrow and its menu, the shared error pane with the
-  author filter), plus SR-GRID's core tests for read-only rows, the ⚠ pin and
+  author filter, a `custom` rule evaluated by IronCalc through
+  `@sheetpane/formulas`), plus SR-GRID's core tests for read-only rows, the ⚠ pin and
   cross-sheet re-validation.
-- **Owed:** a fixture with every rule type saved by Excel — W-30. `custom`
-  rules run once `@sheetpane/formulas` exposes `evaluate()` (W-16).
+- **Owed:** a fixture with every rule type saved by Excel — W-30.
 
 ### Alternatives considered
 

@@ -283,3 +283,25 @@ describe('the engine', () => {
     expect(s.getErrors()[0]!.severity).toBe('error');
   });
 });
+
+describe('custom rules through @sheetpane/formulas (W-16 evaluate)', () => {
+  it('a custom rule is evaluated by IronCalc per cell, shifted from the anchor; a fix resolves it', async () => {
+    const { formulas } = await import('@sheetpane/formulas');
+    const f = formulas();
+    const s = await storeWith([{ name: 'S', cells: { A1: 5, A2: -3, B1: 10, B2: 1 }, rules: [
+      { sqref: 'A1:A2', type: 'custom', f1: 'A1<B1', error: 'A must be below B' },
+    ] }], [], [validation(), f]);
+    await f.ready();
+    expect(f.built()).toBe(true); // a workbook without formulas still builds the model for its custom rule
+    expect(skippedRules(s).skipped).toEqual([]);
+    expect(open(s.getErrors())).toEqual([]); // 5 < 10, -3 < 1
+    s.setCell('S', 'A2', '4');
+    await f.ready();
+    expect(open(s.getErrors())).toMatchObject([{ range: 'A2', author: 'workbook', found: '4' }]);
+    s.setCell('S', 'B2', '9');
+    await f.ready();
+    expect(open(s.getErrors())).toEqual([]);
+    expect(s.getErrors()[0]!.status).toBe('resolved');
+    expect(s.changeCount).toBe(2); // evaluating never touches the workbook
+  });
+});

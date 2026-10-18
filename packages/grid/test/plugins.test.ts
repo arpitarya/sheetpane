@@ -103,6 +103,22 @@ describe('the six hooks (W-14 DoD 1, 4, 5)', () => {
     s.setCell('Holdings', 'F11', '1');
     expect(s.getErrors()[1]!.status).toBe('open');
   });
+  it('validate after setErrors: a restored person’s error with the same id is never taken over; a restored rule error is adopted, not doubled', async () => {
+    const s = createWorkbook({ plugins: [positive] });
+    await s.load(await sampleXlsx(), 's.xlsx');
+    const rule = s.getErrors()[0]!; // ERR-0001, the plugin's own
+    const person = { ...rule, range: 'C3', type: 'wrong-value', author: 'Arpit', found: '268.40', expected: '268.50', message: 'Price is stale' };
+    s.setErrors([person]);
+    s.setCell('Holdings', 'F10', '-2'); // the rule fires again
+    const after = s.getErrors();
+    expect(after.find((e) => e.id === 'ERR-0001')).toMatchObject({ range: 'C3', author: 'Arpit', message: 'Price is stale', found: '268.40' });
+    expect(after.filter((e) => e.author === 'workbook')).toMatchObject([{ id: 'ERR-0002', range: 'F10', found: '-2' }]);
+    // restoring a review that already holds the rule's error: adopted, not added twice
+    s.setErrors([person, { ...rule, id: 'ERR-0007' }]);
+    expect(s.getErrors().filter((e) => e.author === 'workbook').map((e) => e.id)).toEqual(['ERR-0007']);
+    s.setCell('Holdings', 'F10', '5');
+    expect(s.getErrors().find((e) => e.id === 'ERR-0007')!.status).toBe('resolved');
+  });
   it('overlay: items drawn in sheet space, under pins', async () => {
     const el = await mountExcel();
     const s = createWorkbook({ plugins: [box] });

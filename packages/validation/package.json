@@ -1,7 +1,7 @@
 {
   "name": "@sheetpane/validation",
   "version": "0.0.0",
-  "description": "Data validation for sheetpane — the workbook's own `<dataValidations>` rules checked on load and on every edit, landing in <sheetpane-errors> — as a plugin on the `validate` hook.",
+  "description": "Data validation for sheetpane \u2014 the workbook's own `<dataValidations>` rules checked on load and on every edit, landing in <sheetpane-errors> \u2014 as a plugin on the `validate` hook.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -43,6 +43,7 @@
   "dependencies": {},
   "devDependencies": {
     "@sheetpane/export": "workspace:*",
+    "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*"
   },
   "publishConfig": {

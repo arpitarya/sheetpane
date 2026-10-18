@@ -171,6 +171,9 @@ importers:
       '@sheetpane/export':
         specifier: workspace:*
         version: link:../export
+      '@sheetpane/formulas':
+        specifier: workspace:*
+        version: link:../formulas
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid

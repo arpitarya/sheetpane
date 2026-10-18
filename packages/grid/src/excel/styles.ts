@@ -53,6 +53,7 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .find input{padding-left:28px;width:112px}
 .zoom{width:70px;padding:0 2px}
 .find .cnt{font-size:11px;color:var(--sp-ink-3);margin-left:6px;min-width:44px}
+.ptext{display:inline-flex;align-items:center;height:24px;padding:0 8px;border:1px dashed var(--sp-line-strong);border-radius:var(--sp-r-sm);color:var(--sp-ink-2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch;font-variant-numeric:tabular-nums}
 .fx{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--sp-line);min-height:41px;font-size:13px;flex-wrap:wrap}
 .fx .ref{font-weight:600;min-width:52px;color:var(--sp-ink-2);font-variant-numeric:tabular-nums}
 .fx .val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

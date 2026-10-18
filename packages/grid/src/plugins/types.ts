@@ -45,7 +45,8 @@ export type DeriveInput =
   | { kind: 'load' }
   | { kind: 'change'; cells: { sheet: string; ref: string; value: Cell }[] };
 
-export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string }
+/** One recalculated cell. `clear: true` removes the cell's derived entry (its value and text are then ignored). */
+export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string; clear?: boolean }
 
 /** What `validate` returns: an error without the fields the store owns. */
 export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean };

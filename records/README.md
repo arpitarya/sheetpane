@@ -132,6 +132,8 @@ Start from `TEMPLATE.md`.
 | [0108](0108_VALIDATION.md) | **SR-VALIDATION** | `@sheetpane/validation` — the workbook's own rules as errors | accepted | yes |
 | [0109](0109_NUMFMT.md) | **SR-NUMFMT** | `@sheetpane/numfmt` — every Excel number format | accepted | yes |
 | [0110](0110_STYLES.md) | **SR-STYLES** | `@sheetpane/styles` — cell styles, the format row | accepted | yes |
+| [0111](0111_FORMULAS.md) | **SR-FORMULAS** | `@sheetpane/formulas` — recalculation through IronCalc | accepted | yes |
+| [0112](0112_COMMENTS.md) | **SR-COMMENTS** | `@sheetpane/comments` — file comments in, the review out | accepted | yes |
 
 ---
 
@@ -178,12 +180,12 @@ directions.
 | `packages/grid/src/errors/` | SR-ERRORS | `<sheetpane-errors>` — a different element from the sheet |
 | `packages/numfmt/` | SR-NUMFMT | `@sheetpane/numfmt` — number formats |
 | `packages/styles/` | SR-STYLES | `@sheetpane/styles` — cell styles |
-| `packages/formulas/` | W-16 | `@sheetpane/formulas`, a plugin; until its component record exists |
+| `packages/formulas/` | SR-FORMULAS | `@sheetpane/formulas` — recalculation |
 | `packages/validation/` | SR-VALIDATION | `@sheetpane/validation` — workbook rules as errors |
 | `packages/condfmt/` | W-19 | `@sheetpane/condfmt`, a plugin; until its component record exists |
 | `packages/images/` | SR-IMAGES | `@sheetpane/images` — pictures, view only |
 | `packages/charts/` | W-21 | `@sheetpane/charts`, a plugin; until its component record exists |
-| `packages/comments/` | W-22 | `@sheetpane/comments`, a plugin; until its component record exists |
+| `packages/comments/` | SR-COMMENTS | `@sheetpane/comments` — comments in and out |
 
 <!-- OWNERSHIP-TABLE-END -->
 

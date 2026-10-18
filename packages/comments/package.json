@@ -9,7 +9,10 @@
     "directory": "packages/comments"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.js",
+    "./src/index.ts"
+  ],
   "engines": {
     "node": ">=20"
   },

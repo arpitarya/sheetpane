@@ -151,6 +151,20 @@ export class WorkbookStore {
     return out;
   }
 
+  /** The cell's formula with its `=`: a typed formula, else the file's (unless a value edit replaced it); undefined when none. */
+  formula(sheet: string, ref: string): string | undefined {
+    const c = this.snap.changes.get(key(sheet, ref));
+    if (c) return typeof c.now === 'string' && c.now.startsWith('=') ? c.now : undefined;
+    const f = this.sheet(sheet)?.formulas[ref];
+    return f === undefined ? undefined : `=${f}`;
+  }
+  /** What the cell bar edits: the formula when a `derive` provider (a formula engine) is installed, else the raw value. */
+  input(sheet: string, ref: string): string {
+    const f = this.plugins.some((x) => x.provides.includes('derive')) ? this.formula(sheet, ref) : undefined;
+    if (f !== undefined) return f;
+    const v = this.value(sheet, ref);
+    return v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : String(v);
+  }
   /** The current value: a user change, else a derived value, else the upload. */
   value(sheet: string, ref: string): Cell {
     const k = key(sheet, ref), c = this.snap.changes.get(k);
@@ -290,7 +304,10 @@ export class WorkbookStore {
     const now: Cell = typeof input === 'string' && o.parse !== false ? parseInput(input, orig.value, book.source) : (input as Cell);
     const k = key(sheet, a1);
     const prev = base.get(k);
-    const backToOriginal = same(now, orig.value) || (typeof input === 'string' && input === orig.text && orig.text !== '');
+    const fileFormula = this.sheet(sheet)?.formulas[a1];
+    const backToOriginal = fileFormula !== undefined
+      ? typeof input === 'string' && input.trim() === `=${fileFormula}` // retyping the file's formula restores the cell
+      : same(now, orig.value) || (typeof input === 'string' && input === orig.text && orig.text !== '');
     if (!prev && backToOriginal) return undefined;
     if (prev && same(prev.now, now)) return undefined;
     const changes = new Map(base);
@@ -457,7 +474,9 @@ export class WorkbookStore {
     const errors = list.map((e) => ({ ...e, v: 1 as const, matchesExpected: false }));
     for (const e of errors) { const n = /^ERR-(\d+)$/.exec(e.id); if (n) this.nextError = Math.max(this.nextError, Number(n[1]) + 1); }
     this.undoStack = []; this.redoStack = [];
+    this.pluginErrors.clear(); // ids now name the restored list's errors; validate re-adopts its own by what they say, never by id
     this.set({ errors: this.withMatches(errors, this.snap.changes) }, [{ type: 'errors', origin }, { type: 'history', origin, reason: 'cleared' }]);
+    this.runValidate(this.allSheets(), origin);
   }
 
   // ── undo / redo (W-23): one stack per pane ──────────────────────────────
@@ -500,7 +519,8 @@ export class WorkbookStore {
     const derived = new Map(input.kind === 'load' ? [] : this.snap.derived);
     for (const d of out) {
       const k = key(d.sheet, d.ref);
-      derived.set(k, { value: d.value, text: d.text } satisfies DerivedCell);
+      if (d.clear) derived.delete(k);
+      else derived.set(k, { value: d.value, text: d.text } satisfies DerivedCell);
       this.textCache.delete(k);
     }
     this.set({ derived, errors: this.withMatches(this.snap.errors, this.snap.changes) });
@@ -524,7 +544,13 @@ export class WorkbookStore {
           const k = `${p.id}|${d.sheet}|${d.range}|${d.type}`;
           seen.add(k);
           const id = this.pluginErrors.get(k);
-          const at = id ? errors.findIndex((e) => e.id === id) : -1;
+          const mine = (e: SheetpaneError) => e.sheet === d.sheet && e.range === d.range && e.type === d.type && e.author === d.author;
+          let at = id ? errors.findIndex((e) => e.id === id && mine(e)) : -1;
+          if (at < 0) { // a restored review may already hold this error: adopt it rather than add a second
+            const owned = new Set(this.pluginErrors.values());
+            at = errors.findIndex((e) => mine(e) && !owned.has(e.id));
+            if (at >= 0) this.pluginErrors.set(k, errors[at]!.id);
+          }
           if (at < 0) {
             const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString() };
             this.pluginErrors.set(k, e.id);

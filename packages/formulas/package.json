@@ -9,7 +9,12 @@
     "directory": "packages/formulas"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/ui.js",
+    "./src/index.ts",
+    "./src/ui.ts"
+  ],
   "engines": {
     "node": ">=20"
   },

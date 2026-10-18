@@ -764,7 +764,7 @@ export class SheetpaneExcel extends ElementBase {
     cell.hidden = !editable;
     q.val.hidden = editable;
     q.cellname.textContent = `Value of ${sel.ref}`;
-    const curText = rawText(s.value(sel.sheet, sel.ref));
+    const curText = s.input(sel.sheet, sel.ref);
     if (this.shadow.activeElement !== cell) cell.value = curText;
     q.val.textContent = s.text(sel.sheet, sel.ref) || '(empty)';
     q.merge.hidden = !merge;
@@ -815,6 +815,10 @@ export class SheetpaneExcel extends ElementBase {
       if (c.options && c.choose) {
         const cur = c.value?.(snap, snap.selection) ?? '';
         return `${sep}<select class="input" data-control="${esc(c.id)}" aria-label="${esc(c.label)}" title="${esc(c.label)}" style="height:28px;font-size:12px">${c.options(snap, snap.selection).map((o) => `<option value="${esc(o.value)}"${o.value === cur ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
+      }
+      if (c.text && !c.run) { // read-only text (a status-like control in another slot): shown, not pressed
+        const t = c.text(snap, snap.selection);
+        return t ? `${sep}<span class="ptext" data-control="${esc(c.id)}" title="${esc(c.label)}">${esc(t)}</span>` : '';
       }
       const active = c.isActive?.(snap, snap.selection);
       const label = c.labelFor?.(snap, snap.selection) ?? c.label;
