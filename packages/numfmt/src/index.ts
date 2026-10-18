@@ -11,6 +11,7 @@ import { applyFormatEdits, type FormatEdit } from './patch.js';
 
 export { formatValue, codeOfId, builtinCode, builtinIdOf, categoryOf, presetCode, adjustDecimals, resolveLocale, CATEGORIES, type Category, type FormatEnv } from './fmt.js';
 
+/** Options for {@link numfmt}. */
 export interface NumfmtOptions {
   /** A BCP 47 tag (`de-DE`, `en-IN`). Default: the page's `<html lang>`, read when a cell is formatted. */
   locale?: string;
@@ -22,14 +23,27 @@ export interface NumfmtPlugin extends Plugin {
   fallbacks(book?: ImportedWorkbook): string[];
 }
 
-/** The code a cell shows with: the user's `numFmt` change, else the style's `numFmtId`. */
+/**
+ * The code a cell shows with: the user's `numFmt` change, else the style's `numFmtId`.
+ *
+ * @param c - The cell, as the `format` hook receives it.
+ * @param locale - A BCP 47 tag for built-in codes, or `''`.
+ * @returns The format code.
+ */
 export function cellCode(c: CellContext, locale: string): string {
   const ch = c.store.changeOf(c.sheet.name, c.ref, 'numFmt');
   if (ch?.kind === 'numFmt' && typeof ch.now === 'string') return ch.now;
   return originalCode(c.book, c.styleIndex, locale);
 }
 
-/** The code the upload gave a cell: `numFmtId` of its xf (a cell with no `s` has xf 0). */
+/**
+ * The code the upload gave a cell: `numFmtId` of its xf (a cell with no `s` has xf 0).
+ *
+ * @param book - The imported workbook.
+ * @param styleIndex - The cell's `s` attribute, or `undefined`.
+ * @param locale - A BCP 47 tag for built-in codes, or `''`.
+ * @returns The format code; `General` when the xf does not exist.
+ */
 export function originalCode(book: ImportedWorkbook, styleIndex: number | undefined, locale: string): string {
   const xf = book.styles.cellXfs[styleIndex ?? 0];
   return xf ? codeOfId(xf.numFmtId, book.styles.numFmts, locale) : 'General';
@@ -37,6 +51,29 @@ export function originalCode(book: ImportedWorkbook, styleIndex: number | undefi
 
 const PADDED = /[_*?]/;
 
+/**
+ * The number-format plugin: shows every numeric cell as Excel formats it — every built-in and custom code,
+ * locales, the 1904 date system — through the `numfmt` library. A code the library rejects falls back to the
+ * core subset and is counted in `fallbacks()`; on export, changed formats are written as `<numFmt>` and `<xf>`
+ * entries. Importing this module registers it as `numfmt`; the controls are in `@sheetpane/numfmt/ui`.
+ *
+ * @param options - The locale; default: the page's `<html lang>`, read when a cell is formatted.
+ * @returns The plugin (`id: 'numfmt'`) with `fallbacks()`.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0109_NUMFMT.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { numfmt } from '@sheetpane/numfmt';
+ *
+ * const book = createWorkbook({ plugins: [numfmt({ locale: 'de-DE' })] });
+ * await book.load(bytes, 'report.xlsx');
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/numfmt'; // registers `numfmt`
+ * excel.setAttribute('plugins', 'numfmt');
+ * ```
+ */
 export function numfmt(options: NumfmtOptions = {}): NumfmtPlugin {
   const locale = () => options.locale ?? documentLocale();
   const failed = new WeakMap<ImportedWorkbook, Set<string>>();

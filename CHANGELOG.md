@@ -26,6 +26,9 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **TSDoc on the whole public API** (W-36): every export's `.d.ts` carries a
+  summary, parameters, returns, the elements' attributes and events, an example
+  and a link to its record.
 - **`llms.txt` / `llms-full.txt`** (W-38): sheetpane's public contract for AI
   agents, at the repository root and in `@sheetpane/grid` (`dist/`).
 

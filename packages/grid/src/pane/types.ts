@@ -3,7 +3,9 @@
 import type { Cell, SpCode } from '@sheetpane/export';
 import type { ImportedWorkbook } from '@sheetpane/import';
 
+/** The pane's mode, shared by its elements: `view` reads, `edit` changes cells and flags errors. */
 export type Mode = 'view' | 'edit';
+/** How serious an error is; see {@link SEVERITY} for its name, glyph and help line. */
 export type Severity = 'error' | 'warning' | 'note';
 
 /** SheetpaneError v1 — exactly the contract verdict's schema. */
@@ -48,6 +50,7 @@ export interface ChangeEntry {
 /** A value a plugin's `derive` hook computed (W-16): never a user change. */
 export interface DerivedCell { value: Cell; text: string }
 
+/** The pane's selection, shared by its elements. */
 export interface Selection {
   sheet: string;
   /** The active cell, A1. */
@@ -56,8 +59,10 @@ export interface Selection {
   range?: string;
 }
 
+/** The cell (or row range) whose Flag issue form is open. */
 export interface Composing { sheet: string; ref: string; range?: string }
 
+/** Where the pane is in reading a file (SR-GRID decision 2). */
 export type LoadState =
   | { status: 'empty' }
   | { status: 'loading'; name: string }
@@ -65,6 +70,7 @@ export type LoadState =
   /** `code` is the reader's typed reason (`corrupt`, `password-or-legacy`, `unreadable`…); `spCode` its stable SP code (W-40). */
   | { status: 'error'; code: string; spCode: SpCode; detail?: string; message: string; name: string };
 
+/** The file the pane read. */
 export interface Source {
   name: string;
   kind: 'xlsx' | 'csv';
@@ -75,6 +81,7 @@ export interface Source {
   readMs: number;
 }
 
+/** The pane's state at one moment: immutable, a new object per change (SR-GRID decision 2). */
 export interface Snapshot {
   readonly load: LoadState;
   readonly source: Source | undefined;
@@ -93,8 +100,10 @@ export interface Snapshot {
   readonly version: number;
 }
 
+/** A choice in the Flag issue form: an id, its name, its default severity and an example (SR-ERRORS decisions 5–6). */
 export interface ErrorType { id: string; name: string; severity: Severity; why: string; expected: string }
 
+/** The seven error types and Other that `errorTypes` defaults to (SR-ERRORS decision 6). */
 export const DEFAULT_ERROR_TYPES: readonly ErrorType[] = [
   { id: 'wrong-value', name: 'Wrong value', severity: 'error', why: 'Fee rate is 10× the account’s tier and above the 2.00% cap — a misplaced decimal.', expected: '0.75%' },
   { id: 'mismatch-source', name: 'Doesn’t match source', severity: 'error', why: 'Price differs from the 30-Sep pricing file for TMKT; digits look transposed.', expected: '268.40' },
@@ -112,6 +121,7 @@ export const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = { validation
 /** Errors the workbook, the file or a host rule wrote: shown, never resolved or deleted by hand. */
 export const machineAuthored = (author: string) => author === 'workbook' || author === 'file' || author === 'host';
 
+/** Each severity's name, glyph and help line — a glyph and a colour, never colour alone. */
 export const SEVERITY: Record<Severity, { name: string; glyph: string; help: string }> = {
   error: { name: 'Error', glyph: '✕', help: 'Must be fixed before this file is accepted.' },
   warning: { name: 'Warning', glyph: '!', help: 'Needs a second look; may be fine.' },

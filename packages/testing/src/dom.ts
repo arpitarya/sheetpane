@@ -12,11 +12,30 @@ async function until<T>(get: () => T | null | undefined, ms = 5000): Promise<T> 
   for (;;) { const v = get(); if (v) return v; if (performance.now() - t0 > ms) throw new Error('@sheetpane/testing: timed out'); await new Promise((r) => setTimeout(r, 10)); }
 }
 
+/** The errors panel the DOM driver uses, when it is not the one on the sheet's pane. */
 export interface DomOptions {
   /** Its errors panel (default: the `<sheetpane-errors>` on the same pane, if any). */
   errors?: HTMLElement;
 }
 
+/**
+ * A driver for a `<sheetpane-excel>` in Vitest browser mode: it works on the element directly,
+ * with the same API as the Playwright driver. Download is captured from `sheetpane-export`
+ * and the browser's save prevented.
+ *
+ * @param el - The `<sheetpane-excel>` element.
+ * @param o - Its errors panel, when not the `<sheetpane-errors>` on the same pane.
+ * @returns The driver, plus `cell(ref)` for a cell's element.
+ * @example
+ * ```ts
+ * import { sheetpane } from '@sheetpane/testing/dom';
+ * const sp = sheetpane(excel);
+ * await sp.waitForLoad();
+ * await sp.edit('B2', '42');
+ * const values = await sp.readDownload();
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md
+ */
 export function sheetpane(el: HTMLElement, o: DomOptions = {}): SheetpaneDriver & { cell(ref: string): HTMLElement | null } {
   const x = el as Excel;
   const root = () => el.shadowRoot!;

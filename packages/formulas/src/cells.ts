@@ -34,6 +34,11 @@ export const isError = (v: unknown): boolean => typeof v === 'string' && ERRORS.
 /**
  * A cell's formula (with its `=`) as the JavaScript workbook holds it now: a
  * user's `formula` change, else the file's formula unless a value replaced it.
+ *
+ * @param snap - A snapshot of the store.
+ * @param sheet - The sheet's name.
+ * @param ref - The cell, `A1`.
+ * @returns The formula with its `=`, or `undefined` when the cell holds none.
  */
 export function formulaIn(snap: Snapshot, sheet: string, ref: string): string | undefined {
   const c = snap.changes.get(cellKey(sheet, ref));
@@ -43,7 +48,14 @@ export function formulaIn(snap: Snapshot, sheet: string, ref: string): string | 
   return f === undefined ? undefined : `=${f}`;
 }
 
-/** The value a cell shows now: a user's value, a formula's computed value, else the file's. */
+/**
+ * The value a cell shows now: a user's value, a formula's computed value, else the file's.
+ *
+ * @param snap - A snapshot of the store.
+ * @param sheet - The sheet's name.
+ * @param ref - The cell, `A1`.
+ * @returns The value; `null` for an empty cell or a typed formula not yet evaluated.
+ */
 export function valueIn(snap: Snapshot, sheet: string, ref: string): Cell {
   const k = cellKey(sheet, ref);
   const c = snap.changes.get(k);

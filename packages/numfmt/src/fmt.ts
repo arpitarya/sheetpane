@@ -21,7 +21,13 @@ const BASE_OPTIONS = { overflow: '########', dateErrorNumber: false, dateSpanLar
 interface Resolved { tag: string; grouping: [number, number] | undefined }
 const resolved = new Map<string, Resolved>();
 
-/** A locale tag the library knows, normalised (`de_DE` → `de-DE`); anything else → `''`. */
+/**
+ * A locale tag the library knows, normalised (`de_DE` → `de-DE`); anything else → `''`.
+ * `-IN` territories also get Indian digit grouping (`12,34,567`).
+ *
+ * @param tag - A BCP 47 tag, with `-` or `_`; `undefined` means none.
+ * @returns `{ tag, grouping }`: the usable tag (or `''`) and `[3, 2]` grouping for `-IN`, else `undefined`.
+ */
 export function resolveLocale(tag: string | undefined): Resolved {
   const key = tag ?? '';
   let r = resolved.get(key);
@@ -65,7 +71,16 @@ function showsCalendar(code: string): boolean {
   return s;
 }
 
-/** Formats a number by a code. Throws when the library rejects the code — the caller falls back (W-15 DoD 3). */
+/**
+ * Formats a number by an Excel format code, as Excel shows it. A 1904 workbook's serial is shifted by
+ * 1,462 days only when the code shows a calendar date (not for `[h]` elapsed time); an out-of-range date shows `########`.
+ *
+ * @param code - The format code (`#,##0.00`, `m/d/yyyy`, `General`).
+ * @param value - The cell's number (a date is its serial).
+ * @param env - The locale and the workbook's date system.
+ * @returns The text Excel would show.
+ * @throws When the library rejects the code — the caller falls back to the core subset (W-15 DoD 3).
+ */
 export function formatValue(code: string, value: number, env: FormatEnv): string {
   const v = env.date1904 && showsCalendar(code) ? value + DAYS_1900_TO_1904 : value;
   return format(code, v, optionsFor(env.locale));
@@ -75,7 +90,13 @@ export function isValidCode(code: string): boolean {
   return isValidFormat(code);
 }
 
-/** The code for a built-in id in a locale (ids 5–8, 14–22, 41–44 are the system's), else `General`. */
+/**
+ * The code for a built-in format id in a locale (ids 5–8, 14–22, 41–44 follow the locale, as in Excel).
+ *
+ * @param id - The built-in `numFmtId`.
+ * @param locale - A BCP 47 tag, or `''` for the library's English default.
+ * @returns The code, or `General` for an id the library does not know.
+ */
 export function builtinCode(id: number, locale: string): string {
   try {
     const r = resolveLocale(locale);
@@ -83,14 +104,26 @@ export function builtinCode(id: number, locale: string): string {
   } catch { return 'General'; }
 }
 
-/** The code a style's `numFmtId` names: the file's own `<numFmt>` first (a file may redefine an id), then the built-in table. */
+/**
+ * The code a style's `numFmtId` names: the file's own `<numFmt>` first (a file may redefine an id), then the built-in table.
+ *
+ * @param id - The `numFmtId` of a cell's xf.
+ * @param custom - The workbook's `<numFmts>`, id → code.
+ * @param locale - A BCP 47 tag for the built-in table, or `''`.
+ * @returns The format code.
+ */
 export function codeOfId(id: number, custom: Readonly<Record<number, string>>, locale: string): string {
   return custom[id] ?? builtinCode(id, locale);
 }
 
 // ── ids for export: an en-US built-in code is written as its id, anything else as a new custom <numFmt> ──
 let idByCode: Map<string, number> | undefined;
-/** The built-in id whose en-US code is exactly `code`, or undefined (lowest id wins: `m/d/yyyy` is 14, not 27). */
+/**
+ * The built-in id whose en-US code is exactly `code` — export writes such a code as its id, not as a new `<numFmt>`.
+ *
+ * @param code - A format code.
+ * @returns The id (lowest wins: `m/d/yyyy` is 14, not 27), or `undefined` when the code is not built in.
+ */
 export function builtinIdOf(code: string): number | undefined {
   if (!idByCode) {
     idByCode = new Map();
@@ -103,14 +136,22 @@ export function builtinIdOf(code: string): number | undefined {
 }
 
 // ── the dropdown's categories ──
+/** A choice in the number-format dropdown, Excel's Format Cells categories. */
 export type Category = 'general' | 'number' | 'currency' | 'accounting' | 'date' | 'time' | 'percentage' | 'fraction' | 'scientific' | 'text' | 'custom';
+/** The dropdown's choices in order, each a {@link Category} with its label. */
 export const CATEGORIES: readonly { key: Category; label: string }[] = [
   { key: 'general', label: 'General' }, { key: 'number', label: 'Number' }, { key: 'currency', label: 'Currency' }, { key: 'accounting', label: 'Accounting' },
   { key: 'date', label: 'Date' }, { key: 'time', label: 'Time' }, { key: 'percentage', label: 'Percentage' }, { key: 'fraction', label: 'Fraction' },
   { key: 'scientific', label: 'Scientific' }, { key: 'text', label: 'Text' }, { key: 'custom', label: 'Custom…' },
 ];
 
-/** The code a category stands for in a locale; `custom` has none (the user types it). */
+/**
+ * The code a dropdown category applies (`currency`, `accounting`, `date` and `time` follow the locale's built-ins).
+ *
+ * @param c - Any category but `custom`, which has no code (the user types one).
+ * @param locale - A BCP 47 tag, or `''`.
+ * @returns The format code.
+ */
 export function presetCode(c: Exclude<Category, 'custom'>, locale: string): string {
   switch (c) {
     case 'general': return 'General';
@@ -126,7 +167,12 @@ export function presetCode(c: Exclude<Category, 'custom'>, locale: string): stri
   }
 }
 
-/** Which category a code belongs to (what the dropdown shows as current). */
+/**
+ * Which category a code belongs to — what the dropdown shows as current.
+ *
+ * @param code - A format code.
+ * @returns Its category; `custom` for a code the library cannot classify or rejects.
+ */
 export function categoryOf(code: string): Category {
   if (code === 'General') return 'general';
   try {
@@ -155,6 +201,10 @@ function mask(s: string): string {
 /**
  * Excel's Increase / Decrease Decimal on a code: one `0` more (or fewer) after the point of the first number in every
  * section. Dates, times, fractions and text are returned unchanged (`General` is handled from the cell's value).
+ *
+ * @param code - A format code.
+ * @param delta - `1` adds a decimal, `-1` removes one.
+ * @returns The new code, or `code` itself when nothing changes.
  */
 export function adjustDecimals(code: string, delta: 1 | -1): string {
   if (code === 'General' || code === '@') return code;

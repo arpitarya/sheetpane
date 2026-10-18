@@ -3,8 +3,11 @@
 import { parseRange, type RangePos } from '@sheetpane/export';
 import type { ImportedSheet } from '@sheetpane/import';
 
+/** A row's height in pixels at 100 % zoom. */
 export const ROW_H = 28;
+/** The column-header row's height in pixels at 100 % zoom. */
 export const HEAD_H = 24;
+/** The row-header column's width in pixels at 100 % zoom. */
 export const ROWHEAD_W = 52;
 export const DEFAULT_COL_PX = 64;
 /** Columns past this many are virtualised as well as rows (grid verdict decision, "past 60 columns"). */
@@ -22,7 +25,14 @@ export interface SheetGeometry {
   merges: RangePos[];
 }
 
-/** Column widths: the file's, else a width from the first 200 rows' text (CSV), else the default. */
+/**
+ * A sheet's size and column edges at 100 % zoom (SR-GRID decision 11): the file's column widths,
+ * else a width from the first 200 rows' text (CSV), else the default; the grid reaches merges,
+ * rule ranges and drawing anchors past the data.
+ * @param s - The sheet as read.
+ * @param mergeList - The merged ranges to draw; the file's by default.
+ * @returns The row and column counts, the column left edges and the merges.
+ */
 export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? []): SheetGeometry {
   const dataCols = s.rows.reduce((m, r) => Math.max(m, r.length), 0);
   const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);

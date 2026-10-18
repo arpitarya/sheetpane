@@ -34,7 +34,13 @@ export function usedRange(snap: Snap, s: Sheet): { rows: number; cols: number } 
   return { rows, cols };
 }
 
-/** Excel's comparison: numbers < text < logicals; text without case; a blank takes the other side's type. */
+/**
+ * Excel's comparison: numbers < text < logicals; text without case; a blank takes the other side's type.
+ *
+ * @param x - One value.
+ * @param y - The other.
+ * @returns Negative when `x` sorts first, positive when `y` does, 0 when equal.
+ */
 export function compareCells(x: Cell, y: Cell): number {
   const blankAs = (o: Cell): Cell => (typeof o === 'string' ? '' : typeof o === 'boolean' ? false : 0);
   if (isBlank(x) && isBlank(y)) return 0;
@@ -85,7 +91,13 @@ function computeStats(store: WorkbookStore, snap: Snap, sheet: Sheet, boxes: Box
   return { boxes, nums, sum, counts };
 }
 
-/** PERCENTILE.INC over sorted numbers. */
+/**
+ * PERCENTILE.INC over sorted numbers.
+ *
+ * @param sorted - The numbers, ascending.
+ * @param p - The percentile as a fraction, 0 to 1 (clamped).
+ * @returns The interpolated value; `NaN` for no numbers.
+ */
 export function percentile(sorted: readonly number[], p: number): number {
   if (!sorted.length) return NaN;
   const k = Math.max(0, Math.min(1, p)) * (sorted.length - 1);
@@ -94,6 +106,7 @@ export function percentile(sorted: readonly number[], p: number): number {
 }
 
 // ── the cache ─────────────────────────────────────────────────────────────
+/** Every rule of a sheet at one cell: the CSS they draw and the rules that drew it. */
 export interface CellResult {
   /** What the rules draw, or undefined when none matched. */
   css: StyleSubset | undefined;
@@ -108,7 +121,12 @@ interface State { book: Book; changes: Snap['changes']; derived: Snap['derived']
 const states = new WeakMap<WorkbookStore, State>();
 const counters = new WeakMap<WorkbookStore, { stats: number; cells: number }>();
 
-/** How many range statistics and cell results this store has computed (for tests and profiling). */
+/**
+ * How many range statistics and cell results this store has computed (for tests and profiling).
+ *
+ * @param store - The workbook store.
+ * @returns A copy of the counters.
+ */
 export function evaluations(store: WorkbookStore): { stats: number; cells: number } {
   return { ...(counters.get(store) ?? { stats: 0, cells: 0 }) };
 }
@@ -195,7 +213,14 @@ interface Run {
 }
 
 const dxfCache = new WeakMap<Book, Map<number, StyleSubset>>();
-/** A rule's dxf as allow-listed CSS (the same allow-list as @sheetpane/styles; never a font family). */
+/**
+ * A rule's dxf as allow-listed CSS (the same allow-list as `@sheetpane/styles`; never a font family). Cached per workbook.
+ *
+ * @param book - The workbook.
+ * @param dxfId - The rule's `dxfId`, or `undefined`.
+ * @param palette - The workbook's palette; default: read from `book`.
+ * @returns The CSS; `{}` when the rule has no dxf.
+ */
 export function dxfStyle(book: Book, dxfId: number | undefined, palette: Palette = paletteOf(book)): StyleSubset {
   if (dxfId === undefined) return {};
   let m = dxfCache.get(book);
@@ -269,13 +294,27 @@ function thresholdAt(c: Cfvo, o: Operand | undefined, stats: Stats, rule: Rule, 
 const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) as [number, number, number];
 const toHex = (rgb: number[]) => `#${rgb.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 
-/** Linear interpolation between two `#RRGGBB` colours in sRGB, per channel. */
+/**
+ * Linear interpolation between two `#RRGGBB` colours in sRGB, per channel.
+ *
+ * @param a - The colour at 0.
+ * @param b - The colour at 1.
+ * @param t - Where between them, 0 to 1 (clamped).
+ * @returns The colour, `#RRGGBB` upper case.
+ */
 export function lerpColor(a: string, b: string, t: number): string {
   const x = hex(a), y = hex(b), k = Math.max(0, Math.min(1, t));
   return toHex(x.map((v, i) => v + (y[i]! - v) * k));
 }
 
-/** A colour scale's colour for one value: the stops' colours interpolated between their thresholds. */
+/**
+ * A colour scale's colour for one value: the stops' colours interpolated between their thresholds.
+ *
+ * @param v - The cell's number.
+ * @param points - The thresholds' values, ascending (2 or 3).
+ * @param colors - One `#RRGGBB` per threshold.
+ * @returns The colour; the end colours beyond the ends.
+ */
 export function scaleColor(v: number, points: readonly number[], colors: readonly string[]): string {
   if (v <= points[0]!) return colors[0]!;
   const last = points.length - 1;
@@ -295,6 +334,13 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  * A data bar's length in percent of the cell: `minLength` (default 10) for a
  * value at or below the low threshold, `maxLength` (default 90) at or above
  * the high one, linear between (Excel 2007 data bars).
+ *
+ * @param v - The cell's number.
+ * @param lo - The low threshold's value.
+ * @param hi - The high threshold's value.
+ * @param minLength - The shortest bar, in percent; default 10.
+ * @param maxLength - The longest bar, in percent; default 90.
+ * @returns The length in percent, to two decimals.
  */
 export function barLength(v: number, lo: number, hi: number, minLength = 10, maxLength = 90): number {
   const t = hi > lo ? (v - lo) / (hi - lo) : v >= hi ? 1 : 0;
@@ -383,7 +429,13 @@ function applyRule(rule: Rule, run: Run, row: number, col: number, v: Cell | und
 /**
  * Every rule of the sheet at one cell, in priority order: a higher-priority
  * rule wins each property it sets, a lower one fills in the rest; a matching
- * rule with `stopIfTrue` ends the walk. Cached; see the module comment.
+ * rule with `stopIfTrue` ends the walk. Cached per store, and dropped as the cells it read change.
+ *
+ * @param store - The workbook store.
+ * @param sheetName - The sheet's name.
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns The CSS the rules draw and the rules that drew it.
  */
 export function cellResult(store: WorkbookStore, sheetName: string, row: number, col: number): CellResult {
   const snap = store.getSnapshot(), book = snap.book;
@@ -426,7 +478,15 @@ export function cellResult(store: WorkbookStore, sheetName: string, row: number,
   return res;
 }
 
-/** The legend at one cell: each rule that drew it, in words, with its range. */
+/**
+ * The legend at one cell: each rule that drew it, in words, with its range.
+ *
+ * @param store - The workbook store.
+ * @param sheet - The sheet's name.
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns One `{ words, range, rule }` per rule, in priority order; empty when none drew the cell.
+ */
 export function legendAt(store: WorkbookStore, sheet: string, row: number, col: number): { words: string; range: string; rule: Rule }[] {
   return cellResult(store, sheet, row, col).hits.map((rule) => ({ words: ruleWords(rule, row, col), range: rule.sqref, rule }));
 }

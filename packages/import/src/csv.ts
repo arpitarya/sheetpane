@@ -4,8 +4,15 @@ import { MAX_COLS, MAX_ROWS, type Cell } from '@sheetpane/export';
 import { ImportError } from './errors.js';
 import type { ImportedWorkbook } from './types.js';
 
+/** A CSV field separator sheetpane detects and reads. */
 export type Delimiter = ',' | ';' | '\t';
-export interface CsvOptions { name?: string; delimiter?: Delimiter }
+/** Options for `fromCsv`. */
+export interface CsvOptions {
+  /** The file name; the sheet is named after it. */
+  name?: string;
+  /** Skips detection. */
+  delimiter?: Delimiter;
+}
 
 const CANDIDATES: Delimiter[] = [',', ';', '\t'];
 
@@ -24,7 +31,12 @@ function counts(text: string, d: string, lines: number): number[] {
   return out;
 }
 
-/** The delimiter that splits the first 20 lines most consistently into more than one field; `,` when none does. */
+/**
+ * The delimiter that splits the first 20 lines most consistently into more than one field; `,` when none does.
+ *
+ * @param text - The CSV text.
+ * @returns `,`, `;` or tab.
+ */
 export function detectDelimiter(text: string): Delimiter {
   let best: Delimiter = ',', bestScore = 0, bestWidth = 1;
   for (const d of CANDIDATES) {
@@ -40,7 +52,14 @@ export function detectDelimiter(text: string): Delimiter {
   return best;
 }
 
-/** One pass, RFC 4180: `""` inside quotes is a quote; a stray quote mid-field is kept as text. */
+/**
+ * Splits CSV text into rows of fields in one pass, RFC 4180: `""` inside quotes is a quote; a stray quote mid-field is kept as text.
+ * CRLF, LF and CR all end a row; past Excel's limits it throws an `ImportError`.
+ *
+ * @param text - The CSV text, BOM already removed.
+ * @param d - The delimiter.
+ * @returns The rows, every field a string.
+ */
 export function parseCsv(text: string, d: Delimiter): string[][] {
   const rows: string[][] = [];
   let row: string[] = [], field = '', q = false, quoted = false;
@@ -67,12 +86,26 @@ export function parseCsv(text: string, d: Delimiter): string[][] {
   return rows;
 }
 
-/** A sheet name from a file name: extension dropped, forbidden characters replaced, 31 characters at most. */
+/**
+ * A sheet name from a file name: extension dropped, forbidden characters replaced, 31 characters at most.
+ *
+ * @param file - The file name or path, or `undefined`.
+ * @returns The name; `Sheet1` when nothing is left.
+ */
 export function sheetNameFrom(file: string | undefined): string {
   const base = (file ?? '').replace(/^.*[\\/]/, '').replace(/\.csv$/i, '').replace(/[[\]:*?/\\]/g, '_').replace(/^'+|'+$/g, '').trim().slice(0, 31).trim();
   return base || 'Sheet1';
 }
 
+/**
+ * Reads CSV text into a one-sheet workbook: the delimiter detected, the BOM dropped,
+ * every cell text, an empty field `null`.
+ *
+ * @param input - The CSV text, or a Blob read as UTF-8.
+ * @param o - The sheet's name and, to skip detection, the delimiter.
+ * @returns The workbook, `source: 'csv'`, with the detected `delimiter`.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0104_IMPORT.md
+ */
 export async function fromCsv(input: string | Blob, o: CsvOptions = {}): Promise<ImportedWorkbook> {
   let text = typeof input === 'string' ? input : new TextDecoder('utf-8').decode(await input.arrayBuffer());
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);

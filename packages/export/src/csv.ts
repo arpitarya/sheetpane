@@ -2,10 +2,13 @@
 import { cellRef } from './refs.js';
 import type { Cell, Sheet } from './types.js';
 
+/** Options for `toCsv`. */
 export interface ToCsvOptions {
+  /** Default `,`. */
   delimiter?: ',' | ';' | '\t';
   /** UTF-8 byte-order mark first, so Excel reads accents correctly. Default true. */
   bom?: boolean;
+  /** The line ending, also written after the last line. Default `\r\n`. */
   eol?: '\r\n' | '\n';
   /** Prefix `'` to text that a spreadsheet would run as a formula. Default true. */
   guardFormulas?: boolean;
@@ -22,6 +25,21 @@ function text(v: Cell): string {
   return v;
 }
 
+/**
+ * Writes one sheet as RFC 4180 CSV that Excel opens with accents intact and formulas defused.
+ * Ragged rows are padded to one width; booleans are `TRUE` / `FALSE`.
+ *
+ * @param sheet - The sheet to write; only its rows are read.
+ * @param o - Delimiter, BOM, line ending and the formula guard.
+ * @returns The CSV `text`, and the A1 refs of the cells the guard prefixed with `'`.
+ * @example
+ * ```ts
+ * import { toCsv } from '@sheetpane/export';
+ * const { text, guarded } = toCsv({ name: 'Sales', rows: [['Region', 'Total'], ['North', '=1+1']] });
+ * // guarded is ['B2']
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0103_EXPORT.md
+ */
 export function toCsv(sheet: Sheet, o: ToCsvOptions = {}): { text: string; guarded: string[] } {
   const d = o.delimiter ?? ',', eol = o.eol ?? '\r\n', guard = o.guardFormulas ?? true;
   const width = sheet.rows.reduce((w, r) => Math.max(w, r.length), 0);

@@ -5,11 +5,28 @@ import { ImportError } from './errors.js';
 import type { ImportedWorkbook } from './types.js';
 import { cfbRefusal, fromXlsx, isCfb, toBytes, type ReadOptions } from './xlsx.js';
 
+/** Options for `read`: the size limits, and a file name when the source is not a File. */
 export interface ReadAnyOptions extends ReadOptions {
   /** The file name, when the source is not a File (decides the extension check and the CSV sheet name). */
   name?: string;
 }
 
+/**
+ * Reads any upload into the plain workbook: the extension and the first bytes both decide
+ * whether it is .xlsx or CSV, and anything else is refused with an `ImportError`.
+ * CSV and .xlsx read anywhere — a browser, Node or a worker.
+ *
+ * @param source - A File, a Blob or the file's bytes.
+ * @param o - The file name (when `source` is not a File) and the ZIP size limits.
+ * @returns The workbook: raw values, display text, and the tables the plugins read.
+ * @example
+ * ```ts
+ * import { read } from '@sheetpane/import';
+ * const book = await read(file);
+ * console.log(book.sheets[0]?.text[0]?.[0]);
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0104_IMPORT.md
+ */
 export async function read(source: File | Blob | ArrayBuffer | Uint8Array, o: ReadAnyOptions = {}): Promise<ImportedWorkbook> {
   const name = o.name ?? (typeof File !== 'undefined' && source instanceof File ? source.name : undefined);
   const ext = name && /\.([^./\\]+)$/.exec(name)?.[1]?.toLowerCase();

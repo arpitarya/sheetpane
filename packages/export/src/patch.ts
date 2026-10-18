@@ -35,8 +35,10 @@ export interface PatchContext {
   setDefaultContentType(extension: string, contentType: string): Promise<void>;
 }
 
+/** A plugin's `exportPatch` hook: it edits the package through the context after the core's own writes. */
 export type ExportPatchHook = (ctx: PatchContext) => void | Promise<void>;
 
+/** Options for `patchXlsx`: compression, size limits, plugin hooks, and freeze and merge rewrites. */
 export interface PatchOptions extends WriteOptions, ZipLimits {
   /** Plugin hooks, run in order after the core's own writes (plugins verdict, `exportPatch`). */
   exportPatch?: ExportPatchHook[];
@@ -50,9 +52,16 @@ export interface PatchOptions extends WriteOptions, ZipLimits {
 
 const dirOf = (p: string) => p.slice(0, p.lastIndexOf('/') + 1);
 const baseOf = (p: string) => p.slice(p.lastIndexOf('/') + 1);
+/** The relationships part of a part: `xl/worksheets/sheet1.xml` → `xl/worksheets/_rels/sheet1.xml.rels`. */
 export const relsPathOf = (part: string) => `${dirOf(part)}_rels/${baseOf(part)}.rels`;
 
-/** Resolves a relationship target against the folder of the part that owns the rels. */
+/**
+ * Resolves a relationship target against the folder of the part that owns the rels.
+ *
+ * @param fromPart - The part that owns the relationship, e.g. `xl/workbook.xml`.
+ * @param target - The `Target`, relative or starting with `/`.
+ * @returns The target's part name, without a leading `/`.
+ */
 export function resolveTarget(fromPart: string, target: string): string {
   const segs = (target.startsWith('/') ? target.slice(1) : dirOf(fromPart) + target).split('/');
   const out: string[] = [];
@@ -63,26 +72,62 @@ export function resolveTarget(fromPart: string, target: string): string {
   return out.join('/');
 }
 
-/** An attribute's unescaped value; `name` may be `*:id` for any namespace prefix. */
+/**
+ * An attribute's unescaped value; `name` may be `*:id` for any namespace prefix.
+ *
+ * @param tag - One opening or empty tag's text.
+ * @param name - The attribute's name.
+ * @returns The value, or `undefined` when the attribute is absent.
+ */
 export function getAttr(tag: string, name: string): string | undefined {
   const n = name.startsWith('*:') ? `[\\w.-]+:${name.slice(2)}` : name.replace(/[.:]/g, '\\$&');
   const m = new RegExp(`\\s${n}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(tag);
   return m ? unescapeXml(m[1] ?? m[2] ?? '') : undefined;
 }
 
-/** Sets (or adds) an attribute on an opening or empty tag. */
+/**
+ * Sets (or adds) an attribute on an opening or empty tag.
+ *
+ * @param tag - The tag's text.
+ * @param name - The attribute's name.
+ * @param value - The plain value; it is escaped.
+ * @returns The rewritten tag.
+ */
 export function setAttr(tag: string, name: string, value: string): string {
   const re = new RegExp(`(\\s${name.replace(/[.:]/g, '\\$&')}\\s*=\\s*)(?:"[^"]*"|'[^']*')`);
   if (re.test(tag)) return tag.replace(re, `$1"${escapeAttr(value)}"`);
   return tag.replace(/\s*(\/?)>$/, ` ${name}="${escapeAttr(value)}"$1>`);
 }
 
+/**
+ * Removes an attribute from an opening or empty tag.
+ *
+ * @param tag - The tag's text.
+ * @param name - The attribute's name.
+ * @returns The tag without it.
+ */
 export function removeAttr(tag: string, name: string): string {
   return tag.replace(new RegExp(`\\s${name.replace(/[.:]/g, '\\$&')}\\s*=\\s*(?:"[^"]*"|'[^']*')`), '');
 }
 
-export interface Relationship { id: string; type: string; target: string; mode: string | undefined }
+/** One `<Relationship>` of a rels part. */
+export interface Relationship {
+  /** The `Id`, e.g. `rId1`. */
+  id: string;
+  /** The relationship type URI. */
+  type: string;
+  /** The `Target`, as written. */
+  target: string;
+  /** The `TargetMode`, e.g. `External`. */
+  mode: string | undefined;
+}
 
+/**
+ * Reads every `<Relationship>` of a rels part.
+ *
+ * @param xml - The rels part's XML.
+ * @returns The relationships, in document order.
+ */
 export function parseRels(xml: string): Relationship[] {
   return [...xml.matchAll(/<(?:\w+:)?Relationship\b[^>]*>/g)].map((m) => ({
     id: getAttr(m[0], 'Id') ?? '', type: getAttr(m[0], 'Type') ?? '', target: getAttr(m[0], 'Target') ?? '', mode: getAttr(m[0], 'TargetMode'),
@@ -318,7 +363,13 @@ export function patchSheetXml(xml: string, sheetName: string, changes: Map<strin
   return { xml: result, formulaTouched };
 }
 
-/** Replaces the first sheet view's `<pane>` (and its pane selections) with a frozen pane, or removes it. */
+/**
+ * Replaces the first sheet view's `<pane>` (and its pane selections) with a frozen pane, or removes it.
+ *
+ * @param xml - The worksheet's XML.
+ * @param f - Frozen rows and columns; `0, 0` removes the pane.
+ * @returns The rewritten worksheet XML.
+ */
 export function setPane(xml: string, f: { rows: number; cols: number }): string {
   const P = /<(\w+:)?worksheet\b/.exec(xml)?.[1] ?? '';
   const pane = paneXml(f, P);
@@ -335,7 +386,13 @@ export function setPane(xml: string, f: { rows: number; cols: number }): string 
   return xml.replace(view[0], `${open}>${pane}${kept}</${P}sheetView>`);
 }
 
-/** Rewrites a worksheet's `<mergeCells>` to exactly these ranges (removed when empty), in schema position. */
+/**
+ * Rewrites a worksheet's `<mergeCells>` to exactly these ranges (removed when empty), in schema position.
+ *
+ * @param xml - The worksheet's XML.
+ * @param ranges - A1 ranges, e.g. `['A1:J1']`.
+ * @returns The rewritten worksheet XML.
+ */
 export function setMergeCells(xml: string, ranges: string[]): string {
   const P = /<(\w+:)?worksheet\b/.exec(xml)?.[1] ?? '';
   const cur = new RegExp(`<${P}mergeCells\\b[^>]*?(?:/>|>[\\s\\S]*?</${P}mergeCells>)`).exec(xml);
@@ -377,6 +434,17 @@ export function setFullCalcOnLoad(wb: string): string {
  * strings stay in place and new text goes in as inline strings; every other part
  * is copied byte for byte. Excel is asked to recalculate on open, and every
  * pivot cache whose source meets a changed cell to refresh.
+ *
+ * @param original - The uploaded .xlsx file's bytes.
+ * @param changes - The cells to rewrite; a missing sheet or a bad reference throws an `ExportError`.
+ * @param o - Compression, size limits, plugin hooks, freeze panes and merges.
+ * @returns The patched .xlsx file's bytes.
+ * @example
+ * ```ts
+ * import { patchXlsx } from '@sheetpane/export';
+ * const patched = await patchXlsx(bytes, [{ sheet: 'Sales', ref: 'B2', value: 1300 }]);
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0103_EXPORT.md
  */
 export async function patchXlsx(original: Uint8Array, changes: Change[], o: PatchOptions = {}): Promise<Uint8Array> {
   const limits: ZipLimits = { maxEntrySize: o.maxEntrySize ?? DEFAULT_LIMITS.maxEntrySize, maxTotalSize: o.maxTotalSize ?? DEFAULT_LIMITS.maxTotalSize };

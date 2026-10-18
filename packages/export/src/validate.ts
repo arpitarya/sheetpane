@@ -5,6 +5,14 @@ import type { Cell, Sheet, Workbook } from './types.js';
 
 export const MAX_TEXT = 32_767;
 
+/**
+ * Throws an `ExportError` unless the name is a valid sheet name: 1–31 characters, none of `[ ] : * ? / \`,
+ * no apostrophe at either end, and unique ignoring case.
+ *
+ * @param name - The candidate name.
+ * @param seen - Lower-cased names already used; the name is added when it passes.
+ * @returns Nothing; on return `name` is known to be a string.
+ */
 export function checkSheetName(name: unknown, seen?: Set<string>): asserts name is string {
   if (typeof name !== 'string' || name.length < 1 || name.length > 31) {
     throw new ExportError('sheet-name', `sheet name ${JSON.stringify(name)} must be 1–31 characters`, { sheet: String(name) });

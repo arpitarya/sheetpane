@@ -18,9 +18,16 @@ const REF_COLOURS = ['#2346C8', '#B42318', '#16703E', '#875600', '#7A2EB8', '#0E
 
 const general = (n: number) => (Math.abs(n) >= 1e15 || (n !== 0 && Math.abs(n) < 1e-9) ? n.toPrecision(10).replace(/\.?0+e/, 'e') : Number(n.toPrecision(15)).toLocaleString('en-US', { maximumFractionDigits: 10 }));
 
+/** A selection's status-bar figures: `count` non-empty cells, of which `numbers` are numbers; their `sum` and `avg`. */
 export interface Stats { sum: number; avg: number | undefined; count: number; numbers: number }
 
-/** Sum, average and count of a selection, as Excel's status bar counts them: Count is every non-empty cell; Sum and Avg the numbers. */
+/**
+ * Sum, average and count of a selection, as Excel's status bar counts them: Count is every non-empty cell; Sum and Avg the numbers.
+ *
+ * @param snap - A snapshot of the store.
+ * @param sel - The selection.
+ * @returns The figures (`avg` is `undefined` with no numbers), or `undefined` for no sheet or a selection over 2,000,000 cells.
+ */
 export function selectionStats(snap: Snapshot, sel: Selection): Stats | undefined {
   const sheet = snap.book?.sheets.find((s) => s.name === sel.sheet);
   const box = parseBox(sel.range ?? sel.ref);
@@ -45,7 +52,12 @@ export function selectionStats(snap: Snapshot, sel: Selection): Stats | undefine
   return { sum, avg: numbers ? sum / numbers : undefined, count, numbers };
 }
 
-/** Formula cells whose value now differs from the one saved in the file — what the user's changes recalculated. */
+/**
+ * Formula cells whose value now differs from the one saved in the file — what the user's changes recalculated.
+ *
+ * @param snap - A snapshot of the store.
+ * @returns The count (the status line's `⟳ N cells recalculated`).
+ */
 export function recalculatedCount(snap: Snapshot): number {
   const b = snap.book;
   if (!b) return 0;
@@ -59,7 +71,29 @@ export function recalculatedCount(snap: Snapshot): number {
   return n;
 }
 
-/** The formula plugin's controls. Pass the headless plugin so the marks and status can read its state. */
+/**
+ * The formula plugin's controls: `fx =…` in the cell bar; Sum · Avg · Count, `⟳ N cells recalculated` and circular
+ * references in the status line; ⟳ ↻ ≈ marks on cells; coloured outlines of the ranges a formula reads while it is
+ * edited. Importing this module makes `plugins="formulas"` enable the plugin with these controls.
+ *
+ * @param engine - The headless plugin, so the marks and status can read its state; without it, no ↻ or ≈ marks and no circular-reference status.
+ * @returns The controls plugin (`id: 'formulas-ui'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0111_FORMULAS.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { formulas } from '@sheetpane/formulas';
+ * import { ui } from '@sheetpane/formulas/ui';
+ *
+ * const engine = formulas();
+ * const book = createWorkbook({ plugins: [engine, ui(engine)] });
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/formulas/ui'; // registers `formulas` with its controls
+ * excel.setAttribute('plugins', 'formulas');
+ * ```
+ */
 export function ui(engine?: FormulasPlugin): Plugin {
   let seen: WorkbookStore | undefined;
   const storeOf = () => engine?.store ?? seen;
@@ -167,7 +201,19 @@ export function ui(engine?: FormulasPlugin): Plugin {
   };
 }
 
-/** The headless plugin and its controls, sharing state. */
+/**
+ * The headless plugin and its controls, sharing state — what `plugins="formulas"` enables once this module is imported.
+ *
+ * @param o - The headless plugin's options.
+ * @returns `[formulas(o), ui(thatPlugin)]`.
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { formulasWithUi } from '@sheetpane/formulas/ui';
+ *
+ * const book = createWorkbook({ plugins: formulasWithUi({ preload: true }) });
+ * ```
+ */
 export function formulasWithUi(o: FormulasOptions = {}): Plugin[] {
   const f = formulas(o);
   return [f, ui(f)];

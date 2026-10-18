@@ -6,12 +6,19 @@ import type { Cell, Sheet } from '@sheetpane/export';
 /** A colour as SpreadsheetML stores it. */
 export interface Color { rgb?: string; theme?: number; tint?: number; indexed?: number; auto?: boolean }
 
+/** One `<font>` of `xl/styles.xml`. */
 export interface Font { b?: boolean; i?: boolean; u?: string; strike?: boolean; sz?: number; color?: Color; name?: string; vertAlign?: string }
+/** One `<fill>` of `xl/styles.xml`: a pattern or a gradient. */
 export interface Fill { patternType?: string; fgColor?: Color; bgColor?: Color; gradient?: { type?: string; degree?: number; stops: { position: number; color: Color }[] } }
+/** One side of a border: its line style and colour. */
 export interface BorderSide { style?: string; color?: Color }
+/** One `<border>` of `xl/styles.xml`. */
 export interface Border { left?: BorderSide; right?: BorderSide; top?: BorderSide; bottom?: BorderSide; diagonal?: BorderSide }
+/** A cell format's `<alignment>`. */
 export interface Alignment { horizontal?: string; vertical?: string; wrapText?: boolean; indent?: number; textRotation?: number; shrinkToFit?: boolean }
+/** One cell format (`<xf>` of `cellXfs`); a cell's `s` indexes these. */
 export interface CellXf { numFmtId: number; fontId: number; fillId: number; borderId: number; alignment?: Alignment; applyNumberFormat?: boolean; applyFont?: boolean; applyFill?: boolean; applyBorder?: boolean; applyAlignment?: boolean }
+/** A differential format (`<dxf>`), used by conditional formats. */
 export interface Dxf { font?: Font; fill?: Fill; border?: Border; numFmt?: { id: number; code: string }; alignment?: Alignment }
 
 /** `xl/styles.xml`, parsed. */
@@ -26,6 +33,7 @@ export interface StyleTables {
   indexedColors?: string[];
 }
 
+/** One `<dataValidation>` rule of a worksheet. */
 export interface DataValidation {
   /** Ranges the rule covers, e.g. `['B2:B100', 'D2']`. */
   sqref: string[];
@@ -44,7 +52,9 @@ export interface DataValidation {
   formula2?: string;
 }
 
+/** A conditional-format value object: a threshold of a colour scale, data bar or icon set. */
 export interface Cfvo { type: string; val?: string; gte?: boolean }
+/** One `<cfRule>` of a conditional format. */
 export interface CfRule {
   type: string;
   priority: number;
@@ -62,10 +72,12 @@ export interface CfRule {
   dataBar?: { cfvo: Cfvo[]; color?: Color; minLength?: number; maxLength?: number };
   iconSet?: { iconSet?: string; cfvo: Cfvo[] };
 }
+/** One `<conditionalFormatting>`: the ranges and their rules. */
 export interface ConditionalFormat { sqref: string[]; rules: CfRule[] }
 
 /** One position in a drawing: column / row, zero-based, plus an offset in EMU. */
 export interface AnchorPoint { col: number; colOff: number; row: number; rowOff: number }
+/** A picture, chart or shape anchored on a worksheet's drawing. */
 export interface DrawingAnchor {
   kind: 'picture' | 'chart' | 'shape';
   anchor: 'twoCell' | 'oneCell' | 'absolute';
@@ -83,11 +95,16 @@ export interface DrawingAnchor {
   chart?: string;
 }
 
+/** A legacy note (`<comment>`) on a cell. */
 export interface Note { ref: string; author: string; text: string }
+/** One threaded comment or reply on a cell. */
 export interface ThreadedComment { id: string; ref: string; personId: string; parentId?: string; date?: string; done: boolean; text: string }
+/** An author of threaded comments. */
 export interface Person { id: string; displayName: string; userId?: string; providerId?: string }
+/** A pivot table on a worksheet: its name and where it sits. */
 export interface PivotTable { name: string; ref: string }
 
+/** One imported sheet: `@sheetpane/export`'s `Sheet` plus display text and what the plugins read. */
 export interface ImportedSheet extends Sheet {
   /** Display text per cell — what the grid shows (number-format subset applied). Same shape as `rows`. */
   text: string[][];
@@ -114,6 +131,7 @@ export interface ImportedSheet extends Sheet {
   pivotTables: PivotTable[];
 }
 
+/** What `read`, `fromXlsx` and `fromCsv` return: the sheets plus the workbook-wide tables. */
 export interface ImportedWorkbook {
   sheets: ImportedSheet[];
   source: 'xlsx' | 'csv';

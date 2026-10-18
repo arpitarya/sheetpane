@@ -10,6 +10,7 @@ import type { Side } from './css.js';
 /** One colour a picker offers: `RRGGBB` and its name (the name is what the `<select>` shows and a screen reader reads). */
 export interface Swatch { value: string; label: string }
 
+/** Options for {@link ui}: the swatches the pickers offer. */
 export interface StylesUiOptions {
   /** Text colours the colour picker offers. */
   colours?: readonly Swatch[];
@@ -19,6 +20,7 @@ export interface StylesUiOptions {
   highlight?: string;
 }
 
+/** The text colours the colour picker offers by default. */
 export const DEFAULT_COLOURS: readonly Swatch[] = [
   { value: '000000', label: 'Black' }, { value: '595959', label: 'Dark grey' }, { value: 'C00000', label: 'Red' }, { value: 'C65911', label: 'Orange' },
   { value: '375623', label: 'Green' }, { value: '2346C8', label: 'Blue' }, { value: '7030A0', label: 'Purple' },
@@ -30,6 +32,7 @@ export const DEFAULT_FILLS: readonly Swatch[] = [
 ];
 
 const svg = (d: string, w = 1.75) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+/** The controls' icons: inline SVG drawn in `currentColor`, keyed by control. */
 export const ICONS = {
   bold: svg('M7 5h6a3.5 3.5 0 0 1 0 7H7zM7 12h7a3.5 3.5 0 0 1 0 7H7z', 2.5),
   italic: svg('M10 5h8M6 19h8M15 5L9 19'),
@@ -77,7 +80,15 @@ function alignButton(id: string, label: string, icon: string, key: 'align' | 'va
 }
 
 const THIN: BorderEdge = { style: 'thin' };
-/** The border edges a `Borders` choice gives one cell of the selection box. */
+/**
+ * The border edges a `Borders` choice gives one cell of the selection box (`outside` draws only the box's edges).
+ *
+ * @param choice - A {@link BORDER_CHOICES} value (`all`, `outside`, `top`, … `none`).
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @param box - The selection box.
+ * @returns The sides to set (`null` removes one), or `undefined` when the choice gives this cell none.
+ */
 export function borderEdges(choice: string, row: number, col: number, box: Box): StylePatch['border'] | undefined {
   const edge = (on: boolean, e: BorderEdge = THIN) => (on ? e : undefined);
   const pick = (sides: Partial<Record<Side, BorderEdge | null | undefined>>) => {
@@ -99,6 +110,7 @@ export function borderEdges(choice: string, row: number, col: number, box: Box):
   }
 }
 
+/** The Borders menu's choices; the first (`''`) names the menu. */
 export const BORDER_CHOICES: readonly Swatch[] = [
   { value: '', label: 'Borders' }, { value: 'all', label: 'All borders' }, { value: 'outside', label: 'Outside borders' },
   { value: 'top', label: 'Top border' }, { value: 'bottom', label: 'Bottom border' }, { value: 'left', label: 'Left border' }, { value: 'right', label: 'Right border' },
@@ -117,6 +129,9 @@ const overlaps = (a: Box, b: Box) => a.left <= b.right && b.left <= a.right && a
  * Merge / Unmerge — core merges (SR-GRID 21a): a merged range under the
  * selection is unmerged; otherwise a selected range is merged (merges it
  * overlaps are unmerged in the same undo step). One cell, not merged: nothing.
+ *
+ * @param store - The workbook store.
+ * @param sel - The selection.
  */
 export function toggleMerge(store: WorkbookStore, sel: Selection): void {
   const snap = store.getSnapshot();
@@ -146,7 +161,12 @@ function mergeControl(id: string, slot: 'format-row' | 'selbar', group: string):
   };
 }
 
-/** What changed, in words, for the status line: "Style changed · Bold, Fill". */
+/**
+ * What changed, in words, for the status line: "Style changed · Bold, Fill".
+ *
+ * @param p - The cell's patch, or `undefined`.
+ * @returns The sentence, or `''` when nothing changed.
+ */
 export function describe(p: StylePatch | undefined): string {
   if (!p) return '';
   const w: string[] = [];
@@ -161,7 +181,28 @@ export function describe(p: StylePatch | undefined): string {
   return w.length ? `Style changed · ${w.join(', ')}` : '';
 }
 
-/** The opt-in controls: the format row (text · colour · fill · border · align · wrap · clear), the selection bar (Bold · Fill · Merge), a status note. */
+/**
+ * The opt-in controls for Edit mode: the format row (text · colour · fill · border · align · merge · wrap · clear),
+ * the selection bar (Bold · Fill · Merge) and a status note. Every action restyles the selection as one undo step.
+ * Pair it with {@link styles}; importing this module makes `plugins="styles"` enable both. No font picker.
+ *
+ * @param o - The colour and fill swatches, and the selection bar's highlight.
+ * @returns The controls plugin (`id: 'styles-ui'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0110_STYLES.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { styles } from '@sheetpane/styles';
+ * import { ui } from '@sheetpane/styles/ui';
+ *
+ * const book = createWorkbook({ plugins: [styles(), ui({ highlight: 'E2EFDA' })] });
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/styles/ui'; // registers `styles` with its controls
+ * excel.setAttribute('plugins', 'styles');
+ * ```
+ */
 export function ui(o: StylesUiOptions = {}): Plugin {
   const colours = o.colours ?? DEFAULT_COLOURS, fills = o.fills ?? DEFAULT_FILLS;
   const highlight = (o.highlight ?? fills[0]?.value ?? 'FFF2CC').toUpperCase();

@@ -10,6 +10,7 @@ import { allowListed, AUTO_INK } from './css.js';
 import { applyLook, cachedXfCss, fileLook, patchCss, patchOf } from './model.js';
 import { writeStyles } from './xml.js';
 
+/** Options for {@link styles}. */
 export interface StylesOptions {
   /**
    * Draw the formats the file carries (default `true`). `false` draws only the
@@ -19,7 +20,29 @@ export interface StylesOptions {
   fileStyles?: boolean;
 }
 
-/** The headless plugin: `decorate` and `exportPatch`. Add `ui()` from `@sheetpane/styles/ui` for the format row. */
+/**
+ * The cell-styles plugin: `decorate` draws each cell as the workbook formats it — fill, weight, style, size,
+ * colour, decoration, borders, alignment, wrap — plus the reviewer's own `style` changes, never a font family;
+ * `exportPatch` writes those changes into `styles.xml`. Importing this module registers it as `styles`; add
+ * `ui()` from `@sheetpane/styles/ui` for the format row.
+ *
+ * @param o - `fileStyles: false` draws only the reviewer's changes.
+ * @returns The plugin (`id: 'styles'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0110_STYLES.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { styles } from '@sheetpane/styles';
+ *
+ * const book = createWorkbook({ plugins: [styles()] });
+ * await book.load(bytes, 'report.xlsx');
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/styles'; // registers `styles`
+ * excel.setAttribute('plugins', 'styles');
+ * ```
+ */
 export function styles(o: StylesOptions = {}): Plugin {
   const fileStyles = o.fileStyles ?? true;
   return {
@@ -30,7 +53,14 @@ export function styles(o: StylesOptions = {}): Plugin {
   };
 }
 
-/** One cell's CSS: the file's format, then the user's change; allow-listed. */
+/**
+ * One cell's CSS: the file's format, then the user's change; allow-listed. A filled cell with automatic text gets
+ * the workbook's default ink.
+ *
+ * @param cell - The cell, as the `decorate` hook receives it.
+ * @param fileStyles - Draw the file's format (default `true`); `false` draws only the user's change.
+ * @returns The CSS, or `undefined` when there is nothing to draw.
+ */
 export function decorateCell(cell: CellContext, fileStyles = true): StyleSubset | undefined {
   const book = cell.book;
   const patch = patchOf(cell.store, cell.sheet.name, cell.ref);

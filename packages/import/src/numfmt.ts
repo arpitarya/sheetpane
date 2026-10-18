@@ -3,6 +3,7 @@
 // codes made only of `0 # , . % y m d h s AM/PM / - : space "literal"`. Any
 // other format shows the raw stored text; @sheetpane/numfmt replaces all of this.
 
+/** Excel's built-in number formats the subset covers, by `numFmtId`. Exported as `BUILTIN_FORMATS`. */
 export const BUILTIN: Record<number, string> = {
   0: 'General', 1: '0', 2: '0.00', 3: '#,##0', 4: '#,##0.00', 9: '0%', 10: '0.00%', 11: '0.00E+00', 12: '# ?/?', 13: '# ??/??',
   14: 'm/d/yyyy', 15: 'd-mmm-yy', 16: 'd-mmm', 17: 'mmm-yy', 18: 'h:mm AM/PM', 19: 'h:mm:ss AM/PM', 20: 'h:mm', 21: 'h:mm:ss', 22: 'm/d/yyyy h:mm',
@@ -13,20 +14,36 @@ export const BUILTIN: Record<number, string> = {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-/** Is this custom code inside the subset? */
+/**
+ * Whether a custom format code is inside the subset this reader formats.
+ *
+ * @param code - The format code.
+ * @returns True when only the subset's tokens are used.
+ */
 export function inSubset(code: string): boolean {
   const bare = code.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/AM\/PM/gi, '');
   return /^[0#,.%ymdhs/\-: ;]*$/i.test(bare);
 }
 
-/** The format code a cell's style names, when the subset covers it; undefined → show the raw text. */
+/**
+ * The format code a cell's style names, when the subset covers it.
+ *
+ * @param numFmtId - The style's `numFmtId`.
+ * @param custom - The file's own codes by id (`StyleTables.numFmts`).
+ * @returns The code, or `undefined` — show the raw text.
+ */
 export function subsetCode(numFmtId: number, custom: Record<number, string>): string | undefined {
   if (BUILTIN[numFmtId] !== undefined) return BUILTIN[numFmtId];
   const c = custom[numFmtId];
   return c !== undefined && inSubset(c) ? c : undefined;
 }
 
-/** Excel's General: up to 11 characters of digits, scientific past that. */
+/**
+ * Formats a number as Excel's General: up to 11 characters of digits, scientific past that.
+ *
+ * @param n - The number.
+ * @returns The display text.
+ */
 export function general(n: number): string {
   if (n === 0) return '0';
   const a = Math.abs(n);
@@ -61,7 +78,13 @@ function sections(code: string): string[] {
 
 const isDateSection = (s: string) => /\[(h+|m+|s+)\]|[ydhs]|AM\/PM|^[^0#?]*m[^0#?]*$/i.test(s.replace(/"[^"]*"/g, '').replace(/\\./g, '').replace(/\[[^\]]*\]/g, (m) => (/^\[(h+|m+|s+)\]$/i.test(m) ? m : '')));
 
-/** A serial date as calendar parts (UTC), honouring the 1900 leap-year bug and the 1904 system. */
+/**
+ * A serial date as calendar parts (UTC), honouring the 1900 leap-year bug and the 1904 system.
+ *
+ * @param serial - The stored serial number.
+ * @param date1904 - Whether the workbook uses the 1904 date system.
+ * @returns Year `y`, zero-based month `mo`, day `d`, weekday `wd` (0 is Sunday), `secs` into the day and whole `days`.
+ */
 export function serialToParts(serial: number, date1904: boolean) {
   let days = Math.floor(serial);
   let secs = Math.round((serial - days) * 86400 * 1000) / 1000;
@@ -212,7 +235,14 @@ function formatNumber(n: number, sec: string, autoMinus: boolean): string {
   return (neg ? '-' : '') + before + body + after;
 }
 
-/** Formats a number by a code (any of the subset). */
+/**
+ * Formats a number by a format code from the subset.
+ *
+ * @param n - The number.
+ * @param code - The format code, sections and all.
+ * @param date1904 - Whether dates count from 1904; default false.
+ * @returns The display text.
+ */
 export function formatCode(n: number, code: string, date1904 = false): string {
   if (code === 'General' || code === '') return general(n);
   const secs = sections(code);

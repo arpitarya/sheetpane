@@ -9,16 +9,22 @@ import { a1, check, covers, evaluatorOf, ruleWords, rulesOf, skipOf, textAt, use
 export type { Book, Rule, RuleKind, Operator, SkipReason, Evaluate } from './rules.js';
 export { rulesOf, listOptions, ruleWords, check, shiftFormula, parseOperand } from './rules.js';
 
+/** The plugin's id, and the name `plugins="…"` takes. */
 export const PLUGIN_ID = 'validation';
+/** The `type` of every error this plugin raises. */
 export const ERROR_TYPE = 'validation';
+/** The `author` of every error this plugin raises: the workbook's own rules, not a person. */
 export const AUTHOR = 'workbook';
 
+/** Options for {@link validation}. */
 export interface ValidationOptions {
   /** The severity a broken rule gets; `warning` by default. */
   severity?: Severity;
 }
 
+/** A rule that is not checked: where it is, its type, and why (`custom`, `operand`, `operator`, `type`, `source`). */
 export interface SkippedRule { sheet: string; sqref: string; type: string; reason: SkipReason; detail: string }
+/** How many of a workbook's rules are checked, and the ones that are not. */
 export interface SkipReport {
   /** Rules the workbook holds (`type="none"` excluded). */
   rules: number;
@@ -34,6 +40,9 @@ const reports = new WeakMap<Book, SkipReport>();
  * The rules a workbook holds that are not checked, and why. Given a store, a
  * `custom` rule counts as checked when its `derive` plugin offers `evaluate()`;
  * given a bare workbook, every `custom` rule is skipped.
+ *
+ * @param from - The workbook, or the store holding it.
+ * @returns The report; all zero when no workbook is loaded.
  */
 export function skippedRules(from: Book | WorkbookStore): SkipReport {
   const store = 'getSnapshot' in from ? from : undefined;
@@ -51,7 +60,12 @@ export function skippedRules(from: Book | WorkbookStore): SkipReport {
   return out;
 }
 
-/** The last report `validate` made for a workbook (the status line reads it). */
+/**
+ * The last report `validate` made for a workbook (the status line reads it).
+ *
+ * @param book - The workbook, or `undefined`.
+ * @returns The report, or `undefined` before the first `validate`.
+ */
 export function lastReport(book: Book | undefined): SkipReport | undefined {
   return book ? reports.get(book) : undefined;
 }
@@ -62,7 +76,14 @@ function messageOf(rule: Rule, words: string): string {
   return t && e ? `${t}: ${e}` : t || e || words;
 }
 
-/** Every failing cell on one sheet: one draft per cell (the first rule it breaks). */
+/**
+ * Every failing cell on one sheet: one error draft per cell (the first rule it breaks), within the used range.
+ *
+ * @param sheet - The sheet's name.
+ * @param store - The workbook store.
+ * @param severity - The drafts' severity; default `warning`.
+ * @returns The drafts — `type: 'validation'`, `author: 'workbook'`, `found`, `expected` and `message` filled.
+ */
 export function validateSheet(sheet: string, store: WorkbookStore, severity: Severity = 'warning'): ErrorDraft[] {
   const book = store.book, s = store.sheet(sheet);
   if (!book || !s) return [];
@@ -89,7 +110,32 @@ export function validateSheet(sheet: string, store: WorkbookStore, severity: Sev
   return out;
 }
 
-/** The plugin: `validate` on the `workbook` author's behalf. */
+/**
+ * The data-validation plugin: checks the workbook's own `<dataValidations>` rules on load and after every change,
+ * through the `validate` hook. A cell that breaks a rule is one error (`type: 'validation'`, `author: 'workbook'`)
+ * that resolves when the cell passes and reopens when it fails again. `custom` rules need a formula engine
+ * (`@sheetpane/formulas`); rules it cannot check are listed by {@link skippedRules}. Importing this module
+ * registers it as `validation`; the list arrow and status count are in `@sheetpane/validation/ui`.
+ *
+ * @param o - The severity a broken rule gets; default `warning`.
+ * @returns The plugin (`id: 'validation'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0108_VALIDATION.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { formulas } from '@sheetpane/formulas';
+ * import { skippedRules, validation } from '@sheetpane/validation';
+ *
+ * const book = createWorkbook({ plugins: [validation({ severity: 'error' }), formulas()] });
+ * await book.load(bytes, 'budget.xlsx');
+ * console.log(skippedRules(book).skipped);
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/validation'; // registers `validation`
+ * excel.setAttribute('plugins', 'validation formulas');
+ * ```
+ */
 export function validation(o: ValidationOptions = {}): Plugin {
   const severity = o.severity ?? 'warning';
   return {
@@ -102,7 +148,15 @@ export function validation(o: ValidationOptions = {}): Plugin {
   };
 }
 
-/** Is a cell covered by a checkable `list` rule? (The list arrow's `appliesTo`.) */
+/**
+ * The checkable `list` rule covering a cell, if any — the list arrow's `appliesTo`.
+ *
+ * @param store - The workbook store.
+ * @param sheet - The sheet's name.
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns The rule, or `undefined`.
+ */
 export function listRuleAt(store: WorkbookStore, sheet: string, row: number, col: number): Rule | undefined {
   const book = store.book;
   if (!book) return undefined;

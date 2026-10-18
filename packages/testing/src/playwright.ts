@@ -17,6 +17,7 @@ interface Locator {
 interface Download_ { suggestedFilename(): string; path(): Promise<string | null> }
 interface PageLike { locator(selector: string): any; waitForEvent(event: 'download'): Promise<any> }
 
+/** Which `<sheetpane-excel>` the Playwright driver works on, and its errors panel. */
 export interface PlaywrightOptions {
   /** Which sheet: a CSS selector (default `sheetpane-excel`, the first). */
   excel?: string;
@@ -24,6 +25,25 @@ export interface PlaywrightOptions {
   errors?: string;
 }
 
+/**
+ * A driver for one `<sheetpane-excel>` on a Playwright page: clicks, typing and the Download
+ * button, through the grid's committed test hooks. Playwright is never imported.
+ *
+ * @param page - Playwright's `Page`.
+ * @param o - CSS selectors for the sheet and its errors panel.
+ * @returns The driver, plus the sheet's `excel` locator and `cell(ref)` for a cell's locator.
+ * @example
+ * ```ts
+ * import { sheetpane } from '@sheetpane/testing/playwright';
+ * // Playwright's Page, from the test's fixtures
+ * declare const page: Parameters<typeof sheetpane>[0];
+ * const sp = sheetpane(page);
+ * await sp.waitForLoad();
+ * await sp.edit({ column: 'Units', row: 4 }, '12');
+ * const values = await sp.readDownload();
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md
+ */
 export function sheetpane(page: PageLike, o: PlaywrightOptions = {}): SheetpaneDriver & { excel: Locator; cell(ref: string): Locator } {
   const excel: Locator = page.locator(o.excel ?? 'sheetpane-excel').first();
   const panel = async () => { const pane = await excel.evaluate((el) => el.getAttribute('pane'), null); return page.locator(o.errors ?? (pane ? `sheetpane-errors[pane="${pane}"]` : 'sheetpane-errors')).first(); };

@@ -52,7 +52,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-1005](#sp-1005) | Not a workbook | error |
 | [SP-1006](#sp-1006) | File too large | error |
 | [SP-1007](#sp-1007) | Damaged file | error |
-| [SP-1008](#sp-1008) | Reading .xlsx needs a DOM | error |
+| [SP-1008](#sp-1008) | Reading .xlsx needs a DOM (retired) | error |
 | [SP-2001](#sp-2001) | Invalid sheet name | error |
 | [SP-2002](#sp-2002) | No visible sheet | error |
 | [SP-2003](#sp-2003) | Sheet past Excel’s limits | error |
@@ -186,11 +186,11 @@ grid shows it as "Can't open this file" (or the password state) and fires
 
 ### SP-1008
 
-**Reading .xlsx needs a DOM** · error · [SR-IMPORT](../records/0104_IMPORT.md) decision 8 · `code: 'needs-dom'`
+**Reading .xlsx needs a DOM** · error · **retired** · [SR-IMPORT](../records/0104_IMPORT.md) decision 8
 
-- **Meaning:** `.xlsx` is read with `DOMParser`, which this runtime lacks.
-- **Likely cause:** `read()` called in Node, a worker or a server render.
-- **Fix:** read in a browser, or install a DOM shim (`globalThis.DOMParser`) first. CSV reads anywhere.
+- **Meaning:** no longer raised. `.xlsx` once needed `DOMParser`; since W-39 the reader carries its own XML parser for runtimes without one, so `.xlsx` reads in Node, workers and server renders.
+- **Likely cause:** an older `@sheetpane/import`.
+- **Fix:** upgrade `@sheetpane/import`. The code is kept so it is never reused.
 
 ---
 

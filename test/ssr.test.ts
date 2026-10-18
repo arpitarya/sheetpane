@@ -8,10 +8,12 @@ describe('importing in Node, no browser (SR-LAW-8)', () => {
     expect((await m.toXlsx({ sheets: [{ name: 'S', rows: [[1]] }] })).length).toBeGreaterThan(0);
     expect(() => m.download('a', 'a.csv')).toThrow(/^SP-2106: .*needs a browser page/);
   });
-  it('@sheetpane/import imports, reads CSV, and refuses .xlsx without a DOM by name', async () => {
+  it('@sheetpane/import imports and reads CSV and .xlsx with no DOM (SR-IMPORT decision 8)', async () => {
     const m = await import('@sheetpane/import');
     expect((await m.fromCsv('a;b\n1;2')).sheets[0]!.rows).toEqual([['a', 'b'], ['1', '2']]);
     const { toXlsx } = await import('@sheetpane/export');
-    await expect(m.read(await toXlsx({ sheets: [{ name: 'S', rows: [[1]] }] }))).rejects.toMatchObject({ code: 'needs-dom', spCode: 'SP-1008' });
+    const wb = await m.read(await toXlsx({ sheets: [{ name: 'S', rows: [['a', 1], ['b & c', true]] }] }));
+    expect(wb.sheets[0]!.name).toBe('S');
+    expect(wb.sheets[0]!.rows).toEqual([['a', 1], ['b & c', true]]);
   });
 });

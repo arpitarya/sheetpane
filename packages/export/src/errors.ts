@@ -3,6 +3,7 @@
 // SP code (W-40) and the message starts with it and ends with its docs link.
 import { spMessage, type SpCode, type SpCoded } from './codes.js';
 
+/** Why an `ExportError` was thrown — the typed reason hosts switch on. */
 export type ExportErrorCode =
   | 'sheet-name' | 'sheet-count' | 'too-large' | 'bad-ref' | 'bad-value' | 'no-sheet' | 'bad-merge'
   | 'not-zip' | 'zip64' | 'encrypted' | 'unsupported-compression' | 'corrupt' | 'over-limit' | 'not-workbook';
@@ -14,12 +15,22 @@ export const EXPORT_SP_CODES: Readonly<Record<ExportErrorCode, SpCode>> = {
   'unsupported-compression': 'SP-2011', corrupt: 'SP-2012', 'over-limit': 'SP-2013', 'not-workbook': 'SP-2014',
 };
 
+/**
+ * What every writer and the ZIP reader throw: a typed `code`, its stable SP code,
+ * and the sheet and cell it is about.
+ *
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0103_EXPORT.md
+ */
 export class ExportError extends Error implements SpCoded {
+  /** The typed reason. */
   readonly code: ExportErrorCode;
+  /** The stable `SP-2xxx` code; the message starts with it. */
   readonly spCode: SpCode;
   /** The message without its code, title or link. */
   readonly spDetail: string;
+  /** The sheet the error is about, when there is one. */
   readonly sheet: string | undefined;
+  /** The cell or range the error is about, when there is one. */
   readonly ref: string | undefined;
   constructor(code: ExportErrorCode, message: string, where: { sheet?: string; ref?: string } = {}) {
     const sp = EXPORT_SP_CODES[code];

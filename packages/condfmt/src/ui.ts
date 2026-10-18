@@ -10,9 +10,15 @@ import { condfmt, skippedRules, storeOf } from './index.js';
 import { legendAt, usedRange } from './evaluate.js';
 import { parseA1, rulesOf } from './rules.js';
 
+/** The controls plugin's id. */
 export const UI_ID = 'condfmt-ui';
 
-/** `3 conditional rules from the file`, plus `· 1 not shown` when some are skipped; empty when the file has none. */
+/**
+ * The status line: `3 conditional rules from the file`, plus `· 1 not shown` when some are skipped.
+ *
+ * @param snap - A snapshot of the store.
+ * @returns The text; `''` when the file has no rules.
+ */
 export function statusText(snap: Snapshot): string {
   const book = snap.book;
   if (!book) return '';
@@ -22,7 +28,14 @@ export function statusText(snap: Snapshot): string {
   return `${n} conditional rule${n === 1 ? '' : 's'} from the file${k ? ` · ${k} not shown` : ''}`;
 }
 
-/** `Conditional: greater than 1000 · F3:F15` for each rule that drew the cell (`; ` between); empty when none did. */
+/**
+ * The legend for one cell: `Conditional: greater than 1000 · F3:F15` for each rule that drew it (`; ` between).
+ *
+ * @param store - The workbook store.
+ * @param sheet - The sheet's name.
+ * @param ref - The cell, `A1`.
+ * @returns The text; `''` when no rule drew the cell.
+ */
 export function legendText(store: WorkbookStore, sheet: string, ref: string): string {
   const p = parseA1(ref);
   if (!p) return '';
@@ -131,12 +144,43 @@ function overlay(sheet: string, ctx: PluginContext & { geometry: { colX(c: numbe
   return [{ id: 'condfmt-legend', sheet, rect, passThrough: true, role: 'group', alt: 'Conditional formatting legend', render: () => legendLayer(ctx.store, sheet) }];
 }
 
-/** The UI plugin: the hover legend (overlay), the selected cell's legend (cell bar), the count (status). Pair it with `condfmt()`. */
+/**
+ * The conditional-formatting legend and count, so colour never carries meaning alone: hovering a rule-coloured cell
+ * names the rule and its range (an overlay), the cell bar names the selected cell's rules, the status line counts
+ * the file's rules. Pair it with {@link condfmt}; importing this module makes `plugins="condfmt"` enable both.
+ *
+ * @returns The controls plugin (`id: 'condfmt-ui'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0114_CONDFMT.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from "@sheetpane/grid";
+ * import { condfmt } from "@sheetpane/condfmt";
+ * import { ui } from "@sheetpane/condfmt/ui";
+ *
+ * const book = createWorkbook({ plugins: [condfmt(), ui()] });
+ * ```
+ * @example
+ * ```ts
+ * import "@sheetpane/condfmt/ui"; // registers `condfmt` with its legend
+ * excel.setAttribute('plugins', 'condfmt');
+ * ```
+ */
 export function ui(): Plugin {
   return { id: UI_ID, provides: ['overlay'], overlay, controls: [cellbar, status] };
 }
 
-/** Both plugins, for `createWorkbook({ plugins: condfmtWithUi() })`. */
+/**
+ * The conditional-formatting plugin and its legend together.
+ *
+ * @returns `[condfmt(), ui()]`.
+ * @example
+ * ```ts
+ * import { createWorkbook } from "@sheetpane/grid";
+ * import { condfmtWithUi } from "@sheetpane/condfmt/ui";
+ *
+ * const book = createWorkbook({ plugins: condfmtWithUi() });
+ * ```
+ */
 export function condfmtWithUi(): Plugin[] {
   return [condfmt(), ui()];
 }

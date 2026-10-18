@@ -5,7 +5,9 @@ import type { ImportedSheet, ImportedWorkbook } from '@sheetpane/import';
 import type { Mode, Selection, SheetpaneError, Snapshot } from '../pane/types.js';
 import type { WorkbookStore } from '../pane/store.js';
 
+/** The six hooks a plugin may provide (SR-GRID decision 17). */
 export type HookName = 'format' | 'decorate' | 'derive' | 'validate' | 'overlay' | 'exportPatch';
+/** {@link HookName} as a list. */
 export const HOOKS: readonly HookName[] = ['format', 'decorate', 'derive', 'validate', 'overlay', 'exportPatch'];
 /** Hooks with exactly one provider per pane; a second provider throws at registration. */
 export const SINGLE_PROVIDER: readonly HookName[] = ['format', 'derive'];
@@ -15,7 +17,9 @@ export const STYLE_PROPS = [
   'background-color', 'background-image', 'color', 'font-weight', 'font-style', 'font-size', 'text-decoration', 'text-align', 'vertical-align', 'white-space',
   'border-top', 'border-right', 'border-bottom', 'border-left', 'padding-left',
 ] as const;
+/** One CSS property a `decorate` hook may set. */
 export type StyleProp = (typeof STYLE_PROPS)[number];
+/** A `decorate` result: CSS properties from {@link STYLE_PROPS} to their values. */
 export type StyleSubset = Partial<Record<StyleProp, string>>;
 
 /** One cell, as a hook sees it. */
@@ -32,6 +36,7 @@ export interface CellContext {
   readonly styleIndex: number | undefined;
 }
 
+/** What every plugin hook but `format` and `decorate` is given. */
 export interface PluginContext {
   readonly store: WorkbookStore;
   readonly book: ImportedWorkbook;
@@ -52,10 +57,10 @@ export interface DerivedChange { sheet: string; ref: string; value: Cell; text: 
 /** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. */
 export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
 
-/** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
 /** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */
 export interface ExportOption { key: string; label: string; default: boolean }
 
+/** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
 export interface OverlayItem {
   id: string;
   sheet: string;
@@ -77,7 +82,9 @@ export interface Geometry {
   rowHeight(row: number): number;
 }
 
+/** The six places a plugin's controls render (SR-GRID decision 19). */
 export type SlotName = 'format-row' | 'selbar' | 'cellbar' | 'status' | 'cell' | 'overlay';
+/** {@link SlotName} as a list. */
 export const SLOTS: readonly SlotName[] = ['format-row', 'selbar', 'cellbar', 'status', 'cell', 'overlay'];
 
 /** A control a plugin describes and the grid renders (plugins verdict, slots). */
@@ -108,6 +115,10 @@ export interface ControlDescriptor {
   cellOptions?(cell: CellContext): string[];
 }
 
+/**
+ * A plugin: a plain object naming the hooks it provides, the functions for them and its
+ * controls (SR-GRID decisions 17–19). Register it with {@link registerPlugin}.
+ */
 export interface Plugin {
   id: string;
   /** The hooks this plugin provides. */

@@ -36,7 +36,13 @@ function sha1(bytes: Uint8Array): Uint8Array {
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 const uuidBytes = (u: string) => Uint8Array.from(u.replace(/[{}-]/g, '').match(/../g)!, (h) => parseInt(h, 16));
 
-/** RFC 4122 §4.3: the version-5 UUID of `name` in `namespace` (lowercase, no braces). */
+/**
+ * RFC 4122 §4.3: the version-5 UUID (SHA-1) of `name` in `namespace`. Synchronous, no dependency.
+ *
+ * @param namespace - The namespace UUID, with or without braces and hyphens.
+ * @param name - The name, UTF-8 encoded.
+ * @returns The UUID, lowercase, hyphenated, no braces.
+ */
 export function uuidv5(namespace: string, name: string): string {
   const ns = uuidBytes(namespace), nm = new TextEncoder().encode(name);
   const buf = new Uint8Array(ns.length + nm.length);
@@ -69,6 +75,9 @@ export function guid(name: string): string {
  * The ids of one error's thread entries: the comment, and the `expected` reply.
  * Named by the error's `id` and `createdAt` — ids restart at ERR-0001 each
  * session, so the id alone would collide with an earlier review's threads.
+ *
+ * @param e - The error (its `id` and `createdAt`).
+ * @returns Excel-form GUIDs (`{…}`) for the `comment` and its `expected` reply.
  */
 export function errorGuids(e: { id: string; createdAt: string }): { comment: string; expected: string } {
   const base = `sheetpane:${e.id}:${e.createdAt}`;

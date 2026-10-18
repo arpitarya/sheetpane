@@ -9,7 +9,14 @@ interface Entry { store: WorkbookStore; users: Set<Element>; plugins: string }
 const panes = new Map<string, Entry>();
 const attached = new WeakMap<WorkbookStore, Element[]>();
 
-/** The store for a pane id; `plugins` (ids) applies only when this call creates it — the set is fixed per pane. */
+/**
+ * The store for a pane id, created on first use; the elements call it when they connect
+ * (SR-GRID decision 1). A later caller naming other plugins gets a console warning (SP-3011).
+ * @param id - The `pane` attribute's value.
+ * @param el - The element taking a hold on the store; {@link releasePane} drops it.
+ * @param plugins - Registered plugin ids; they apply only when this call creates the store — the set is fixed per pane.
+ * @returns The pane's store.
+ */
 export function acquirePane(id: string, el: Element, plugins: readonly string[]): WorkbookStore {
   let e = panes.get(id);
   if (!e) {
@@ -22,6 +29,11 @@ export function acquirePane(id: string, el: Element, plugins: readonly string[])
   return e.store;
 }
 
+/**
+ * Drops an element's hold on a pane; the store goes when the last element releases it.
+ * @param id - The pane id.
+ * @param el - The element that acquired it.
+ */
 export function releasePane(id: string, el: Element): void {
   const e = panes.get(id);
   if (!e) return;
@@ -29,7 +41,17 @@ export function releasePane(id: string, el: Element): void {
   if (!e.users.size) panes.delete(id);
 }
 
-/** Test and host helper: the live store of a pane, if any element holds it. */
+/**
+ * The live store of a pane, if any element holds it — for a host or a test to read or drive.
+ * @param id - The `pane` attribute's value.
+ * @returns The pane's store, or undefined when no connected element names that pane.
+ * @example
+ * ```ts
+ * import { paneStore } from '@sheetpane/grid';
+ * const book = paneStore('q3');
+ * if (book) console.log(book.changeCount, book.getErrors().length);
+ * ```
+ */
 export function paneStore(id: string): WorkbookStore | undefined {
   return panes.get(id)?.store;
 }

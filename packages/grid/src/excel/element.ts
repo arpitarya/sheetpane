@@ -41,7 +41,73 @@ const rawText = (v: unknown) => (v === null || v === undefined ? '' : typeof v =
 const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
+/**
+ * `<sheetpane-excel>` — the sheet: views and edits a `.xlsx` or `.csv` file held in the pane's
+ * in-memory workbook (SR-GRID decisions 9–22e). Every change stays in memory and `export()`
+ * writes a copy of the upload with it (SR-LAW-6); a `<sheetpane-errors>` on the same `pane`
+ * reads the same store, so the two are always in step (SR-LAW-7). It registers on import.
+ *
+ * Attributes:
+ * - `pane` — the pane id shared with other elements; none gives the element its own store.
+ * - `src` — a URL (read with a GET; nothing is sent), a data URL or base64.
+ * - `mode` — `view` (the default) or `edit`.
+ * - `display` — `tab` (the default) or `popup` (a modal dialog, shown by `open`).
+ * - `open` — shows the pop-up.
+ * - `author` — written into the errors this element's user flags.
+ * - `plugins` — space-separated registered plugin ids; fixed per pane.
+ * - `theme` — `light` (the default), `dark` or `auto`.
+ * - `header-row` — the 1-based row holding column titles (default 1).
+ * - `on-invalid` — `flag` (the default) or `block`: what a failing column rule does.
+ * - `rules-src` — a URL to a rules file (read with a GET).
+ * - `flagging` — `on` (the default) or `off`: no Flag issue anywhere.
+ *
+ * Properties: `workbook`, `errors`, `errorTypes`, `file`, `mode`, `theme`, `open`, `src`,
+ * `rules`, `flagging`, `columns`, `validate`, `onInvalid`.
+ *
+ * Methods: `load()`, `export()`, `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
+ * `shortcuts()`, `column()`, `renderNow()`, `geometryFor()`.
+ *
+ * Every event bubbles and is composed; an action's event fires once, on the element where it
+ * happened. Cell payloads also carry `column: { index, letter, header }`.
+ *
+ * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
+ * @fires sheetpane-change `{ sheet, ref, kind, was, now }` for each change, undo and redo included.
+ * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change.
+ * @fires sheetpane-select `{ sheet, ref, column, value }` when the selection moves.
+ * @fires sheetpane-sheet `{ sheet }` when the selection moves to another sheet.
+ * @fires sheetpane-mode `{ mode }` when the pane switches between View and Edit.
+ * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
+ * @fires sheetpane-editstart `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only.
+ * @fires sheetpane-input `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed.
+ * @fires sheetpane-beforechange `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused.
+ * @fires sheetpane-editcancel `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it.
+ * @fires sheetpane-export `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing.
+ * @fires sheetpane-close `{}` when the pop-up closes.
+ *
+ * @slot format-row - Host controls for the format row (Edit only); the row shows when a plugin or this slot puts something in it.
+ * @csspart root - The sheet's frame: toolbar, cell bar, format row, grid, sheet tabs and status line.
+ * @csspart toolbar - The top bar: file, View/Edit, counts, find, zoom, undo, redo, freeze, Download.
+ * @csspart cellbar - The cell bar: the reference, the value being edited and the docked selection actions.
+ * @csspart format-row - The format row (Edit): plugin controls and the `format-row` slot.
+ * @csspart status - The status line under the sheet tabs.
+ * @csspart dialog - The modal `<dialog>` the root moves into when `display="popup"`.
+ *
+ * @example
+ * ```ts
+ * import '@sheetpane/grid';
+ * const sheet = document.createElement('sheetpane-excel');
+ * sheet.setAttribute('pane', 'q3');
+ * sheet.setAttribute('mode', 'edit');
+ * document.body.append(sheet);
+ * sheet.addEventListener('sheetpane-change', (e) => console.log((e as CustomEvent).detail));
+ * await sheet.load(file);
+ * const blob = await sheet.export();
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md
+ * @see https://github.com/arpitarya/sheetpane/blob/main/packages/grid/README.md#sheetpane-excel
+ */
 export class SheetpaneExcel extends ElementBase {
+  /** The attributes the element reacts to. */
   static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging'];
 
   private _store: WorkbookStore | undefined;
@@ -70,6 +136,7 @@ export class SheetpaneExcel extends ElementBase {
   private readonly onUnload = (e: BeforeUnloadEvent) => { if (this._store && this._store.changeCount > 0) { e.preventDefault(); e.returnValue = ''; } };
 
   // ── the DOM contract: properties ─────────────────────────────────────────
+  /** The pane's store; assigning one replaces the `pane` lookup and applies this element's `mode` to it. */
   get workbook(): WorkbookStore | undefined { return this._store; }
   set workbook(s: WorkbookStore | undefined) {
     this._explicitStore = s;
@@ -79,11 +146,15 @@ export class SheetpaneExcel extends ElementBase {
     if (m === 'edit' || m === 'view') this._store!.setMode(m, this);
     this.schedule();
   }
+  /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
   get errors(): SheetpaneError[] { return this._store?.getErrors() ?? []; }
   set errors(list: SheetpaneError[]) { this.setErrors(list); }
+  /** The types offered in the Flag issue form; an empty list falls back to `DEFAULT_ERROR_TYPES`. */
   get errorTypes(): readonly ErrorType[] { return this._errorTypes; }
   set errorTypes(t: readonly ErrorType[]) { this._errorTypes = t.length ? t : DEFAULT_ERROR_TYPES; this.schedule(); }
+  /** Loads a file, like `load()`; `null` does nothing. */
   set file(f: File | Blob | ArrayBuffer | Uint8Array | null) { if (f) void this.load(f); }
+  /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
   get mode(): Mode { return this._store?.getSnapshot().mode ?? ((this.getAttribute('mode') as Mode) || 'view'); }
   set mode(m: Mode) { this.setAttribute('mode', m); }
   /** `light` (the default), `dark`, or `auto` (follows `prefers-color-scheme`) — colour only; the file's own colours never change (W-29). */
@@ -125,8 +196,10 @@ export class SheetpaneExcel extends ElementBase {
     if (this.rulesCfg.document !== undefined) c.document = this.rulesCfg.document;
     this._store.setColumnRules(c);
   }
+  /** Whether the pop-up is shown (the `open` attribute). */
   get open(): boolean { return this.hasAttribute('open'); }
   set open(v: boolean) { this.toggleAttribute('open', v); }
+  /** The `src` attribute; `null`, `undefined` or `''` removes it. */
   get src(): string | null { return this.getAttribute('src'); }
   set src(v: string | null | undefined) { if (v === null || v === undefined || v === '') this.removeAttribute('src'); else this.setAttribute('src', v); }
 
@@ -158,13 +231,19 @@ export class SheetpaneExcel extends ElementBase {
   private lastExport: { ok: boolean; name: string } | undefined;
   private lastSheet = '';
 
+  /** Selects a cell and scrolls to it. */
   select(sheet: string, ref: string): void { this.ensureStore().select({ sheet, ref }, this); this.scrollToSel = true; }
+  /** A copy of the pane's errors, to save a review. */
   getErrors(): SheetpaneError[] { return this.errors; }
+  /** Restores a saved review; not a user action, so the undo stack is cleared. */
   setErrors(list: SheetpaneError[]): void { this.ensureStore().setErrors(list, this); }
+  /** Undoes the pane's last step. */
   undo(): void { this._store?.undo(this); }
+  /** Redoes the last undone step. */
   redo(): void { this._store?.redo(this); }
 
   // ── lifecycle ────────────────────────────────────────────────────────────
+  /** Binds to the pane's store, applies `mode`, and reads `src` and `rules-src`. */
   connectedCallback(): void {
     if (!this.built) this.build();
     this.bind();
@@ -179,12 +258,14 @@ export class SheetpaneExcel extends ElementBase {
     this.schedule();
   }
 
+  /** Releases the pane's store. */
   disconnectedCallback(): void {
     removeEventListener('beforeunload', this.onUnload);
     this.unbind();
     cancelAnimationFrame(this.raf);
   }
 
+  /** Reacts to an observed attribute. */
   attributeChangedCallback(name: string, old: string | null, val: string | null): void {
     if (!this.isConnected || old === val) return;
     if (name === 'pane' || name === 'plugins') { this.unbind(); this.bind(); }

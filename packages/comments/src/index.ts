@@ -9,13 +9,16 @@ import { errorGuids } from './guid.js';
 import { readComments } from './read.js';
 import { writeReview, type WriteReport } from './write.js';
 
+/** Options for {@link comments}. */
 export interface CommentsOptions {
   /** Write the review into the file on export. Default `true`; `export({ comments: false })` skips one export. */
   write?: boolean;
 }
 
+/** What one export wrote (`written`: error ids) and skipped, with the reason (`note-at-cell`, `no-sheet`, `bad-range`, `unreadable-part`). */
 export type CommentsReport = WriteReport;
 
+/** The comments plugin, plus the report of its most recent export. */
 export interface CommentsPlugin extends Plugin {
   /** What the most recent export wrote and skipped; undefined until one runs (or when it wrote nothing). */
   readonly lastExport: CommentsReport | undefined;
@@ -27,6 +30,33 @@ const typeName = (id: string) => DEFAULT_ERROR_TYPES.find((t) => t.id === id)?.n
 /** The review in the store this plugin writes: every error not read from the file. */
 const reviewOf = (ctx: PluginContext): SheetpaneError[] => ctx.snapshot().errors.filter((e) => e.author !== 'file');
 
+/**
+ * The comments plugin, both ways. On load (`validate`), the file's notes and threaded comments become read-only
+ * `file` notes in the error pane. On export (`exportPatch`), every other error is written as an Excel threaded
+ * comment at the top-left cell of its range — with the legacy comment and VML parts older Excel needs — extending
+ * existing parts, never replacing them. A cell holding someone's note is left alone and reported in `lastExport`.
+ * String XML only, so it runs in Node. Importing this module registers it as `comments`.
+ *
+ * @param options - `write: false` never writes the review; `export({ comments: false })` skips one export.
+ * @returns The plugin (`id: 'comments'`) with `lastExport`.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0112_COMMENTS.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { comments } from '@sheetpane/comments';
+ *
+ * const plugin = comments();
+ * const book = createWorkbook({ plugins: [plugin] });
+ * await book.load(bytes, 'review.xlsx');
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/comments'; // registers `comments`
+ * excel.setAttribute('plugins', 'comments');
+ * const withReview = await excel.export();
+ * const withoutReview = await excel.export({ comments: false }); // this export only
+ * ```
+ */
 export function comments(options: CommentsOptions = {}): CommentsPlugin {
   let last: CommentsReport | undefined;
   return {

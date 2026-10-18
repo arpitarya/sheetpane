@@ -40,6 +40,7 @@ const ALLOW_THROW: { file: string; expr: string; reason: string }[] = [
   { file: 'packages/export/src/deflate.ts', expr: 'e;', reason: 'rethrows an ExportError (guarded by instanceof), which already carries its code' },
   { file: 'packages/import/src/xlsx.ts', expr: 'e;', reason: 'mapZipError: an error that is not an ExportError is an internal failure, rethrown unchanged' },
   { file: 'packages/formulas/src/model.ts', expr: 'e;', reason: 'loadEngine rethrows the engine failure after clearing its cache; the caller logs SP-5202 or SP-5201' },
+  { file: 'packages/import/src/minixml.ts', expr: 'new Error(', reason: 'the built-in XML reader says what is malformed; parseXml (dom.ts) catches it and throws ImportError corrupt, SP-1007' },
 ];
 const ALLOW_CONSOLE: { file: string; expr: string; reason: string }[] = [];
 

@@ -7,6 +7,20 @@ interface ErrorLike { sheet: string; range: string; type: string; severity: stri
 
 const same = (a: Value, b: Value) => a === b || (typeof a === 'number' && typeof b === 'string' && String(a) === b) || (typeof b === 'number' && typeof a === 'string' && a === String(b));
 
+/**
+ * Matchers for Vitest's and Playwright's `expect.extend(matchers)`: `toHaveCell` on values
+ * `readFile` returned, `toHaveError` on a driver's `errors()`.
+ *
+ * @example
+ * ```ts
+ * import { expect } from 'vitest';
+ * import { matchers } from '@sheetpane/testing';
+ * expect.extend(matchers);
+ * // expect(values).toHaveCell('Sheet1!B2', 42);
+ * // expect(await sp.errors()).toHaveError({ ref: 'B3', status: 'open' });
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md
+ */
 export const matchers = {
   /** `expect(values).toHaveCell('Sheet1!B2', 42)` — a number and its text compare equal. */
   toHaveCell(received: Values, address: string, expected: Value) {

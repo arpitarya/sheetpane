@@ -4,11 +4,15 @@
 // from @sheetpane/grid, the values from the store a hook is handed.
 import { shiftFormula, type CellContext, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
 
+/** The imported workbook, as a plugin hook receives it. */
 export type Book = PluginContext['book'];
 export type Sheet = CellContext['sheet'];
 export type Cell = CellContext['value'];
+/** One `<conditionalFormatting>` block as `@sheetpane/import` reads it: its ranges and rules. */
 export type ConditionalFormat = Sheet['conditionalFormats'][number];
+/** One `<cfRule>` as `@sheetpane/import` reads it. */
 export type CfRule = ConditionalFormat['rules'][number];
+/** One colour-scale or data-bar threshold (`<cfvo>`): `min`, `max`, `num`, `percent`, `percentile` or `formula`. */
 export type Cfvo = NonNullable<CfRule['colorScale']>['cfvo'][number];
 
 /** The rule types v1 draws. */
@@ -17,7 +21,9 @@ export const RULE_KINDS = [
   'containsBlanks', 'notContainsBlanks', 'containsErrors', 'notContainsErrors',
   'duplicateValues', 'uniqueValues', 'top10', 'aboveAverage', 'colorScale', 'dataBar', 'expression',
 ] as const;
+/** A rule type this plugin draws, one of {@link RULE_KINDS}. */
 export type RuleKind = (typeof RULE_KINDS)[number];
+/** A `cellIs` rule's comparison. */
 export type Operator = 'between' | 'notBetween' | 'equal' | 'notEqual' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
 const OPERATORS: readonly Operator[] = ['between', 'notBetween', 'equal', 'notEqual', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual'];
 /** Rule kinds that read the whole range (its statistics), not only the cell. */
@@ -33,6 +39,7 @@ export type SkipReason = 'iconSet' | 'formula' | 'type' | 'malformed';
 export const MAX_ROWS = 1_048_576, MAX_COLS = 16_384;
 
 // ── A1 ────────────────────────────────────────────────────────────────────
+/** A rectangle of cells, 0-based and inclusive. */
 export interface Box { top: number; left: number; bottom: number; right: number }
 
 export function colIndex(letters: string): number {
@@ -51,7 +58,12 @@ export function parseA1(ref: string): { row: number; col: number } | undefined {
   return m ? { row: Number(m[2]) - 1, col: colIndex(m[1]!) } : undefined;
 }
 
-/** `B3`, `B3:B5`, `B:B`, `3:3` (`$` allowed) → a box; undefined when it is none of these. */
+/**
+ * Parses a cell, range, whole column or whole row (`B3`, `B3:B5`, `B:B`, `3:3`; `$` allowed) into a box.
+ *
+ * @param s - The reference.
+ * @returns The box, or `undefined` when `s` is none of these.
+ */
 export function parseBox(s: string): Box | undefined {
   const t = s.replace(/\$/g, '').toUpperCase();
   let m = /^([A-Z]{1,3})(\d+)(?::([A-Z]{1,3})(\d+))?$/.exec(t);
@@ -69,7 +81,7 @@ export function parseBox(s: string): Box | undefined {
 }
 export const inBox = (b: Box, row: number, col: number) => row >= b.top && row <= b.bottom && col >= b.left && col <= b.right;
 
-// ── shifting relative references: @sheetpane/export's, re-exported by the grid peer
+/** Shifting relative references: `@sheetpane/export`'s `shiftFormula`, re-exported by the grid peer. */
 export { shiftFormula };
 
 // ── operands ──────────────────────────────────────────────────────────────
@@ -85,7 +97,12 @@ const NUM = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 const SHEET = String.raw`(?:'((?:[^']|'')+)'|([^\s!'"(),:=<>&+\-*/^]+))!`;
 const REF = new RegExp(`^(?:${SHEET})?(\\$?)([A-Za-z]{1,3})(\\$?)(\\d+)$`);
 
-/** Parses one operand: a literal or a cell; anything else is a formula for the engine. */
+/**
+ * Parses one operand: a number, quoted text, `TRUE` / `FALSE` or a cell; anything else is a formula for the engine.
+ *
+ * @param f - The operand as the file stores it, with or without `=`.
+ * @returns The operand, with its source text in `src`.
+ */
 export function parseOperand(f: string): Operand {
   const src = f.trim().replace(/^=/, '').trim();
   if (NUM.test(src)) return { k: 'num', v: Number(src), src };
@@ -101,6 +118,7 @@ export function parseOperand(f: string): Operand {
 }
 
 // ── compiled rules ────────────────────────────────────────────────────────
+/** One `<cfRule>`, compiled: its ranges, anchor, operands, thresholds, whether it needs a formula engine, and why it is skipped, if it is. */
 export interface Rule {
   sheet: string;
   /** The file's rule, as `@sheetpane/import` read it. */
@@ -126,7 +144,13 @@ export interface Rule {
 
 const cache = new WeakMap<Book, Map<string, Rule[]>>();
 
-/** The sheet's rules in drawing order: priority ascending (1 is first), then file order. Compiled once per workbook. */
+/**
+ * The sheet's rules in drawing order: priority ascending (1 is first), then file order. Compiled once per workbook.
+ *
+ * @param book - The workbook.
+ * @param sheetName - The sheet's name.
+ * @returns The compiled rules, skipped ones included (they carry `skip`).
+ */
 export function rulesOf(book: Book, sheetName: string): Rule[] {
   let bySheet = cache.get(book);
   if (!bySheet) cache.set(book, (bySheet = new Map()));
@@ -229,6 +253,11 @@ function thresholdWords(c: Cfvo): string {
  * The rule in words, at one cell (relative references shifted to it):
  * `greater than 1000`, `between 10 and 20`, `contains "late"`, `top 10%`,
  * `colour scale: lowest → 50th percentile → highest`, `formula =A2>B2`.
+ *
+ * @param rule - The rule.
+ * @param row - The cell's row, 0-based; default the rule's anchor.
+ * @param col - The cell's column, 0-based; default the rule's anchor.
+ * @returns The sentence.
  */
 export function ruleWords(rule: Rule, row = rule.anchor.row, col = rule.anchor.col): string {
   const cf = rule.cf;

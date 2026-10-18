@@ -37,15 +37,28 @@ export interface StylePatch {
  * two would overwrite each other (see the W-17 report).
  */
 export const STYLE_PREFIX = '#style:';
+/** The change-map ref of a cell's style slot: `A1` → `#style:A1`. */
 export const styleRef = (ref: string) => `${STYLE_PREFIX}${ref}`;
 
-/** The cell's style change, if any — from a store, or from a snapshot (what `isActive` and `text` are given). */
+/**
+ * The cell's style change, if any — from a store, or from a snapshot (what `isActive` and `text` are given).
+ *
+ * @param from - The store or a snapshot of it.
+ * @param sheet - The sheet's name.
+ * @param ref - The cell, `A1`.
+ * @returns The change's patch, or `undefined` when the cell has none.
+ */
 export function patchOf(from: WorkbookStore | Snapshot, sheet: string, ref: string): StylePatch | undefined {
   const c = 'changeOf' in from ? from.changeOf(sheet, styleRef(ref)) : from.changes.get(cellKey(sheet, styleRef(ref)));
   return c && c.kind === 'style' ? (c.now as StylePatch) : undefined;
 }
 
-/** Every style change in the map: `{ sheet, ref, patch }`. */
+/**
+ * Every style change in a change map.
+ *
+ * @param changes - The change map (`snapshot.changes`).
+ * @returns One `{ sheet, ref, patch }` per style change.
+ */
 export function styleChanges(changes: ReadonlyMap<string, ChangeEntry>): { sheet: string; ref: string; patch: StylePatch }[] {
   const out: { sheet: string; ref: string; patch: StylePatch }[] = [];
   for (const [k, c] of changes) {
@@ -70,6 +83,7 @@ export interface Look {
   wrap: boolean;
 }
 
+/** The look of a cell with no format: nothing on, every colour automatic. */
 export const PLAIN: Look = Object.freeze({ b: false, i: false, u: false, strike: false, color: undefined, fill: undefined, border: Object.freeze({}), align: undefined, valign: undefined, wrap: false }) as Look;
 
 const H: Readonly<Record<string, Look['align']>> = { left: 'left', center: 'center', right: 'right', centerContinuous: 'center', fill: 'left' };
@@ -77,7 +91,14 @@ const V: Readonly<Record<string, Look['valign']>> = { top: 'top', center: 'middl
 
 type Book = NonNullable<Snapshot['book']>;
 
-/** The look the file gives a cell (`cellXfs[s]`). */
+/**
+ * The look the file gives a cell (`cellXfs[s]`).
+ *
+ * @param book - The imported workbook.
+ * @param s - The cell's style index, or `undefined`.
+ * @param palette - The workbook's palette; default: read from `book`.
+ * @returns The flattened look.
+ */
 export function fileLook(book: Book, s: number | undefined, palette: Palette = paletteOf(book)): Look {
   const t = book.styles;
   const xf = s === undefined ? undefined : t.cellXfs[s];
@@ -106,7 +127,13 @@ export function fileLook(book: Book, s: number | undefined, palette: Palette = p
 const hex = (c: string | null | undefined) => (c ? `#${c.toUpperCase()}` : undefined);
 const edgeLook = (e: BorderEdge | null | undefined) => (e ? { style: e.style, color: hex(e.color) ?? AUTO_INK } : undefined);
 
-/** The look after a patch. */
+/**
+ * The look after a patch (`clear` starts from {@link PLAIN}).
+ *
+ * @param base - The look before.
+ * @param p - The patch, or `undefined` for none.
+ * @returns The new look.
+ */
 export function applyLook(base: Look, p: StylePatch | undefined): Look {
   if (!p) return base;
   const from = p.clear ? PLAIN : base;
@@ -132,6 +159,10 @@ export const sameLook = (a: Look, b: Look) =>
  * The smallest patch with the same effect, in a fixed key order (the store
  * compares by JSON): fields equal to what the file already shows are dropped;
  * `undefined` when nothing is left — the cell is back to its file look.
+ *
+ * @param p - The patch, or `undefined`.
+ * @param base - The look the file gives the cell.
+ * @returns The normalised patch, or `undefined`.
  */
 export function normalize(p: StylePatch | undefined, base: Look): StylePatch | undefined {
   if (!p) return undefined;
@@ -158,7 +189,13 @@ export function normalize(p: StylePatch | undefined, base: Look): StylePatch | u
   return Object.keys(out).length ? out : undefined;
 }
 
-/** Merges a new partial patch over the cell's current one (a later `border` side wins side by side). */
+/**
+ * Merges a new partial patch over the cell's current one (a later `border` side wins side by side).
+ *
+ * @param cur - The cell's current patch, or `undefined`.
+ * @param next - The partial patch to merge in.
+ * @returns The merged patch.
+ */
 export function combine(cur: StylePatch | undefined, next: StylePatch): StylePatch {
   if (next.clear) return { ...next };
   const out: StylePatch = { ...cur, ...next };
@@ -222,9 +259,16 @@ export const selBox = (sel: Selection): Box | undefined => parseBox(sel.range ??
 
 // ── one undo step for many cells ────────────────────────────────────────────
 
+/** One change-map entry to set: the cell, the kind of change, its new and original values. */
 export interface ChangeSpec { sheet: string; ref: string; kind: ChangeKind; now: unknown; was: unknown }
 
-/** Applies several change-map entries as ONE undo step, through the store's public batch (SR-GRID 20a). */
+/**
+ * Applies several change-map entries as ONE undo step, through the store's public batch (SR-GRID 20a).
+ *
+ * @param store - The workbook store.
+ * @param list - The changes to set.
+ * @param origin - Who made them (the element that dispatches the event), if anyone.
+ */
 export function setChanges(store: WorkbookStore, list: readonly ChangeSpec[], origin?: Origin): void {
   store.setChanges(list.map((c) => ({ sheet: c.sheet, ref: c.ref, kind: c.kind, now: c.now, was: c.was })), origin);
 }
@@ -234,7 +278,14 @@ export const NO_PATCH: StylePatch = Object.freeze({}) as StylePatch;
 
 /**
  * Restyles every cell of the selection: `edit` gets the cell's current look
- * and patch and returns the partial patch to merge in. One undo step.
+ * and patch and returns the partial patch to merge in. One undo step. Does nothing on a CSV or a selection over
+ * 50,000 cells.
+ *
+ * @param store - The workbook store.
+ * @param sel - The selection.
+ * @param edit - Called per cell with its ref, position, look and the selection box; returns the patch to merge, or `undefined` to skip the cell.
+ * @param origin - Who made the change, if anyone.
+ * @returns Nothing; the changes are in the store.
  */
 export function restyle(store: WorkbookStore, sel: Selection, edit: (cell: { ref: string; row: number; col: number; look: Look; box: Box }) => StylePatch | undefined, origin?: Origin): void {
   const snap = store.getSnapshot(), book = snap.book;
@@ -255,7 +306,14 @@ export function restyle(store: WorkbookStore, sel: Selection, edit: (cell: { ref
   setChanges(store, list, origin);
 }
 
-/** A cell's look, its change applied — from a store or a snapshot. */
+/**
+ * A cell's look, its change applied — from a store or a snapshot.
+ *
+ * @param from - The store or a snapshot of it.
+ * @param sheet - The sheet's name.
+ * @param ref - The cell, `A1`.
+ * @returns The look; {@link PLAIN} when no workbook or sheet is loaded.
+ */
 export function lookAt(from: WorkbookStore | Snapshot, sheet: string, ref: string): Look {
   const snap = 'getSnapshot' in from ? from.getSnapshot() : from;
   const book = snap.book, s = book?.sheets.find((x) => x.name === sheet);

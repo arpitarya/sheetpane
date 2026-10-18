@@ -69,6 +69,9 @@ const AREA = /^(?:'((?:[^']|'')+)'|([^'!]+))!(\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za
 /**
  * The cell ranges a `c:f` formula names. Anything that is not a plain sheet-qualified
  * reference — a defined name, an external workbook (`[1]Sheet1!A1`), a whole column — is skipped.
+ *
+ * @param f - The formula, e.g. `Holdings!$E$3:$E$15` or `(Sheet1!$B$2,Sheet1!$D$2)`.
+ * @returns The ranges, in order; empty for none.
  */
 export function parseFormulaRefs(f: string | undefined): SourceRange[] {
   if (!f) return [];
@@ -86,7 +89,12 @@ export function parseFormulaRefs(f: string | undefined): SourceRange[] {
   return out;
 }
 
-/** The cells of the ranges in reading order: down a column, across a row, row by row for a block. */
+/**
+ * The cells of the ranges in reading order: down a column, across a row, row by row for a block.
+ *
+ * @param ranges - The ranges.
+ * @returns One `{ sheet, ref }` per cell.
+ */
 export function cellsOf(ranges: readonly SourceRange[]): { sheet: string; ref: string }[] {
   const out: { sheet: string; ref: string }[] = [];
   for (const r of ranges) {
@@ -101,7 +109,12 @@ export const contains = (r: SourceRange, sheet: string, row: number, col: number
 export const intersects = (a: Omit<SourceRange, 'sheet' | 'range'>, b: Omit<SourceRange, 'sheet' | 'range'>): boolean =>
   a.left <= b.right && b.left <= a.right && a.top <= b.bottom && b.top <= a.bottom;
 
-/** `Holdings!E3:E15`, quoting a sheet name that needs it. */
+/**
+ * A range as text: `Holdings!E3:E15`, quoting a sheet name that needs it.
+ *
+ * @param r - The range.
+ * @returns The sheet-qualified reference.
+ */
 export function qualified(r: SourceRange): string {
   const name = /^[A-Za-z_][A-Za-z0-9_.]*$/.test(r.sheet) ? r.sheet : `'${r.sheet.replace(/'/g, "''")}'`;
   return `${name}!${r.range}`;
@@ -117,6 +130,9 @@ export function uniqueRanges(list: readonly SourceRange[]): SourceRange[] {
  * What one `select()` can show of a union of ranges: the ranges on the first range's sheet, as
  * their bounding box when that box is exactly their union (adjacent columns, say), else the first
  * range alone. The grid's selection is one rectangle; a multi-area selection would need core.
+ *
+ * @param list - The ranges.
+ * @returns A selection for `store.select()`, or `undefined` for no ranges.
  */
 export function selectionFor(list: readonly SourceRange[]): { sheet: string; ref: string; range?: string } | undefined {
   const first = list[0];

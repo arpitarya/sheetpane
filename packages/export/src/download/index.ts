@@ -10,6 +10,7 @@ export const MIME = {
 /** How long the object URL lives after the click (SR-DOWNLOAD decision 6, measured by W-12). */
 export const REVOKE_DELAY_MS = 30_000;
 
+/** Options for `download`. */
 export interface DownloadOptions {
   /** Overrides the MIME type taken from the extension. */
   type?: string;
@@ -72,6 +73,17 @@ export function save(blob: Blob, name: string, delay = REVOKE_DELAY_MS): void {
  * Saves export output as a file: bytes from `toXlsx` / `patchXlsx`, text from
  * `toCsv`, or a Blob. `.xlsx` or `.csv` only; a missing extension is added;
  * unsafe characters in the name are replaced; the bytes are never altered.
+ * It throws an error naming the file instead of failing silently, and needs a browser page.
+ *
+ * @param data - The bytes, the CSV text (saved as UTF-8, BOM kept) or a Blob.
+ * @param filename - The file name; the extension, or the data's type when there is none, sets the file type.
+ * @param options - `type` overrides the MIME type taken from the extension.
+ * @example
+ * ```ts
+ * import { download, toXlsx } from '@sheetpane/export';
+ * download(await toXlsx({ sheets: [{ name: 'Sales', rows: [['North', 1200]] }] }), 'sales.xlsx');
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0101_DOWNLOAD.md
  */
 export function download(data: Uint8Array | Blob | string, filename: string, options: DownloadOptions = {}): void {
   if (!(data instanceof Uint8Array) && !isBlob(data) && typeof data !== 'string') {

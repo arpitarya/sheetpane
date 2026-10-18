@@ -7,6 +7,7 @@
 // values, not with pixels.
 import type { DrawKind, Grouping } from './model.js';
 
+/** One series as stage 2 draws it: its values and colours. */
 export interface PlotSeries {
   name: string;
   /** Fill (bars, slices, markers), `#RRGGBB`. */
@@ -21,6 +22,7 @@ export interface PlotSeries {
   pointColors: string[];
 }
 
+/** Everything stage 2 needs to draw one chart group. */
 export interface PlotData {
   kind: DrawKind;
   grouping: Grouping;
@@ -49,7 +51,13 @@ const AXIS = 'stroke:var(--sp-line-strong,#CBCBC5)';
 const NEG = 'var(--sp-fail,#B42318)';
 
 const nf = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
-/** `-9180` → `−9,180` (a true minus, as the board shows it). */
+/**
+ * A number for an axis or label: `-9180` → `−9,180` (a true minus), at most two decimals, in the page's locale.
+ *
+ * @param v - The number.
+ * @param percent - Show `v` as a percentage (`0.25` → `25%`).
+ * @returns The text.
+ */
 export function formatNumber(v: number, percent = false): string {
   const x = percent ? v * 100 : v;
   const s = nf.format(Math.abs(x)) + (percent ? '%' : '');
@@ -59,9 +67,17 @@ export function formatNumber(v: number, percent = false): string {
 /** Cuts a label to `max` characters with an ellipsis. */
 export const clip = (s: string, max: number): string => (max <= 1 ? '' : s.length > max ? `${s.slice(0, Math.max(1, max - 1))}…` : s);
 
+/** An axis: its ends, its step and its tick values. */
 export interface Scale { lo: number; hi: number; step: number; ticks: number[] }
 
-/** A "nice" axis: steps of 1, 2, 2.5 or 5 × 10ⁿ covering [lo, hi] in about `count` intervals. */
+/**
+ * A "nice" axis: steps of 1, 2, 2.5 or 5 × 10ⁿ covering [lo, hi] in about `count` intervals.
+ *
+ * @param lo - The lowest value to cover.
+ * @param hi - The highest value to cover.
+ * @param count - About how many intervals.
+ * @returns The scale; at least two ticks.
+ */
 export function niceScale(lo: number, hi: number, count: number): Scale {
   if (!Number.isFinite(lo) || !Number.isFinite(hi)) { lo = 0; hi = 1; }
   if (hi < lo) [lo, hi] = [hi, lo];
@@ -77,7 +93,13 @@ export function niceScale(lo: number, hi: number, count: number): Scale {
   return { lo: nlo, hi: nhi === nlo ? fix(nlo + step) : nhi, step, ticks: ticks.length > 1 ? ticks : [nlo, fix(nlo + step)] };
 }
 
-/** Excel's automatic minimum, roughly: zero unless the data sit in a narrow band far from it. */
+/**
+ * Excel's automatic axis range, roughly: it includes zero unless the data sit in a narrow band far from it.
+ *
+ * @param lo - The data's minimum.
+ * @param hi - The data's maximum.
+ * @returns `[lo, hi]` widened to zero, or unchanged.
+ */
 export function withZero(lo: number, hi: number): [number, number] {
   if (lo > 0 && hi - lo < hi / 6) return [lo, hi];
   if (hi < 0 && hi - lo < -lo / 6) return [lo, hi];
@@ -86,7 +108,14 @@ export function withZero(lo: number, hi: number): [number, number] {
 
 const finite = (v: number | null | undefined): v is number => typeof v === 'number' && Number.isFinite(v);
 
-/** Per category: the value each series contributes once stacking (or 100 % stacking) is applied. */
+/**
+ * Per category: the value each series contributes once stacking (or 100 % stacking) is applied.
+ *
+ * @param series - The series.
+ * @param cats - How many categories.
+ * @param grouping - The group's grouping; `clustered` and `standard` do not stack.
+ * @returns Per series, per category: `{ base, top, value }` (`value` `null` for a missing point).
+ */
 export function stackedValues(series: readonly PlotSeries[], cats: number, grouping: Grouping): { base: number; top: number; value: number | null }[][] {
   const out = series.map(() => [] as { base: number; top: number; value: number | null }[]);
   for (let j = 0; j < cats; j++) {
@@ -334,7 +363,19 @@ export function titleBand(title: string, meta: string, width: number, changed = 
 const svgOpen = (w: number, h: number, label: string, attrs: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" class="sp-chart-svg" viewBox="0 0 ${n2(w)} ${n2(h)}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(label)}" ${attrs} style="display:block;overflow:hidden"><title>${esc(label)}</title>`;
 
-/** Stage 2: the whole drawn chart, `width` × `height` in px at 100 % zoom. */
+/**
+ * Stage 2: the whole drawn chart as SVG markup, `width` × `height` in px at 100 % zoom. No font is named; every
+ * file string is escaped.
+ *
+ * @param d - What to draw.
+ * @param title - The chart's title.
+ * @param meta - The line under the title, e.g. `bar · 2 series`.
+ * @param width - Width in px.
+ * @param height - Height in px.
+ * @param attrs - Extra attributes for the `<svg>` element.
+ * @param changed - Show the "data changed — Excel will redraw" tag.
+ * @returns The `<svg>` markup.
+ */
 export function drawChart(d: PlotData, title: string, meta: string, width: number, height: number, attrs = '', changed = false): string {
   const band = titleBand(title, meta, width, changed);
   const parts: string[] = [svgOpen(width, height, title, `data-kind="${d.kind}" data-stage="2" ${attrs}`), band.svg];
@@ -348,7 +389,18 @@ export function drawChart(d: PlotData, title: string, meta: string, width: numbe
   return parts.join('');
 }
 
-/** Stage 1: the frame's content — title, type and series count, and a few lines under it. */
+/**
+ * Stage 1: the frame's content as SVG markup — title, type and series count, and as many of `lines` as fit under it.
+ *
+ * @param title - The chart's title.
+ * @param meta - The line under the title, e.g. `bar · 2 series`.
+ * @param lines - The lines to list (why it is not drawn, each series and the cells it reads).
+ * @param width - Width in px.
+ * @param height - Height in px.
+ * @param attrs - Extra attributes for the `<svg>` element.
+ * @param changed - Show the "data changed — Excel will redraw" tag.
+ * @returns The `<svg>` markup.
+ */
 export function frameSvg(title: string, meta: string, lines: string[], width: number, height: number, attrs = '', changed = false): string {
   const band = titleBand(title, meta, width, changed);
   const parts = [svgOpen(width, height, title, `data-stage="1" ${attrs}`), band.svg];

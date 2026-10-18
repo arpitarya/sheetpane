@@ -18,12 +18,14 @@ export { parseFormulaRefs, selectionFor, qualified, cellsOf, type SourceRange } 
 export { resolveColor, defaultColor, accents, modify, OFFICE_ACCENTS, type ColorSpec } from './colors.js';
 export { drawChart, frameSvg, niceScale, stackedValues, formatNumber, withZero, HEAD, CHANGED_TAG, type PlotData, type PlotSeries, type Scale } from './svg.js';
 
+/** The plugin's id, and the name `plugins="…"` takes. */
 export const PLUGIN_ID = 'charts';
 
 type Book = PluginContext['book'];
 type Store = PluginContext['store'];
 type Drawing = Book['sheets'][number]['drawings'][number];
 
+/** Options for {@link charts}. */
 export interface ChartsOptions {
   /** `false` keeps every chart a stage-1 frame (no SVG plot). Default `true`. */
   draw?: boolean;
@@ -33,7 +35,13 @@ export interface ChartsOptions {
 const pending = new WeakMap<Book, Map<string, Promise<ChartModel | undefined>>>();
 const parsed = new WeakMap<Book, Map<string, ChartModel | null>>();
 
-/** The parsed chart part, read through `book.part()` on first ask; undefined when it is missing or unreadable. */
+/**
+ * The parsed chart part, read through `book.part()` on first ask and cached per workbook.
+ *
+ * @param book - The workbook.
+ * @param path - The chart part's path, e.g. `xl/charts/chart1.xml`.
+ * @returns The model; `undefined` when the part is missing or unreadable.
+ */
 export function chartModel(book: Book, path: string): Promise<ChartModel | undefined> {
   let byPath = pending.get(book);
   if (!byPath) { byPath = new Map(); pending.set(book, byPath); }
@@ -55,12 +63,24 @@ export function chartModel(book: Book, path: string): Promise<ChartModel | undef
   return p;
 }
 
-/** The model if it is parsed already: a model, `null` (unreadable) or `undefined` (not yet). */
+/**
+ * The chart model if it is parsed already, without reading anything.
+ *
+ * @param book - The workbook.
+ * @param path - The chart part's path.
+ * @returns The model, `null` (unreadable) or `undefined` (not read yet).
+ */
 export function chartModelNow(book: Book, path: string): ChartModel | null | undefined {
   return parsed.get(book)?.get(path);
 }
 
-/** The chart drawings of a sheet, with their index among the sheet's drawings. */
+/**
+ * The chart drawings of a sheet, with their index among the sheet's drawings.
+ *
+ * @param book - The workbook, or `undefined`.
+ * @param sheet - The sheet's name.
+ * @returns One `{ drawing, index, path }` per chart; empty for none.
+ */
 export function chartsOn(book: Book | undefined, sheet: string): { drawing: Drawing; index: number; path: string }[] {
   const s = book?.sheets.find((x) => x.name === sheet);
   if (!s) return [];
@@ -81,7 +101,16 @@ function liveNumbers(store: Store, ranges: readonly SourceRange[]): (number | nu
   return cellsOf(ranges).map((c) => asNumber(store.value(c.sheet, c.ref)));
 }
 
-/** What stage 2 draws: the chart's one group, its series coloured and valued. */
+/**
+ * What stage 2 draws: the chart's one group, its series coloured and valued — the cached points, or the live cells
+ * when `live` and the ranges are readable.
+ *
+ * @param m - The chart model.
+ * @param book - The workbook (its theme and sheets).
+ * @param store - The store, for live values; `undefined` uses the cache.
+ * @param live - Whether the pane computes formulas (a `derive` plugin), so the cells are current.
+ * @returns The plot data, or `undefined` when the chart is not drawable.
+ */
 export function plotData(m: ChartModel, book: Book, store: Store | undefined, live: boolean): PlotData | undefined {
   const g = m.groups[0];
   if (!m.drawable || !g) return undefined;
@@ -114,7 +143,13 @@ export function plotData(m: ChartModel, book: Book, store: Store | undefined, li
   };
 }
 
-/** True when a user changed a value inside one of the ranges (snapshot `changes`, kinds `value` and `formula`). */
+/**
+ * Whether a user changed a value inside one of the ranges (snapshot `changes`, kinds `value` and `formula`).
+ *
+ * @param snap - A snapshot of the store.
+ * @param ranges - The ranges a chart reads.
+ * @returns `true` when at least one such change lies in them.
+ */
 export function changedInside(snap: Snapshot, ranges: readonly SourceRange[]): boolean {
   if (!ranges.length) return false;
   for (const [k, c] of snap.changes) {
@@ -125,12 +160,24 @@ export function changedInside(snap: Snapshot, ranges: readonly SourceRange[]): b
   return false;
 }
 
-/** The plotted ranges that exist in this workbook, for `select()`. */
+/**
+ * The chart's plotted ranges that exist in this workbook, as one selection (see {@link selectionFor}).
+ *
+ * @param m - The chart model.
+ * @param book - The workbook.
+ * @returns A selection for `store.select()`, or `undefined` when the data is literal or names no sheet here.
+ */
 export function sourceSelection(m: ChartModel, book: Book): { sheet: string; ref: string; range?: string } | undefined {
   return selectionFor(m.plotted.filter((r) => book.sheets.some((s) => s.name === r.sheet)));
 }
 
-/** Shows a chart's source: selects the union of its plotted ranges (or the first one — see `selectionFor`). */
+/**
+ * Shows a chart's source: selects the union of its plotted ranges (or the first one — see {@link selectionFor}).
+ *
+ * @param store - The workbook store.
+ * @param m - The chart model.
+ * @returns `true` when something was selected; `false` when there was nothing to select.
+ */
 export function showSource(store: Store, m: ChartModel): boolean {
   const book = store.book;
   const sel = book && sourceSelection(m, book);
@@ -257,7 +304,15 @@ function renderChart(d: Drawing & { chart: string }, rect: Rect, sheet: string, 
 /** The last geometry the grid gave for each sheet of a workbook — what `chartAt` places anchors with. */
 const geometries = new WeakMap<Book, Map<string, Geometry>>();
 
-/** The chart whose frame covers the middle of a cell, once the grid has drawn that sheet. */
+/**
+ * The chart whose frame covers the middle of a cell (the topmost), once the grid has drawn that sheet.
+ *
+ * @param book - The workbook, or `undefined`.
+ * @param sheet - The sheet's name.
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns `{ path, index }` of the chart, or `undefined`.
+ */
 export function chartAt(book: Book | undefined, sheet: string, row: number, col: number): { path: string; index: number } | undefined {
   const g = book && geometries.get(book)?.get(sheet);
   if (!g) return undefined;
@@ -270,7 +325,14 @@ export function chartAt(book: Book | undefined, sheet: string, row: number, col:
   return top && { path: top.path, index: top.index };
 }
 
-/** The chart items of one sheet, with their rectangles in sheet space. */
+/**
+ * The chart items of one sheet, with their rectangles in sheet space: one item per chart drawing with an area.
+ *
+ * @param sheet - The sheet's name.
+ * @param ctx - The plugin context with the grid's geometry, as the `overlay` hook receives it.
+ * @param o - The plugin's options (`draw: false` keeps every chart a frame).
+ * @returns The overlay items.
+ */
 export function chartItems(sheet: string, ctx: PluginContext & { geometry: Geometry }, o: ChartsOptions = {}): OverlayItem[] {
   let bySheet = geometries.get(ctx.book);
   if (!bySheet) { bySheet = new Map(); geometries.set(ctx.book, bySheet); }
@@ -293,7 +355,32 @@ export function chartItems(sheet: string, ctx: PluginContext & { geometry: Geome
   return items;
 }
 
-/** The charts plugin: an `overlay` provider, nothing else. Pair it with `ui()` from `@sheetpane/charts/ui` for the status line and the shortcut. */
+/**
+ * The charts plugin: draws each chart of the workbook at its anchor through the `overlay` hook, view only. Every
+ * chart gets a frame with its title, type and series count and a Show source cells button; bar, column, line, pie,
+ * doughnut and scatter charts are drawn as SVG (no chart library, no font named), from the cached points or, with a
+ * `derive` plugin such as `@sheetpane/formulas`, the live cells. A "data changed — Excel will redraw" tag shows once a
+ * plotted cell is edited. Export copies the chart parts unchanged. Importing this module registers it as `charts`;
+ * add `ui()` from `@sheetpane/charts/ui` for the status line and the shortcut.
+ *
+ * @param o - `draw: false` keeps every chart a frame.
+ * @returns The plugin (`id: 'charts'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0113_CHARTS.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { charts } from '@sheetpane/charts';
+ * import { formulas } from '@sheetpane/formulas';
+ *
+ * const book = createWorkbook({ plugins: [charts(), formulas()] });
+ * await book.load(bytes, 'dashboard.xlsx');
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/charts'; // registers `charts`
+ * excel.setAttribute('plugins', 'charts');
+ * ```
+ */
 export function charts(o: ChartsOptions = {}): Plugin {
   return {
     id: PLUGIN_ID,

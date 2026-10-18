@@ -5,12 +5,16 @@ import { deflateRaw, inflateRaw } from './deflate.js';
 import { ExportError } from './errors.js';
 import { fromUtf8, utf8 } from './xml.js';
 
+/** One entry of a ZIP's central directory. */
 export interface ZipEntry {
+  /** The entry's path in the archive, e.g. `xl/workbook.xml`. */
   name: string;
+  /** 0 is stored, 8 is deflate; nothing else is read. */
   method: number;
   flags: number;
   crc: number;
   compressedSize: number;
+  /** The inflated size, bytes. */
   size: number;
   time: number;
   date: number;
@@ -18,6 +22,7 @@ export interface ZipEntry {
   dataOffset: number;
 }
 
+/** Size caps that refuse a ZIP bomb. */
 export interface ZipLimits {
   /** Largest inflated size of one entry, bytes. Default 512 MB (reading verdict decision 4). */
   maxEntrySize?: number;
@@ -25,16 +30,29 @@ export interface ZipLimits {
   maxTotalSize?: number;
 }
 
+/** The caps used when `ZipLimits` leaves one out: 512 MB per entry, 1 GB in all. */
 export const DEFAULT_LIMITS = { maxEntrySize: 512 * 2 ** 20, maxTotalSize: 2 ** 30 } as const;
 
 const SIG_LOCAL = 0x04034b50, SIG_CENTRAL = 0x02014b50, SIG_EOCD = 0x06054b50, SIG_ZIP64_LOC = 0x07064b50;
 
-/** True when the bytes begin like a ZIP archive. */
+/**
+ * True when the bytes begin like a ZIP archive.
+ *
+ * @param b - The file's bytes.
+ * @returns Whether a ZIP signature comes first.
+ */
 export function isZip(b: Uint8Array): boolean {
   return b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && (b[2] === 3 || b[2] === 5) && (b[3] === 4 || b[3] === 6);
 }
 
-/** Lists the entries from the central directory. Sizes come from there, never the local header. */
+/**
+ * Lists the entries from the central directory. Sizes come from there, never the local header.
+ * ZIP64, encrypted entries and methods other than store and deflate throw an `ExportError`.
+ *
+ * @param bytes - The archive.
+ * @param limits - `maxTotalSize` caps the sum of inflated sizes.
+ * @returns The entries, in central-directory order.
+ */
 export function readZip(bytes: Uint8Array, limits: ZipLimits = {}): ZipEntry[] {
   const maxTotal = limits.maxTotalSize ?? DEFAULT_LIMITS.maxTotalSize;
   const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -75,12 +93,25 @@ export function readZip(bytes: Uint8Array, limits: ZipLimits = {}): ZipEntry[] {
   return entries;
 }
 
-/** The entry's stored (possibly compressed) bytes. */
+/**
+ * The entry's stored (possibly compressed) bytes.
+ *
+ * @param bytes - The archive the entry was read from.
+ * @param e - The entry.
+ * @returns A view into `bytes`, not a copy.
+ */
 export function rawData(bytes: Uint8Array, e: ZipEntry): Uint8Array {
   return bytes.subarray(e.dataOffset, e.dataOffset + e.compressedSize);
 }
 
-/** The entry's content, inflated and CRC-checked, within the size limit. */
+/**
+ * The entry's content, inflated and CRC-checked, within the size limit.
+ *
+ * @param bytes - The archive the entry was read from.
+ * @param e - The entry.
+ * @param limits - `maxEntrySize` caps the inflated size.
+ * @returns The inflated bytes.
+ */
 export async function inflateEntry(bytes: Uint8Array, e: ZipEntry, limits: ZipLimits = {}): Promise<Uint8Array> {
   const cap = limits.maxEntrySize ?? DEFAULT_LIMITS.maxEntrySize;
   if (e.size > cap) throw new ExportError('over-limit', `"${e.name}" is ${e.size} bytes inflated — over the ${cap}-byte limit`);
@@ -90,17 +121,28 @@ export async function inflateEntry(bytes: Uint8Array, e: ZipEntry, limits: ZipLi
   return out;
 }
 
+/** One entry to write: new data, or an entry copied byte for byte from another archive. */
 export type ZipInput =
   | { name: string; data: Uint8Array }
   /** An entry copied from another archive byte for byte, compressed data and all. */
   | { name: string; copy: ZipEntry; from: Uint8Array };
 
-export interface WriteOptions { compression?: 'deflate' | 'store' }
+/** How new entries are written. */
+export interface WriteOptions {
+  /** `deflate` (the default) or `store`; `store` gives the same bytes on every engine. */
+  compression?: 'deflate' | 'store';
+}
 
 const DOS_DATE_1980 = (0 << 9) | (1 << 5) | 1; // 1980-01-01
 const DOS_TIME_0 = 0;
 
-/** Writes a ZIP. New entries get a fixed 1980-01-01 timestamp and no extra fields, in the given order. */
+/**
+ * Writes a ZIP. New entries get a fixed 1980-01-01 timestamp and no extra fields, in the given order.
+ *
+ * @param files - The entries, in order.
+ * @param o - The compression for new entries.
+ * @returns The archive's bytes.
+ */
 export async function writeZip(files: ZipInput[], o: WriteOptions = {}): Promise<Uint8Array> {
   const compress = (o.compression ?? 'deflate') === 'deflate';
   if (files.length > 0xfffe) throw new ExportError('over-limit', 'more than 65,534 entries would need ZIP64');

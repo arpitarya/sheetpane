@@ -3,6 +3,7 @@
 // code (W-40) and the message starts with it and ends with its docs link.
 import { spMessage, type SpCode, type SpCoded } from '@sheetpane/export';
 
+/** Why a file was refused — the typed reason hosts switch on. */
 export type ImportErrorCode =
   /** Not .xlsx or .csv — .xls, .xlsm, .xlsb, .ods, .numbers, .tsv, anything else. */
   | 'unsupported-format'
@@ -13,11 +14,16 @@ export type ImportErrorCode =
   /** ZIP64, past the inflate caps, or past 1,048,576 rows / 16,384 columns. */
   | 'too-large'
   /** Damaged: bad DEFLATE, a CRC mismatch, broken XML. */
-  | 'corrupt'
-  /** Reading .xlsx needs DOMParser, which Node lacks. */
-  | 'needs-dom';
+  | 'corrupt';
 
-/** The SP code of a typed refusal; `password-or-legacy` splits by what the OLE file holds. */
+/**
+ * The SP code of a typed refusal; `password-or-legacy` splits by what the OLE file holds.
+ *
+ * @param code - The typed reason.
+ * @param detail - For `password-or-legacy`, what the file holds, when it can be told.
+ * @returns The `SP-1xxx` code.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md
+ */
 export function importSpCode(code: ImportErrorCode, detail?: 'password' | 'legacy'): SpCode {
   switch (code) {
     case 'unsupported-format': return 'SP-1001';
@@ -25,12 +31,18 @@ export function importSpCode(code: ImportErrorCode, detail?: 'password' | 'legac
     case 'not-workbook': return 'SP-1005';
     case 'too-large': return 'SP-1006';
     case 'corrupt': return 'SP-1007';
-    case 'needs-dom': return 'SP-1008';
   }
 }
 
+/**
+ * What the reader throws for a file it refuses: a typed `code` and its stable SP code.
+ *
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0104_IMPORT.md
+ */
 export class ImportError extends Error implements SpCoded {
+  /** The typed reason. */
   readonly code: ImportErrorCode;
+  /** The stable `SP-1xxx` code; the message starts with it. */
   readonly spCode: SpCode;
   /** The message without its code, title or link — what the grid's "Can't open" state shows. */
   readonly spDetail: string;

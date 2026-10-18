@@ -28,6 +28,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | file | closed | where the live answer lives now |
 |---|---|---|
 | `W-38-llms-txt.md` | 2026-10-18 | [SR-BUILD](../records/0102_BUILD.md) decision 9a |
+| `W-36-tsdoc-public-api.md` | 2026-10-18 | [SR-BUILD](../records/0102_BUILD.md) decision 7a |
 | `W-41-testing-package.md` | 2026-10-18 | [SR-TESTING](../records/0118_TESTING.md) |
 | `W-40-error-codes.md` | 2026-10-18 | [SR-CODES](../records/0117_CODES.md) |
 | `W-42-fixtures-package.md` | 2026-10-18 | [SR-FIXTURES](../records/0115_FIXTURES.md) |

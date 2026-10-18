@@ -17,7 +17,16 @@ function row(abs: string, n: string, dr: number): string {
   return r < 1 || r > MAX_ROWS ? '#REF!' : String(r);
 }
 
-/** `shiftFormula('A1+$B2', 1, 2)` → `'C2+$B3'`. Strings and quoted sheet names are left alone. */
+/**
+ * Shifts a formula's relative references by a row and column offset, as a shared formula does for each cell it covers:
+ * `shiftFormula('A1+$B2', 1, 2)` → `'C2+$B3'`. Strings and quoted sheet names are left alone;
+ * a reference pushed off the sheet becomes `#REF!`.
+ *
+ * @param f - The formula, without its `=`.
+ * @param dr - Rows to move down (negative moves up).
+ * @param dc - Columns to move right (negative moves left).
+ * @returns The shifted formula.
+ */
 export function shiftFormula(f: string, dr: number, dc: number): string {
   let out = '';
   for (let i = 0; i < f.length; ) {

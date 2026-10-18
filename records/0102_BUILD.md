@@ -108,6 +108,16 @@ pnpm and a justfile; the testing verdict chose the runner.
    reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
    dependency of every other package (W-35, SR-SKILLS).
+7a. **TSDoc (W-36):** every symbol reachable from a package's `exports`
+    carries TSDoc that survives into the built `.d.ts` (`removeComments`
+    stays off): a summary; for a function `@param` per top-level parameter
+    and `@returns` unless it returns `void`; a custom element class lists its
+    Attributes, a `@fires` per event it dispatches, an `@example` and a `@see`
+    to its record. `test/tsdoc.test.ts` reads the built declaration files —
+    TypeScript 7 has no stable JavaScript compiler API, so `test/tsdoc-walk.ts`
+    follows `export … from`, `export *`, aliases, re-exported imports and
+    `@sheetpane/<pkg>` re-exports itself — and fails naming each symbol; it
+    also type-checks every `@example` code block against the built packages.
 8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
    `just pack-check` on every push to `main` and every PR (Chromium);
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;

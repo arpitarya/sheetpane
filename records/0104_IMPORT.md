@@ -106,12 +106,16 @@ carry over unchanged; the plugins verdict added what plugins read.
    `unsupported-format`; no workbook part, or `.xlsx` bytes that are not a ZIP
    → `not-workbook`; ZIP64, over 512 MB in a part or 1 GB in all, past
    1,048,576 rows or 16,384 columns → `too-large`; bad DEFLATE, CRC or XML →
-   `corrupt`; `.xlsx` without `DOMParser` → `needs-dom`. No name and no ZIP:
+   `corrupt` (`needs-dom`, SP-1008, is retired — decision 8). No name and no ZIP:
    NUL bytes in the first 8 KB → `unsupported-format`, else CSV.
 7. **Sheets:** every worksheet in workbook order; hidden and very-hidden
    marked `hidden`; chartsheets and dialog sheets are skipped (they hold no
    cells); `activeSheet` follows the kept list.
-8. **Runtimes:** CSV reads anywhere; `.xlsx` needs `DOMParser` (browsers).
+8. **Runtimes:** CSV and `.xlsx` read anywhere. `.xlsx` parts are parsed
+   with `DOMParser` where the runtime has it, else with the built-in reader
+   (`minixml.ts`): the DOM subset the reader touches, prefixes kept, a DOCTYPE
+   refused so no entity is ever expanded, malformed XML → `corrupt`. W-39
+   (the MCP server reads workbooks in Node) retired `needs-dom` / SP-1008.
    Importing the package in Node is safe (SR-LAW-8).
 9. **One implementation:** ZIP, inflate, CRC-32, A1 helpers and
    `shiftFormula` come from `@sheetpane/export` — the only runtime dependency.

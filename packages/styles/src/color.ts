@@ -33,7 +33,12 @@ export const DEFAULT_INDEXED: readonly string[] = [
 /** `indexed="64"` is the system foreground (text), `65` the system background. */
 const SYSTEM_FG = '000000', SYSTEM_BG = 'FFFFFF';
 
-/** A workbook's palette: its theme and its indexed override, when it has them. */
+/**
+ * A workbook's palette: its theme and its indexed override, when it has them.
+ *
+ * @param book - The imported workbook (its `themeColors` and `styles.indexedColors`).
+ * @returns The palette; a field is absent when the file has none, so the defaults apply.
+ */
 export function paletteOf(book: Pick<Book, 'themeColors' | 'styles'>): Palette {
   const p: Palette = {};
   if (book.themeColors.length) p.theme = book.themeColors;
@@ -53,6 +58,10 @@ const six = (s: string | undefined): string | undefined => {
  * Resolves a SpreadsheetML colour to `#RRGGBB`. `auto` and an absent colour
  * resolve to `undefined` — the caller decides what automatic means (text: the
  * host's colour; a border: black). Theme colours take their tint.
+ *
+ * @param c - The colour as SpreadsheetML stores it (`rgb`, `theme`, `indexed` or `auto`, with an optional `tint`).
+ * @param palette - The workbook's theme and indexed colours; default: Office's.
+ * @returns `#RRGGBB`, or `undefined` for `auto`, an absent colour or one that does not resolve.
  */
 export function resolveColor(c: XlColor | undefined, palette: Palette = {}): string | undefined {
   if (!c || c.auto) return undefined;
@@ -72,7 +81,10 @@ export function resolveColor(c: XlColor | undefined, palette: Palette = {}): str
 /**
  * Excel's tint (ECMA-376 Part 1, §18.8.19 `tint`): in HSL, a negative tint
  * darkens (`L·(1+tint)`), a positive one lightens (`L·(1−tint) + tint`).
- * Takes and returns `RRGGBB`.
+ *
+ * @param rgb - The colour, `RRGGBB` (no `#`).
+ * @param tint - The tint, -1 to 1 (clamped).
+ * @returns The tinted colour, `RRGGBB` upper case.
  */
 export function applyTint(rgb: string, tint: number): string {
   const n = [0, 2, 4].map((i) => parseInt(rgb.slice(i, i + 2), 16) / 255) as [number, number, number];
@@ -106,7 +118,14 @@ function fromHsl(h: number, s: number, l: number): [number, number, number] {
   return [ch(h + 1 / 3), ch(h), ch(h - 1 / 3)];
 }
 
-/** Mixes two `#RRGGBB` colours: `amount` of `a` over `b`. */
+/**
+ * Mixes two `#RRGGBB` colours: `amount` of `a` over `b`.
+ *
+ * @param a - The colour laid over, `#RRGGBB`.
+ * @param b - The colour beneath, `#RRGGBB`.
+ * @param amount - How much of `a`, 0 to 1.
+ * @returns The mix, `#RRGGBB` upper case.
+ */
 export function mix(a: string, b: string, amount: number): string {
   const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
   return `#${pa.map((v, i) => Math.round(v * amount + pb[i]! * (1 - amount)).toString(16).padStart(2, '0')).join('').toUpperCase()}`;

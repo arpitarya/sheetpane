@@ -6,6 +6,7 @@ import { checkWorkbook } from './validate.js';
 import { cleanXmlChars, escapeAttr, tElement, utf8 } from './xml.js';
 import { writeZip, type WriteOptions } from './zip.js';
 
+/** Options for `toXlsx`: the ZIP compression, and a report of stripped characters. */
 export interface ToXlsxOptions extends WriteOptions {
   /** Called with every `Sheet!A1` whose text lost characters XML forbids. */
   onStripped?: (refs: string[]) => void;
@@ -72,7 +73,22 @@ function colOf(cellTag: string): number {
   return n;
 }
 
-/** Builds a new .xlsx from the object: text as inline strings, numbers and booleans typed, merges centred. */
+/**
+ * Builds a new .xlsx from the object: text as inline strings, numbers and booleans typed, merges centred.
+ * The same input gives the same bytes in `store` mode.
+ *
+ * @param book - The workbook; it is checked first and an `ExportError` names what is wrong.
+ * @param o - Compression and the `onStripped` report.
+ * @returns The .xlsx file's bytes.
+ * @example
+ * ```ts
+ * import { toXlsx } from '@sheetpane/export';
+ * const xlsx = await toXlsx({
+ *   sheets: [{ name: 'Sales', rows: [['Region', 'Total'], ['North', 1200]], merges: ['A1:B1'] }],
+ * });
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0103_EXPORT.md
+ */
 export async function toXlsx(book: Workbook, o: ToXlsxOptions = {}): Promise<Uint8Array> {
   const merges = checkWorkbook(book);
   const active = book.sheets.findIndex((s) => !s.hidden);

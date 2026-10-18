@@ -3,19 +3,43 @@
 import { spError } from '@sheetpane/export';
 import { SINGLE_PROVIDER, SLOTS, type ControlDescriptor, type Plugin, type StyleSubset } from './types.js';
 
+/** Makes a plugin (or several) for a new pane; called once per pane that names its id. */
 export type PluginFactory = () => Plugin | Plugin[];
 const registry = new Map<string, PluginFactory>();
 
-/** Called by a plugin package when it is imported, e.g. `registerPlugin('numfmt', () => numfmt())`. */
+/**
+ * Registers a plugin under an id, so a `plugins="…"` attribute can name it (SR-GRID decision 18).
+ * A plugin package calls it when imported; registering the id again replaces the factory.
+ * @param id - The id the `plugins` attribute names.
+ * @param factory - Makes the plugin for each pane that enables it.
+ * @example
+ * ```ts
+ * import { registerPlugin } from '@sheetpane/grid';
+ * registerPlugin('shout', () => ({
+ *   id: 'shout',
+ *   provides: ['format'],
+ *   format: (cell) => (typeof cell.value === 'string' ? cell.value.toUpperCase() : undefined),
+ * }));
+ * // <sheetpane-excel plugins="shout">
+ * ```
+ */
 export function registerPlugin(id: string, factory: PluginFactory): void {
   registry.set(id, factory);
 }
 
+/**
+ * The ids registered so far, in registration order.
+ * @returns The plugin ids.
+ */
 export function registeredPluginIds(): string[] {
   return [...registry.keys()];
 }
 
-/** The plugins a `plugins="numfmt formulas"` attribute names; an unknown id throws, naming it. */
+/**
+ * The plugins a `plugins="numfmt formulas"` attribute names; an unknown id throws (SP-3002).
+ * @param ids - Registered plugin ids.
+ * @returns A fresh plugin from each id's factory, flattened.
+ */
 export function pluginsFromIds(ids: readonly string[]): Plugin[] {
   return ids.flatMap((id) => {
     const f = registry.get(id);
@@ -25,7 +49,12 @@ export function pluginsFromIds(ids: readonly string[]): Plugin[] {
   });
 }
 
-/** Checks a plugin set and returns it with `decorate` providers in `after` order. Throws on any rule broken. */
+/**
+ * Checks a plugin set against the host's rules (SR-GRID decision 17) and throws on the first
+ * one broken (SP-3003 to SP-3009).
+ * @param list - The pane's plugins.
+ * @returns The same plugins with the `decorate` providers last, in `after` order.
+ */
 export function checkPlugins(list: readonly Plugin[]): Plugin[] {
   const ids = new Set<string>();
   for (const p of list) {
@@ -57,7 +86,11 @@ export function checkPlugins(list: readonly Plugin[]): Plugin[] {
   return [...list.filter((p) => !p.provides.includes('decorate')), ...ordered];
 }
 
-/** Merges `decorate` results in order, later winning per property; `font-family` is refused (SR-LAW-5). */
+/**
+ * Merges `decorate` results in order, later winning per property; a `font-family` throws (SP-3010, SR-LAW-5).
+ * @param results - Each provider's id and result, in `after` order.
+ * @returns The merged style.
+ */
 export function mergeDecorations(results: { id: string; style: StyleSubset | undefined }[]): StyleSubset {
   const out: StyleSubset = {};
   for (const { id, style } of results) {
@@ -70,6 +103,13 @@ export function mergeDecorations(results: { id: string; style: StyleSubset | und
   return out;
 }
 
+/**
+ * The controls the plugins put in one slot for a mode, grouped in group order.
+ * @param list - The pane's plugins.
+ * @param slot - The slot to fill.
+ * @param mode - The pane's mode; a control shows when its `mode` matches or is `both`.
+ * @returns The controls, in render order.
+ */
 export function controlsFor(list: readonly Plugin[], slot: ControlDescriptor['slot'], mode: 'view' | 'edit'): ControlDescriptor[] {
   const all = list.flatMap((p) => (p.controls ?? []).filter((c) => c.slot === slot && (c.mode === 'both' || c.mode === mode)));
   const groups = [...new Set(all.map((c) => c.group))];

@@ -10,6 +10,7 @@ import { formatCode, general, subsetCode } from './numfmt.js';
 import { color, parseStyles, parseTheme } from './styles.js';
 import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, Person, PivotTable, StyleTables, ThreadedComment } from './types.js';
 
+/** Options for reading an .xlsx: the ZIP size limits that refuse a ZIP bomb. */
 export interface ReadOptions extends ZipLimits {}
 
 const CT_MAIN = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml';
@@ -306,7 +307,15 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
   };
 }
 
-/** Reads an .xlsx. Throws ImportError with a typed code for anything it refuses. */
+/**
+ * Reads an .xlsx. Throws ImportError with a typed code for anything it refuses.
+ * Formula cells hold their cached values, never evaluated. Reads in any runtime (SR-IMPORT decision 8).
+ *
+ * @param data - The file's bytes, or a Blob.
+ * @param o - The ZIP size limits.
+ * @returns The workbook.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0104_IMPORT.md
+ */
 export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOptions = {}): Promise<ImportedWorkbook> {
   const bytes = await toBytes(data);
   if (isCfb(bytes)) throw cfbRefusal(bytes, undefined);

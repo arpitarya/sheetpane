@@ -10,13 +10,19 @@ import { HostRules, type ColumnRulesConfig } from './rules.js';
 import { machineAuthored } from './types.js';
 import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetpaneError, Snapshot, Source } from './types.js';
 
+/** What {@link createWorkbook} takes. */
 export interface StoreOptions {
+  /** The pane's plugins, fixed for the store's life; checked by `checkPlugins` (throws on a broken rule). */
   plugins?: readonly Plugin[];
 }
 
 /** Who made a mutation — the element that dispatches its DOM event (one event per action, on the element where it happened). */
 export type Origin = object | undefined;
 
+/**
+ * What {@link WorkbookStore.on} reports: one event per action, which the elements turn into
+ * `sheetpane-*` DOM events on the element named by `origin`.
+ */
 export type StoreEvent =
   | { type: 'load'; origin: Origin }
   | { type: 'change'; origin: Origin; sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }
@@ -28,9 +34,16 @@ export type StoreEvent =
 interface Undoable { changes: ReadonlyMap<string, ChangeEntry>; errors: readonly SheetpaneError[] }
 interface HistoryEntry { before: Undoable; after: Undoable; keys: string[]; coalesce: string | undefined }
 
+/** The undo stack's depth per pane; the oldest entry goes first (W-23, SR-GRID decision 7). */
 export const HISTORY_CAP = 500;
 const BLANK = '(blank)';
 
+/**
+ * The change-map key of a cell: `Sheet1!B3` (exported as `cellKey`).
+ * @param sheet - The sheet name.
+ * @param ref - The A1 ref, or a slotted ref such as `#style:A1`.
+ * @returns `sheet!ref`.
+ */
 export const key = (sheet: string, ref: string) => `${sheet}!${ref}`;
 
 /** Kinds that sit beside a cell's value in their own slot: `sheet!#style:A1`, `sheet!#numFmt:A1`. */
@@ -39,12 +52,25 @@ export const SLOTTED_KINDS: readonly ChangeKind[] = ['style', 'numFmt'];
 export const kindRef = (ref: string, kind: ChangeKind) => (ref.startsWith('#') || !SLOTTED_KINDS.includes(kind) ? ref : `#${kind}:${ref}`);
 /** The cell a change-map ref belongs to: `#style:A1` → `A1`. */
 export const baseRef = (ref: string) => ref.replace(/^#(?:style|numFmt):/, '');
+/**
+ * Splits a change-map key at its last `!`: `Sheet1!B3` → `{ sheet: 'Sheet1', ref: 'B3' }`.
+ * @param k - A key made by `cellKey`.
+ * @returns The sheet name and the ref.
+ */
 export function splitKey(k: string): { sheet: string; ref: string } {
   const i = k.lastIndexOf('!');
   return { sheet: k.slice(0, i), ref: k.slice(i + 1) };
 }
 
-/** A value typed into the cell bar, as the cell will store it. */
+/**
+ * A value typed into the cell bar, as the cell will store it (SR-GRID decision 3): in a
+ * `.csv` it stays text; in an `.xlsx` a number or blank cell takes a number, a boolean cell
+ * `TRUE`/`FALSE`.
+ * @param text - What was typed; `''` clears the cell.
+ * @param original - The cell's uploaded value, which decides the parse.
+ * @param source - The workbook's kind.
+ * @returns The value to store.
+ */
 export function parseInput(text: string, original: Cell, source: 'xlsx' | 'csv'): Cell {
   if (text === '') return null;
   if (source === 'csv') return text;
@@ -58,7 +84,31 @@ export function parseInput(text: string, original: Cell, source: 'xlsx' | 'csv')
 
 const same = (a: unknown, b: unknown) => a === b || (typeof a === 'number' && typeof b === 'number' && Object.is(a, b)) || JSON.stringify(a) === JSON.stringify(b);
 
+/**
+ * The in-memory workbook one pane shares (SR-GRID decisions 1–8): the uploaded file, every
+ * change, every error, the selection, the mode and one undo stack. Framework-free and
+ * `useSyncExternalStore`-shaped (`subscribe`, `getSnapshot`); every mutation goes through one
+ * commit (undo entry, one notification, then `validate` and `derive`). The upload is never
+ * modified; {@link WorkbookStore.exportFile} writes a copy with the changes (SR-LAW-6).
+ *
+ * Elements get one per `pane` id from the registry ({@link paneStore}); a host may make its own
+ * with {@link createWorkbook} and assign it to `el.workbook`.
+ *
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * const book = createWorkbook();
+ * await book.load(bytes, 'accounts.xlsx');
+ * book.setMode('edit');
+ * book.setCell('Sheet1', 'B3', '42');
+ * const off = book.subscribe(() => console.log(book.getSnapshot().changes.size));
+ * const { blob, name } = await book.exportFile();
+ * off();
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md
+ */
 export class WorkbookStore {
+  /** The pane's plugins, checked and in `decorate` order; fixed for the store's life. */
   readonly plugins: readonly Plugin[];
   private snap: Snapshot;
   private readonly listeners = new Set<() => void>();
@@ -84,6 +134,7 @@ export class WorkbookStore {
     progress: () => this.set({}),
   });
 
+  /** An empty store; prefer {@link createWorkbook}. Throws when the plugin set breaks a rule. */
   constructor(o: StoreOptions = {}) {
     this.plugins = checkPlugins(o.plugins ?? []);
     this.snap = {
@@ -95,7 +146,9 @@ export class WorkbookStore {
   }
 
   // ── subscription (useSyncExternalStore-shaped) ───────────────────────────
+  /** Calls `fn` after every change of state; returns the unsubscribe function. */
   subscribe = (fn: () => void): (() => void) => { this.listeners.add(fn); return () => this.listeners.delete(fn); };
+  /** The current immutable snapshot — a new object per change, with a `version`. */
   getSnapshot = (): Snapshot => this.snap;
   /** Store events, for the elements to turn into DOM events. */
   on(fn: (e: StoreEvent) => void): () => void { this.eventListeners.add(fn); return () => this.eventListeners.delete(fn); }
@@ -106,10 +159,12 @@ export class WorkbookStore {
     for (const e of events) for (const fn of [...this.eventListeners]) fn(e);
   }
 
+  /** The ids of the pane's plugins, in order. */
   get pluginIds(): string[] { return this.plugins.map((p) => p.id); }
 
   /** `<sheetpane-errors>` elements connected to this pane: the store decides which form opens (contract decision 4). */
   attachErrorsView(): () => void { this.errorsViews++; this.set({}); return () => { this.errorsViews--; this.set({}); }; }
+  /** Whether a `<sheetpane-errors>` is connected to this pane. */
   get hasErrorsView(): boolean { return this.errorsViews > 0; }
 
   // ── loading ──────────────────────────────────────────────────────────────
@@ -147,7 +202,9 @@ export class WorkbookStore {
   }
 
   // ── reading ──────────────────────────────────────────────────────────────
+  /** The workbook as read, or undefined before a load. */
   get book(): ImportedWorkbook | undefined { return this.snap.book; }
+  /** A sheet of the workbook by name. */
   sheet(name: string): ImportedSheet | undefined { return this.snap.book?.sheets.find((s) => s.name === name); }
 
   /** The uploaded value and display text. */
@@ -230,6 +287,7 @@ export class WorkbookStore {
     return code === undefined || code === 'General' ? general(v) : formatCode(v, code, book?.date1904 ?? false);
   }
 
+  /** One cell as a plugin hook sees it; undefined when the sheet is unknown. */
   cellContext(sheet: string, ref: string, value?: Cell): CellContext | undefined {
     const book = this.snap.book, s = this.sheet(sheet), p = parseRef(ref);
     if (!book || !s || !p) return undefined;
@@ -245,6 +303,7 @@ export class WorkbookStore {
     return mergeDecorations(deco.map((p) => ({ id: p.id, style: p.decorate!(ctx) })));
   }
 
+  /** What a plugin hook is given: the store, the book and a snapshot reader. */
   pluginContext(): PluginContext {
     return { store: this, book: this.snap.book!, snapshot: () => this.snap };
   }
@@ -373,6 +432,7 @@ export class WorkbookStore {
   }
 
   // ── merged ranges: core, changed by plugins as kind `merge` (key `sheet!#merge:A1:C1`, now true | false) ──
+  /** The sheet's merged ranges: the file's with `merge` changes applied. */
   merges(sheet: string): string[] {
     const s = this.sheet(sheet);
     if (!s) return [];
@@ -391,10 +451,12 @@ export class WorkbookStore {
   }
 
   // ── freeze panes (W-24): view state, a change of kind `freeze` ─────────
+  /** A sheet's frozen rows and columns: a `freeze` change, else the file's. */
   freeze(sheet: string): { rows: number; cols: number } {
     const c = this.snap.changes.get(key(sheet, '#freeze'));
     return (c?.now as { rows: number; cols: number } | undefined) ?? this.sheet(sheet)?.freeze ?? { rows: 0, cols: 0 };
   }
+  /** Freezes rows and columns of a sheet, as an undoable change of kind `freeze` (W-24). */
   setFreeze(sheet: string, f: { rows: number; cols: number }, origin?: Origin): void {
     const s = this.sheet(sheet);
     if (!s) return;
@@ -402,6 +464,7 @@ export class WorkbookStore {
   }
 
   // ── selection, mode, composing ───────────────────────────────────────────
+  /** Moves the pane's shared selection; leaving the composed cell drops the draft error. */
   select(sel: Selection, origin?: Origin): void {
     const s = this.snap.selection;
     if (s.sheet === sel.sheet && s.ref === sel.ref && s.range === sel.range) return;
@@ -410,10 +473,12 @@ export class WorkbookStore {
     const drop = !!this.snap.composing && (this.snap.composing.sheet !== sel.sheet || this.snap.composing.ref !== sel.ref);
     this.set(drop ? { selection: next, composing: null } : { selection: next }, [{ type: 'select', origin, sheet: sel.sheet, ref: sel.ref }]);
   }
+  /** Switches the pane between `view` and `edit`. */
   setMode(mode: Mode, origin?: Origin): void {
     if (this.snap.mode === mode) return;
     this.set({ mode, composing: mode === 'view' ? null : this.snap.composing }, [{ type: 'mode', origin, mode }]);
   }
+  /** Opens (or, with `null`, closes) the Flag issue form for a cell. */
   compose(c: Composing | null): void { this.set({ composing: c }); }
 
   // ── errors ───────────────────────────────────────────────────────────────
@@ -450,6 +515,7 @@ export class WorkbookStore {
     return (this.original(e.sheet, cellRef(r.top, r.left)).text || BLANK) !== e.found;
   }
 
+  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. */
   addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string }, origin?: Origin): SheetpaneError {
     const e: SheetpaneError = {
       v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity,
@@ -472,6 +538,7 @@ export class WorkbookStore {
     return this.snap.errors.find((x) => x.id === e.id)!;
   }
 
+  /** Changes an error's status, severity, expected value, message or type; undoable. */
   updateError(id: string, patch: Partial<Pick<SheetpaneError, 'status' | 'severity' | 'expected' | 'message' | 'type'>>, origin?: Origin): void {
     if (!this.snap.errors.some((e) => e.id === id)) return;
     this.commit({ changes: this.snap.changes, errors: this.snap.errors.map((e) => (e.id === id ? { ...e, ...patch } : e)) }, [], origin, [{ type: 'errors', origin }]);
@@ -483,6 +550,7 @@ export class WorkbookStore {
     this.commit({ changes: this.snap.changes, errors: this.snap.errors.filter((e) => e.id !== id) }, [], origin, [{ type: 'errors', origin }]);
   }
 
+  /** A copy of every error in the pane. */
   getErrors(): SheetpaneError[] { return this.snap.errors.map((e) => ({ ...e })); }
 
   /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). */
@@ -496,7 +564,9 @@ export class WorkbookStore {
   }
 
   // ── undo / redo (W-23): one stack per pane ──────────────────────────────
+  /** Undoes the pane's last step (changes and errors; never selection or mode). */
   undo(origin?: Origin): void { this.travel(this.undoStack, this.redoStack, 'before', origin, 'undo'); }
+  /** Redoes the last undone step. */
   redo(origin?: Origin): void { this.travel(this.redoStack, this.undoStack, 'after', origin, 'redo'); }
 
   private travel(from: HistoryEntry[], to: HistoryEntry[], side: 'before' | 'after', origin: Origin, reason: 'undo' | 'redo'): void {
@@ -609,6 +679,7 @@ export class WorkbookStore {
   // ── column rules (W-27) ──────────────────────────────────────────────────
   /** The host's column rules for this pane. Setting them checks every row again; host errors no longer produced go. */
   setColumnRules(c: ColumnRulesConfig): void { this.rules.configure(c); }
+  /** The column rules in force. */
   get columnRules(): Readonly<ColumnRulesConfig> { return this.rules.config; }
   /** The `load` phase's progress while it runs (rows checked of rows to check). */
   get ruleProgress(): { done: number; total: number } | undefined { return this.rules.progress; }
@@ -617,7 +688,9 @@ export class WorkbookStore {
 
   // ── flagging (W-33): `off` leaves the errors panel as the one place errors are read ──
   private flaggingOn = true;
+  /** Whether Flag issue is on for this pane (SR-GRID decision 22e). */
   get flagging(): boolean { return this.flaggingOn; }
+  /** Turns Flag issue on or off; off cancels an open form. */
   setFlagging(on: boolean): void { if (on !== this.flaggingOn) { this.flaggingOn = on; if (!on && this.snap.composing) this.compose(null); this.set({}); } }
   /** The draft as typed, checked without storing anything (`input` phase). */
   checkInput(sheet: string, ref: string, input: string, signal: AbortSignal) {
@@ -731,6 +804,13 @@ export class WorkbookStore {
 }
 
 /** The ranges a formula reads (A1 refs, ranges, whole columns or rows; sheet-qualified or not). */
+/**
+ * The ranges a formula reads (A1 refs, ranges, whole columns or rows; sheet-qualified or not),
+ * used for the "may be stale" mark (SR-GRID decision 8).
+ * @param f - The formula, without its `=`.
+ * @param sheet - The sheet the formula sits on, for unqualified refs.
+ * @returns Each referenced range with its sheet.
+ */
 export function formulaRefs(f: string, sheet: string): { sheet: string; range: ReturnType<typeof parseRange> }[] {
   const out: { sheet: string; range: ReturnType<typeof parseRange> }[] = [];
   const src = f.replace(/"(?:[^"]|"")*"/g, '""');
@@ -747,6 +827,20 @@ export function formulaRefs(f: string, sheet: string): { sheet: string; range: R
   return out;
 }
 
+/**
+ * Makes a framework-free workbook store (SR-GRID decision 1). Elements make theirs through the
+ * pane registry; a host makes one to share across elements or to drive without any DOM.
+ * @param o - The store's options: its plugins, fixed for its life.
+ * @returns A new, empty {@link WorkbookStore}.
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * const book = createWorkbook({ plugins: [] });
+ * await book.load(bytes, 'q3.csv');
+ * excel.workbook = book;
+ * errors.workbook = book;
+ * ```
+ */
 export function createWorkbook(o: StoreOptions = {}): WorkbookStore {
   return new WorkbookStore(o);
 }

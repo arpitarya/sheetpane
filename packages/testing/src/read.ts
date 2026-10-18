@@ -5,6 +5,7 @@
 import { inflateEntry, readZip } from '@sheetpane/export';
 import { read } from '@sheetpane/import';
 
+/** One cell's value as read back: text, a number, a boolean, or `null` for empty. */
 export type Value = string | number | boolean | null;
 /** A workbook as values: `sheets[name][A1] = value` (empty cells absent), sheet names in order. */
 export interface Values { names: string[]; sheets: Record<string, Record<string, Value>> }
@@ -13,7 +14,21 @@ const colName = (i: number) => { let s = ''; for (let n = i + 1; n > 0; n = Math
 const unesc = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&amp;/g, '&');
 const texts = (xml: string) => [...xml.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map((m) => unesc(m[1]!)).join('');
 
-/** Reads `.xlsx` or `.csv` bytes into values. `name` tells the kind (default: by the ZIP signature). */
+/**
+ * Reads `.xlsx` or `.csv` bytes into values. `name` tells the kind (default: by the ZIP signature).
+ * Where a DOM exists `@sheetpane/import` reads it; in Node a values-only reader does.
+ *
+ * @param bytes - The file's bytes, e.g. a `Download`'s.
+ * @param name - The file name; its extension tells .xlsx from .csv.
+ * @returns The workbook as values, sheet names in order.
+ * @example
+ * ```ts
+ * import { readFile, valueAt } from '@sheetpane/testing';
+ * const values = await readFile(bytes, 'sales.xlsx');
+ * const total = valueAt(values, 'Sales!B2');
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md
+ */
 export async function readFile(bytes: Uint8Array, name?: string): Promise<Values> {
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
   const fileName = name ?? (isZip ? 'workbook.xlsx' : 'data.csv');
@@ -56,7 +71,14 @@ export async function readFile(bytes: Uint8Array, name?: string): Promise<Values
   return out;
 }
 
-/** The cells whose value differs between two readings: `{ sheet, ref, was, now }`. */
+/**
+ * The cells whose value differs between two readings: `{ sheet, ref, was, now }`.
+ *
+ * @param before - The earlier reading.
+ * @param after - The later reading.
+ * @returns One entry per changed cell; an empty cell is `null`.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md
+ */
 export function changesBetween(before: Values, after: Values): { sheet: string; ref: string; was: Value; now: Value }[] {
   const out: { sheet: string; ref: string; was: Value; now: Value }[] = [];
   for (const sheet of new Set([...before.names, ...after.names])) {
@@ -66,7 +88,14 @@ export function changesBetween(before: Values, after: Values): { sheet: string; 
   return out;
 }
 
-/** `Sheet1!B2` → its value (`B2` alone means the first sheet). */
+/**
+ * `Sheet1!B2` → its value (`B2` alone means the first sheet).
+ *
+ * @param book - The values `readFile` returned.
+ * @param address - An A1 address, with or without its sheet; `$` signs are ignored.
+ * @returns The value, or `null` when the cell is empty.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md
+ */
 export function valueAt(book: Values, address: string): Value {
   const i = address.lastIndexOf('!');
   const sheet = i < 0 ? book.names[0]! : address.slice(0, i).replace(/^'(.*)'$/, '$1').replace(/''/g, "'"), ref = address.slice(i + 1).replace(/\$/g, '');

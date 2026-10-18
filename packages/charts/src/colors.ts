@@ -20,7 +20,12 @@ const SCHEME_FALLBACK: Record<number, string> = { 0: 'FFFFFF', 1: '000000', 2: '
 
 const hex6 = (s: string | undefined) => (s && /^[0-9A-Fa-f]{6}$/.test(s) ? s.toUpperCase() : undefined);
 
-/** The theme's six accents, Office's where the workbook has none. */
+/**
+ * The theme's six accents, Office's where the workbook has none.
+ *
+ * @param themeColors - The workbook's theme colours by SpreadsheetML index (accents at 4–9), `RRGGBB`.
+ * @returns Six `RRGGBB` accents.
+ */
 export function accents(themeColors: readonly string[]): string[] {
   return OFFICE_ACCENTS.map((d, i) => hex6(themeColors[4 + i]) ?? d);
 }
@@ -59,7 +64,14 @@ function hslToRgb([h, s, l]: [number, number, number]): [number, number, number]
   return [f(h + 1 / 3) * 255, f(h) * 255, f(h - 1 / 3) * 255];
 }
 
-/** Applies DrawingML modifiers (values in 1/1000 of a percent: 75000 = 75 %). */
+/**
+ * Applies DrawingML colour modifiers: `lumMod` / `lumOff` in HSL, then `shade` and `tint` (values in 1/1000 of a
+ * percent: 75000 = 75 %). Other modifiers are ignored.
+ *
+ * @param hex - The base colour, `RRGGBB`.
+ * @param mods - The modifiers in file order, each `{ name, val }`.
+ * @returns The modified colour, `RRGGBB`.
+ */
 export function modify(hex: string, mods: readonly { name: string; val: number }[]): string {
   let rgb = toRgb(hex);
   const lumMod = mods.find((m) => m.name === 'lumMod'), lumOff = mods.find((m) => m.name === 'lumOff');
@@ -76,7 +88,13 @@ export function modify(hex: string, mods: readonly { name: string; val: number }
   return toHex(rgb);
 }
 
-/** A colour spec → `#RRGGBB`, or undefined when it names nothing this resolver knows. */
+/**
+ * Resolves a chart colour (`srgbClr`, `schemeClr`, `sysClr` with its modifiers) to `#RRGGBB`.
+ *
+ * @param c - The colour spec, or `undefined`.
+ * @param themeColors - The workbook's theme colours, for a scheme colour.
+ * @returns `#RRGGBB`, or `undefined` when it names nothing this resolver knows.
+ */
 export function resolveColor(c: ColorSpec | undefined, themeColors: readonly string[]): string | undefined {
   if (!c) return undefined;
   const base = c.kind === 'srgb' ? hex6(c.val) : c.kind === 'scheme' ? themeColor(themeColors, c.val) : hex6(c.val);
@@ -86,6 +104,10 @@ export function resolveColor(c: ColorSpec | undefined, themeColors: readonly str
 /**
  * The colour Excel's default chart style gives the n-th series (or pie slice) when the part
  * names none: accents 1–6, then the same six darker, then lighter.
+ *
+ * @param n - The series' `c:idx` (or the slice's index).
+ * @param themeColors - The workbook's theme colours.
+ * @returns `#RRGGBB`.
  */
 export function defaultColor(n: number, themeColors: readonly string[]): string {
   const a = accents(themeColors)[n % 6]!, round = Math.floor(n / 6) % 3;

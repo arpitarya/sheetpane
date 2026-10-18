@@ -7,6 +7,7 @@ import type { ControlDescriptor, Plugin, Selection, Snapshot, WorkbookStore } fr
 import { numfmt, originalCode, type NumfmtOptions } from './index.js';
 import { adjustDecimals, categoryOf, CATEGORIES, documentLocale, fixedCode, generalDecimals, isValidCode, presetCode, type Category } from './fmt.js';
 
+/** Options for {@link ui}: the plugin's locale plus how Custom… asks for a code. */
 export interface UiOptions extends NumfmtOptions {
   /** Asks for a custom code (the dropdown's "Custom…"). Default: `window.prompt`. Return null to cancel. */
   ask?: (current: string) => string | null;
@@ -57,6 +58,29 @@ const ICON = (inner: string) => `<svg viewBox="0 0 16 16" width="16" height="16"
 const ICON_LESS = ICON('<path d="M2 5.5 5 8l-3 2.5M5 8h4"/><circle cx="12" cy="11.5" r=".6" fill="currentColor"/>');
 const ICON_MORE = ICON('<path d="M9 5.5 12 8l-3 2.5M12 8H8"/><circle cx="4" cy="11.5" r=".6" fill="currentColor"/>');
 
+/**
+ * The number-format controls for Edit mode: a `format-row` dropdown (General, Number, Currency, Accounting, Date,
+ * Time, Percentage, Fraction, Scientific, Text, Custom…) and ± decimals. A choice applies to the selection's numeric
+ * cells as one undo step; Custom… refuses an invalid code. Pair it with {@link numfmt}; importing this module makes
+ * `plugins="numfmt"` enable both.
+ *
+ * @param options - The locale and the Custom… prompt.
+ * @returns The controls plugin (`id: 'numfmt-ui'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0109_NUMFMT.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { numfmt } from '@sheetpane/numfmt';
+ * import { ui } from '@sheetpane/numfmt/ui';
+ *
+ * const book = createWorkbook({ plugins: [numfmt(), ui()] });
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/numfmt/ui'; // registers `numfmt` with its controls
+ * excel.setAttribute('plugins', 'numfmt');
+ * ```
+ */
 export function ui(options: UiOptions = {}): Plugin {
   const locale = () => options.locale ?? documentLocale();
   const ask = options.ask ?? ((cur: string) => (typeof globalThis.prompt === 'function' ? globalThis.prompt('Custom number format', cur) : null));

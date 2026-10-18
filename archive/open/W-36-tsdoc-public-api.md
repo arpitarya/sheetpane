@@ -6,7 +6,7 @@ item: W-36
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,8 +16,8 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Write TSDoc on every public export of every package: a one-line summary, `@param`/`@returns`, the events an element fires, one `@example`, a `@see` to its record | an agent reading `dist/*.d.ts` gets the contract, not a guess | ⏳ |
-| 2 | Add a test using the TypeScript compiler API that walks each package's public entry and fails on an export without a summary or an element without `@example` | it stays documented | ⏳ |
+| 1 | Write TSDoc on every public export of every package: a one-line summary, `@param`/`@returns`, the events an element fires, one `@example`, a `@see` to its record | an agent reading `dist/*.d.ts` gets the contract, not a guess | ✅ |
+| 2 | Add a test using the TypeScript compiler API that walks each package's public entry and fails on an export without a summary or an element without `@example` | it stays documented | ✅ |
 
 **Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
 
@@ -31,12 +31,12 @@ ball: agent
 
 | DoD | what | state |
 |---|---|---|
-| 1 · coverage | every symbol reachable from each package's `exports` has a summary; functions have `@param`/`@returns`; each custom element class lists its attributes, properties, methods and events (`@fires sheetpane-…`) and has one `@example` | ⏳ |
-| 2 · links | each element and top-level function has `@see` to its record (e.g. `records/0105_GRID.md`) and its README section | ⏳ |
-| 3 · survives the build | `removeComments` stays off; a test reads the built `.d.ts` and finds them | ⏳ |
-| 4 · check | `test/tsdoc.test.ts` walks every package entry with the TypeScript compiler API (already a dev dependency — no API Extractor) and fails on a missing summary or element `@example`, naming the symbol | ⏳ |
-| 5 · examples compile | every `@example` block is extracted and type-checked against the built packages | ⏳ |
-| 6 · record | SR-BUILD gains the TSDoc check | ⏳ |
+| 1 · coverage | every symbol reachable from each package's `exports` has a summary; functions have `@param`/`@returns`; each custom element class lists its attributes, properties, methods and events (`@fires sheetpane-…`) and has one `@example` | ✅ every symbol the walker reaches in the 13 packages (export, import, grid, the eight plugins, fixtures, testing); both elements list Attributes, members and `@fires` per dispatched event, with an `@example` |
+| 2 · links | each element and top-level function has `@see` to its record (e.g. `records/0105_GRID.md`) and its README section | ✅ elements and plugin factories `@see` their record and README section; top-level functions `@see` their record (checked for elements only) |
+| 3 · survives the build | `removeComments` stays off; a test reads the built `.d.ts` and finds them | ✅ `removeComments` off; the test reads the built `.d.ts` |
+| 4 · check | `test/tsdoc.test.ts` walks every package entry with the TypeScript compiler API (already a dev dependency — no API Extractor) and fails on a missing summary or element `@example`, naming the symbol | ✅ `test/tsdoc.test.ts` with `test/tsdoc-walk.ts` — **not** the compiler API: TypeScript 7 has none stable in JavaScript, so the walker reads the declaration files and follows re-exports itself (SR-BUILD 7a) |
+| 5 · examples compile | every `@example` block is extracted and type-checked against the built packages | ✅ every `@example` ```ts block type-checked against the built packages |
+| 6 · record | SR-BUILD gains the TSDoc check | ✅ SR-BUILD decision 7a |
 
 ## Blockers
 

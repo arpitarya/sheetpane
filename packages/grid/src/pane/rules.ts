@@ -39,8 +39,11 @@ export interface ColumnRule {
   severity?: Severity;
   onInvalid?: OnInvalid;
 }
+/** Column rules keyed by column title (or, in a rules file's `cells`, by A1 cell or range). */
 export type ColumnRules = Readonly<Record<string, ColumnRule>>;
+/** What a failing rule does on commit: `flag` stores the value and adds an error; `block` refuses it. */
 export type OnInvalid = 'flag' | 'block';
+/** When a rule runs: while typing (`input`), on commit, or over every row when a file loads. */
 export type RulePhase = 'input' | 'commit' | 'load';
 
 /** The rules file (W-33), version 1: rules per sheet (`"*"` for every sheet), by column title and by cell or range. */
@@ -64,9 +67,12 @@ export interface RuleContext {
   /** The row's values keyed by column title. */
   rowValues: Readonly<Record<string, Cell>>;
 }
+/** A failure a host `validate` function reports; `null` or `undefined` means the cell passes. */
 export interface RuleResult { severity?: Severity; message: string; expected?: string }
+/** The host's own check for each cell of a titled column; `signal` aborts when a newer check of the cell starts. */
 export type ValidateFn = (ctx: RuleContext, signal: AbortSignal) => RuleResult | null | undefined | Promise<RuleResult | null | undefined>;
 
+/** The pane's column rules (SR-GRID decision 22): set by the element or `store.setColumnRules()`. */
 export interface ColumnRulesConfig {
   columns?: ColumnRules;
   validate?: ValidateFn | undefined;
@@ -99,7 +105,9 @@ export interface RulesHost {
 }
 
 export const RULES_PROVIDER_ID = 'host-rules';
+/** The error `type` of a column rule's finding. */
 export const RULE_TYPE = 'column-rule';
+/** The error `type` of a rules file's cell rule finding. */
 export const CELL_RULE_TYPE = 'cell-rule';
 const PATTERN_LIMIT = 10_000;
 const SLICE_MS = 8;
@@ -589,7 +597,9 @@ function filePattern(r: ColumnRule): RegExp | undefined {
 /**
  * Checks a rules file (W-33) by hand — no schema library at run time. Every problem
  * is named (an unknown key, version or word, a bad ref or pattern) and the rest
- * still applies; nothing throws.
+ * still applies; nothing throws (SR-GRID decision 22d).
+ * @param doc - The parsed JSON, as given.
+ * @returns The usable rules per sheet, and one problem per thing wrong.
  */
 export function checkDocument(doc: unknown): { sheets: Map<string, DocSheet>; problems: DocProblem[] } {
   const problems: DocProblem[] = [];
@@ -623,7 +633,11 @@ export function checkDocument(doc: unknown): { sheets: Map<string, DocSheet>; pr
   return { sheets, problems };
 }
 
-/** A rule in words, for an error's `expected`: "a whole number from 18 to 99", "one of Active, Inactive". */
+/**
+ * A rule in words, for an error's `expected`: "a whole number from 18 to 99", "one of Active, Inactive".
+ * @param r - The rule.
+ * @returns The rule as a phrase.
+ */
 export function describeRule(r: ColumnRule): string {
   const parts: string[] = [];
   const kind = r.type === 'integer' ? 'a whole number' : r.type === 'number' ? 'a number' : r.type === 'date' ? 'a date' : r.type === 'boolean' ? 'TRUE or FALSE' : r.type === 'text' ? 'text' : '';

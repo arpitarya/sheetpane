@@ -7,6 +7,7 @@ import type { PluginContext } from '@sheetpane/grid';
 
 type Book = PluginContext['book'];
 
+/** What a media part turned out to be: a drawable image with its object URL, a format no browser draws, or missing. */
 export type MediaResult =
   /** The browser can draw it. */
   | { kind: 'image'; url: string; mime: string }
@@ -25,14 +26,26 @@ export const extensionOf = (path: string): string => /\.([A-Za-z0-9]+)$/.exec(pa
 /** The part's file name, for labels: `xl/media/logo.emf` → `logo.emf`. */
 export const fileName = (path: string): string => path.slice(path.lastIndexOf('/') + 1);
 
-/** True when the extension alone says a browser cannot draw it — no bytes need reading to know. */
+/**
+ * Whether the extension alone says a browser cannot draw the part — no bytes need reading to know.
+ *
+ * @param path - The media part's path, e.g. `xl/media/image1.emf`.
+ * @returns `true` for anything but PNG, JPEG, GIF, SVG, BMP or WebP.
+ */
 export function isUnsupportedPath(path: string): boolean {
   return !(extensionOf(path) in BY_EXTENSION);
 }
 
 const startsWith = (b: Uint8Array, sig: number[], at = 0) => sig.every((v, i) => b[at + i] === v);
 
-/** What the bytes are, by their signature — the file name lies more often than the header. */
+/**
+ * What the bytes are, by their signature — the file name lies more often than the header. Unrecognised bytes fall
+ * back to the extension.
+ *
+ * @param bytes - The part's bytes.
+ * @param path - The part's path, for the fallback.
+ * @returns `{ mime }` for a format `<img>` draws, else `{ format }` (`emf`, `wmf`, `tiff`, the extension, or `unknown`).
+ */
 export function sniff(bytes: Uint8Array, path: string): { mime: string } | { format: string } {
   if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47])) return { mime: 'image/png' };
   if (startsWith(bytes, [0xff, 0xd8, 0xff])) return { mime: 'image/jpeg' };

@@ -36,7 +36,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Built: 22 of 23 skills, entry files, installer, drift check (SR-SKILLS); skill 18 waits on W-37, DoD 8 (a prompt in each tool) is the decider's. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
 
-- 🟢 **W-36** `agent` · Every public export documented with TSDoc (summary, params, events, one `@example`, a link to its record); a test fails on any undocumented export. Filed by Arpit (Cowork). [detail](open/W-36-tsdoc-public-api.md)
 
 - 🟢 **W-37** `agent` · Ship `custom-elements.json` for the elements; generate VS Code / JetBrains editor data and React, Vue, Svelte, Solid typings from it; a test keeps the manifest equal to the code. Filed by Arpit (Cowork). [detail](open/W-37-custom-elements-manifest.md)
 

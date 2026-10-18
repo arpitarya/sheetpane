@@ -59,7 +59,49 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 type Filter = 'all' | Severity;
 type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
 
+/**
+ * `<sheetpane-errors>` — the error list and the Flag issue form, on the same in-memory
+ * workbook as `<sheetpane-excel>` (SR-ERRORS). It keeps no private copy: every render reads
+ * the pane's store, so the two are always in step (SR-LAW-7). It registers on import.
+ *
+ * Attributes:
+ * - `pane` — the pane id shared with the sheet; none gives the element its own store.
+ * - `readonly` — hides the form, Resolve, Delete, Undo and Redo (a sign-off screen).
+ * - `author` — written into the errors this element's user adds.
+ * - `plugins` — space-separated registered plugin ids; fixed per pane.
+ * - `theme` — `light` (the default), `dark` or `auto`.
+ *
+ * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`.
+ *
+ * Methods: `getErrors()`, `setErrors(list, { plugins? })`, `renderNow()`.
+ *
+ * Every event bubbles and is composed; an action's event fires once, on the element where it
+ * happened.
+ *
+ * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change — the envelope to save a review.
+ * @fires sheetpane-change `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo).
+ * @fires sheetpane-select `{ sheet, ref }` when picking a row selects its cell.
+ * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
+ * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up.
+ *
+ * @csspart root - The panel's frame: the header, the form, the filters and the list.
+ *
+ * @example
+ * ```ts
+ * import '@sheetpane/grid';
+ * const list = document.createElement('sheetpane-errors');
+ * list.setAttribute('pane', 'q3');
+ * list.setAttribute('author', 'reviewer@example.com');
+ * document.body.append(list);
+ * list.addEventListener('sheetpane-errors', (e) => localStorage.setItem('review', JSON.stringify((e as CustomEvent).detail)));
+ * const saved = JSON.parse(localStorage.getItem('review') ?? 'null');
+ * if (saved) list.setErrors(saved.errors, { plugins: saved.plugins });
+ * ```
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md
+ * @see https://github.com/arpitarya/sheetpane/blob/main/packages/grid/README.md#sheetpane-errors
+ */
 export class SheetpaneErrors extends ElementBase {
+  /** The attributes the element reacts to. */
   static observedAttributes = ['pane', 'readonly', 'author', 'plugins'];
 
   private _store: WorkbookStore | undefined;
@@ -77,18 +119,23 @@ export class SheetpaneErrors extends ElementBase {
   private savedPlugins: string[] | undefined;
 
   // ── properties ───────────────────────────────────────────────────────────
+  /** The pane's store; assigning one replaces the `pane` lookup. */
   get workbook(): WorkbookStore | undefined { return this._store; }
   set workbook(s: WorkbookStore | undefined) { this._explicitStore = s; if (this.isConnected) { this.unbind(); this.bind(); this.schedule(); } }
+  /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
   get errors(): SheetpaneError[] { return this._store?.getErrors() ?? []; }
   set errors(list: SheetpaneError[]) { this.setErrors(list); }
+  /** The types offered in the form; an empty list falls back to `DEFAULT_ERROR_TYPES`. */
   get errorTypes(): readonly ErrorType[] { return this._errorTypes; }
   set errorTypes(t: readonly ErrorType[]) { this._errorTypes = t.length ? t : DEFAULT_ERROR_TYPES; this.formKey = ''; this.schedule(); }
+  /** Whether the list is read-only (the `readonly` attribute). */
   get readOnly(): boolean { return this.hasAttribute('readonly'); }
   set readOnly(v: boolean) { this.toggleAttribute('readonly', v); }
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
   set theme(t: Theme) { this.setAttribute('theme', t); }
 
+  /** A copy of the pane's errors, to save a review. */
   getErrors(): SheetpaneError[] { return this.errors; }
   /** Restores a saved review. `plugins` (from the saved `sheetpane-errors` envelope) shows a notice when it differs from this pane's set. */
   setErrors(list: SheetpaneError[], o: { plugins?: string[] } = {}): void {
@@ -96,6 +143,7 @@ export class SheetpaneErrors extends ElementBase {
     this.ensureStore().setErrors(list, this);
   }
 
+  /** Builds the shadow root once and binds to the pane's store. */
   connectedCallback(): void {
     if (!this.shadow) {
       this.shadow = this.attachShadow({ mode: 'open' });
@@ -108,7 +156,9 @@ export class SheetpaneErrors extends ElementBase {
     this.bind();
     this.schedule();
   }
+  /** Releases the pane's store. */
   disconnectedCallback(): void { this.unbind(); cancelAnimationFrame(this.raf); }
+  /** Reacts to an observed attribute. */
   attributeChangedCallback(name: string, old: string | null, val: string | null): void {
     if (!this.isConnected || old === val) return;
     if (name === 'pane' || name === 'plugins') { this.unbind(); this.bind(); }
@@ -150,6 +200,7 @@ export class SheetpaneErrors extends ElementBase {
     if (this.raf || !this.shadow) return;
     this.raf = requestAnimationFrame(() => { this.raf = 0; this.render(); });
   }
+  /** Renders now (tests and the first frame). */
   renderNow(): void { cancelAnimationFrame(this.raf); this.raf = 0; this.render(); }
 
   // ── interactions ─────────────────────────────────────────────────────────

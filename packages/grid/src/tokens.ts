@@ -5,6 +5,7 @@
 // Proof's ink #16171A and ground #F6F6F4 with the light hues, shipped as hex
 // (no color-mix() at runtime). A host may override any --sp-* on the element.
 
+/** The light theme's design tokens, applied as `--sp-<name>` on both elements (SR-GRID decision 15a). */
 export const TOKENS = {
   ground: '#F6F6F4', surface: '#FFFFFF', sunken: '#EFEFEB', line: '#E2E2DD', 'line-strong': '#CBCBC5',
   cell: '#FFFFFF', head: '#F3F3F0', grid: '#E6E6E1',
@@ -19,6 +20,7 @@ export const TOKENS = {
   'shadow-lg': '0 24px 64px rgba(22,23,26,.22)',
 } as const;
 
+/** A token's name; its custom property is `--sp-<name>`. */
 export type TokenName = keyof typeof TOKENS;
 
 /** The `theme` attribute on both elements. */

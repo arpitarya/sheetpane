@@ -1,8 +1,12 @@
 // DOMParser helpers that ignore namespace prefixes (files use x:, none, or others).
 import { ImportError } from './errors.js';
+import { parseMiniXml } from './minixml.js';
 
 export function parseXml(text: string, what: string): Document {
-  if (typeof DOMParser === 'undefined') throw new ImportError('needs-dom', 'reading .xlsx needs DOMParser — a browser, or a DOM shim in Node');
+  if (typeof DOMParser === 'undefined') {
+    // Node and workers: the built-in reader (SR-IMPORT decision 8)
+    try { return parseMiniXml(text); } catch (e) { throw new ImportError('corrupt', `${what} is not well-formed XML — ${(e as Error).message}`); }
+  }
   const doc = new DOMParser().parseFromString(text, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length) throw new ImportError('corrupt', `${what} is not well-formed XML`);
   return doc;

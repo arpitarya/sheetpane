@@ -17,10 +17,17 @@ import { chartAt, chartModel, chartModelNow, charts, chartsOn, showSource, type 
 import { intersects, parseArea, parseCell, qualified, uniqueRanges, type SourceRange } from './refs.js';
 import type { ChartModel } from './model.js';
 
+/** The controls plugin's id. */
 export const UI_ID = 'charts-ui';
+/** The keyboard shortcut for Show source cells. */
 export const SHORTCUT = 'Mod+Shift+U';
 
-/** The ranges a chart reads, categories before values — the order the status line names them in. */
+/**
+ * The ranges a chart reads, categories before values — the order the status line names them in.
+ *
+ * @param m - The chart model.
+ * @returns The ranges, without duplicates.
+ */
 export function sourceList(m: ChartModel): SourceRange[] {
   return uniqueRanges(m.series.flatMap((s) => [...(s.cat?.ranges ?? []), ...(s.val?.ranges ?? [])]));
 }
@@ -40,7 +47,14 @@ function chartsReading(snap: Snapshot, sel: Selection): ChartModel[] {
   return out;
 }
 
-/** The status line's text for a selection. Charts not yet read count, but cannot be named. */
+/**
+ * The status line's text for a selection: `Chart source: Holdings!E3:E15, H3:H15` while it lies in a chart's plotted
+ * cells or under its frame, else `2 charts` on a sheet that has some. Charts not yet read count, but cannot be named.
+ *
+ * @param snap - A snapshot of the store.
+ * @param sel - The selection.
+ * @returns The text, or `''`.
+ */
 export function statusText(snap: Snapshot, sel: Selection): string {
   const book = snap.book;
   if (!book) return '';
@@ -57,7 +71,13 @@ export function statusText(snap: Snapshot, sel: Selection): string {
   return n ? `${n} ${n === 1 ? 'chart' : 'charts'}` : '';
 }
 
-/** The chart the shortcut acts on: the one over the active cell, else the sheet's only chart. */
+/**
+ * The chart the shortcut acts on: the one over the active cell, else the sheet's only chart.
+ *
+ * @param store - The workbook store.
+ * @param sel - The selection.
+ * @returns The chart part's path, or `undefined`.
+ */
 export function targetChart(store: WorkbookStore, sel: Selection): string | undefined {
   const p = parseCell(sel.ref);
   const hit = p && chartAt(store.book, sel.sheet, p.row, p.col);
@@ -81,12 +101,44 @@ const source: ControlDescriptor = {
   },
 };
 
-/** The UI plugin: no hooks; the status line and the shortcut. Pair it with `charts()`. */
+/**
+ * The charts controls: no hooks; a status line naming the source of the chart under the selection (or the sheet's
+ * chart count), and Mod+Shift+U for Show source cells — the keyboard route to each frame's button. Pair it with
+ * {@link charts}; importing this module makes `plugins="charts"` enable both.
+ *
+ * @returns The controls plugin (`id: 'charts-ui'`).
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0113_CHARTS.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { charts } from '@sheetpane/charts';
+ * import { ui } from '@sheetpane/charts/ui';
+ *
+ * const book = createWorkbook({ plugins: [charts(), ui()] });
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/charts/ui'; // registers `charts` with its controls
+ * excel.setAttribute('plugins', 'charts');
+ * ```
+ */
 export function ui(): Plugin {
   return { id: UI_ID, provides: [], controls: [source] };
 }
 
-/** Both plugins, for `createWorkbook({ plugins: chartsWithUi() })`. */
+/**
+ * The charts plugin and its controls together.
+ *
+ * @param o - The charts plugin's options.
+ * @returns `[charts(o), ui()]`.
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { chartsWithUi } from '@sheetpane/charts/ui';
+ *
+ * const book = createWorkbook({ plugins: chartsWithUi({ draw: false }) });
+ * ```
+ */
 export function chartsWithUi(o: ChartsOptions = {}): Plugin[] {
   return [charts(o), ui()];
 }

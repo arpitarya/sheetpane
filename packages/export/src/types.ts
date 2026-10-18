@@ -3,6 +3,7 @@
 /** A cell's stored value. Text, a number, a boolean, or empty. */
 export type Cell = string | number | boolean | null;
 
+/** One worksheet: its name, its rows of cells, and how it is laid out. */
 export interface Sheet {
   /** 1–31 characters, none of `[ ] : * ? / \`, unique ignoring case. */
   name: string;
@@ -12,18 +13,23 @@ export interface Sheet {
   merges?: string[];
   /** Column widths in Excel's character units (`<col width>`), index 0 = column A. */
   columnWidths?: number[];
+  /** Written as `state="hidden"`; at least one sheet must stay visible. */
   hidden?: boolean;
   /** Frozen rows and columns (top-left), written as `<pane state="frozen">`. */
   freeze?: { rows: number; cols: number };
 }
 
+/** The plain object both directions share: `@sheetpane/import` reads into it, the writers write from it. */
 export interface Workbook {
+  /** In tab order; at least one. */
   sheets: Sheet[];
 }
 
 /** One cell's new value, for `patchXlsx`. */
 export interface Change {
+  /** The sheet's name. */
   sheet: string;
+  /** An A1 reference, e.g. `B3`. */
   ref: string;
   value: Cell;
 }

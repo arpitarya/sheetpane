@@ -30,7 +30,15 @@ const unavailable = (name: string) => `${name} — preview unavailable`;
 const FRAME = 'box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:4px;overflow:hidden;text-align:center;'
   + 'border:1px dashed var(--sp-line-strong,#CBCBC5);background:var(--sp-sunken,#EFEFEB);color:var(--sp-ink-3,#63666E);font-size:12px;line-height:1.3;word-break:break-all';
 
-/** The picture items of one sheet, with their rectangles in sheet space. Exported for tests and for charts to model on. */
+/**
+ * The picture items of one sheet, with their rectangles in sheet space: one item per `picture` drawing with media
+ * and an area (charts and shapes are skipped). Exported for tests and for charts to model on.
+ *
+ * @param sheet - The sheet's name.
+ * @param ctx - The plugin context with the grid's geometry, as the `overlay` hook receives it.
+ * @param cache - Returns the media cache the items read their bytes through.
+ * @returns The overlay items; `alt` is the drawing's description, else its name.
+ */
 export function pictureItems(sheet: string, ctx: PluginContext & { geometry: Geometry }, cache: () => MediaCache): OverlayItem[] {
   const s = ctx.book.sheets.find((x) => x.name === sheet);
   if (!s) return [];
@@ -115,7 +123,29 @@ const status: ControlDescriptor = {
   },
 };
 
-/** The images plugin. One instance serves one pane; the object URLs it makes are revoked when that pane loads another workbook. */
+/**
+ * The pictures plugin: draws each picture anchored in the sheet through the `overlay` hook, view only. Bytes are
+ * read only when a picture nears the viewport; PNG, JPEG, GIF, BMP, WebP and SVG show through `<img>`, and EMF, WMF,
+ * TIFF or a missing part show a labelled "preview unavailable" frame. In Edit a click on a picture selects the cell
+ * under it. Export copies the drawings unchanged. One instance serves one pane; its object URLs are revoked when
+ * that pane loads another workbook. Importing this module registers it as `images`.
+ *
+ * @returns The plugin (`id: 'images'`), with a status count of the sheet's pictures.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0107_IMAGES.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { images } from '@sheetpane/images';
+ *
+ * const book = createWorkbook({ plugins: [images()] });
+ * await book.load(bytes, 'catalogue.xlsx');
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/images'; // registers `images`
+ * excel.setAttribute('plugins', 'images');
+ * ```
+ */
 export function images(): Plugin {
   const states = new WeakMap<Store, StoreState>();
   const stateFor = (store: Store): StoreState => {

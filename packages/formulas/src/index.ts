@@ -15,6 +15,7 @@ export { engineLoaded } from './model.js';
 export { formulaIn, valueIn } from './cells.js';
 export type { WasmSource } from './model.js';
 
+/** Options for {@link formulas}. */
 export interface FormulasOptions {
   /** Load the WASM engine now rather than on the first `derive` that needs it. */
   preload?: boolean;
@@ -22,6 +23,7 @@ export interface FormulasOptions {
   wasm?: WasmSource;
 }
 
+/** A cell: its sheet's name and its `A1` ref. */
 export interface CellAddress { sheet: string; ref: string }
 
 /** The headless plugin, plus what the UI and hosts read from it. */
@@ -47,7 +49,13 @@ const REACH_ANYWHERE = /\b(?:INDIRECT|OFFSET)\s*\(/i;
 const NUMERIC = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 const REL = 1e-14; // IronCalc reads back 15 significant digits; Excel caches 17
 
-/** Equal as a reviewer would see them: numbers to 15 significant digits, empty text as empty. */
+/**
+ * Equal as a reviewer would see them: numbers at a 1e-14 relative tolerance (15 significant digits), `null` as `''`.
+ *
+ * @param a - One cell value.
+ * @param b - The other.
+ * @returns Whether they are the same.
+ */
 export function sameValue(a: Cell, b: Cell): boolean {
   if (typeof a === 'number' && typeof b === 'number') return a === b || Math.abs(a - b) <= REL * Math.max(Math.abs(a), Math.abs(b));
   return (a ?? '') === (b ?? '');
@@ -365,7 +373,32 @@ class Engine {
   }
 }
 
-/** The formulas plugin: `derive` recalculates through IronCalc; `exportPatch` writes `<f>` and cached `<v>`. */
+/**
+ * The formulas plugin: `derive` recalculates formulas live through IronCalc (WASM, loaded on the first formula to
+ * calculate, never at import); `exportPatch` writes typed formulas as `<f>` + `<v>` and recalculated values as new
+ * cached `<v>`. Cycles show 0, as in Excel; a file formula IronCalc cannot calculate keeps its saved value. Importing
+ * this module registers it as `formulas`; the status line, marks and reference outlines are in `@sheetpane/formulas/ui`.
+ *
+ * @param o - `preload` to load the engine now; `wasm` to say where its `.wasm` comes from.
+ * @returns The plugin (`id: 'formulas'`) with `ready()`, `cycles()`, `unsupported()`, `stateOf()`, `built()` and `evaluate()`.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0111_FORMULAS.md
+ * @example
+ * ```ts
+ * import { createWorkbook } from '@sheetpane/grid';
+ * import { formulas } from '@sheetpane/formulas';
+ *
+ * const engine = formulas({ preload: true });
+ * const book = createWorkbook({ plugins: [engine] });
+ * await book.load(bytes, 'model.xlsx');
+ * await engine.ready();
+ * console.log(engine.cycles());
+ * ```
+ * @example
+ * ```ts
+ * import '@sheetpane/formulas'; // registers `formulas`
+ * excel.setAttribute('plugins', 'formulas');
+ * ```
+ */
 export function formulas(o: FormulasOptions = {}): FormulasPlugin {
   const e = new Engine(o);
   if (o.preload) loadEngine(o.wasm).catch((err: unknown) => console.error(spMessage('SP-5202', 'sheetpane formulas: the engine did not load'), err));

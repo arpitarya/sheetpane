@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-36 | TSDoc on every public export of 13 packages (summary, `@param`/`@returns`, elements' Attributes, `@fires`, `@example`, `@see`); a check reading the built `.d.ts` and type-checking every `@example` | closed | `test/tsdoc.test.ts` (17) |
 | 2026-10-18 | W-38 | `llms.txt` and `llms-full.txt` generated from the READMEs, docs, laws, records and skills; in the repo root and the grid's `dist/`; links pinned to the release tag; a freshness test | closed | `test/llms.test.ts` (3) |
 | 2026-10-18 | W-41 | `@sheetpane/testing`: one driver API for Playwright and Vitest browser mode on committed `data-sp-*` hooks (SR-GRID 9a), Download read back as values (Node too), `toHaveCell` / `toHaveError`; demo-check's review steps use it | closed | `--project testing --project node` (9) · demo-check 49 ✓ |
 | 2026-10-18 | W-40 | Stable `SP-xxxx` codes on every throw, console line, rules note, refused load and blocked edit; one registry (`CODES` in export), `docs/ERRORS.md`, a scan test with an append-only lock | closed | `test/error-codes.test.ts` (87) · full suite 681 ✓ |

@@ -12,7 +12,9 @@ import type { Geometry } from '@sheetpane/grid';
 /** 914,400 EMU per inch, 96 px per inch. */
 export const EMU_PER_PX = 9525;
 
+/** EMU → px (9,525 EMU per pixel), unrounded. */
 export const emuToPx = (emu: number): number => emu / EMU_PER_PX;
+/** px → EMU (9,525 EMU per pixel), rounded to a whole EMU. */
 export const pxToEmu = (px: number): number => Math.round(px * EMU_PER_PX);
 
 /** A position in a drawing: zero-based column and row, plus an offset in EMU inside that cell. */
@@ -29,12 +31,20 @@ export interface Anchor {
   pos?: { x: number; y: number };
 }
 
+/** A rectangle in sheet space: px at 100 % zoom from the top-left of A1. */
 export interface Rect { x: number; y: number; width: number; height: number }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 const finite = (n: number) => (Number.isFinite(n) ? n : 0);
 
-/** A point's top-left in px. An offset never reaches past its own cell (Excel clamps it the same way). */
+/**
+ * An anchor point in sheet space, placed through the grid's geometry. An offset never reaches past its own cell
+ * (Excel clamps it the same way).
+ *
+ * @param g - The grid's geometry (its column and row positions and sizes).
+ * @param p - The point: column, row and their EMU offsets.
+ * @returns The point's `{ x, y }` in px.
+ */
 export function pointToPx(g: Geometry, p: AnchorPoint): { x: number; y: number } {
   return {
     x: g.colX(p.col) + clamp(emuToPx(finite(p.colOff)), 0, g.colWidth(p.col)),
@@ -47,6 +57,10 @@ export function pointToPx(g: Geometry, p: AnchorPoint): { x: number; y: number }
  * - twoCell: `from` to `to`, each with its offsets;
  * - oneCell: `from` plus `ext`;
  * - absolute: `pos` plus `ext`, from the sheet origin.
+ *
+ * @param a - The anchor (any drawing kind fits).
+ * @param g - The grid's geometry.
+ * @returns The rectangle in sheet space, or `undefined`.
  */
 export function anchorRect(a: Anchor, g: Geometry): Rect | undefined {
   if (a.anchor === 'twoCell') {
@@ -78,12 +92,24 @@ function indexAt(at: (i: number) => number, v: number, max: number): number {
 const MAX_COLS = 16384;
 const MAX_ROWS = 1048576;
 
-/** The zero-based cell under a point in sheet space (px at 100 %). */
+/**
+ * The cell under a point in sheet space (px at 100 %); a negative coordinate counts as 0.
+ *
+ * @param g - The grid's geometry.
+ * @param x - Horizontal position, px.
+ * @param y - Vertical position, px.
+ * @returns The zero-based `{ row, col }`.
+ */
 export function cellAt(g: Geometry, x: number, y: number): { row: number; col: number } {
   return { col: indexAt((c) => g.colX(c), Math.max(0, x), MAX_COLS), row: indexAt((r) => g.rowY(r), Math.max(0, y), MAX_ROWS) };
 }
 
-/** `0` → `A`, `25` → `Z`, `26` → `AA`. */
+/**
+ * A column's letters: `0` → `A`, `25` → `Z`, `26` → `AA`.
+ *
+ * @param col - The column, 0-based.
+ * @returns Its letters.
+ */
 export function colLabel(col: number): string {
   let s = '';
   for (let n = col + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s;

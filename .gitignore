@@ -14,3 +14,5 @@ coverage/
 .vitest/
 # the playground build (W-44)
 site/
+# W-36: @example blocks extracted for type-checking
+test/.tsdoc-examples*/

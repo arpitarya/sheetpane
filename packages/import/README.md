@@ -47,7 +47,6 @@ Every refusal is an `ImportError` with a `code`:
 | `not-workbook` | a ZIP without `xl/workbook.xml`, or bytes named `.xlsx` that are not a ZIP |
 | `too-large` | ZIP64; more than 512 MB inflated in one part or 1 GB in all; past 1,048,576 rows or 16,384 columns |
 | `corrupt` | broken DEFLATE, a CRC mismatch, XML that does not parse |
-| `needs-dom` | reading `.xlsx` in Node, which has no `DOMParser` (CSV works anywhere) |
 
 The spec is the record [SR-IMPORT](../../records/0104_IMPORT.md).
 

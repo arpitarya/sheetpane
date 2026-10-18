@@ -3,12 +3,15 @@
 // come from @sheetpane/grid, the values from the store a hook is handed.
 import { shiftFormula, type CellContext, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
 
+/** The imported workbook, as a plugin hook receives it. */
 export type Book = PluginContext['book'];
 export type Sheet = CellContext['sheet'];
 export type Cell = CellContext['value'];
 export type DataValidation = Sheet['dataValidations'][number];
 
+/** A data-validation rule's type (`<dataValidation type>`); `custom` needs a formula engine. */
 export type RuleKind = 'whole' | 'decimal' | 'date' | 'time' | 'textLength' | 'list' | 'custom';
+/** A rule's comparison (`<dataValidation operator>`); `between` is the default and inclusive. */
 export type Operator = 'between' | 'notBetween' | 'equal' | 'notEqual' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
 /** Why a rule is not checked: `custom` without a formula evaluator, an operator or operand outside the subset, an unknown type, a list source that names nothing. */
 export type SkipReason = 'custom' | 'operator' | 'operand' | 'type' | 'source';
@@ -66,7 +69,16 @@ const RANGE = new RegExp(`^(?:${SHEET})?(\\$?[A-Za-z]{1,3}\\$?\\d+:\\$?[A-Za-z]{
 function dayBase(d1904: boolean): number { return d1904 ? Date.UTC(1904, 0, 1) : Date.UTC(1899, 11, 30); }
 export function dateSerial(y: number, m: number, d: number, d1904: boolean): number { return Math.round((Date.UTC(y, m - 1, d) - dayBase(d1904)) / 864e5); }
 
-/** Parses one operand; a defined name is followed (three levels) to its formula. Undefined: outside the subset. */
+/**
+ * Parses one operand (`formula1` / `formula2`): a number, quoted text, `DATE` / `TIME` of numbers, a cell or a
+ * range; a defined name is followed (three levels) to its formula.
+ *
+ * @param f - The operand as the file stores it, with or without `=`.
+ * @param book - The workbook (its date system and defined names).
+ * @param sheetIndex - The rule's sheet, 0-based — a sheet-scoped name wins over a global one.
+ * @param depth - How many defined names have been followed already; callers omit it.
+ * @returns The operand, or `undefined` when it is outside the subset (the rule is then skipped).
+ */
 export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 0): Operand | undefined {
   const t = f.trim().replace(/^=/, '').trim();
   if (NUM.test(t)) return { k: 'num', v: Number(t) };
@@ -103,6 +115,7 @@ export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 
 export { shiftFormula };
 
 // ── compiled rules ────────────────────────────────────────────────────────
+/** One `<dataValidation>`, compiled: its kind, operator, ranges, parsed operands, and why it is skipped, if it is. */
 export interface Rule {
   sheet: string;
   dv: DataValidation;
@@ -120,7 +133,13 @@ export interface Rule {
 
 const cache = new WeakMap<Book, Map<string, Rule[]>>();
 
-/** The sheet's rules, compiled once per workbook. `type="none"` (any value) is not a rule. */
+/**
+ * The sheet's rules, compiled once per workbook. `type="none"` (any value) is not a rule.
+ *
+ * @param book - The workbook.
+ * @param sheetName - The sheet's name.
+ * @returns The compiled rules, skipped ones included (they carry `skip`).
+ */
 export function rulesOf(book: Book, sheetName: string): Rule[] {
   let bySheet = cache.get(book);
   if (!bySheet) cache.set(book, (bySheet = new Map()));
@@ -214,7 +233,16 @@ function operandAt(o: Operand, rule: Rule, store: WorkbookStore, row: number, co
   return undefined;
 }
 
-/** A `list` rule's choices at one cell — read live from the store for a range. */
+/**
+ * A `list` rule's choices at one cell — the literal list, or read live from the store for a range (relative parts
+ * shifted to the cell; empty and repeated values dropped).
+ *
+ * @param rule - A `list` rule.
+ * @param store - The workbook store.
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns The choices, in order.
+ */
 export function listOptions(rule: Rule, store: WorkbookStore, row: number, col: number): string[] {
   if (rule.literal) return rule.literal;
   const o = rule.f1;
@@ -266,7 +294,17 @@ const compare = (op: Operator, x: number, a: number, b: number | undefined): boo
   }
 };
 
-/** Does one cell pass one (checkable) rule? `unknown` when an operand cannot be read — not an error. */
+/**
+ * Does one cell pass one (checkable) rule? A blank cell passes with `allowBlank`.
+ *
+ * @param rule - A rule that is not skipped.
+ * @param store - The workbook store (current values).
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @param evaluate - The formula engine's `evaluate`, for `custom` rules; `undefined` without one.
+ * @param memo - A cache of list sources, shared across one run.
+ * @returns `pass`, `fail`, or `unknown` when an operand cannot be read — not an error.
+ */
 export function check(rule: Rule, store: WorkbookStore, row: number, col: number, evaluate: Evaluate | undefined, memo?: Map<Rule, string[]>): Verdict {
   const ref = a1(row, col);
   const v = valueAt(store, rule.sheet, ref);
@@ -322,7 +360,16 @@ const TYPE_WORDS: Record<RuleKind, string> = { whole: 'whole number', decimal: '
 const OP_WORDS: Record<Operator, string> = { between: 'between', notBetween: 'not between', equal: '=', notEqual: '≠', greaterThan: '>', lessThan: '<', greaterThanOrEqual: '≥', lessThanOrEqual: '≤' };
 const LIST_SHOWN = 8;
 
-/** The rule in words, at one cell: `whole number > 0`, `decimal between 0.00% and 2.00%`, `date ≤ 30-Sep-2026`, `list — Core, Income, Cap`. */
+/**
+ * The rule in words, at one cell: `whole number > 0`, `decimal between 0.00% and 2.00%`, `date ≤ 30-Sep-2026`,
+ * `list — Core, Income, Cap` — an error's `expected`.
+ *
+ * @param rule - The rule.
+ * @param store - The workbook store (cell operands are read live).
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns The sentence.
+ */
 export function ruleWords(rule: Rule, store: WorkbookStore, row: number, col: number): string {
   const ref = a1(row, col);
   if (rule.kind === 'list') {

@@ -8,6 +8,7 @@ import { parseFormulaRefs, uniqueRanges, type SourceRange } from './refs.js';
 
 /** The types stage 2 draws. */
 export type DrawKind = 'bar' | 'column' | 'line' | 'pie' | 'doughnut' | 'scatter';
+/** How a chart group's series combine: side by side, stacked, stacked to 100 %, or (lines, scatter) as they are. */
 export type Grouping = 'clustered' | 'stacked' | 'percentStacked' | 'standard';
 
 /** A reference and what Excel cached for it when it last saved the file. */
@@ -22,6 +23,7 @@ export interface DataRef {
   formatCode?: string;
 }
 
+/** One series of a chart part: its name, references and cached points, and explicit colours. */
 export interface SeriesModel {
   /** `c:idx` — what default colours count from. */
   idx: number;
@@ -39,6 +41,7 @@ export interface SeriesModel {
   pointFills: Map<number, ColorSpec>;
 }
 
+/** One chart group of the plot area (`c:barChart`, `c:lineChart` …): its type, layout settings and series. */
 export interface GroupModel {
   /** The plot-area element's local name: `barChart`, `lineChart`, `pie3DChart` … */
   element: string;
@@ -57,6 +60,7 @@ export interface GroupModel {
   series: SeriesModel[];
 }
 
+/** A chart part read into plain data: title, groups, series, what can be drawn, and the ranges it reads. */
 export interface ChartModel {
   /** The chart's title, or `Chart` when it has none. */
   title: string;
@@ -228,7 +232,14 @@ function titleOf(chart: Element | undefined, all: SeriesModel[]): string {
 
 const PLOT_TYPES = new Set(Object.keys(LABELS));
 
-/** Parses a chart part's XML. Throws when the XML is not well-formed or holds no `chart`. */
+/**
+ * Parses a chart part's XML (`c:chartSpace`, by local name, so strict and transitional parts read the same).
+ * Uses DOMParser: browser only.
+ *
+ * @param xml - The chart part's text.
+ * @returns The model.
+ * @throws When the XML is not well-formed or holds no `chart`.
+ */
 export function parseChart(xml: string): ChartModel {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length) throw spError('SP-5701', 'sheetpane charts: the chart part is not well-formed XML');

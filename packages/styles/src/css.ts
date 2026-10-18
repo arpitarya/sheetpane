@@ -18,10 +18,16 @@ export const ALLOWED_PROPS = [
   'background-color', 'color', 'font-weight', 'font-style', 'font-size', 'text-decoration', 'text-align', 'vertical-align', 'white-space',
   'border-top', 'border-right', 'border-bottom', 'border-left',
 ] as const satisfies readonly StyleProp[];
+/** One CSS property of {@link ALLOWED_PROPS}. */
 export type AllowedProp = (typeof ALLOWED_PROPS)[number];
 const ALLOWED = new Set<string>(ALLOWED_PROPS);
 
-/** Drops anything outside the allow-list (a font family included, whatever its spelling). */
+/**
+ * Drops anything outside the allow-list (a font family included, whatever its spelling) and empty values.
+ *
+ * @param style - CSS declarations, property → value.
+ * @returns A new object holding only {@link ALLOWED_PROPS} with a value.
+ */
 export function allowListed(style: StyleSubset): StyleSubset {
   const out: StyleSubset = {};
   for (const [k, v] of Object.entries(style) as [StyleProp, string | undefined][]) if (ALLOWED.has(k) && v !== undefined && v !== '') out[k] = v;
@@ -47,7 +53,13 @@ export const BORDER_STYLES = Object.keys(BORDER_CSS);
 /** Automatic text and border colour: Excel's system foreground. */
 export const AUTO_INK = '#000000';
 
-/** `text-decoration` from underline and strike; `undefined` when neither. */
+/**
+ * `text-decoration` from a font's underline and strike.
+ *
+ * @param u - The underline (`true`, `single`, `double`, `singleAccounting`, `doubleAccounting`, `none`), or absent.
+ * @param strike - Whether the font is struck through.
+ * @returns `underline`, `line-through` or both (plus `double` for a double underline); `undefined` when neither.
+ */
 export function decoration(u: string | boolean | undefined, strike: boolean | undefined): string | undefined {
   const parts: string[] = [];
   if (u && u !== 'none') parts.push('underline');
@@ -64,6 +76,11 @@ const sameColor = (a: XlFont['color'], b: XlFont['color']) => JSON.stringify(a ?
  * colour are emitted only where they differ from it — a plain cell stays plain
  * and keeps the host's colour (dark themes included). Without `base` (a dxf),
  * everything the font names is emitted. The family is never read.
+ *
+ * @param font - The font, or `undefined`.
+ * @param palette - The workbook's palette, for its colour.
+ * @param base - The workbook's default font; omit for a dxf.
+ * @returns `font-weight`, `font-style`, `text-decoration`, `font-size` (in `em`) and `color`, as they apply.
  */
 export function fontCss(font: XlFont | undefined, palette: Palette, base?: XlFont): StyleSubset {
   const out: StyleSubset = {};
@@ -98,6 +115,11 @@ const PATTERN_DENSITY: Readonly<Record<string, number>> = {
  * solid fill takes `bgColor`, as Excel writes it); other patterns blend the
  * pattern colour over the background by their density; a gradient shows the
  * midpoint of its first and last stops (no `background-image` — DoD 2).
+ *
+ * @param fill - The fill, or `undefined`.
+ * @param palette - The workbook's palette, for its colours.
+ * @param o - `{ dxf: true }` for a conditional format's fill.
+ * @returns `{ 'background-color' }`, or `{}` for no fill.
  */
 export function fillCss(fill: XlFill | undefined, palette: Palette, o: { dxf?: boolean } = {}): StyleSubset {
   if (!fill) return {};
@@ -120,14 +142,26 @@ const SIDES = ['top', 'right', 'bottom', 'left'] as const;
 export type Side = (typeof SIDES)[number];
 export { SIDES };
 
-/** One border side as CSS, e.g. `1px solid #000000`; `undefined` for none. */
+/**
+ * One border side as CSS, e.g. `1px solid #000000`; an automatic colour is black.
+ *
+ * @param side - The side (`style` and `color`), or `undefined`.
+ * @param palette - The workbook's palette, for its colour.
+ * @returns The CSS value, or `undefined` for no border.
+ */
 export function sideCss(side: XlBorderSide | undefined, palette: Palette): string | undefined {
   const w = side?.style ? BORDER_CSS[side.style] : undefined;
   if (!w) return undefined;
   return `${w} ${resolveColor(side!.color, palette) ?? AUTO_INK}`;
 }
 
-/** A border's CSS: `border-top` … `border-left`. Diagonals have no CSS twin and are not drawn. */
+/**
+ * A border's CSS: `border-top` … `border-left`. Diagonals have no CSS twin and are not drawn.
+ *
+ * @param border - The border, or `undefined`.
+ * @param palette - The workbook's palette, for its colours.
+ * @returns One property per drawn side.
+ */
 export function borderCss(border: XlBorder | undefined, palette: Palette): StyleSubset {
   const out: StyleSubset = {};
   if (!border) return out;
@@ -141,7 +175,12 @@ export function borderCss(border: XlBorder | undefined, palette: Palette): Style
 const H_ALIGN: Readonly<Record<string, string>> = { left: 'left', center: 'center', right: 'right', justify: 'justify', distributed: 'justify', fill: 'left', centerContinuous: 'center' };
 const V_ALIGN: Readonly<Record<string, string>> = { top: 'top', center: 'middle', bottom: 'bottom', justify: 'middle', distributed: 'middle' };
 
-/** Alignment's CSS: `text-align`, `vertical-align`, and `white-space: pre-wrap` for wrapped text. Indent and rotation are not drawn. */
+/**
+ * Alignment's CSS: `text-align`, `vertical-align`, and `white-space: pre-wrap` for wrapped text. Indent and rotation are not drawn.
+ *
+ * @param a - A cell format's alignment, or `undefined`.
+ * @returns The properties that apply.
+ */
 export function alignmentCss(a: XlAlignment | undefined): StyleSubset {
   const out: StyleSubset = {};
   if (!a) return out;
@@ -153,7 +192,14 @@ export function alignmentCss(a: XlAlignment | undefined): StyleSubset {
   return out;
 }
 
-/** A cell format (`cellXfs[s]`) as CSS, measured against the workbook's default font. */
+/**
+ * A cell format (`cellXfs[s]`) as CSS — font, fill, border and alignment — measured against the workbook's default font.
+ *
+ * @param tables - The workbook's style tables.
+ * @param s - The cell's style index, or `undefined`.
+ * @param palette - The workbook's palette.
+ * @returns The CSS; `{}` when the xf does not exist.
+ */
 export function xfCss(tables: Tables, s: number | undefined, palette: Palette): StyleSubset {
   const xf = s === undefined ? undefined : tables.cellXfs[s];
   if (!xf) return {};
@@ -166,7 +212,13 @@ export function xfCss(tables: Tables, s: number | undefined, palette: Palette): 
   };
 }
 
-/** A differential format (conditional formatting) as CSS — for @sheetpane/condfmt. */
+/**
+ * A differential format (conditional formatting) as CSS — for `@sheetpane/condfmt`. Everything it names is emitted.
+ *
+ * @param dxf - The differential format, or `undefined`.
+ * @param palette - The workbook's palette.
+ * @returns The CSS; `{}` for none.
+ */
 export function dxfCss(dxf: XlDxf | undefined, palette: Palette): StyleSubset {
   if (!dxf) return {};
   return { ...fontCss(dxf.font, palette), ...fillCss(dxf.fill, palette, { dxf: true }), ...borderCss(dxf.border, palette), ...alignmentCss(dxf.alignment) };

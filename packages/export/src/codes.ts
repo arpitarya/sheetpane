@@ -9,8 +9,11 @@
 // 5500 condfmt · 5600 images · 5700 charts · 5800 comments) · 6xxx rules ·
 // 7xxx mcp (reserved).
 
+/** One registry entry: a code's short title and how serious it is. */
 export interface CodeInfo {
+  /** A few words; the long text lives in docs/ERRORS.md. */
   readonly title: string;
+  /** An `error` is thrown or refuses a load; a `warning` or `note` is reported and work goes on. */
   readonly severity: 'error' | 'warning' | 'note';
   /** No longer raised; kept so the code is never reused. */
   readonly retired?: true;
@@ -25,7 +28,7 @@ const TABLE = {
   'SP-1005': { title: 'Not a workbook', severity: 'error' },
   'SP-1006': { title: 'File too large', severity: 'error' },
   'SP-1007': { title: 'Damaged file', severity: 'error' },
-  'SP-1008': { title: 'Reading .xlsx needs a DOM', severity: 'error' },
+  'SP-1008': { title: 'Reading .xlsx needs a DOM', severity: 'error', retired: true },
 
   // ── 2xxx · @sheetpane/export ─────────────────────────────────────────────
   'SP-2001': { title: 'Invalid sheet name', severity: 'error' },
@@ -123,7 +126,14 @@ export const ERRORS_DOC_URL = 'https://github.com/arpitarya/sheetpane/blob/main/
 /** The docs link for one code: `…/ERRORS.md#sp-3012`. */
 export const codeUrl = (code: SpCode): string => `${ERRORS_DOC_URL}#${code.toLowerCase()}`;
 
-/** `SP-xxxx: <title> — <detail> (<docs link>)` — the text of a thrown error or a console line. */
+/**
+ * `SP-xxxx: <title> — <detail> (<docs link>)` — the text of a thrown error or a console line.
+ *
+ * @param code - The SP code.
+ * @param detail - What happened, in words; left out, the message is the title and the link.
+ * @returns The formatted message.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md
+ */
 export function spMessage(code: SpCode, detail?: string): string {
   const head = `${code}: ${CODES[code].title}`;
   return `${detail ? `${head} — ${detail}` : head} (${codeUrl(code)})`;
@@ -138,7 +148,15 @@ export interface SpCoded {
 /** What `spError` returns: an Error whose `code` and `spCode` are the SP code. */
 export type SpError = Error & SpCoded & { readonly code: SpCode };
 
-/** Builds (does not throw) an Error carrying `code` and `spCode`; its message is `spMessage(code, detail)`. */
+/**
+ * Builds (does not throw) an Error carrying `code` and `spCode`; its message is `spMessage(code, detail)`.
+ *
+ * @param code - The SP code.
+ * @param detail - The human text, kept as `spDetail`.
+ * @param Ctor - The Error class to build, e.g. `TypeError`; default `Error`.
+ * @returns The error, ready to throw.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md
+ */
 export function spError(code: SpCode, detail?: string, Ctor: new (message: string) => Error = Error): SpError {
   const e = new Ctor(spMessage(code, detail)) as Error & { code: SpCode; spCode: SpCode; spDetail: string };
   e.code = code;
@@ -150,14 +168,26 @@ export function spError(code: SpCode, detail?: string, Ctor: new (message: strin
 const SP_RE = /^SP-\d{4}$/;
 const isCode = (x: unknown): x is SpCode => typeof x === 'string' && SP_RE.test(x) && x in CODES;
 
-/** The SP code of anything sheetpane raised — a thrown error, a load state, a note, an event detail — or undefined. */
+/**
+ * The SP code of anything sheetpane raised — a thrown error, a load state, a note, an event detail — or undefined.
+ *
+ * @param x - Anything; its `spCode`, else its `code`, is read when it is a known code.
+ * @returns The code, or `undefined`.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md
+ */
 export function codeOf(x: unknown): SpCode | undefined {
   if (!x || typeof x !== 'object') return undefined;
   const o = x as { spCode?: unknown; code?: unknown };
   return isCode(o.spCode) ? o.spCode : isCode(o.code) ? o.code : undefined;
 }
 
-/** The human text of an error without its code, title or link (`spDetail`), else its message. */
+/**
+ * The human text of an error without its code, title or link (`spDetail`), else its message.
+ *
+ * @param x - An error or anything else; a non-object is turned into a string.
+ * @returns The text.
+ * @see https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md
+ */
 export function detailOf(x: unknown): string {
   if (x && typeof x === 'object') {
     const o = x as { spDetail?: unknown; message?: unknown };

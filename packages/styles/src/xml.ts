@@ -240,6 +240,12 @@ function noneFill(sheet: StyleSheet): number {
  * Sets `s` on each listed cell — `style(ref, current)` returns the new index —
  * adding `<c r s/>` (and its `<row>`) where the cell has no element yet. Rows
  * without a listed cell are kept byte for byte, and so is every other cell.
+ *
+ * @param xml - A worksheet's XML.
+ * @param refs - The cells to restyle, `A1`.
+ * @param style - Given a cell and its current `s`, returns its new `s`.
+ * @param current - The cell's current `s` (for a cell not yet written, its row's `s` or 0), as `style` receives it — its second argument.
+ * @returns The worksheet XML with the cells repointed.
  */
 export function restyleSheetXml(xml: string, refs: readonly string[], style: (ref: string, current: number) => number): string {
   const P = /<(\w+:)?worksheet\b/.exec(xml)?.[1] ?? '';
@@ -352,7 +358,14 @@ async function stylesPathOf(patch: PatchContext): Promise<string | undefined> {
   return out.join('/');
 }
 
-/** Writes every style change in the pane into the package. */
+/**
+ * The styles plugin's `exportPatch`: writes every style change in the pane into the package — new deduplicated
+ * `<font>`, `<fill>`, `<border>` and `<xf>` entries, each changed cell's `s` repointed, and `styles.xml` created when
+ * the package has none. A workbook without style changes, or a CSV, is left as it is.
+ *
+ * @param patch - The export's package being patched.
+ * @param ctx - The plugin context (the store and the workbook).
+ */
 export async function writeStyles(patch: PatchContext, ctx: PluginContext): Promise<void> {
   const list = styleChanges(ctx.snapshot().changes).filter((c) => Object.keys(c.patch).length);
   if (!list.length) return;
