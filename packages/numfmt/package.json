@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/numfmt",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Excel number formats for sheetpane — currency, dates, fractions, elapsed time, conditional sections, locales — as a plugin on the `format` hook.",
   "license": "MIT",
   "repository": {

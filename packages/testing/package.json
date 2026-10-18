@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/testing",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Test helpers for hosts that embed sheetpane: locators, actions and reading a download back, for Playwright and Vitest browser mode.",
   "license": "MIT",
   "repository": {
@@ -46,8 +46,12 @@
     "vitest": ">=3"
   },
   "peerDependenciesMeta": {
-    "@playwright/test": { "optional": true },
-    "vitest": { "optional": true }
+    "@playwright/test": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@sheetpane/fixtures": "workspace:*",
@@ -56,9 +60,18 @@
   "publishConfig": {
     "access": "public",
     "exports": {
-      ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-      "./playwright": { "types": "./dist/playwright.d.ts", "import": "./dist/playwright.js" },
-      "./dom": { "types": "./dist/dom.d.ts", "import": "./dist/dom.js" }
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./playwright": {
+        "types": "./dist/playwright.d.ts",
+        "import": "./dist/playwright.js"
+      },
+      "./dom": {
+        "types": "./dist/dom.d.ts",
+        "import": "./dist/dom.js"
+      }
     }
   }
 }

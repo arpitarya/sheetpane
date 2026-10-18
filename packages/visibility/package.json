@@ -1,7 +1,7 @@
 {
   "name": "@sheetpane/visibility",
-  "version": "0.0.0",
-  "description": "Hide and unhide rows, columns and sheets for sheetpane \u2014 menus, Google Sheets' shortcuts, a click on the grid's hidden-span markers \u2014 written into the download. Core already honours and marks what a file hides.",
+  "version": "0.1.0",
+  "description": "Hide and unhide rows, columns and sheets for sheetpane — menus, Google Sheets' shortcuts, a click on the grid's hidden-span markers — written into the download. Core already honours and marks what a file hides.",
   "license": "MIT",
   "repository": {
     "type": "git",

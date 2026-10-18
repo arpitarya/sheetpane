@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/images",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Images for sheetpane — pictures anchored in the sheet drawn in sheet space through the `overlay` hook; view only, kept on export.",
   "license": "MIT",
   "repository": {

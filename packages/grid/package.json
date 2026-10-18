@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/grid",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "View and edit .xlsx and .csv files inside any web page: the <sheetpane-excel> and <sheetpane-errors> web components, always in sync through one in-memory workbook.",
   "license": "MIT",
   "repository": {
