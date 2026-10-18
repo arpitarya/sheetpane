@@ -213,7 +213,7 @@ open source ([law L2](records/0004_LAW-2-foss-dependencies.md)).
 
 ## Contributing
 
-**Welcome — especially failing files and bug reports.** You need **Node 20+**,
+**Welcome — especially failing files and bug reports.** You need **Node 22+**,
 **pnpm 10** and [**just**](https://just.systems).
 
 ```sh
@@ -234,7 +234,7 @@ just demo-html   # the plain HTML demo at http://127.0.0.1:5173
 | `just demo-react` | the React 19 demo at http://127.0.0.1:5174 |
 | `just demo-check` | both demos driven end to end in Chromium |
 | `just pack-check` | every package packed as npm would publish it, and checked |
-| `just release <version>` | bump every package together, check, tag; CI publishes |
+| `just release <version>` | bump every package together, check, push; a GitHub Release publishes ([RELEASING.md](RELEASING.md)) |
 
 </details>
 

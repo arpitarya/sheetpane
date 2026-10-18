@@ -1,0 +1,129 @@
+# Publishing (SR-BUILD decision 9; how to cut one: RELEASING.md). Runs when a GitHub Release
+# is published; nothing else publishes. No NPM_TOKEN anywhere: npm trusted publishing (OIDC).
+#
+# ⚠ Do NOT rename this file or the `npm` environment. Each package's trusted publisher on
+#   npmjs.com is bound to both — `arpitarya/sheetpane` · `publish.yml` · environment `npm` —
+#   and a rename fails the next release at the registry for a reason no diff shows.
+name: publish
+on:
+  release:
+    types: [published]
+jobs:
+  build:
+    name: build the tarballs once
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read # to read ci.yml's verdict on the commit being released
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ci.yml must have succeeded on this commit, on main
+        # Create the release only after CI is green on main: while it is running, red or
+        # missing, this refuses — nothing reaches npm from an unchecked commit.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          got="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&branch=main&event=push&per_page=1" \
+                 -q '.workflow_runs[0] | "\(.status) \(.conclusion)"')"
+          echo "ci.yml on ${GITHUB_SHA::8} (main): ${got:-no run}"
+          [ "$got" = "completed success" ] || {
+            echo "::error::refusing to publish: ci.yml has not succeeded on ${GITHUB_SHA::8} on main (${got:-no run}). Wait for it or fix it, then re-run this job."
+            exit 1
+          }
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: every version site agrees
+        run: node scripts/check-version-parity.mjs
+
+      - name: the release tag is the packages' version
+        # An unbumped tree would publish nothing new and still go green: refuse instead.
+        run: |
+          pkg="$(node -p "require('./packages/grid/package.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          [ "$pkg" = "$tag" ] || { echo "::error::release tag v$tag != package version $pkg — run \`just release $tag\` first"; exit 1; }
+          echo "✔ tag v$tag matches the packages' version $pkg"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+
+      - name: pack every public package (pnpm rewrites workspace:*)
+        run: |
+          mkdir -p tarballs
+          for d in packages/*/; do
+            [ -f "${d}package.json" ] || continue
+            [ "$(node -p "require('./${d}package.json').private === true")" = true ] && { echo "${d}: private"; continue; }
+            (cd "$d" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/tarballs" >/dev/null)
+          done
+          ls -l tarballs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarballs
+          path: tarballs/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-npm:
+    name: publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write # the OIDC token npm trusted publishing exchanges, and provenance
+      contents: read
+    environment:
+      name: npm
+      url: https://www.npmjs.com/org/sheetpane
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: take the tarballs the build job made — never rebuild here
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-tarballs
+          path: tarballs/
+
+      - name: each tarball carries its build and nothing else
+        run: |
+          v="${GITHUB_REF_NAME#v}"; n=0
+          for t in tarballs/*.tgz; do
+            list="$(tar -tzf "$t")"; man="$(tar -xzOf "$t" package/package.json)"; n=$((n + 1))
+            for f in package/package.json package/README.md package/LICENSE; do
+              grep -qx "$f" <<<"$list" || { echo "::error::$t has no $f"; exit 1; }
+            done
+            ! grep -q '^package/src/' <<<"$list" || { echo "::error::$t ships src/"; exit 1; }
+            ! grep -q '^package/test/' <<<"$list" || { echo "::error::$t ships test/"; exit 1; }
+            ! grep -q '"workspace:' <<<"$man" || { echo "::error::$t keeps a workspace: specifier"; exit 1; }
+            if node -e 'process.exit(JSON.parse(process.argv[1]).files.includes("dist") ? 0 : 1)' "$man"; then
+              grep -q '^package/dist/' <<<"$list" || { echo "::error::$t has no dist/"; exit 1; }
+            fi
+            [ "$(node -p 'JSON.parse(process.argv[1]).version' "$man")" = "$v" ] || { echo "::error::$t is not version $v"; exit 1; }
+          done
+          echo "✔ $n tarballs: build output, README and LICENSE; no src/, no test/, no workspace:"
+
+      - name: npm 11.5.1 or later (trusted publishing needs it; Node 22 ships npm 10)
+        run: |
+          npm i -g npm@latest
+          npm --version
+
+      - name: publish each tarball
+        # A version with a "-" (0.3.0-beta.1) goes to `next`, never to `latest`. A version
+        # already on npm is skipped, so a failed run is re-run, not re-released.
+        run: |
+          for t in tarballs/*.tgz; do
+            id="$(tar -xzOf "$t" package/package.json | node -p 'const p = JSON.parse(require("fs").readFileSync(0, "utf8")); p.name + "@" + p.version')"
+            case "$id" in *@*-*) tag=next ;; *) tag=latest ;; esac
+            if npm view "$id" version >/dev/null 2>&1; then echo "✓ $id is already on npm"; continue; fi
+            echo "publishing $id with tag $tag"
+            npm publish "$t" --tag "$tag" --provenance --access public
+          done

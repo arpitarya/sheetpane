@@ -1,7 +1,7 @@
 # @sheetpane/export
 
 **A plain JavaScript object in, an `.xlsx` or `.csv` file out.** No runtime
-dependencies. Runs in evergreen browsers and Node 20+. Used by
+dependencies. Runs in evergreen browsers and Node 22+. Used by
 `@sheetpane/grid`'s Export button; usable on its own.
 
 ```sh

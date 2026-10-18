@@ -22,7 +22,7 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| 🔴 **W-44** — **no `NPM_TOKEN`** (the decider, 2026-10-19): publish `0.1.0` **once** from a terminal (`npm login`, then `pnpm -r publish --access public` from a green, tagged tree); an agent then adds a *trusted publisher* (GitHub Actions · `arpitarya/sheetpane` · `release.yml`) to each package on npmjs.com and switches `release.yml` to OIDC. Pages is **on** (source *GitHub Actions*, `github-pages` environment exists). CI must be green first. An agent then checks npm, the playground and the starters load and closes W-44 | 2026-10-18 | 1 d |
+| 🔴 **W-44** — **no `NPM_TOKEN`** (the decider, 2026-10-19). Publishing is a GitHub Release → `publish.yml` over npm trusted publishing (OIDC); the steps are [`RELEASING.md`](../RELEASING.md) §One time: publish `0.1.0` **once** by hand (npm asks the authenticator code on every write — the account's 2FA is *auth-and-writes*), a trusted publisher per package (`publish.yml` · environment `npm` · *Allow npm publish*), and the `npm` environment in GitHub. Then `just release 0.2.0` and a GitHub Release `v0.2.0` prove the pipeline; an agent checks npm, the playground and the starters load and closes W-44 | 2026-10-18 | 1 d |
 | ↳ **blocks:** W-44 (closing only — everything is built) | | |
 
 ---
@@ -31,7 +31,7 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — and the release pipeline (`release.yml`, SR-BUILD 9); `v0.1.0` tagged. Waiting on the decider: the `NPM_TOKEN` secret and Pages enabled, the tag's runs re-run, then an agent checks npm, the playground and the starters load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
+- 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — and the release pipeline (`publish.yml` on a GitHub Release, OIDC; `ci.yml` on three OSes; SR-BUILD 8, 9, 9b; `RELEASING.md`); `v0.1.0` tagged. Waiting on the decider: the `NPM_TOKEN` secret and Pages enabled, the tag's runs re-run, then an agent checks npm, the playground and the starters load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
 - 🟢 **W-50** `agent` · **G1** · Pass and not-checked marks: show what is right, not only what is wrong. Filed by Arpit (Cowork). [detail](open/W-50-pass-and-not-checked.md)
 

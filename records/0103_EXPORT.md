@@ -182,7 +182,7 @@ else.
 ### Alternatives considered
 
 - Patch via `DOMParser` — rejected: Node has no DOM, and this package must
-  run in Node 20+.
+  run in Node 22+.
 - Re-compressing untouched parts — rejected: copying the compressed bytes is
   faster and provably byte-identical.
 - A shared-string table in `toXlsx` — rejected by the verdict (inline strings

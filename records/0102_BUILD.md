@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
 timestamp: 2026-10-19T09:00:00Z
 content_sha: ""
@@ -140,17 +140,26 @@ pnpm and a justfile; the testing verdict chose the runner.
     follows `export … from`, `export *`, aliases, re-exported imports and
     `@sheetpane/<pkg>` re-exports itself — and fails naming each symbol; it
     also type-checks every `@example` code block against the built packages.
-8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
-   `just pack-check` on every push to `main` and every PR (Chromium), and a
-   `create` job — a matrix over the six `create-sheetpane` templates running
-   `just create-check <template>` (SR-CREATE decision 5);
+8. **CI:** `.github/workflows/ci.yml` runs on every push to any branch, every
+   PR and on demand: `check` (Linux, Node 22: version parity, `just check`,
+   `just pack-check`, `just demo-check` in Chromium); `portable` (ubuntu,
+   macos and windows × Node 22 and the current LTS: version parity, build,
+   typecheck — the repo's lint — the Node unit tests, and
+   `scripts/smoke-built.mjs`, which installs every package from its packed
+   tarball with npm into an empty folder and imports it from plain Node, so
+   the BUILT package is what is tested); and `create` — a matrix over the six
+   `create-sheetpane` templates running `just create-check <template>`
+   (SR-CREATE decision 5). Every package's `engines.node` is `>=22` (the
+   decider, 2026-10-19; Node 20 is past end of life). Build scripts resolve
+   paths with `fileURLToPath`, never `URL.pathname`, so they run on Windows;
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;
    `pages.yml` (W-44) on a release tag builds the live playground — `just
    site` → `site/` (`scripts/build-site.mjs`: the HTML gallery at `/` with
    every file its import map names copied in, the React gallery at `/react/`
    with a relative base, the version in both headers, no third-party script)
    — checks it with `demo-check`, and deploys it to GitHub Pages;
-   `release.yml` on the same tag publishes the packages (decision 9).
+   `publish.yml` publishes the packages when a GitHub Release is published
+   (decision 9).
 8b. **Starters and links (W-44):** `scripts/build-starters.mjs` (`just
     starters`) scaffolds every `create-sheetpane` template with the CLI itself
     into `examples/starters/<template>` (not workspace members) with an index
@@ -162,22 +171,27 @@ pnpm and a justfile; the testing verdict chose the runner.
     `create-sheetpane` READMEs, `llms.txt` and the setup skill link the live
     playground (`https://arpitarya.github.io/sheetpane/`, decision 8) and the
     starters.
-9. **Release:** `just release <version>` — clean tree required; every package
-   set to the version (`scripts/release.mjs`, which then rebuilds the
-   starters, the Claude Code plugin and `llms.txt`); `just check pack-check`; a
-   commit and an annotated tag `v<version>`, both pushed. Nothing is published
-   from a laptop: the tag runs `.github/workflows/release.yml`, which fails
-   unless every package carries the tag's version, runs `just check`,
-   `pack-check` and `demo-check`, then publishes every public package with
-   no token — npm trusted publishing (OIDC; the decider's ruling, 2026-10-19:
-   no `NPM_TOKEN`): `pnpm pack` (which rewrites `workspace:*`) and `npm
-   publish` of the tarball with npm 11, provenance added by npm — and opens a
-   GitHub release with every tarball attached. A version already on npm is
-   skipped, so a failed run is re-run, not re-tagged. Never `npm publish` from
-   a package folder: npm ships `workspace:*` literally. Trusted publishing
-   needs the package to exist: the first version is published once by hand,
-   then `scripts/npm-trust.sh` (npm 12's `npm trust github`, an interactive
-   login) makes each package trust `release.yml`.
+9. **Release** (`RELEASING.md` is the walkthrough): `just release <version>`
+   — clean tree required; every package set to the version
+   (`scripts/release.mjs`, which then rebuilds the starters, the Claude Code
+   plugin and `llms.txt`); version parity; `just check pack-check`; a commit
+   pushed to `main`, no tag. After `ci.yml` is green on that commit, a GitHub
+   Release `v<version>` is published, and that alone runs
+   `.github/workflows/publish.yml`. Its `build` job refuses unless `ci.yml`
+   concluded `success` on the commit on `main`, checks version parity and that
+   the tag is the packages' version, builds once and packs every public
+   package (`pnpm pack` rewrites `workspace:*`) into one artifact. Its
+   `publish-npm` job (environment `npm`) never rebuilds: it checks each
+   tarball (README, LICENSE and the build output present; no `src/`, `test/`
+   or `workspace:`) and publishes it with npm ≥ 11.5.1, `--provenance`, the
+   `next` dist-tag for a version with a `-` and `latest` otherwise; a version
+   already on npm is skipped, so a failed run is re-run. **No token** — npm
+   trusted publishing (OIDC; the decider's ruling, 2026-10-19: no
+   `NPM_TOKEN`). Trusted publishing needs the package to exist: the first
+   version is published once by hand, then each package trusts `publish.yml`
+   and environment `npm` (npmjs.com, or `scripts/npm-trust.sh`). Neither name
+   may change: npmjs.com is bound to both. Never `npm publish` from a package
+   folder: npm ships `workspace:*` literally.
 9a. **llms.txt (W-38):** `scripts/build-llms.mjs` (`just llms`, no
     dependencies, deterministic) writes `llms.txt` (llmstxt.org: an H1, a
     summary, sections Start · Elements · Plugins · Rules and errors · Testing
@@ -189,6 +203,12 @@ pnpm and a justfile; the testing verdict chose the runner.
     release); `release.mjs` rewrites them with the version, and
     `test/llms.test.ts` fails when either is stale (it prints the full file's
     size — over 200 KB is a hint to split per package).
+9b. **Version parity:** `scripts/check-version-parity.mjs` (`just
+    version-parity`; Node standard library only) fails when any file holding
+    the version disagrees: every `packages/*/package.json`, the plugin's
+    `plugin.json`, each starter's `@sheetpane/*` pins and `tree/v…` links, and
+    `blob/v…` in `llms.txt` and `llms-full.txt`. It runs in `ci.yml` (every
+    job) and in `publish.yml`.
 10. **Pack check:** `scripts/pack-check.mjs` packs each package as publish
     would and fails on a surviving `workspace:` or `source` entry or a missing
     exported file (for a subpath pattern such as `./files/*`, its folder).
@@ -228,8 +248,9 @@ pnpm and a justfile; the testing verdict chose the runner.
 - **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
   pack-check`, locally and in CI.
 - **Owed by the decider:** the first publish by hand (any package not yet on
-  npm) and `scripts/npm-trust.sh`, both needing the decider's npm login and
-  2FA, before `release.yml` can publish; the `@sheetpane` organisation exists.
+  npm), a trusted publisher per package (`publish.yml`, environment `npm`,
+  *Allow npm publish*) and the `npm` environment in GitHub — `RELEASING.md`
+  §One time; the `@sheetpane` organisation exists.
 - **Still open:** the licence check over the whole lockfile (backlog B-008);
   decision 7 checks only the runtime allow-list.
 - **Plugins must keep `@sheetpane/grid` as a dev dependency too** (a peer is
@@ -272,7 +293,7 @@ is never listed here.*
 - [`package.json`](../package.json) · [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) · [`justfile`](../justfile) · [`tsconfig.base.json`](../tsconfig.base.json)
 - [`vitest.config.ts`](../vitest.config.ts) · [`test/packages.test.ts`](../test/packages.test.ts)
 - [`scripts/pack-check.mjs`](../scripts/pack-check.mjs) · [`scripts/release.mjs`](../scripts/release.mjs) · [`scripts/build-grid-css.mjs`](../scripts/build-grid-css.mjs)
-- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) · [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) · [`.github/workflows/release.yml`](../.github/workflows/release.yml)
+- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) · [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) · [`.github/workflows/publish.yml`](../.github/workflows/publish.yml) · [`RELEASING.md`](../RELEASING.md)
 
 **Project docs**
 

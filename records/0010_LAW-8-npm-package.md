@@ -72,7 +72,7 @@ sheetpane is a library other applications build on. The decider ruled on
   importing either package in Node without a browser must be safe.
   `@sheetpane/grid` registers its elements only when `customElements` exists;
   `@sheetpane/export` touches the DOM only inside `download()` (which throws a
-  clear error without a `document`) and otherwise runs in Node 20+.
+  clear error without a `document`) and otherwise runs in Node 22+.
 - **Publishing (ruled 2026-10-18):** the two packages are versioned in
   lockstep — one version number, released together — so `@sheetpane/grid@x.y.z`
   always pins `@sheetpane/export@x.y.z`. The root `package.json` is the

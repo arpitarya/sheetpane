@@ -87,7 +87,7 @@ flowchart TB
 | **`<sheetpane-errors>`** | the **error** component: the list (filter, resolve, delete) and the New error form; always on the same workbook as the sheet | `packages/grid/src/errors/` (W-02) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
 | **`@sheetpane/export`** | a plain object or the original file plus changes → `.xlsx` or `.csv` bytes; `download()` to save it (W-12, [SR-DOWNLOAD](../records/0101_DOWNLOAD.md)); ZIP read and write, CRC-32, XML, CSV; zero dependencies; also usable without the UI | `packages/export/` (W-03, W-12) | [export verdict](../work/compare/export-shape.compare.md) |
 | **plugins** | eight separate packages that register against the one workbook through six hooks (`format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch`) and add controls to six slots the grid draws; the grid with none installed is unchanged | `packages/numfmt/` `formulas/` `styles/` `validation/` `condfmt/` `images/` `charts/` `comments/` (W-15–W-22); the host in `packages/grid/src/plugins/` (W-14) | [plugins verdict](../work/compare/plugins.compare.md) |
-| **browser APIs** | `DecompressionStream` / `CompressionStream` (`deflate-raw`), `DOMParser`, `customElements`, `Blob` | the browser; Node 20+ uses `zlib` for export | the reading and export verdicts |
+| **browser APIs** | `DecompressionStream` / `CompressionStream` (`deflate-raw`), `DOMParser`, `customElements`, `Blob` | the browser; Node 22+ uses `zlib` for export | the reading and export verdicts |
 
 **Dependency direction:** host → plugins → `@sheetpane/grid` → `@sheetpane/import` → `@sheetpane/export` → browser.
 Nothing points the other way. `@sheetpane/export` has no runtime dependencies;

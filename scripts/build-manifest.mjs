@@ -8,9 +8,10 @@
 // Run by `pnpm --filter @sheetpane/grid build` after `tsc`; `generate({ dts })` is what test/manifest.test.ts
 // compares with the committed files. Deterministic: the same sources give the same bytes.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const GRID = join(root, 'packages/grid');
 const BLOB = 'https://github.com/arpitarya/sheetpane/blob/main';
 
@@ -417,7 +418,7 @@ export function generate({ dts = join(GRID, 'dist') } = {}) {
 /** The framework entries the build publishes: `dist/frameworks/<name>.d.ts` and an empty `.js` beside it. */
 export const FRAMEWORK_ENTRIES = ['jsx', 'vue', 'svelte', 'solid'];
 
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const files = generate();
   for (const [rel, text] of Object.entries(files)) {
     const p = join(GRID, rel);

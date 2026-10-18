@@ -48,15 +48,24 @@ pack-check: build
 create-check *templates: build
     node scripts/create-check.mjs {{templates}}
 
-# bump every package to one version, check, commit and tag; the pushed tag publishes them all (lockstep, release.yml)
+# bump every package to one version, check, commit and push; publishing is a GitHub Release (RELEASING.md, publish.yml)
 release version:
     git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)
     node scripts/release.mjs {{version}}
+    node scripts/check-version-parity.mjs
     just check pack-check
     git add -A packages llms.txt llms-full.txt examples/starters plugins .claude-plugin
     git commit -m "release v{{version}}" -m "no SR affected"
-    git tag -a v{{version}} -m "v{{version}}"
-    git push origin HEAD v{{version}}
+    git push origin HEAD
+    @echo "next: wait for ci.yml to go green on main, then: gh release create v{{version}} --target main --generate-notes"
+
+# every file that holds the release version agrees (also in CI and publish.yml)
+version-parity:
+    node scripts/check-version-parity.mjs
+
+# the built packages, installed from their tarballs and imported from plain Node (also in CI on three OSes)
+smoke-built: build
+    node scripts/smoke-built.mjs
 
 # the plain-HTML demo at http://127.0.0.1:5173 (builds the packages first)
 demo-html: build

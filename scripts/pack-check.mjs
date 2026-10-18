@@ -4,8 +4,9 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
 const out = mkdtempSync(join(tmpdir(), 'sheetpane-pack-'));
 let failed = 0;
 for (const dir of readdirSync(join(root, 'packages'))) {
