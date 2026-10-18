@@ -178,6 +178,8 @@ directions.
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |
 | `scripts/serve.mjs` | SR-BUILD | the demos' static server |
 | `scripts/build-site.mjs` | SR-BUILD | the live playground's static site (W-44) |
+| `scripts/build-llms.mjs` | SR-BUILD | writes `llms.txt` and `llms-full.txt` (W-38) |
+| `llms.txt`, `llms-full.txt` | SR-BUILD | the generated contract index for agents |
 | `scripts/demo-check.mjs` | SR-BUILD | both demos used in Chromium (W-09 DoD 4, 8) |
 | `scripts/demo-packed.mjs` | SR-BUILD | both demos installed from tarballs (W-09 DoD 6) |
 | `examples/` | SR-BUILD | the plain-HTML and React 19 demos (SR-BUILD decision 11) |

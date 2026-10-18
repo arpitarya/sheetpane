@@ -26,6 +26,9 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **`llms.txt` / `llms-full.txt`** (W-38): sheetpane's public contract for AI
+  agents, at the repository root and in `@sheetpane/grid` (`dist/`).
+
 - **`@sheetpane/testing`** (W-41): `sheetpane(page)` for Playwright and
   `sheetpane(element)` for Vitest browser mode — edit, flag, resolve, Download
   read back, `toHaveCell` / `toHaveError` — on committed `data-sp-*` hooks.

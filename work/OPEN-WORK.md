@@ -40,7 +40,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-37** `agent` · Ship `custom-elements.json` for the elements; generate VS Code / JetBrains editor data and React, Vue, Svelte, Solid typings from it; a test keeps the manifest equal to the code. Filed by Arpit (Cowork). [detail](open/W-37-custom-elements-manifest.md)
 
-- 🟢 **W-38** `agent` · Generate `llms.txt` (index) and `llms-full.txt` (everything) from the READMEs, records and skills; ship them in the repo and in `@sheetpane/grid`; a test fails when they are stale. Filed by Arpit (Cowork). [detail](open/W-38-llms-txt.md)
 
 - 🟡 **W-39** `agent` · New package `@sheetpane/mcp`: a stdio MCP server with deterministic tools (describe the API, inspect a workbook, draft and check rules, explain an error code); registered for Claude, Kiro and Codex by the skills installer. — waiting on W-37. Filed by Arpit (Cowork). [detail](open/W-39-mcp-server.md)
 

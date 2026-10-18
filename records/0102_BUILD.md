@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8]
 timestamp: 2026-10-18T11:40:00Z
 content_sha: ""
@@ -120,6 +120,17 @@ pnpm and a justfile; the testing verdict chose the runner.
    set to the version (`scripts/release.mjs`); `just check pack-check`; a
    commit and tag `v<version>`; `pnpm -r publish --access public`; push with
    tags. Never `npm publish`: npm ships `workspace:*` literally.
+9a. **llms.txt (W-38):** `scripts/build-llms.mjs` (`just llms`, no
+    dependencies, deterministic) writes `llms.txt` (llmstxt.org: an H1, a
+    summary, sections Start · Elements · Plugins · Rules and errors · Testing
+    and tooling · Skills · Records of absolute links) and `llms-full.txt` (the
+    package READMEs, the docs, the laws and the component records inlined,
+    each under its source path — never `work/` or `archive/`) at the repo
+    root; the grid build copies both into `dist/` (`@sheetpane/grid/llms.txt`).
+    Links are GitHub URLs pinned to `v<version>` (`main` before the first
+    release); `release.mjs` rewrites them with the version, and
+    `test/llms.test.ts` fails when either is stale (it prints the full file's
+    size — over 200 KB is a hint to split per package).
 10. **Pack check:** `scripts/pack-check.mjs` packs each package as publish
     would and fails on a surviving `workspace:` or `source` entry or a missing
     exported file (for a subpath pattern such as `./files/*`, its folder).

@@ -24,7 +24,8 @@
       "import": "./dist/index.js"
     },
     "./style.css": "./dist/style.css",
-    "./rules.schema.json": "./dist/rules.schema.json"
+    "./rules.schema.json": "./dist/rules.schema.json",
+    "./llms.txt": "./dist/llms.txt"
   },
   "files": [
     "dist"
@@ -46,7 +47,8 @@
         "import": "./dist/index.js"
       },
       "./style.css": "./dist/style.css",
-      "./rules.schema.json": "./dist/rules.schema.json"
+      "./rules.schema.json": "./dist/rules.schema.json",
+      "./llms.txt": "./dist/llms.txt"
     }
   },
   "bin": {

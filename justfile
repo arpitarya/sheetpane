@@ -66,6 +66,10 @@ demo-react: build
 site: build
     node scripts/build-site.mjs site
 
+# llms.txt and llms-full.txt from the READMEs, docs, laws, records and skills (W-38)
+llms:
+    node scripts/build-llms.mjs
+
 # rewrite @sheetpane/fixtures' files and manifest (W-42; hand-built, not Excel-saved)
 fixtures: build
     node packages/fixtures/scripts/make.mjs
