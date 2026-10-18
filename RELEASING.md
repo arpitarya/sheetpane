@@ -49,25 +49,33 @@ After step 4, no release needs a token, a code or your machine again.
 
 ## Every release
 
-1. **Bump.** `just release 0.2.0` sets the version on every package, then
-   rebuilds what pins it: the starters, the Claude Code plugin and `llms.txt`.
-   It runs `just version-parity` and `just check pack-check`, then commits and
-   pushes `main`. It does not tag.
-2. **CHANGELOG.** Move `## Unreleased` under `## 0.2.0 — <date>`, in the same
-   push or the one before it.
-3. **Wait for CI.** `ci.yml` must finish green on that commit on `main`: the
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
+`feat(grid): …`, `fix(mcp): …`, `docs: …`, `build(ci): …`,
+`chore(release): v0.2.0`. A breaking change says `!` (`feat(grid)!: …`) and
+has a `BREAKING CHANGE:` footer.
+
+1. **Notes first.** In `CHANGELOG.md`, turn `## Unreleased` into
+   `## 0.2.0 — <date>`, start a new empty `## Unreleased` above it, and open
+   the section with a few lines a user needs: what is new, what to change
+   before upgrading, and how to install. This section **is** the GitHub
+   Release note; `just release` refuses without it.
+2. **Bump.** `just release 0.2.0` sets the version on every package, then
+   rebuilds what pins it: the starters, the Claude Code plugin and
+   `llms.txt`. It runs `just version-parity` and `just check pack-check`,
+   then commits `chore(release): v0.2.0` and pushes `main`. It does not tag.
+3. **Wait for CI.** `ci.yml` must finish green on the head of `main`: the
    full suite, the three-OS matrix and the templates.
-4. **Release.** Run `gh release create v0.2.0 --target main --generate-notes`,
-   or use *Releases → Draft a new release* on GitHub. Publishing the release
-   creates the tag and runs `publish.yml`, which:
+4. **Publish.** `just publish 0.2.0` creates the GitHub Release `v0.2.0`
+   on that commit, with the CHANGELOG section as its notes. Publishing the
+   release creates the tag and runs `publish.yml`, which:
    - refuses unless `ci.yml` succeeded on this commit;
    - checks version parity and that the tag is the packages' version;
    - builds once and packs the 17 tarballs;
-   - checks each tarball (README, LICENSE and build output present; no `src/`,
-     no tests, no `workspace:`);
+   - checks each tarball (README, LICENSE and build output present; no
+     `src/`, no tests, no `workspace:`);
    - publishes each one with provenance. A version with a `-` (e.g.
-     `0.3.0-beta.1`) goes to the `next` dist-tag, everything else to `latest`.
-     A version already on npm is skipped.
+     `0.3.0-beta.1`) goes to the `next` dist-tag, everything else to
+     `latest`. A version already on npm is skipped.
 5. **The tag also deploys the playground** (`pages.yml`).
 
 ## Troubleshooting

@@ -51,13 +51,19 @@ create-check *templates: build
 # bump every package to one version, check, commit and push; publishing is a GitHub Release (RELEASING.md, publish.yml)
 release version:
     git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)
+    node scripts/release-notes.mjs {{version}} > /dev/null
     node scripts/release.mjs {{version}}
     node scripts/check-version-parity.mjs
     just check pack-check
     git add -A packages llms.txt llms-full.txt examples/starters plugins .claude-plugin
-    git commit -m "release v{{version}}" -m "no SR affected"
+    git commit -m "chore(release): v{{version}}" -m "no SR affected"
     git push origin HEAD
-    @echo "next: wait for ci.yml to go green on main, then: gh release create v{{version}} --target main --generate-notes"
+    @echo "next: wait for ci.yml to go green on main, then: just publish {{version}}"
+
+# publish a version: the GitHub Release v<version>, its notes the CHANGELOG section; publish.yml does the rest
+publish version:
+    node scripts/release-notes.mjs {{version}} > /tmp/sheetpane-notes-{{version}}.md
+    gh release create v{{version}} --target "$(git rev-parse HEAD)" --title "v{{version}}" --notes-file /tmp/sheetpane-notes-{{version}}.md
 
 # every file that holds the release version agrees (also in CI and publish.yml)
 version-parity:

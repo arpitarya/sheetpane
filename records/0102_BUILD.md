@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, scripts/release-notes.mjs, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
 timestamp: 2026-10-19T09:00:00Z
 content_sha: ""
@@ -175,8 +175,12 @@ pnpm and a justfile; the testing verdict chose the runner.
    — clean tree required; every package set to the version
    (`scripts/release.mjs`, which then rebuilds the starters, the Claude Code
    plugin and `llms.txt`); version parity; `just check pack-check`; a commit
-   pushed to `main`, no tag. After `ci.yml` is green on that commit, a GitHub
-   Release `v<version>` is published, and that alone runs
+   pushed to `main` as `chore(release): v<version>` (commits follow
+   Conventional Commits, the decider, 2026-10-19), no tag; it refuses unless
+   `CHANGELOG.md` has a `## <version>` section. After `ci.yml` is green on
+   that commit, `just publish <version>` publishes the GitHub Release
+   `v<version>` with that section as its notes (`scripts/release-notes.mjs`),
+   and that alone runs
    `.github/workflows/publish.yml`. Its `build` job refuses unless `ci.yml`
    concluded `success` on the commit on `main`, checks version parity and that
    the tag is the packages' version, builds once and packs every public

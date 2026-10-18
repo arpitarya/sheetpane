@@ -181,6 +181,7 @@ directions.
 | `scripts/release.mjs` | SR-BUILD | one version on every package |
 | `scripts/npm-trust.sh` | SR-BUILD | each package trusts `publish.yml` and environment `npm` (npm trusted publishing) |
 | `scripts/check-version-parity.mjs` | SR-BUILD | every file holding the version agrees |
+| `scripts/release-notes.mjs` | SR-BUILD | a version's CHANGELOG section, the GitHub Release note |
 | `scripts/smoke-built.mjs` | SR-BUILD | the built packages installed from tarballs and imported in Node |
 | `RELEASING.md` | SR-BUILD | how a release is cut; the decider's one-time npm steps |
 | `.github/workflows/` | SR-BUILD | CI on every push (three OSes); the three-engine nightly; the publish on a GitHub Release |
