@@ -1,5 +1,9 @@
 # create-sheetpane
 
+> [!IMPORTANT]
+> **Internal — for testing sheetpane itself.** Not a supported way to start a
+> host app; use [`@sheetpane/grid`](../grid/README.md) directly.
+
 **A working sheetpane app in one command.**
 
 ```sh

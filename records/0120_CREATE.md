@@ -79,6 +79,11 @@ flowchart LR
    installer (and checks it wrote the skills, `.mcp.json` and `AGENTS.md`),
    builds and runs the template's test. A template that cannot pass is
    dropped, never shipped broken.
+6. **Internal, never marketed** (the decider, 2026-10-19: *"Do not market
+   this … just for internal testing purposes"*): `create-sheetpane` exists to
+   test sheetpane itself. The root README, the package READMEs, the
+   CHANGELOG, the setup skill and `llms.txt` do not promote it; its own
+   README says it is internal. The starters it generates stay linked as demos.
 
 ### Consequences
 

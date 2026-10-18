@@ -125,6 +125,8 @@ W-44 is built and waits on the decider (enable Pages, first release).
   The PKWARE ZIP spec is kept local only (`_local/`, gitignored) — its licence
   forbids redistribution.
 
+**`create-sheetpane` is internal** (the decider, 2026-10-19; SR-CREATE decision 6): it exists to test sheetpane; no public doc, skill or `llms.txt` promotes it. Whether npm still publishes it is open.
+
 ## 4 · Lessons learned
 
 - **Two sessions share this tree.** Re-read every file before writing it and

@@ -24,6 +24,26 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — `create-sheetpane` is internal: removed from every public doc  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"npm create sheetpane@latest — Do not market this. This is just for internal purposes. Internal testing purposes. Remove it from readme wherever this is mentioned … Remove it from Markdown wherever this is mentioned."*
+- **Done:** removed from `README.md` (Get started, packages table), `packages/grid/README.md`, `CHANGELOG.md` (the W-43 entry), the setup skill (`packages/skills` and the plugin copy), the starters index (generator `scripts/build-starters.mjs` and its output), `llms.txt`/`llms-full.txt` (`create-sheetpane` and SR-CREATE dropped from `scripts/build-llms.mjs`). `packages/create-sheetpane/README.md` now opens with an *Internal* note. The ruling filed as **SR-CREATE decision 6**. Registry rows bumped. Checked: `llms`, `starters`, `packages`, `create`, `skills` tests — 223 passed. **Not committed.**
+- **Decided / left open:** records, `work/` history and `archive/` keep their mentions (internal; worklog append-only; archive is never edited). **Open for the decider:** `create-sheetpane` is still *published* to npm by `release.yml` — an internal tool would normally not be; say whether to stop publishing it.
+- **Mistakes:** none.
+- **Next:** the decider rules on publishing `create-sheetpane`; then commit.
+
+---
+
+## 2026-10-19 — correction to the W-50 – W-69 entry  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** (same session as the entry below)
+- **Done:** the scratch file `work/open/_rows.tmp.md` was deleted with the decider's permission; the filing was committed as `3f04197` by the concurrent session, so the entry's *"Not committed"* no longer holds.
+- **Decided / left open:** none.
+- **Mistakes:** the entry below was written before the concurrent commit; corrected here, not edited (append-only).
+- **Next:** the decider reviews W-50 – W-69.
+
+---
+
 ## 2026-10-19 — twenty items filed from pdfsuite's spec needs: W-50 – W-69, classified plugin vs existing package  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"*; then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*

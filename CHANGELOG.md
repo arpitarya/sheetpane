@@ -58,10 +58,6 @@ Newest first. The specs are the records in [`records/`](records/README.md).
   download (`patchXlsx`'s new `hidden` option). `sheetpane-visibility` event;
   `store.setHidden`, `setSheetState`, `setOutline`.
 
-- **`npm create sheetpane`** (W-43): a working app in one command — vanilla,
-  React, Next.js, Vue, Angular or Svelte — with the grid and the errors panel,
-  a sample workbook and rules file, one passing test, typings, the agent
-  skills and the MCP server.
 - **`custom-elements.json` and typings** (W-37): `@sheetpane/grid` ships the
   Custom Elements Manifest, VS Code and JetBrains editor data, and type-only
   entries `@sheetpane/grid/jsx`, `/vue`, `/svelte`, `/solid` — no host writes

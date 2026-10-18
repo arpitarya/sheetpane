@@ -29,11 +29,6 @@ records; this skill points at them and restates none of their rules.
 template opens in StackBlitz from [the starters](https://github.com/arpitarya/sheetpane/blob/main/examples/starters/README.md)
 (once a version is published).
 
-**A new app?** `npm create sheetpane@latest` scaffolds one — vanilla, React,
-Next.js, Vue, Angular or Svelte — with both elements on one pane, the
-`@sheetpane/fixtures` sample and rules file, one `@sheetpane/testing` test,
-and these skills; the steps below are what it did for you.
-
 1. **Install** with any npm client (SR-LAW-8):
 
    ```sh

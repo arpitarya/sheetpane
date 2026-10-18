@@ -16,11 +16,11 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 const url = (p) => `${BASE}/${p}`;
 const titleOf = (p) => (/^#\s+(.+)$/m.exec(read(p))?.[1] ?? p).replace(/[`*]/g, '');
 const descOf = (p) => (/^description:\s*"?([^"\n]+)"?$/m.exec(read(p))?.[1] ?? '').trim();
-const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'fixtures', 'testing', 'skills', 'mcp', 'create-sheetpane'];
+const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'fixtures', 'testing', 'skills', 'mcp']; // create-sheetpane is internal — not listed (the decider, 2026-10-19)
 const PLUGINS = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility'];
 const records = readdirSync(join(root, 'records')).filter((f) => /^\d{4}_.*\.md$/.test(f)).sort();
 const LAWS = records.filter((f) => /^000\d_|^0010_|^0011_/.test(f));
-const COMPONENTS = records.filter((f) => /^01\d\d_/.test(f));
+const COMPONENTS = records.filter((f) => /^01\d\d_/.test(f) && !f.includes('CREATE')); // SR-CREATE: internal (the decider, 2026-10-19)
 const skills = readdirSync(join(root, 'packages/skills/skills')).sort();
 const pkgReadme = (p) => `packages/${p}/README.md`;
 const line = (path, title, note) => `- [${title}](${url(path)})${note ? `: ${note}` : ''}`;
@@ -42,8 +42,7 @@ const index = [
   '',
   '## Try it',
   `- [Live playground](https://arpitarya.github.io/sheetpane/): the plugin gallery in plain HTML; \`/react/\` in React (deployed from each release)`,
-  line('examples/starters/README.md', 'Starters', 'each create-sheetpane template, with an Open in StackBlitz link'),
-  line(pkgReadme('create-sheetpane'), 'create-sheetpane', '`npm create sheetpane@latest`: a working app in one command'),
+  line('examples/starters/README.md', 'Starters', 'one starter app per framework, with an Open in StackBlitz link'),
   '',
   '## Elements',
   line(`records/${COMPONENTS.find((f) => f.includes('GRID'))}`, 'SR-GRID', 'the sheet, the store, the plugin host, events, rules, test hooks'),
@@ -65,7 +64,6 @@ const index = [
   '## Testing and tooling',
   line(pkgReadme('testing'), '@sheetpane/testing', 'Playwright and Vitest helpers for host apps'),
   line(pkgReadme('fixtures'), '@sheetpane/fixtures', 'known workbooks with a manifest'),
-  line(pkgReadme('create-sheetpane'), 'create-sheetpane', 'npm create sheetpane — a working app in vanilla, React, Next.js, Vue, Angular or Svelte'),
   '',
   '## Skills',
   line(pkgReadme('skills'), '@sheetpane/skills', 'npx sheetpane-skills install — skills for Claude Code, Kiro and Codex'),
