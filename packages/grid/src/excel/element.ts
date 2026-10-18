@@ -6,7 +6,7 @@ import type { ImportedSheet } from '@sheetpane/import';
 import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
-import { createWorkbook, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
+import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
 import { DEFAULT_ERROR_TYPES, SEVERITY, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
@@ -40,7 +40,7 @@ const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 export class SheetpaneExcel extends ElementBase {
-  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins'];
+  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -107,6 +107,7 @@ export class SheetpaneExcel extends ElementBase {
     return r.blob;
   }
   private lastExport: { ok: boolean; name: string } | undefined;
+  private lastSheet = '';
 
   select(sheet: string, ref: string): void { this.ensureStore().select({ sheet, ref }, this); this.scrollToSel = true; }
   getErrors(): SheetpaneError[] { return this.errors; }
@@ -171,7 +172,10 @@ export class SheetpaneExcel extends ElementBase {
   /** One DOM event per action, on the element where it happened (or the pane's first sheet when nobody owns it). */
   private onStoreEvent(e: StoreEvent): void {
     if (e.type === 'select' && e.origin !== this) this.scrollToSel = true;
-    if (e.type === 'load') { this.geom = undefined; this.findHits = []; this.findVersion = -1; }
+    const sheetBefore = this.lastSheet;
+    if (e.type === 'load') this.lastSheet = this._store!.getSnapshot().selection.sheet;
+    if (e.type === 'select') this.lastSheet = e.sheet;
+    if (e.type === 'load') { this.geom = undefined; this.findHits = []; this.findVersion = -1; for (const el of this.overlayCache.values()) el.remove(); this.overlayCache.clear(); }
     const mine = e.origin === this || (e.origin === undefined && isPrimary(this._store!, this));
     if (!mine) return;
     const s = this._store!;
@@ -185,7 +189,10 @@ export class SheetpaneExcel extends ElementBase {
       }
       case 'change': fire(this, 'sheetpane-change', { sheet: e.sheet, ref: e.ref, kind: e.kind, was: e.was, now: e.now }); break;
       case 'errors': fire(this, 'sheetpane-errors', { errors: s.getErrors(), plugins: s.pluginIds }); break;
-      case 'select': fire(this, 'sheetpane-select', { sheet: e.sheet, ref: e.ref }); break;
+      case 'select':
+        if (e.sheet !== sheetBefore) fire(this, 'sheetpane-sheet', { sheet: e.sheet });
+        fire(this, 'sheetpane-select', { sheet: e.sheet, ref: e.ref, column: this.column(e.sheet, e.ref), value: s.value(e.sheet, e.ref) });
+        break;
       case 'mode': fire(this, 'sheetpane-mode', { mode: e.mode }); break;
       case 'history': fire(this, 'sheetpane-history', { reason: e.reason, canUndo: s.getSnapshot().canUndo, canRedo: s.getSnapshot().canRedo }); break;
     }
@@ -299,19 +306,35 @@ export class SheetpaneExcel extends ElementBase {
     q.orig.addEventListener('click', () => { const src = s().getSnapshot().source; if (src) download(src.bytes, src.name); });
     q.help.addEventListener('click', () => { this.helpOpen = !this.helpOpen; q.help.setAttribute('aria-expanded', String(this.helpOpen)); this.schedule(); });
     q.revert.addEventListener('click', () => { const sel = s().getSnapshot().selection; s().revert(sel.sheet, sel.ref, this); });
+    // The cell bar edits a draft; Enter, Tab and blur commit it (W-26, events verdict decisions 1–3).
     const cell = q.cell as HTMLInputElement;
-    cell.addEventListener('focus', () => { this.cellFocusStart = cell.value; });
-    cell.addEventListener('input', () => { const sel = s().getSnapshot().selection; s().setCell(sel.sheet, sel.ref, cell.value, { origin: this, coalesce: true }); });
+    cell.addEventListener('focus', () => {
+      const sel = s().getSnapshot().selection;
+      const allowed = fire(this, 'sheetpane-editstart', { sheet: sel.sheet, ref: sel.ref, column: this.column(sel.sheet, sel.ref), value: s().value(sel.sheet, sel.ref) }, true);
+      if (!allowed) { cell.readOnly = true; this.editing = undefined; queueMicrotask(() => q.grid.focus({ preventScroll: true })); return; }
+      cell.readOnly = false;
+      this.editing = { sheet: sel.sheet, ref: sel.ref, start: cell.value };
+    });
+    cell.addEventListener('input', () => {
+      const ed = this.editing;
+      if (!ed) return;
+      fire(this, 'sheetpane-input', { sheet: ed.sheet, ref: ed.ref, column: this.column(ed.sheet, ed.ref), draft: cell.value, was: s().value(ed.sheet, ed.ref) });
+    });
     cell.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); s().endCoalesce(); this.cellFocusStart = undefined; this.move(e.key === 'Tab' ? 0 : e.shiftKey ? -1 : 1, e.key === 'Tab' ? (e.shiftKey ? -1 : 1) : 0, false); q.grid.focus({ preventScroll: true }); }
-      else if (e.key === 'Escape') {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        this.commitDraft();
+        this.move(e.key === 'Tab' ? 0 : e.shiftKey ? -1 : 1, e.key === 'Tab' ? (e.shiftKey ? -1 : 1) : 0, false);
+        q.grid.focus({ preventScroll: true });
+      } else if (e.key === 'Escape') {
         e.preventDefault(); e.stopPropagation();
-        const sel = s().getSnapshot().selection;
-        if (this.cellFocusStart !== undefined && cell.value !== this.cellFocusStart) s().setCell(sel.sheet, sel.ref, this.cellFocusStart, { origin: this, coalesce: true });
-        s().endCoalesce(); q.grid.focus({ preventScroll: true });
+        const ed = this.editing;
+        if (ed) { cell.value = ed.start; this.editing = undefined; fire(this, 'sheetpane-editcancel', { sheet: ed.sheet, ref: ed.ref }); }
+        q.grid.focus({ preventScroll: true });
       }
     });
-    cell.addEventListener('blur', () => s().endCoalesce());
+    cell.addEventListener('blur', () => this.commitDraft());
+    q.grid.addEventListener('paste', (e) => this.onPaste(e as ClipboardEvent));
     q.tabs.addEventListener('click', (e) => { const b = (e.target as Element).closest<HTMLElement>('[data-sheet]'); if (b) { s().select({ sheet: b.dataset.sheet!, ref: 'A1' }, this); this.q.scroller.scrollTo(0, 0); } });
     q.scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
     q.scroller.addEventListener('mousedown', (e) => this.onPointer(e, 'down'));
@@ -342,6 +365,52 @@ export class SheetpaneExcel extends ElementBase {
   }
   private showEmpty = false;
   private helpOpen = false;
+  private editing: { sheet: string; ref: string; start: string } | undefined;
+
+  /** The column a payload names: index, letter and the title from the header row (`header-row`, default 1). */
+  column(sheet: string, ref: string): { index: number; letter: string; header: string } {
+    const p = parseRef(ref)!;
+    const hr = Math.max(1, Number(this.getAttribute('header-row') ?? 1) || 1);
+    return { index: p.col, letter: colName(p.col), header: this._store?.text(sheet, cellRef(hr - 1, p.col)).trim() ?? '' };
+  }
+
+  /** `sheetpane-beforechange` (cancellable) for one cell; the value it would store is `now`. */
+  private allowChange(sheet: string, ref: string, now: unknown): boolean {
+    const s = this._store!;
+    return fire(this, 'sheetpane-beforechange', { sheet, ref, column: this.column(sheet, ref), was: s.value(sheet, ref), now }, true);
+  }
+
+  /** Commits the cell bar's draft: beforechange, then the store (change map → undo → derive → validate → sheetpane-change). */
+  private commitDraft(): void {
+    const ed = this.editing, s = this._store;
+    this.editing = undefined;
+    if (!ed || !s) return;
+    const cell = this.q.cell as HTMLInputElement;
+    const draft = cell.value;
+    if (draft === ed.start) return;
+    const book = s.book;
+    const now = book ? parseInput(draft, s.original(ed.sheet, ed.ref).value, book.source) : draft;
+    if (!this.allowChange(ed.sheet, ed.ref, now)) { cell.value = ed.start; return; }
+    s.setCell(ed.sheet, ed.ref, draft, { origin: this });
+  }
+
+  /** Paste (Edit): tab- and line-separated text from the active cell, beforechange per cell, one undo step. */
+  private onPaste(e: ClipboardEvent): void {
+    const s = this._store!, snap = s.getSnapshot();
+    if (snap.mode !== 'edit' || snap.load.status !== 'ready') return;
+    const text = e.clipboardData?.getData('text/plain');
+    if (text === undefined) return;
+    e.preventDefault();
+    const rows = text.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n').map((r) => r.split('\t'));
+    const p = parseRef(snap.selection.ref)!;
+    const book = s.book!;
+    const cells: { sheet: string; ref: string; input: string }[] = [];
+    rows.forEach((row, dr) => row.forEach((v, dc) => {
+      const ref = cellRef(p.row + dr, p.col + dc);
+      if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source))) cells.push({ sheet: snap.selection.sheet, ref, input: v });
+    }));
+    s.setCells(cells, { origin: this });
+  }
 
   /** The grid's keys, then every plugin control's shortcut (W-14 DoD 8). */
   shortcuts(): { keys: string; what: string }[] {
@@ -415,7 +484,7 @@ export class SheetpaneExcel extends ElementBase {
     else if ((k === 'Enter' || k === 'F2') && edit) this.editCell();
     else if ((k === 'f' || k === 'F') && edit && !mod && !e.altKey) this.flag();
     else if (k === 'Escape') { if (!this.escape()) handled = false; }
-    else if ((k === 'Delete' || k === 'Backspace') && edit) s.setCell(snap.selection.sheet, snap.selection.ref, null, { origin: this });
+    else if ((k === 'Delete' || k === 'Backspace') && edit) { if (this.allowChange(snap.selection.sheet, snap.selection.ref, null)) s.setCell(snap.selection.sheet, snap.selection.ref, null, { origin: this }); }
     else if (edit && !mod && !e.altKey && k.length === 1) { this.editCell(k); }
     else handled = false;
     if (handled) { e.preventDefault(); e.stopPropagation(); }

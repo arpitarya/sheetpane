@@ -16,7 +16,7 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Arpit accepts or changes the dark values, and says whether dark follows the computer's setting on its own | the dark colours are decided, not guessed | 🔴 decider decides |
+| 1 | Arpit accepts or changes the dark values, and says whether dark follows the computer's setting on its own | the dark colours are decided, not guessed | ✅ 2026-10-18 |
 | 2 | Add the tokens the slots need to `tokens.ts`: cell, header, grid line, three reference colours, text-on-solid | plugin controls and marks draw from tokens, never from hex | ⏳ |
 | 3 | Ship the dark set on both elements | a host app in dark mode gets a dark grid | ⏳ |
 | 4 | Keep the file's own colours exactly as saved | a conditional fill or a styled cell is data, never re-themed | ⏳ |
@@ -35,9 +35,9 @@ The proposed values are in [`sp-plugins.css`](../reference/design/boards/sp-plug
 
 | DoD | what | state |
 |---|---|---|
-| 1 · ruling | the decider's answer to step 1 is written here: the dark values as accepted, and `auto` (follow `prefers-color-scheme`) on or off by default | 🔴 |
+| 1 · ruling | the decider's answer to step 1 is written here: the dark values as accepted, and `auto` (follow `prefers-color-scheme`) on or off by default | ✅ Arpit, 2026-10-18: **dark values accepted** as drawn in `sp-plugins.css` `.spx-dark`; **`auto` is off by default**: `theme` defaults to `light`, and a host opts in with `theme=\"auto\"` or `theme=\"dark\"` (the grid can't know the host page's theme) |
 | 2 · tokens | `TOKENS` gains `cell`, `head`, `grid`, `ref-1`, `ref-2`, `ref-3`, `on-solid`; the grid's own CSS uses them instead of literals (`#FFFFFF`, `#F3F3F0`, `#E6E6E1`) | ⏳ |
-| 3 · dark | a dark set for every token, applied by a `theme` attribute on both elements (`light` · `dark` · `auto`); a host can still override any `--sp-*` on the element | ⏳ |
+| 3 · dark | a dark set for every token, applied by a `theme` attribute on both elements (`light` · `dark` · `auto`, **default `light`**); a host can still override any `--sp-*` on the element | ⏳ |
 | 4 · file colours | colours that come from the workbook (styles, condfmt, chart fills) render as saved in both themes; only sheetpane's chrome and marks change | ⏳ |
 | 5 · contrast | in both themes: text 4.5:1 on its ground, severity glyphs, pins, the changed mark and focus rings 3:1 against the cell — checked by a test over the token table | ⏳ |
 | 6 · fallback | `color-mix()` is not required at runtime: the dark set ships as computed hex | ⏳ |
@@ -46,7 +46,7 @@ The proposed values are in [`sp-plugins.css`](../reference/design/boards/sp-plug
 
 ## Blockers
 
-Blocked on the decider's dark-ramp ruling (step 1, inbox). Waiting on **W-01** (the shadow roots that adopt the tokens) and **W-14** (the slots that draw with them).
+None. The ruling is in (DoD 1); W-01 and W-14 have closed (SR-GRID).
 
 ## Record affected
 

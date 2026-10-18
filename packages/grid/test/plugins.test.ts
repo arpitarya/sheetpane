@@ -186,12 +186,14 @@ describe('undo across elements (W-23 DoD 3, 4)', () => {
     excel.select('Holdings', 'G7');
     await frame();
     await userEvent.fill($(excel, '.cell') as HTMLInputElement, '268.4');
+    await userEvent.keyboard('{Enter}');
     await frame();
     ($(errors, '[data-act=undo]') as HTMLButtonElement).click();
     expect(excel.workbook!.text('Holdings', 'G7')).toBe('286.4');
     await frame();
     ($(errors, '[data-act=redo]') as HTMLButtonElement).click();
     expect(excel.workbook!.text('Holdings', 'G7')).toBe('268.4');
+    excel.select('Holdings', 'G7');
     await frame();
     ($(excel, '.revert') as HTMLButtonElement).click();
     expect(excel.workbook!.text('Holdings', 'G7')).toBe('286.4');

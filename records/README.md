@@ -128,6 +128,7 @@ Start from `TEMPLATE.md`.
 | [0104](0104_IMPORT.md) | **SR-IMPORT** | `@sheetpane/import` — an .xlsx or .csv in, the workbook object out | accepted | yes |
 | [0105](0105_GRID.md) | **SR-GRID** | `@sheetpane/grid` — the pane's workbook store, `<sheetpane-excel>`, the plugin host, undo, freeze panes | accepted | yes |
 | [0106](0106_ERRORS.md) | **SR-ERRORS** | `<sheetpane-errors>` — the error list and the New error form | accepted | yes |
+| [0107](0107_IMAGES.md) | **SR-IMAGES** | `@sheetpane/images` — pictures drawn through the overlay hook | accepted | yes |
 
 ---
 
@@ -177,7 +178,7 @@ directions.
 | `packages/styles/` | W-17 | `@sheetpane/styles`, a plugin; until its component record exists |
 | `packages/validation/` | W-18 | `@sheetpane/validation`, a plugin; until its component record exists |
 | `packages/condfmt/` | W-19 | `@sheetpane/condfmt`, a plugin; until its component record exists |
-| `packages/images/` | W-20 | `@sheetpane/images`, a plugin; until its component record exists |
+| `packages/images/` | SR-IMAGES | `@sheetpane/images` — pictures, view only |
 | `packages/charts/` | W-21 | `@sheetpane/charts`, a plugin; until its component record exists |
 | `packages/comments/` | W-22 | `@sheetpane/comments`, a plugin; until its component record exists |
 

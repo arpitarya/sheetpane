@@ -70,16 +70,41 @@ return <sheetpane-excel ref={ref} pane="q3" />;
 | attribute | `open` | shows the pop-up |
 | attribute | `author` | written on errors flagged here |
 | attribute | `plugins` | the enabled plugin ids, e.g. `numfmt formulas` |
+| attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export()` | `Promise<Blob>` — the upload with every change |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-change {sheet, ref, kind, was, now}`, `sheetpane-errors {errors, plugins}`, `sheetpane-select {sheet, ref}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name}` (cancelable — prevent it to save the file yourself), `sheetpane-close` | bubbling, composed |
+| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name}` (cancelable — prevent it to save the file yourself), `sheetpane-close` | bubbling, composed |
+
+### Following an edit
+
+Every edit fires these, in this order, on the element where it happened;
+every payload names the column `{ index, letter, header }` (the title from
+`header-row`):
+
+| event | fires | detail | cancel it to |
+|---|---|---|---|
+| `sheetpane-select` | the selected cell moves | `{sheet, ref, column, value}` | — |
+| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value}` | keep the cell read-only |
+| `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
+| `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
+| `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
+| `sheetpane-editcancel` | Esc | `{sheet, ref}` | — |
+| `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
+
+A refused value never reaches the change map, undo or a plugin.
+
+```js
+excel.addEventListener('sheetpane-beforechange', (e) => {
+  if (e.detail.column.header === 'Units' && Number(e.detail.now) < 0) e.preventDefault();
+});
+```
 
 **Keys:** arrows, Shift+arrows, Home/End, Ctrl+Home/End, PageUp/PageDown;
-Enter or F2 edits; typing replaces; Delete clears; **F flags an issue**; Esc
+Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
 

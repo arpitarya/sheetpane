@@ -27,6 +27,8 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 
 | file | closed | where the live answer lives now |
 |---|---|---|
+| `W-20-images.md` | 2026-10-18 | [SR-IMAGES](../records/0107_IMAGES.md); real-app pictures in W-30 |
+| `W-26-edit-events.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 11a |
 | `W-24-freeze-panes.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decision 21; Excel-saved freezes in W-30 |
 | `W-01-sheetpane-excel.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md); real-app fixtures in W-30 |
 | `W-23-undo-redo.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decision 7 |
@@ -38,6 +40,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-12-downloader.md` | 2026-10-18 | [SR-DOWNLOAD](../records/0101_DOWNLOAD.md); the iOS check moved to W-09 DoD 10 |
 | `W-13-import-package.md` | 2026-10-18 | [SR-IMPORT](../records/0104_IMPORT.md); real-app fixtures moved to W-30 |
 | `W-25-research-events-rules-hooks.md` | 2026-10-18 | [`work/compare/grid-events-and-host-rules.compare.md`](../work/compare/grid-events-and-host-rules.compare.md) |
+| `W-09-demo-apps.md` | 2026-10-18 | [SR-BUILD](../records/0102_BUILD.md) decision 11; the iPhone check is backlog B-031 |
 | `W-05-research-xlsx-csv-reading.md` | 2026-10-18 | [`work/compare/xlsx-csv-reading.compare.md`](../work/compare/xlsx-csv-reading.compare.md); built by W-01 |
 | `W-06-research-grid-rendering.md` | 2026-10-18 | [`work/compare/grid-rendering.compare.md`](../work/compare/grid-rendering.compare.md); built by W-01 |
 | `W-07-research-pane-and-error-contract.md` | 2026-10-18 | [`work/compare/workbook-and-error-contract.compare.md`](../work/compare/workbook-and-error-contract.compare.md); built by W-01 and W-02 |

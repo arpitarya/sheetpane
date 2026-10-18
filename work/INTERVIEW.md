@@ -79,9 +79,12 @@ WebKit and Firefox nightly).
   validation, W-20 images; W-19 after W-17, W-21 after W-20; W-27 and W-28
   after W-26.
 - **Owed by the decider:** W-30 (files from Excel, Google Sheets, LibreOffice,
-  Numbers); W-29's dark values; W-22's Export-line ruling; B-030 (SR-LAW-6's
-  veto command flags the `src` loader's GET); accepting SR-DOWNLOAD; the
-  `@sheetpane` npm org before `just release`.
+  Numbers, when convenient); B-030 (SR-LAW-6's
+  veto command flags the `src` loader's GET); the `@sheetpane` npm org before
+  `just release`. **Ruled 2026-10-18:** W-29 dark values accepted, `theme`
+  defaults to `light`; W-22 has no Export-menu line, the host decides
+  (`comments({ write })` on by default, `export({ comments: false })`);
+  SR-DOWNLOAD accepted. W-09 closed; its iPhone check is backlog B-031 (not now).
 - **Know before you build on the grid:** the store is `packages/grid/src/pane/store.ts`
   (one commit path: undo, derive, validate, events); plugins are plain objects
   on six hooks (SR-GRID decisions 17–20); zoom scales geometry, not a

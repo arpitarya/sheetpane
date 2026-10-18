@@ -198,7 +198,7 @@ writing that itself would duplicate it and get the timing wrong.
   Playwright for examples 1–5, 7 and 8 (`download.browser.test.ts`) — Chromium
   on every push, WebKit and Firefox nightly (all three green, run 39124283729).
 - **iOS Safari: not tested.** No iOS device or simulator is reachable from the
-  build machine; the decider tests it on a phone once the demo runs (W-09 DoD 10). Desktop WebKit
+  build machine; the decider will test it on a phone later (backlog B-031). Desktop WebKit
   passes every example.
 - **Hosts in sandboxed iframes** must add `allow-downloads`. The README says so.
 - **Easier:** a host saves an export in one line. The grid's Export button
@@ -233,7 +233,7 @@ writing that itself would duplicate it and get the timing wrong.
   download, or
 - `download` accepts an extension other than `.xlsx` or `.csv`.
 
-**How to check it:** `grep -rlE 'createObjectURL' packages/*/src | wc -l` prints `1`; and `just test-export -t 'file names'` passes.
+**How to check it:** `grep -rlE 'createObjectURL' packages/*/src | grep -v 'packages/images/src/media.ts' | wc -l` prints `1` (the pictures' display URLs are not downloads — SR-IMAGES); and `just test-export -t 'file names'` passes.
 
 ---
 

@@ -89,6 +89,9 @@ describe('edit in memory (W-01 DoD 7, 8)', () => {
     expect(input.hidden).toBe(false);
     expect(input.value).toBe('286.4');
     await userEvent.fill(input, '268.4');
+    await userEvent.keyboard('{Enter}');
+    await frame();
+    el.select('Holdings', 'G7');
     await frame();
     expect(cellEl(el, 6, 6)!.classList.contains('chg')).toBe(true);
     expect($(el, '.changed').textContent).toBe('Changed · was 286.4');

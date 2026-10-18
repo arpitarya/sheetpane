@@ -24,6 +24,26 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — W-09 closed; iPhone download check to backlog B-031  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *for W-09, put the iPhone download check in the backlog; not testing it now.*
+- **Done:** B-031 (`unmeasured`) filed; W-09 DoD 10 → B-031, W-09 closed and archived (map row → SR-BUILD decision 11); its inbox row and queue row removed; SR-DOWNLOAD Consequences point at B-031; W-28's links to the demo now name `examples/react/`. The inbox is empty. INTERVIEW, registry. Not committed.
+- **Decided / left open:** Arpit's ruling as above. SR-DOWNLOAD's 30-second revoke margin stays until B-031 is measured.
+- **Mistakes:** none.
+- **Next:** W-22, W-26, W-29 in Claude Code; W-30 whenever Arpit has the files.
+
+---
+
+## 2026-10-18 — W-29 and W-22 ruled  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *accept the dark colour values (W-29); explain W-22 more; then: W-22 and W-29, go with the recommendation.*
+- **Done:** W-29 DoD 1 ✅ (dark values as drawn in `sp-plugins.css` `.spx-dark`; `theme` defaults to `light`); W-22 step 4 ✅ and DoD 3a added (`comments({ write })` default on, `export({ comments: false })`, no Export-menu line); both inbox rows removed; W-22 and W-29 re-balled 🟢 (W-01, W-02, W-03, W-13, W-14 had closed under parallel sessions). INTERVIEW §2, registry. Not committed.
+- **Decided / left open:** Arpit's rulings as above. No extension point beyond the six slots, so the plugins verdict stands. The only inbox row left is W-09's iPhone check.
+- **Mistakes:** "except" read as "accept" (voice input). The next message confirmed it.
+- **Next:** W-09's iPhone check (Arpit); W-22, W-26, W-29 in Claude Code.
+
+---
+
 ## 2026-10-18 — blockers ruled: W-03, W-12, W-13 closed; W-25 decided and closed; W-30 filed  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *present the blockers one by one with a recommendation.* Then: *W-03: all files opened, accents good. W-12: go with the recommendation. W-13: hold; a separate testing item. W-25 a–e: go with the recommendation.*

@@ -22,12 +22,8 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| Dark theme: should it follow the computer's light/dark setting by default (`theme="auto"`), or stay light until the host sets it? The dark values themselves were accepted 2026-10-18 (W-29 DoD 1) | 2026-10-18 | 0 days |
-| ↳ **blocks:** W-29 | | |
-| Comments: keep an on/off "Write review as Excel comments" line in Export ▾ — an extension point beyond the six slots, the plugins verdict's reopen-trigger — or always write them, as W-22 is filed? (board Plugin-Comments) | 2026-10-18 | 0 days |
-| ↳ **blocks:** W-22 (the Export line only) | | |
-| On an iPhone, open the plain demo (`HOST=0.0.0.0 just demo-html`, then `http://<this Mac's address>:5173`) and press Export for the `.xlsx` and the CSV sample — what does iOS Safari do? (W-09 DoD 10, from W-12) | 2026-10-18 | 0 days |
-| ↳ **blocks:** W-09 (closing only — the demos are built and checked) | | |
+
+*Empty since 2026-10-18 — nothing waits on a ruling; the iPhone download check is backlog B-031, the real-app files are W-30 (`arpit` lane).*
 
 ---
 
@@ -35,19 +31,16 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🔴 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — blocked on the decider's Export-line ruling. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
-- 🔴 **W-29** `agent` · Dark theme for the grid and the `--sp-*` tokens the plugin slots draw with — blocked on the decider's dark-values ruling. Filed by Arpit (Cowork). [detail](open/W-29-dark-theme-and-slot-tokens.md)
-- 🔴 **W-09** `agent` · Demo apps built and checked (plain HTML, React 19, from tarballs) — blocked on the decider pressing Export on an iPhone (DoD 10). Filed by Arpit (Cowork). [detail](open/W-09-demo-apps.md)
+- 🟢 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments, on by default, host can switch off. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
+- 🟢 **W-29** `agent` · Dark theme for the grid and the `--sp-*` tokens the plugin slots draw with; dark values accepted, `theme` defaults to light. Filed by Arpit (Cowork). [detail](open/W-29-dark-theme-and-slot-tokens.md)
 - 🟢 **W-15** `agent` · Build `@sheetpane/numfmt`: every Excel number format through the `numfmt` library, format dropdown. Filed by Arpit (Cowork). [detail](open/W-15-numfmt.md)
 - 🟢 **W-16** `agent` · Build `@sheetpane/formulas`: live recalculation through IronCalc (WASM, lazy), `fx` cell bar, status sums. Filed by Arpit (Cowork). [detail](open/W-16-formulas.md)
 - 🟢 **W-17** `agent` · Build `@sheetpane/styles`: fill, weight, colour, borders, alignment rendered and edited; the format row. Filed by Arpit (Cowork). [detail](open/W-17-styles.md)
 - 🟢 **W-18** `agent` · Build `@sheetpane/validation`: the workbook's data-validation rules flagged in the error pane; list dropdowns. Filed by Arpit (Cowork). [detail](open/W-18-validation.md)
 - 🟡 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — waiting on W-17. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
-- 🟢 **W-20** `agent` · Build `@sheetpane/images`: anchored pictures drawn in sheet space, view only. Filed by Arpit (Cowork). [detail](open/W-20-images.md)
-- 🟡 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types — waiting on W-20. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
-- 🟢 **W-26** `agent` · Editing and position events: edit start, typing, before-save (cancellable), cancel, sheet switch; column title on every event. Filed by Arpit (Cowork). [detail](open/W-26-edit-events.md)
-- 🟡 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list — waiting on W-26. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
-- 🟡 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as recipes in the README and React demo — waiting on W-26. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)
+- 🟢 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
+- 🟢 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
+- 🟢 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as recipes in the README and React demo. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)
 
 ### testing
 

@@ -45,6 +45,7 @@ it, and do not read it top-down as a priority order.
 | id | what is outstanding | named in | what closes it |
 |---|---|---|---|
 | B-026 | The largest workbook sheetpane can hold in JavaScript objects before the tab struggles | [SR-LAW-9](../records/0011_LAW-9-memory-is-a-javascript-object.md) Consequences | a measurement on a named machine, recorded in the record that owns the workbook model |
+| B-031 | What iOS Safari does when `download()` is called: saves the `.xlsx` / `.csv` or opens it in a tab. Untested; SR-DOWNLOAD's 30-second revoke margin stays until it is measured. Arpit, 2026-10-18: not testing now (was W-09 DoD 10, W-12 DoD 7) | [SR-DOWNLOAD](../records/0101_DOWNLOAD.md) Consequences | the decider runs `HOST=0.0.0.0 just demo-html`, opens it on an iPhone and presses Export for both files; the result goes into SR-DOWNLOAD Consequences |
 
 ---
 

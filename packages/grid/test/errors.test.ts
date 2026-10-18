@@ -152,6 +152,8 @@ describe('always in sync (SR-LAW-7, B-020)', () => {
       excel.select('Holdings', 'I6');
       await frame();
       await userEvent.fill($(excel, '.cell') as HTMLInputElement, '0.75%');
+      await userEvent.keyboard('{Enter}');
+      excel.select('Holdings', 'I6');
       // … an error made in the errors element, about it …
       s.compose({ sheet: 'Holdings', ref: 'I6' });
       await frame();

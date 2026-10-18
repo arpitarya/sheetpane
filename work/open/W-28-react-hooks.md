@@ -18,7 +18,7 @@ ball: agent
 |---|---|---|---|
 | 1 | Arpit's ruling: `@sheetpane/react` package, or recipes | the shape of this item | ✅ settled 2026-10-18 — the verdict |
 | 2 | Write the hooks over the store's `subscribe` / `getSnapshot` | React state that always matches the sheet | ⏳ |
-| 3 | Use them in the W-09 React demo | proof in a real app | ⏳ |
+| 3 | Use them in the React demo (`examples/react/`) | proof in a real app | ⏳ |
 
 **Arpit, 2026-10-18:** *"Can you create some React hooks … helpful whenever
 somebody is editing something or which cell they are on."*
@@ -43,7 +43,7 @@ return <sheetpane-excel ref={sheet} src="people.xlsx" mode="edit" pane="r1" />;
 | 1 · shape | **recipes** in the grid README and `examples/react/`, no package (Arpit, 2026-10-18; verdict decision 15) | ⏳ |
 | 2 · hooks | `useWorkbook`, `useSelection`, `useCellEdit`, `useChanges`, `useErrors`, `useSheetpaneEvent`, `useColumnRules`, or the set the verdict names; each on `useSyncExternalStore`; listeners removed on unmount | ⏳ |
 | 3 · versions | React 19; React 18 too per verdict decision 15 (hooks are fine in 18; the element needs a `ref` there) | ⏳ |
-| 4 · demo | the W-09 React app uses every hook | ⏳ |
+| 4 · demo | the React demo (`examples/react/`) uses every hook | ⏳ |
 | 5 · tests | each hook re-renders on the store change it follows and on no other; StrictMode double-mount is safe | ⏳ |
 
 ## Blockers
@@ -64,4 +64,4 @@ Ruled: recipes, no package (verdict decision 15).
 
 ## Reference
 
-- the [events-and-rules verdict](../compare/grid-events-and-host-rules.compare.md) · [W-26](W-26-edit-events.md) · [W-27](W-27-host-column-rules.md) · [W-09](W-09-demo-apps.md) · [`../reference/specs/react/react-useSyncExternalStore.md`](../reference/specs/react/react-useSyncExternalStore.md)
+- the [events-and-rules verdict](../compare/grid-events-and-host-rules.compare.md) · [W-26](W-26-edit-events.md) · [W-27](W-27-host-column-rules.md) · W-09 (closed — `examples/react/`, [SR-BUILD](../../records/0102_BUILD.md) decision 11) · [`../reference/specs/react/react-useSyncExternalStore.md`](../reference/specs/react/react-useSyncExternalStore.md)

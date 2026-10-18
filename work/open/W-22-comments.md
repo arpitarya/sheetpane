@@ -19,7 +19,7 @@ ball: agent
 | 1 | Read notes (`xl/comments*.xml`) and threaded comments (`xl/threadedComments/`) into the error pane as notes from author `file` | what the file's authors already said is part of the review | ⏳ |
 | 2 | On export, write every sheetpane error as a threaded comment Excel displays | the review travels inside the .xlsx — no sidecar | ⏳ |
 | 3 | Also write the legacy comment and VML parts Excel needs, so older Excel sees a note | every Excel shows it | ⏳ |
-| 4 | Arpit rules: an on/off "Write review as Excel comments" line in Export ▾, or always write | whether writing the review into the file is optional | 🔴 decider decides |
+| 4 | Arpit rules: an on/off "Write review as Excel comments" line in Export ▾, or always write | whether writing the review into the file is optional | ✅ 2026-10-18: no menu line — the host decides (option C) |
 
 **Arpit, 2026-10-18:** *"Let's create separate packages, plugins for number format, formulas, styles. Merge cells, freeze panes, data validation, conditional formatting, images, charts, pivots, comments, notes. Decide, do some research and have them as separate packages or plugins."*
 
@@ -36,6 +36,7 @@ A plugin that connects Excel's comments to sheetpane's errors in both directions
 | 1 · package | `packages/comments/` builds to ESM, no runtime dependency; `@sheetpane/grid` a peer; no `./ui` | ⏳ |
 | 2 · read | notes: text per cell, author from the `authors` list; threaded: each `threadedComment` with replies in order, person from `persons`; both land as errors `{ type: 'comment', severity: 'note', author: 'file', found: <cell text>, message: <the comment>, status: 'open' }`, read-only in the pane (no Resolve / Delete), filterable by author | ⏳ |
 | 3 · write | `exportPatch` adds, per sheet with errors: `xl/threadedComments/threadedCommentN.xml` (one thread per error: message, then `expected` as a reply when present, `done="1"` when resolved), `xl/persons/person.xml` (one person per `author`), the legacy `xl/commentsN.xml` with the "[Threaded comment]" placeholder text, and `xl/drawings/vmlDrawingN.vml`; the four rels and content types; existing parts are extended, never replaced | ⏳ |
+| 3a · option | `comments({ write })` plugin option, default `true`; `export({ comments: false })` on `<sheetpane-excel>` skips the parts for that call; both documented in the README and added to SR-GRID's `export()` signature | ⏳ |
 | 4 · round-trip | an exported file opened in Excel 365, Excel 2019 and LibreOffice shows every error at its cell — checked by the decider on the fixture; loading the exported file back into sheetpane recreates the errors as `file` notes | ⏳ |
 | 5 · ids | a sheetpane error written once keeps its `id` in the thread's `id` GUID namespace, so a second export of the same review updates rather than duplicates | ⏳ |
 | 6 · tests | fixtures from Excel with notes, threads and both; the written parts validated against the schema; the duplicate-export test | ⏳ |
@@ -43,9 +44,9 @@ A plugin that connects Excel's comments to sheetpane's errors in both directions
 
 ## Blockers
 
-Waiting on **W-14** (`exportPatch`), **W-13** (comment parts from the reader), **W-02** (the pane) and **W-03** (`patchXlsx`).
+None. W-14 (`exportPatch`), W-13 (the reader's comment parts), W-02 (the pane) and W-03 (`patchXlsx`) have all closed; their records are SR-GRID, SR-IMPORT, SR-ERRORS and SR-EXPORT.
 
-**Blocked on the decider** for one control (inbox, 2026-10-18): the Plugin-Comments board draws an on/off line "Write review as Excel comments ✓" in Export ▾. That menu is no slot of the six, so keeping it needs an extension point the plugins verdict does not have. Until ruled, DoD 3 writes comments on every export, as filed.
+**Ruled (Arpit, 2026-10-18, option C):** no "Write review as Excel comments" line in Export ▾, so no seventh extension point and the plugins verdict stands. The **host** decides: `comments({ write: true })` when installing the plugin (**on by default**: installing it is the opt-in), and `export({ comments: false })` per call. An end-user toggle, if a host wants one, goes in the host's own `format-row` slot.
 
 ## Record affected
 

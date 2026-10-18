@@ -243,24 +243,44 @@ export class WorkbookStore {
    * Typing the uploaded value back removes the change. Returns false when nothing changed.
    */
   setCell(sheet: string, ref: string, input: string | Cell, o: { origin?: Origin; coalesce?: boolean; parse?: boolean } = {}): boolean {
+    const step = this.cellStep(this.snap.changes, sheet, ref, input, o);
+    if (!step) return false;
+    const commitOpts: { coalesce?: string } = {};
+    if (o.coalesce) commitOpts.coalesce = `type:${step.key}`;
+    this.commit({ changes: step.changes, errors: this.snap.errors }, [step.key], o.origin, [step.event], commitOpts);
+    return true;
+  }
+
+  /** Sets many cells as one undo step (paste). Returns how many changed. */
+  setCells(cells: { sheet: string; ref: string; input: string | Cell }[], o: { origin?: Origin; parse?: boolean } = {}): number {
+    let changes = this.snap.changes;
+    const keys: string[] = [], events: StoreEvent[] = [];
+    for (const c of cells) {
+      const step = this.cellStep(changes, c.sheet, c.ref, c.input, o);
+      if (!step) continue;
+      changes = step.changes; keys.push(step.key); events.push(step.event);
+    }
+    if (keys.length) this.commit({ changes, errors: this.snap.errors }, keys, o.origin, events);
+    return keys.length;
+  }
+
+  /** What a cell write would do to the change map, or undefined when nothing changes. */
+  private cellStep(base: ReadonlyMap<string, ChangeEntry>, sheet: string, ref: string, input: string | Cell, o: { origin?: Origin; parse?: boolean }): { key: string; changes: Map<string, ChangeEntry>; event: StoreEvent } | undefined {
     const book = this.snap.book;
     const p = parseRef(ref);
-    if (!book || !p || !this.sheet(sheet)) return false;
+    if (!book || !p || !this.sheet(sheet)) return undefined;
     const a1 = cellRef(p.row, p.col);
     const orig = this.original(sheet, a1);
     const now: Cell = typeof input === 'string' && o.parse !== false ? parseInput(input, orig.value, book.source) : (input as Cell);
     const k = key(sheet, a1);
-    const prev = this.snap.changes.get(k);
+    const prev = base.get(k);
     const backToOriginal = same(now, orig.value) || (typeof input === 'string' && input === orig.text && orig.text !== '');
-    if (!prev && backToOriginal) return false;
-    if (prev && same(prev.now, now)) return false;
-    const changes = new Map(this.snap.changes);
+    if (!prev && backToOriginal) return undefined;
+    if (prev && same(prev.now, now)) return undefined;
+    const changes = new Map(base);
     if (backToOriginal) changes.delete(k);
     else changes.set(k, { kind: typeof now === 'string' && now.startsWith('=') && this.plugins.some((x) => x.provides.includes('derive')) ? 'formula' : 'value', was: orig.value, now });
-    const commitOpts: { coalesce?: string } = {};
-    if (o.coalesce) commitOpts.coalesce = `type:${k}`;
-    this.commit({ changes, errors: this.snap.errors }, [k], o.origin, [{ type: 'change', origin: o.origin, sheet, ref: a1, kind: 'value', was: prev ? prev.now : orig.value, now: backToOriginal ? orig.value : now }], commitOpts);
-    return true;
+    return { key: k, changes, event: { type: 'change', origin: o.origin, sheet, ref: a1, kind: 'value', was: prev ? prev.now : orig.value, now: backToOriginal ? orig.value : now } };
   }
 
   /** Sets any change-map entry a plugin owns (`style`, `numFmt`, `merge`, `freeze`). `now === undefined` removes it. */

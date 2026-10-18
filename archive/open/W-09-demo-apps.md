@@ -6,7 +6,7 @@ item: W-09
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Claude Code, claude-opus-5-5)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -54,11 +54,11 @@ from the design:
 | 7 · files | both apps open the design's sample workbook and a `.csv`; dropping any other format shows the refusal state (L3) | ✅ the design sample `.xlsx` and the `.csv` open; a `.xls` shows "Can’t open this file" — in both apps |
 | 8 · run | `just demo-react` and `just demo-html` (W-10's justfile) are in the root README; a browser test opens each app and runs DoD 4 | ✅ `just demo-html`, `just demo-react`, `just demo-check`, `just demo-packed` in the root `README.md`; `demo-check` runs in CI on every push, `demo-packed` nightly |
 | 9 · record | **no SR affected** unless the apps become a maintained surface; the Ownership rows for `examples/` are added to the register in the change that creates the directory, owned by W-09 | ✅ the demos became a checked surface: [SR-BUILD](../../records/0102_BUILD.md) decision 11 owns `examples/` and the demo scripts (Ownership rows added) |
-| 10 · iOS | open either demo on an iPhone and press Export (`.xlsx` and `.csv`); what iOS Safari does is recorded in SR-DOWNLOAD Consequences — moved from W-12 DoD 7 (Arpit, 2026-10-18) | ⏳ 🔴 Arpit, once the demo runs |
+| 10 · iOS | open either demo on an iPhone and press Export (`.xlsx` and `.csv`); what iOS Safari does is recorded in SR-DOWNLOAD Consequences — moved from W-12 DoD 7 (Arpit, 2026-10-18) | ➡ backlog B-031 (Arpit, 2026-10-18: not testing on an iPhone now) |
 
 ## Blockers
 
-Only DoD 10 (the decider on an iPhone): `HOST=0.0.0.0 just demo-html`, then open `http://<this Mac's address>:5173` on the phone and press Export (`.xlsx`, then the CSV sample's `.csv`).
+None. **Closed 2026-10-18**: DoD 10 moved to backlog B-031, every other row ✅; the live answer is [SR-BUILD](../../records/0102_BUILD.md) decision 11.
 
 ## Record affected
 
