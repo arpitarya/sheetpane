@@ -3,12 +3,21 @@
   "version": "0.0.0",
   "description": "View and edit .xlsx and .csv files inside any web page: the <sheetpane-excel> and <sheetpane-errors> web components, always in sync through one in-memory workbook.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/grid"
+  },
   "type": "module",
   "sideEffects": [
     "*.css"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
@@ -17,7 +26,21 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ../../scripts/build-grid-css.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "@sheetpane/export": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./style.css": "./dist/style.css"
+    }
   }
 }

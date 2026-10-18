@@ -87,7 +87,7 @@ for sheetpane and everything inside it to use.
   size, colour and decoration** may follow the workbook; the **family never
   does** — a `decorate` result naming `font-family` is refused at
   registration. Decisions 1–5 are unchanged.
-- **Judgment today:** no code exists. The check is backlog B-015 (`ungated`).
+- **Checked today:** no font file, `@font-face`, web-font URL or named `font-family` in any package source (SR-BUILD decision 7, run by `just check`).
 
 ### Alternatives considered
 
@@ -120,7 +120,7 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/BACKLOG.md`](../work/BACKLOG.md) — B-015
+- [SR-BUILD](0102_BUILD.md) — decision 7, the check
 - [`work/WORKLOG.md`](../work/WORKLOG.md)
 
 **External**

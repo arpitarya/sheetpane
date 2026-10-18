@@ -3,14 +3,24 @@
   "version": "0.0.0",
   "description": "Data validation for sheetpane — the workbook's own `<dataValidations>` rules checked on load and on every edit, landing in <sheetpane-errors> — as a plugin on the `validate` hook.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/validation"
+  },
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./ui": {
+      "source": "./src/ui.ts",
       "types": "./dist/ui.d.ts",
       "import": "./dist/ui.js"
     }
@@ -18,8 +28,28 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "peerDependencies": {
     "@sheetpane/grid": "workspace:*"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./ui": {
+        "types": "./dist/ui.d.ts",
+        "import": "./dist/ui.js"
+      }
+    }
+  }
 }

@@ -87,7 +87,7 @@ use it.
   dependencies.
 - Shadow DOM or light DOM, the tag name, and the attribute/event names are
   component decisions, owed by the first record that owns the element.
-- **Judgment today:** no code exists. The check is backlog B-012 (`ungated`).
+- **Checked today:** no UI framework is a dependency or peer of any package (SR-BUILD decision 7). The element-registration half is backlog B-012 (`ungated`) until W-01 lands.
 
 ### Alternatives considered
 

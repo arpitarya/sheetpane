@@ -6,7 +6,7 @@ item: W-04
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -17,9 +17,9 @@ ball: agent
 | step | what we do | what it gives us | state |
 |---|---|---|---|
 | 1 | Lay out the monorepo: npm workspaces, two packages, shared TypeScript settings | one repo, two packages, linked locally | ✅ 2026-10-18 |
-| 2 | Add the build, the test runner and type-checking, on pnpm and just (W-10) with the runner W-11 picks | `just build` / `just test` / `just typecheck` that mean something | ⏳ waits on W-10, W-11 |
-| 3 | Run the same checks on every push | a red build before a bad merge | ⏳ |
-| 4 | Set up publishing for the two packages — one version, released together | `npm publish` for both from one tag | ⏳ |
+| 2 | Add the build, the test runner and type-checking, on pnpm and just (W-10) with the runner W-11 picks | `just build` / `just test` / `just typecheck` that mean something | ✅ |
+| 3 | Run the same checks on every push | a red build before a bad merge | ✅ |
+| 4 | Set up publishing for the two packages — one version, released together | `just release <v>` publishes every package from one tag | ✅ recipe; first publish waits on the npm org |
 
 **Arpit, 2026-10-18:** *"Create this repo as a mono repo. We will have
 multiple packages. One for Excel and CSV export, the other one for the UI
@@ -51,23 +51,22 @@ The table above shows step 1 as it landed, before that switch. **W-10 landed it:
 | DoD | what | state |
 |---|---|---|
 | 1 · skeleton | the layout above; `pnpm install --frozen-lockfile` resolves every workspace package (W-10) | ✅ |
-| 2 · build | each package builds to `dist/` with `.d.ts`; `@sheetpane/grid` builds `dist/style.css` from the Proof tokens | ⏳ |
-| 3 · test | **Vitest**, one root config, two projects — `export` in Node, `grid` in browser mode on Playwright (Chromium per push; Firefox and WebKit nightly); no jsdom; coverage reported, 90 % lines gating `export` ([`testing.compare.md`](../compare/testing.compare.md)) | ⏳ |
-| 4 · typecheck | `just typecheck` (`pnpm -r typecheck`) is strict and green | ⏳ |
-| 5 · CI | a workflow runs install, typecheck, test and build on every push and PR | ⏳ |
-| 6 · publish | **lockstep versioning** (ruled 2026-10-18, SR-LAW-8 Consequences): one version for both packages, bumped together; `@sheetpane/grid` pins `@sheetpane/export` to the same version; a release recipe bumps, tags and publishes both; SR-LAW-8's veto command (reads `packages/*/package.json`) runs green | ⏳ |
-| 7 · guard | the commit guard is installed (`ln -sf ../../scripts/sr-guard.sh .git/hooks/commit-msg`) and the hooks in `.claude-pending/` are reviewed for moving to `.claude/` | ⏳ |
+| 2 · build | each package builds to `dist/` with `.d.ts`; `@sheetpane/grid` builds `dist/style.css` from the Proof tokens | ✅ `tsc -p tsconfig.build.json` per package → `dist/` with `.d.ts` and maps; `@sheetpane/grid` writes `dist/style.css` from `src/tokens.ts` (Proof tokens as `--sp-*`, fonts dropped) — `just build` green |
+| 3 · test | **Vitest**, one root config, two projects — `export` in Node, `grid` in browser mode on Playwright (Chromium per push; Firefox and WebKit nightly); no jsdom; coverage reported, 90 % lines gating `export` ([`testing.compare.md`](../compare/testing.compare.md)) | ✅ Vitest 5.0.5, one root `vitest.config.ts`: `repo` + `export` in Node, every other package in browser mode on Playwright 1.64.1 (Chromium per push; `just test-browsers` / nightly for Firefox and WebKit); no jsdom; v8 coverage on every run, 90 % lines gating `packages/export/src/**` — `just test`: 45 tests green |
+| 4 · typecheck | `just typecheck` (`pnpm -r typecheck`) is strict and green | ✅ `pnpm -r typecheck` (TypeScript 7.0.2, strict) plus the root over `test/` — green |
+| 5 · CI | a workflow runs install, typecheck, test and build on every push and PR | ✅ `.github/workflows/ci.yml` (install, `just check`, `just pack-check`, Chromium) on push and PR; `nightly.yml` three engines — see the run linked in IMPLEMENTATION |
+| 6 · publish | **lockstep versioning** (ruled 2026-10-18, SR-LAW-8 Consequences): one version for both packages, bumped together; `@sheetpane/grid` pins `@sheetpane/export` to the same version; a release recipe bumps, tags and publishes both; SR-LAW-8's veto command (reads `packages/*/package.json`) runs green | ✅ `just release <v>` + `scripts/release.mjs` (one version on every package), `pnpm -r publish`; `scripts/pack-check.mjs` proves packed manifests pin `@sheetpane/*` exactly and drop `source`; SR-LAW-8's veto command (now `packages/*/`) prints `publishable` for all ten. **Not run:** the first publish needs the `@sheetpane` npm org (the decider's) |
+| 7 · guard | the commit guard is installed (`ln -sf ../../scripts/sr-guard.sh .git/hooks/commit-msg`) and the hooks in `.claude-pending/` are reviewed for moving to `.claude/` | ✅ `.git/hooks/commit-msg → ../../scripts/sr-guard.sh` installed 2026-10-18; the hooks already moved from `.claude-pending/` to `.claude/` (committed `3642c13`) and are wired in `.claude/settings.json` |
 
 ## Blockers
 
-Waiting on W-10 (pnpm and just) for DoD 2–5. The runner (DoD 3) and
-publishing (DoD 6) are decided; DoD 7 is free now; nothing waits on the decider.
+None. The first real publish waits on the `@sheetpane` npm organisation — the
+decider's, and not part of this item's DoD.
 
 ## Record affected
 
-**No SR affected** until the toolchain lands; then a component record for the
-build (next free from `0101`) owns `package.json` and `tsconfig.base.json`.
-Until then this item owns them.
+**[SR-BUILD](../../records/0102_BUILD.md)** — written by this item; it owns
+the root build files, `test/`, the build scripts and the workflows.
 
 ## Hazards
 

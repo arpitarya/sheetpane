@@ -1,0 +1,158 @@
+---
+type: Standing Record
+kind: component
+name: SR-BUILD
+title: "SR-BUILD (0102) — the monorepo build: pnpm, just, tsc, Vitest, CI, lockstep release"
+description: "How the monorepo installs, type-checks, builds, tests, runs in CI and publishes every package under packages/ at one version."
+status: accepted
+date: 2026-10-18
+feature: the monorepo toolchain
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, .github/workflows/]
+laws: [L2, L4, L5, L8]
+timestamp: 2026-10-18T11:40:00Z
+content_sha: ""
+ratifies: W-04
+---
+
+# SR-BUILD — the monorepo build
+
+## §1 — For humans
+
+**One command per job, from a clean clone.** `just install`, `just typecheck`,
+`just test`, `just build`, `just check` (all three). The `justfile` only wraps
+the pnpm scripts, so nothing *needs* just.
+
+**Every package is published at the same version.** `just release 1.2.3`
+bumps every package under `packages/`, runs the checks, tags, and publishes
+them together. A plugin always pins the exact grid it was tested with.
+
+**Tests run where the code runs.** `@sheetpane/export` in Node; every package
+that touches the DOM in a real browser (Chromium on every push, Firefox and
+WebKit nightly). No simulated DOM.
+
+```mermaid
+flowchart LR
+    C["clean clone"] --> I["pnpm install --frozen-lockfile"]
+    I --> T["typecheck: tsc per package, strict"]
+    T --> V["test: Vitest — Node + Chromium, coverage"]
+    V --> B["build: tsc → dist/ + .d.ts; grid style.css"]
+    B --> P["pack-check: tarballs as npm sees them"]
+    P --> R["release: one version, tag, pnpm publish"]
+```
+
+<details>
+<summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
+
+```text
+   clean clone -> pnpm install --frozen-lockfile -> typecheck (tsc, strict)
+     -> test (Vitest: Node + Chromium, coverage) -> build (tsc -> dist/, style.css)
+     -> pack-check (tarballs as npm sees them) -> release (one version, tag, publish)
+```
+
+</details>
+
+---
+
+## §2 — For agents
+
+### Context
+
+W-04 asked for a repo that builds, tests and type-checks every package from a
+clean clone, locally and in CI, before feature code lands. W-10 moved it to
+pnpm and a justfile; the testing verdict chose the runner.
+
+### Decision
+
+1. **Package manager:** pnpm, pinned by `packageManager` in the root
+   `package.json`; the workspace is `packages/*` (`pnpm-workspace.yaml`).
+   Internal dependencies and peers use `workspace:*`; `pnpm publish` rewrites
+   them to the exact version.
+2. **Commands:** the root `package.json` scripts are the real commands
+   (`build`, `test`, `typecheck`); the `justfile` wraps them and adds
+   `check`, `test-pkg`, `test-export`, `test-grid`, `test-browsers`,
+   `pack-check`, `release`, `clean`.
+3. **Build:** plain `tsc` per package (`tsconfig.build.json`, `src/` →
+   `dist/`, ESM with `.d.ts` and maps). No bundler: consumers bundle; the
+   output is native ESM with `.js` import specifiers, so it also loads from
+   plain HTML (SR-LAW-4). `@sheetpane/grid` also writes `dist/style.css` from
+   its token module.
+4. **Type-check:** `tsc --noEmit` per package over `src/` and `test/`, and
+   at the root over `test/` and `vitest.config.ts`; `tsconfig.base.json` is
+   strict, with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`.
+5. **Source condition:** every `exports` entry carries a `source` condition
+   pointing at `src/`, so type-check and tests read sibling packages without a
+   build. `publishConfig.exports` drops it from the published manifest.
+6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
+   Node; every other package runs in browser mode on Playwright. `SP_BROWSERS`
+   selects the engines. Coverage (v8) is reported on every run; 90 % lines on
+   `packages/export/src/**` fails the run.
+7. **Package checks** (`test/packages.test.ts`): each package is public,
+   `@sheetpane/<dir>`, MIT, ESM with types; one version across all (lockstep);
+   `workspace:*` for `@sheetpane/*`; no UI framework as a dependency or peer;
+   no third-party runtime dependency except `numfmt` and `@ironcalc/wasm`,
+   each pinned exactly; no font file, `@font-face`, web-font URL or named
+   `font-family` in any package source.
+8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
+   `just pack-check` on every push to `main` and every PR (Chromium);
+   `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit.
+9. **Release:** `just release <version>` — clean tree required; every package
+   set to the version (`scripts/release.mjs`); `just check pack-check`; a
+   commit and tag `v<version>`; `pnpm -r publish --access public`; push with
+   tags. Never `npm publish`: npm ships `workspace:*` literally.
+10. **Pack check:** `scripts/pack-check.mjs` packs each package as publish
+    would and fails on a surviving `workspace:` or `source` entry or a missing
+    exported file.
+
+### Consequences
+
+- **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
+  pack-check`, locally and in CI.
+- **Owed by the decider:** the `@sheetpane` npm organisation, before the first
+  `just release` can publish.
+- **Still open:** the licence check over the whole lockfile (backlog B-008);
+  decision 7 checks only the runtime allow-list.
+- **Plugins must keep `@sheetpane/grid` as a dev dependency too** (a peer is
+  not installed for the package's own tests).
+
+### Alternatives considered
+
+- A bundler (tsup, Vite library mode) — rejected: `tsc` output is already
+  valid ESM; a bundler adds a tool and hides import mistakes.
+- Building before type-checking siblings (project references) — rejected for
+  the `source` condition: no build step in the edit–test loop.
+- jsdom/happy-dom for DOM tests — rejected by the testing verdict.
+- Changesets — rejected: lockstep needs one version, not per-package bumps.
+
+### Reference (required)
+
+- [`justfile`](../justfile) · [`vitest.config.ts`](../vitest.config.ts) ·
+  [`test/packages.test.ts`](../test/packages.test.ts) ·
+  [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+- [`work/compare/testing.compare.md`](../work/compare/testing.compare.md) — the runner.
+
+### Veto condition
+
+**Reopen this decision if:** a clean clone cannot run `just check` and
+`just pack-check` green, or two packages carry different versions.
+
+**How to check it:** `pnpm install --frozen-lockfile && just check pack-check`
+
+---
+
+## References
+
+*Every source this record cites, gathered in one place. An archived document
+is never listed here.*
+
+**Records** — [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-8](0010_LAW-8-npm-package.md)
+
+**Code**
+
+- [`package.json`](../package.json) · [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) · [`justfile`](../justfile) · [`tsconfig.base.json`](../tsconfig.base.json)
+- [`vitest.config.ts`](../vitest.config.ts) · [`test/packages.test.ts`](../test/packages.test.ts)
+- [`scripts/pack-check.mjs`](../scripts/pack-check.mjs) · [`scripts/release.mjs`](../scripts/release.mjs) · [`scripts/build-grid-css.mjs`](../scripts/build-grid-css.mjs)
+- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) · [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml)
+
+**Project docs**
+
+- [`work/compare/testing.compare.md`](../work/compare/testing.compare.md)

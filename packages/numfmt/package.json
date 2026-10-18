@@ -3,14 +3,24 @@
   "version": "0.0.0",
   "description": "Excel number formats for sheetpane — currency, dates, fractions, elapsed time, conditional sections, locales — as a plugin on the `format` hook.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/numfmt"
+  },
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./ui": {
+      "source": "./src/ui.ts",
       "types": "./dist/ui.d.ts",
       "import": "./dist/ui.js"
     }
@@ -18,10 +28,30 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "peerDependencies": {
     "@sheetpane/grid": "workspace:*"
   },
   "dependencies": {
     "numfmt": "4.0.1"
+  },
+  "devDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./ui": {
+        "types": "./dist/ui.d.ts",
+        "import": "./dist/ui.js"
+      }
+    }
   }
 }

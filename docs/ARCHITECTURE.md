@@ -227,5 +227,6 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 - **IndexedDB** (B-025) — the decider's deferred request; needs L6 and L9 rewritten.
 - **Undo/redo for cell edits** (B-027) — out of v1 by the contract verdict.
 - **Largest workbook the tab can hold** (B-026) — unmeasured until W-01 lands.
-- **The mechanical checks for every law** (B-008, B-009, B-012, B-015, B-017,
-  B-020, B-023) — each becomes a test or a CI step once there is code to check.
+- **The mechanical checks still owed** (B-008 licences, B-009, B-012's element half,
+  B-017, B-020) — each becomes a test once there is code to check; the font,
+  framework-peer and publishable checks run today ([SR-BUILD](../records/0102_BUILD.md)).

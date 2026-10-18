@@ -3,10 +3,19 @@
   "version": "0.0.0",
   "description": "Comments and notes for sheetpane — the file's notes and threaded comments read into the error pane; every sheetpane error written back as a threaded comment on export.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/comments"
+  },
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -14,8 +23,24 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "peerDependencies": {
     "@sheetpane/grid": "workspace:*"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  }
 }

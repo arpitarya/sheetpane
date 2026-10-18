@@ -3,14 +3,24 @@
   "version": "0.0.0",
   "description": "Cell styles for sheetpane — fill, bold, italic, underline, colour, borders, alignment, wrap — as a plugin on the `decorate` hook. Never a font family (SR-LAW-5).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/styles"
+  },
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./ui": {
+      "source": "./src/ui.ts",
       "types": "./dist/ui.d.ts",
       "import": "./dist/ui.js"
     }
@@ -18,8 +28,28 @@
   "files": [
     "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "peerDependencies": {
     "@sheetpane/grid": "workspace:*"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./ui": {
+        "types": "./dist/ui.d.ts",
+        "import": "./dist/ui.js"
+      }
+    }
+  }
 }

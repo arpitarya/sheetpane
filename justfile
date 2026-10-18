@@ -13,9 +13,25 @@ install:
 build:
     pnpm -r --if-present build
 
-# run every test suite
-test:
-    pnpm -r --if-present test
+# run every test suite (Node + Chromium), coverage reported, export gated at 90 % lines
+test *args:
+    pnpm exec vitest run --coverage {{args}}
+
+# run one package's tests, e.g. `just test-pkg export`
+test-pkg name *args:
+    pnpm exec vitest run --project {{name}} {{args}}
+
+# @sheetpane/export's tests (Node)
+test-export *args:
+    pnpm exec vitest run --project export {{args}}
+
+# @sheetpane/grid's tests (browser)
+test-grid *args:
+    pnpm exec vitest run --project grid {{args}}
+
+# the browser suites in Chromium, Firefox and WebKit (nightly)
+test-browsers:
+    SP_BROWSERS=chromium,firefox,webkit pnpm exec vitest run
 
 # type-check every package, strict
 typecheck:
@@ -23,6 +39,20 @@ typecheck:
 
 # typecheck, test and build — what CI runs
 check: typecheck test build
+
+# pack every package as npm would publish it and check the tarballs
+pack-check: build
+    node scripts/pack-check.mjs
+
+# bump every package to one version, check, tag and publish them together (lockstep)
+release version:
+    git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)
+    node scripts/release.mjs {{version}}
+    just check pack-check
+    git commit -am "release v{{version}}"
+    git tag v{{version}}
+    pnpm -r publish --access public --no-git-checks
+    git push --follow-tags
 
 # remove build output and installed modules
 clean:

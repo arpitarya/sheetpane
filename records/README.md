@@ -106,11 +106,11 @@ Start from `TEMPLATE.md`.
 | [0003](0003_LAW-1-retired-records-archived.md) | **SR-LAW-1** | **L1** — a retired record is archived, never deleted | accepted | yes |
 | [0004](0004_LAW-2-foss-dependencies.md) | **SR-LAW-2** | **L2** — every dependency is free and open source | accepted | no — nothing checks it yet (B-008) |
 | [0005](0005_LAW-3-xlsx-and-csv-only.md) | **SR-LAW-3** | **L3** — sheetpane supports XLSX and CSV only | accepted | no — no code yet (B-009) |
-| [0006](0006_LAW-4-web-component.md) | **SR-LAW-4** | **L4** — sheetpane is always a web component | accepted | no — no code yet (B-012) |
-| [0007](0007_LAW-5-host-font.md) | **SR-LAW-5** | **L5** — the font is the browser's default unless the host sets one | accepted | no — no code yet (B-015) |
+| [0006](0006_LAW-4-web-component.md) | **SR-LAW-4** | **L4** — sheetpane is always a web component | accepted | partly — no framework peer is tested (SR-BUILD decision 7); the element check waits on W-01 (B-012) |
+| [0007](0007_LAW-5-host-font.md) | **SR-LAW-5** | **L5** — the font is the browser's default unless the host sets one | accepted | yes — no font in any package source is tested (SR-BUILD decision 7) |
 | [0008](0008_LAW-6-edits-in-memory-export-with-changes.md) | **SR-LAW-6** | **L6** — every change is held in memory and export carries it | accepted | no — no code yet (B-017) |
 | [0009](0009_LAW-7-surfaces-always-in-sync.md) | **SR-LAW-7** | **L7** — the view, edit and error components are always in sync | accepted | no — no code yet (B-020) |
-| [0010](0010_LAW-8-npm-package.md) | **SR-LAW-8** | **L8** — sheetpane is consumed as an npm package | accepted | no — no `package.json` yet (B-023) |
+| [0010](0010_LAW-8-npm-package.md) | **SR-LAW-8** | **L8** — sheetpane is consumed as an npm package | accepted | yes — publishable, lockstep and packed manifests are tested (SR-BUILD decisions 7, 10) |
 | [0011](0011_LAW-9-memory-is-a-javascript-object.md) | **SR-LAW-9** | **L9** — memory means a JavaScript object, for now | accepted | yes — nothing stores data yet; L6's veto command checks it |
 | [0051](0051_WORK-open-queue.md) | **SR-WORK-OPEN-QUEUE** | How `OPEN-WORK.md` works — the queue discipline in ten groups | accepted | yes |
 | [0052](0052_WORK-backlog.md) | **SR-WORK-BACKLOG** | How `BACKLOG.md` works — the named-but-unclaimed in five classes | accepted | yes |
@@ -123,6 +123,7 @@ Start from `TEMPLATE.md`.
 | [0059](0059_WORK-governance.md) | **SR-WORK-GOVERNANCE** | The governance map — which file governs what; no counts | accepted | yes |
 | [0060](0060_WORK-registry.md) | **SR-WORK-REGISTRY** | The doc registry — rules in §2, the table in §3 | accepted | yes |
 | [0101](0101_DOWNLOAD.md) | **SR-DOWNLOAD** | `download()` — export output in, a saved `.xlsx` or `.csv` out | proposed | no — not built (W-12); home package waits on W-08 |
+| [0102](0102_BUILD.md) | **SR-BUILD** | The monorepo build — pnpm, just, tsc, Vitest, CI, lockstep release | accepted | yes |
 
 ---
 
@@ -145,11 +146,18 @@ directions.
 | `.claude/hooks/stop-if-blocked.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/session-lock.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/require-progress.sh` | SR-WORK-SESSION | decision 5 |
-| `package.json` | W-04 | the private monorepo root; until the build record exists |
-| `pnpm-lock.yaml` | W-04 | the workspace lockfile |
-| `pnpm-workspace.yaml` | W-04 | the pnpm workspace — `packages/*` |
-| `justfile` | W-04 | the one place to run install, build, test, typecheck, check |
-| `tsconfig.base.json` | W-04 | the shared TypeScript settings |
+| `package.json` | SR-BUILD | the private monorepo root and its scripts |
+| `pnpm-lock.yaml` | SR-BUILD | the workspace lockfile |
+| `pnpm-workspace.yaml` | SR-BUILD | the pnpm workspace — `packages/*` |
+| `justfile` | SR-BUILD | the one place to run install, build, test, typecheck, check, release |
+| `tsconfig.base.json` | SR-BUILD | the shared strict TypeScript settings |
+| `tsconfig.json` | SR-BUILD | the root type-check over `test/` and the Vitest config |
+| `vitest.config.ts` | SR-BUILD | the one test runner config — Node and browser projects |
+| `test/` | SR-BUILD | repo-level package checks (lockstep, no framework peer, no font, runtime allow-list) |
+| `scripts/build-grid-css.mjs` | SR-BUILD | writes `@sheetpane/grid`'s `dist/style.css` from its tokens |
+| `scripts/pack-check.mjs` | SR-BUILD | the tarballs as npm sees them |
+| `scripts/release.mjs` | SR-BUILD | one version on every package |
+| `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |
 | `packages/export/` | W-03 | `@sheetpane/export`; until its component record exists |
 | `packages/grid/` | W-01 | `@sheetpane/grid`, the UI package — the sheet and the pane; until its component record exists |
 | `packages/grid/src/errors/` | W-02 | `<SheetPaneErrors>` — a different item from the sheet |

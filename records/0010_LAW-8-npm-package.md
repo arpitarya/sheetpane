@@ -77,8 +77,8 @@ sheetpane is a library other applications build on. The decider ruled on
   lockstep — one version number, released together — so `@sheetpane/grid@x.y.z`
   always pins `@sheetpane/export@x.y.z`. The root `package.json` is the
   private monorepo root (W-04); the packages meant for npm are under
-  `packages/`, and the veto command below reads those. The check is backlog
-  B-023 (`ungated`).
+  `packages/`, and the veto command below reads those. Checked by SR-BUILD
+  decisions 7 and 10 (publishable, lockstep, packed manifests).
 
 ### Alternatives considered
 
@@ -97,7 +97,7 @@ sheetpane is a library other applications build on. The decider ruled on
 at release, is marked `"private": true`, or the package cannot be installed
 from the npm registry.
 
-**How to check it:** `for p in packages/sheetpane packages/export; do node -e "const p=require('./$p/package.json');console.log(p.private?'VIOLATION private '+p.name:'publishable '+p.name)"; done`
+**How to check it:** `for p in packages/*/; do node -e "const p=require('./$p/package.json');console.log(p.private?'VIOLATION private '+p.name:'publishable '+p.name)"; done`
 
 ---
 
@@ -110,7 +110,7 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/BACKLOG.md`](../work/BACKLOG.md) — B-023
+- [SR-BUILD](0102_BUILD.md) — decisions 7 and 10, the checks
 - [`work/WORKLOG.md`](../work/WORKLOG.md)
 
 **External**
