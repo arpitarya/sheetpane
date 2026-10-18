@@ -14,6 +14,9 @@ importers:
       '@sheetpane/import':
         specifier: workspace:*
         version: link:packages/import
+      '@sheetpane/testing':
+        specifier: workspace:*
+        version: link:packages/testing
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
@@ -285,6 +288,31 @@ importers:
         specifier: workspace:*
         version: link:../grid
 
+  packages/testing:
+    dependencies:
+      '@playwright/test':
+        specifier: '>=1.40'
+        version: 1.64.1
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
+      '@sheetpane/import':
+        specifier: workspace:*
+        version: link:../import
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
+      vitest:
+        specifier: '>=3'
+        version: 5.0.5(@types/node@22.20.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(vite@8.3.4(@types/node@22.20.5))
+    devDependencies:
+      '@sheetpane/fixtures':
+        specifier: workspace:*
+        version: link:../fixtures
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
   packages/validation:
     dependencies:
       '@sheetpane/skills':
@@ -348,6 +376,11 @@ packages:
 
   '@oxc-project/types@0.154.0':
     resolution: {integrity: sha512-KYOUGQFlLWR+s4QMV2Q9ko38TZm7EdO87Qm7rvZLqk/webse/cDjtyxKhg/47l0byCbs/k46LT8qc4PKjAikzA==}
+
+  '@playwright/test@1.64.1':
+    resolution: {integrity: sha512-IaYGml/nSOiZWROfPtuIL7neuu9qDOZ3TNvNljUIrhDMxiGTgPjzj/g9p9RxpS2tSepPDRY+UwAaEeiKtUvIAg==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -1707,6 +1740,10 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@oxc-project/types@0.154.0': {}
+
+  '@playwright/test@1.64.1':
+    dependencies:
+      playwright: 1.64.1
 
   '@polka/url@1.0.0-next.29': {}
 

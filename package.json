@@ -21,6 +21,7 @@
   "devDependencies": {
     "@sheetpane/export": "workspace:*",
     "@sheetpane/import": "workspace:*",
+    "@sheetpane/testing": "workspace:*",
     "@types/node": "^22.20.5",
     "@vitest/browser": "5.0.5",
     "@vitest/browser-playwright": "5.0.5",

@@ -128,7 +128,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     (Vite + React 19) are workspace members that depend on the packages by
     name and import only their public exports. `scripts/demo-check.mjs` uses
     both in Chromium (flag, resolve, edit + Download read back, font, pop-up,
-    CSV, refusal; in React also the hooks strip and the column rules) —
+    CSV, refusal; in React also the hooks strip and the column rules; the
+    review steps driven by `@sheetpane/testing`, SR-TESTING) —
     `just demo-check`, on every push; `scripts/demo-packed.mjs`
     installs both from `pnpm pack` tarballs (every package, the eight plugins
     included) outside the workspace and runs the same check — `just

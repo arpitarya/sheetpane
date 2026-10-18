@@ -26,6 +26,10 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **`@sheetpane/testing`** (W-41): `sheetpane(page)` for Playwright and
+  `sheetpane(element)` for Vitest browser mode — edit, flag, resolve, Download
+  read back, `toHaveCell` / `toHaveError` — on committed `data-sp-*` hooks.
+
 - **Agent skills** (W-35): `npx sheetpane-skills install` copies 23 skills for
   Claude Code, Kiro and Codex into a repository, plus a short block in
   `CLAUDE.md` / `AGENTS.md`; `uninstall` removes exactly what it wrote.

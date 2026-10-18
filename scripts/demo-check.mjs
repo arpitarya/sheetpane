@@ -2,7 +2,8 @@
 // node scripts/demo-check.mjs <html-dir> <react-dist-dir>
 import { chromium } from 'playwright';
 import { readFile } from 'node:fs/promises';
-import { fromUtf8, inflateEntry, readZip } from '@sheetpane/export';
+import { sheetpane } from '@sheetpane/testing/playwright';
+import { readFile as readValues, valueAt } from '@sheetpane/testing';
 import { serve } from './serve.mjs';
 
 const [htmlDir = 'examples/html', reactDir = 'examples/react/dist'] = process.argv.slice(2);
@@ -75,31 +76,24 @@ async function run(name, dir, spa) {
   page.on('pageerror', (e) => errorsSeen.push(String(e)));
   try {
     await page.goto(url);
-    const excel = page.locator('sheetpane-excel').first();
+    // the review, driven with @sheetpane/testing (W-41) — the helpers hosts use for their own apps
+    const sp = sheetpane(page);
+    const excel = sp.excel;
     const errors = page.locator('sheetpane-errors').first();
-    await excel.locator('#c1_0').waitFor({ timeout: 15000 });
-    check((await excel.locator('#c1_0').textContent()) === 'Account ID', `${name}: the sample workbook opens`);
+    await sp.waitForLoad();
+    check((await sp.text('Holdings!A2')) === 'Account ID', `${name}: the sample workbook opens`);
     // flag an error in the sheet → it appears in the list
-    await excel.locator('#c6_6').click();
-    await page.keyboard.press('f');
-    await errors.locator('[data-field=expected]').fill('268.4');
-    await errors.locator('[data-act=add]').click();
-    await errors.locator('.item').first().waitFor();
-    check((await errors.locator('.item').count()) === 1, `${name}: a flagged error appears in the error list`);
+    await sp.flag('Holdings!G7', { expected: '268.4' });
+    check((await errors.locator('[data-sp-error]').count()) === 1, `${name}: a flagged error appears in the error list`);
     // resolve it in the list → the pin turns ✓
-    await errors.locator('.item .issue').first().click();
-    await errors.locator('[data-act=resolve]').click();
+    await sp.resolve(0);
     await excel.locator('.pin.resolved').waitFor();
     check((await excel.locator('.pin').first().textContent()) === '✓', `${name}: resolved in the list → the pin turns ✓`);
     // edit a cell → Download hands back a file with the change
-    await excel.locator('#c7_1').click();
-    await excel.locator('input.cell').fill('Edited in the demo');
-    await excel.locator('input.cell').press('Enter');
-    const [dl] = await Promise.all([page.waitForEvent('download'), excel.locator('button.export').click()]);
-    const bytes = new Uint8Array(await readFile(await dl.path()));
-    const sheet = readZip(bytes).find((e) => e.name === 'xl/worksheets/sheet1.xml');
-    const xml = fromUtf8(await inflateEntry(bytes, sheet));
-    check(xml.includes('<t>Edited in the demo</t>') && dl.suggestedFilename().endsWith('.xlsx'), `${name}: Download hands back ${dl.suggestedFilename()} carrying the edit`);
+    await sp.edit('Holdings!B8', 'Edited in the demo');
+    const got = await sp.download();
+    const book = await readValues(got.bytes, got.name);
+    check(valueAt(book, 'Holdings!B8') === 'Edited in the demo' && got.name.endsWith('.xlsx'), `${name}: Download hands back ${got.name} carrying the edit`);
     // the host's font, switched live
     await page.selectOption('select[aria-label="Page font"]', { label: 'Georgia' });
     await page.waitForTimeout(100);

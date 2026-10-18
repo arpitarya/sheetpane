@@ -271,18 +271,18 @@ export class SheetpaneExcel extends ElementBase {
   <label class="find"><span class="vh">Find in sheet</span>${ICON.find}<input class="input findin" type="search" placeholder="Find" autocomplete="off"><span class="cnt"></span></label>
   <select class="input zoom" aria-label="Zoom">${zoomOpts}</select>
   <span class="editonly" style="display:contents">
-   <button type="button" class="btn btn-g btn-i undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button>
-   <button type="button" class="btn btn-g btn-i redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button>
+   <button type="button" class="btn btn-g btn-i undo" data-sp="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button>
+   <button type="button" class="btn btn-g btn-i redo" data-sp="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button>
    <button type="button" class="btn btn-g btn-i freeze" aria-label="Freeze panes at the selected cell" title="Freeze rows above and columns left of the selected cell">${ICON.freeze}</button>
    <span class="xs faint changes"></span>
   </span>
-  <span class="split dl"><button type="button" class="btn export">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button><button type="button" class="btn btn-i dlmore" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="false">▾</button><span class="dlslot"></span></span>
+  <span class="split dl"><button type="button" class="btn export" data-sp="download">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button><button type="button" class="btn btn-i dlmore" data-sp="download-menu" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="false">▾</button><span class="dlslot"></span></span>
   <button type="button" class="btn btn-g btn-i help" aria-label="Keyboard shortcuts" aria-expanded="false" title="Keyboard shortcuts">?</button>
   <button type="button" class="btn btn-g btn-i close" aria-label="Close (Esc)" title="Close">${ICON.close}</button>
  </div>
  <div class="fx" part="cellbar">
   <span class="ref"></span>
-  <label class="cellwrap" style="display:contents"><span class="vh cellname">Cell value</span><input class="input cell" placeholder="(empty)" autocomplete="off" spellcheck="false"></label>
+  <label class="cellwrap" style="display:contents"><span class="vh cellname">Cell value</span><input class="input cell" data-sp="cell-input" placeholder="(empty)" autocomplete="off" spellcheck="false"></label>
   <span class="val"></span>
   <span class="tag merge"></span>
   <span class="chip chip-info changed"></span><button type="button" class="btn btn-g revert">Revert</button>
@@ -557,7 +557,7 @@ export class SheetpaneExcel extends ElementBase {
   }
 
   private contextMenuHtml(x: number, y: number, edit: boolean, err: SheetpaneError | undefined): string {
-    return `<div class="card ctxmenu" role="menu" aria-label="Selection actions" style="top:${y}px;left:${x}px">${this.actionItems(edit, err, { flag: true, plugins: true })}</div>`;
+    return `<div class="card ctxmenu" role="menu" aria-label="Selection actions" data-sp="menu" style="top:${y}px;left:${x}px">${this.actionItems(edit, err, { flag: true, plugins: true })}</div>`;
   }
 
   /** Arrow keys move through a menu's items; Esc closes it and returns focus. True when handled. */
@@ -1025,7 +1025,7 @@ export class SheetpaneExcel extends ElementBase {
     const typing = !!this.editing && this.shadow.activeElement === cell;
     q.dock.hidden = typing || composing;
     if (!q.dock.hidden) {
-      const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" title="Flag issue (F)" aria-label="Flag issue (F)">${ICON.flag}Flag issue<span class="kbd">F</span></button>` : '';
+      const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" data-sp="flag" title="Flag issue (F)" aria-label="Flag issue (F)">${ICON.flag}Flag issue<span class="kbd">F</span></button>` : '';
       const plug = edit ? this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit'), 'btn btn-g') : '';
       const more = `<button type="button" class="btn btn-g btn-i" data-act="more" aria-haspopup="menu" aria-expanded="${this.moreOpen}" title="More actions (Shift+F10)" aria-label="More actions (Shift+F10)">⋯</button>`;
       // the ⋯ menu: Copy ref, Copy value, and the plugin buttons, which show here only once they fold out of the bar
@@ -1045,7 +1045,7 @@ export class SheetpaneExcel extends ElementBase {
     q.tabs.hidden = src.kind === 'csv';
     q.tabs.innerHTML = book.sheets.map((sh) => {
       const cnt = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open').length : 0;
-      return `<button type="button" role="tab" class="tab${sh.hidden ? ' hidden-sheet' : ''}" data-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${sh.hidden ? ' title="Hidden in the file"' : ''}>${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open">${cnt}</span>` : ''}</button>`;
+      return `<button type="button" role="tab" class="tab${sh.hidden ? ' hidden-sheet' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${sh.hidden ? ' title="Hidden in the file"' : ''}>${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open">${cnt}</span>` : ''}</button>`;
     }).join('');
     this.renderGrid(g.g, sheet, snap.mode);
     // status line
@@ -1176,7 +1176,7 @@ export class SheetpaneExcel extends ElementBase {
         for (const cc of cellControls) if (ctx && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
       }
       const title = stale ? ' title="May be stale — Excel recalculates on open"' : text.length > 24 ? ` title="${esc(text)}"` : '';
-      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" aria-colindex="${c + 2}" aria-selected="${r === selP.row && c === selP.col}" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
+      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-sp-ref="${cellRef(r, c)}" aria-colindex="${c + 2}" aria-selected="${r === selP.row && c === selP.col}" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
     };
     const rowHead = (r: number) => {
       const w = rowWorst.get(r);
@@ -1321,7 +1321,7 @@ export class SheetpaneExcel extends ElementBase {
     const tags = [e.matchesExpected ? '<span class="chip chip-pass">matches suggestion</span>' : '', s.isStale(e) ? '<span class="chip">stale</span>' : ''].join('');
     const meta = [sv.name, e.author || '', e.code ?? '', e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '', e.cellChanged ? 'cell changed' : ''].filter(Boolean).join(' · ');
     const ro = machineAuthored(e.author);
-    return `<div class="card callout" role="group" aria-label="Error details" style="top:${top}px;left:${left}px;width:300px">
+    return `<div class="card callout" role="group" aria-label="Error details" data-sp="callout" style="top:${top}px;left:${left}px;width:300px">
 <div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
 <div class="bd"><dl class="fe"><dt>Found</dt><dd><span class="found">${esc(e.found)}</span></dd><dt>Should be</dt><dd><span class="want">${esc(e.expected || '—')}</span></dd></dl>${e.message ? `<p style="margin:0;font-size:13px">${esc(e.message)}</p>` : ''}${tags ? `<div style="display:flex;gap:6px">${tags}</div>` : ''}<span class="xs faint">${esc(meta)}</span></div>
 ${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button></div>`}</div>`;
@@ -1332,7 +1332,7 @@ ${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve
     const found = s.foundFor(c.sheet, c.range ?? c.ref);
     const ex = this._errorTypes.find((x) => x.id === this.draft.type) ?? this._errorTypes[0]!;
     const sevs = (['error', 'warning', 'note'] as Severity[]).map((v) => `<button type="button" data-act="sev" data-sev="${v}" aria-pressed="${this.draft.severity === v}"><span class="g g-${v}">${SEVERITY[v].glyph}</span>${SEVERITY[v].name}</button>`).join('');
-    return `<div class="card composer" role="dialog" aria-label="New error" style="top:${top}px;left:${left}px;width:330px">
+    return `<div class="card composer" role="dialog" aria-label="New error" data-sp="composer" style="top:${top}px;left:${left}px;width:330px">
 <div class="hd"><span class="t">New error</span><span class="xs faint">${esc(c.range ?? ref)} · found ${esc(found)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="cancel" aria-label="Cancel">${ICON.close}</button></div>
 <div class="bd">
 <label class="field"><span>Type</span><select class="input" data-field="type">${this._errorTypes.map((t) => `<option value="${esc(t.id)}"${t.id === this.draft.type ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
@@ -1341,7 +1341,7 @@ ${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve
 <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" data-field="change"${this.draft.change ? ' checked' : ''}>Also change the cell to this value</label>
 <div class="seg" role="group" aria-label="Severity">${sevs}</div><span class="xs faint">${esc(SEVERITY[this.draft.severity].help)}</span>
 </div>
-<div class="ft"><span class="xs faint">⌘↵ adds</span><span class="spacer"></span><button type="button" class="btn btn-p" data-act="add">Add error</button></div></div>`;
+<div class="ft"><span class="xs faint">⌘↵ adds</span><span class="spacer"></span><button type="button" class="btn btn-p" data-act="add" data-sp="add-error">Add error</button></div></div>`;
   }
 }
 

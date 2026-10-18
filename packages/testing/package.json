@@ -1,0 +1,65 @@
+{
+  "name": "@sheetpane/testing",
+  "version": "0.0.0",
+  "description": "Test helpers for hosts that embed sheetpane: locators, actions and reading a download back, for Playwright and Vitest browser mode.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/testing"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./playwright": {
+      "source": "./src/playwright.ts",
+      "types": "./dist/playwright.d.ts",
+      "import": "./dist/playwright.js"
+    },
+    "./dom": {
+      "source": "./src/dom.ts",
+      "types": "./dist/dom.d.ts",
+      "import": "./dist/dom.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/skills": "workspace:*"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40",
+    "vitest": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": { "optional": true },
+    "vitest": { "optional": true }
+  },
+  "devDependencies": {
+    "@sheetpane/fixtures": "workspace:*",
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+      "./playwright": { "types": "./dist/playwright.d.ts", "import": "./dist/playwright.js" },
+      "./dom": { "types": "./dist/dom.d.ts", "import": "./dist/dom.js" }
+    }
+  }
+}

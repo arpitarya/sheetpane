@@ -105,6 +105,8 @@ the store and the contract are the contract verdict's and
     (`SP-xxxx`, additive to v1); a machine-authored note from the rules engine
     always sets it, and the expanded row shows it beside the author and time.
 
+12. **Test hooks (W-41):** rows carry `data-sp-error` and `data-sp-ref`; Resolve `data-sp="resolve"`; the form's Add `data-sp="add-error"` (SR-GRID decision 9a lists them all).
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,

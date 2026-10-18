@@ -55,7 +55,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
 
-- 🟢 **W-41** `agent` · New package `@sheetpane/testing`: Playwright and Vitest-browser helpers — cell and error-row locators, `waitForLoad`, `edit`, `readDownload` (parses the .xlsx/.csv) — so hosts can test their integration. Filed by Arpit (Cowork). [detail](open/W-41-testing-package.md)
 
 
 ### record update
