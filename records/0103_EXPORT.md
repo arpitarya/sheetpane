@@ -102,6 +102,8 @@ else.
      `<pane>` (with `topLeftCell` and `state="frozen"`; `0, 0` removes it);
      sheets not named keep theirs byte for byte; `toXlsx` writes `<pane>`
      for `Sheet.freeze` (W-24);
+   - `merges: [{ sheet, ranges }]` rewrites that sheet's `<mergeCells>` to
+     exactly those ranges (in schema position; removed when empty);
    - runs each `exportPatch` hook after its own writes, with a
      `PatchContext` (`list`, `has`, `readText`, `readBytes`, `write`,
      `remove`, `workbookPath`, `sheetNames`, `sheetPath`, `relsPathOf`,

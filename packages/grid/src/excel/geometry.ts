@@ -23,9 +23,9 @@ export interface SheetGeometry {
 }
 
 /** Column widths: the file's, else a width from the first 200 rows' text (CSV), else the default. */
-export function sheetGeometry(s: ImportedSheet): SheetGeometry {
+export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? []): SheetGeometry {
   const dataCols = s.rows.reduce((m, r) => Math.max(m, r.length), 0);
-  const merges = (s.merges ?? []).map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
+  const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
   const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1));
   const rows = Math.max(s.rows.length + 3, 20, ...merges.map((m) => m.bottom + 1));
   const dflt = s.defaultColWidth !== undefined ? charsToPx(s.defaultColWidth) : DEFAULT_COL_PX;

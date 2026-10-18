@@ -325,6 +325,7 @@ export class SheetpaneExcel extends ElementBase {
     q.overlay.addEventListener('change', (e) => this.onComposerInput(e));
     q.plugFrow.addEventListener('click', (e) => this.runControl(e));
     q.plugCellbar.addEventListener('click', (e) => this.runControl(e));
+    for (const box of [q.plugFrow, q.plugCellbar, q.overlay]) box.addEventListener('change', (e) => this.chooseControl(e));
     q.frow.querySelector('slot')!.addEventListener('slotchange', () => this.schedule());
     // the empty state: drop a file, browse, open a link, paste base64
     q.state.addEventListener('click', (e) => {
@@ -423,6 +424,7 @@ export class SheetpaneExcel extends ElementBase {
   /** Esc cancels the innermost thing open; false when nothing was. */
   private escape(): boolean {
     const s = this._store;
+    if (this.menu) { this.menu = undefined; this.schedule(); return true; }
     if (s?.getSnapshot().composing) { s.compose(null); return true; }
     if (this.findText) { (this.q.findin as HTMLInputElement).value = ''; this.findText = ''; this.findHits = []; this.schedule(); return true; }
     return false;
@@ -525,6 +527,14 @@ export class SheetpaneExcel extends ElementBase {
       case 'sev': this.draft.severity = t.closest<HTMLElement>('[data-sev]')!.dataset.sev as Severity; this.composerKey = ''; this.schedule(); break;
       case 'cancel': s.compose(null); this.q.grid.focus({ preventScroll: true }); break;
       case 'add': this.addFromComposer(); break;
+      case 'pick-option': {
+        const m = this.menu;
+        this.menu = undefined;
+        const c = m && s.plugins.flatMap((p) => p.controls ?? []).find((x) => x.id === m.control);
+        if (m && c?.choose) c.choose(s, { sheet: m.sheet, ref: m.ref }, t.closest<HTMLElement>('[data-v]')!.dataset.v!);
+        this.schedule();
+        break;
+      }
     }
   }
 
@@ -575,9 +585,16 @@ export class SheetpaneExcel extends ElementBase {
     return hits.sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || sevOrder[b.severity] - sevOrder[a.severity])[0];
   }
 
+  private chooseControl(e: Event): void {
+    const t = e.target as HTMLSelectElement;
+    if (t.tagName !== 'SELECT' || !t.dataset.control) return;
+    const c = this._store!.plugins.flatMap((p) => p.controls ?? []).find((x) => x.id === t.dataset.control);
+    c?.choose?.(this._store!, this._store!.getSnapshot().selection, t.value);
+  }
+
   private runControl(e: Event): void {
     const b = (e.target as Element).closest<HTMLElement>('[data-control]');
-    if (!b) return;
+    if (!b || b.tagName === 'SELECT') return;
     const c = this._store!.plugins.flatMap((p) => p.controls ?? []).find((x) => x.id === b.dataset.control);
     c?.run?.(this._store!, this._store!.getSnapshot().selection);
   }
@@ -587,8 +604,11 @@ export class SheetpaneExcel extends ElementBase {
     const cell = mk.closest<HTMLElement>('.c')!;
     const sel = { sheet: s.getSnapshot().selection.sheet, ref: cellRef(Number(cell.dataset.r), Number(cell.dataset.c)) };
     s.select(sel, this);
+    const ctx = s.cellContext(sel.sheet, sel.ref);
+    if (c?.cellOptions && c.choose && ctx) { this.menu = { control: c.id, sheet: sel.sheet, ref: sel.ref, options: c.cellOptions(ctx) }; this.schedule(); return; }
     c?.run?.(s, sel);
   }
+  private menu: { control: string; sheet: string; ref: string; options: string[] } | undefined;
 
   // ── rendering ────────────────────────────────────────────────────────────
   private schedule(): void {
@@ -603,9 +623,12 @@ export class SheetpaneExcel extends ElementBase {
     const s = this._store, snap = s?.getSnapshot();
     const sheet = snap && s!.sheet(snap.selection.sheet);
     if (!sheet) return undefined;
-    if (this.geom?.sheet !== sheet) this.geom = { sheet, g: sheetGeometry(sheet) };
+    const merges = s!.merges(sheet.name);
+    const mk = merges.join('|');
+    if (this.geom?.sheet !== sheet || this.geomMerges !== mk) { this.geom = { sheet, g: sheetGeometry(sheet, merges) }; this.geomMerges = mk; }
     return this.geom;
   }
+  private geomMerges = '';
 
   /** Geometry as plugins see it: pixels at 100 % zoom from A1's top-left. */
   geometryFor(sheet: string): Geometry | undefined {
@@ -704,6 +727,10 @@ export class SheetpaneExcel extends ElementBase {
     return list.map((c) => {
       const sep = separators && group && c.group !== group ? '<span class="sep" aria-hidden="true"></span>' : '';
       group = c.group;
+      if (c.options && c.choose) {
+        const cur = c.value?.(snap, snap.selection) ?? '';
+        return `${sep}<select class="input" data-control="${esc(c.id)}" aria-label="${esc(c.label)}" title="${esc(c.label)}" style="height:28px;font-size:12px">${c.options(snap, snap.selection).map((o) => `<option value="${esc(o.value)}"${o.value === cur ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
+      }
       const active = c.isActive?.(snap, snap.selection);
       return `${sep}<button type="button" class="${cls}" data-control="${esc(c.id)}" aria-label="${esc(c.label)}${c.shortcut ? ` (${esc(c.shortcut)})` : ''}" title="${esc(c.label)}"${active !== undefined ? ` aria-pressed="${active}"` : ''}>${c.icon ?? ''}${c.icon ? '' : esc(c.label)}</button>`;
     }).join('');
@@ -879,6 +906,9 @@ export class SheetpaneExcel extends ElementBase {
     if (composing && edit && composing.sheet === sheet.name) {
       parts.push(`<span class="pin pending" aria-hidden="true" style="top:${p.y - 8}px;left:${p.x - 6}px">${snap.errors.reduce((m, e) => Math.max(m, errNum(e)), 0) + 1}</span>`);
       if (!s.hasErrorsView) card = this.composerHtml(sideLeft(330), sideTop(380), sel.ref);
+    } else if (this.menu && this.menu.sheet === sheet.name && this.menu.ref === sel.ref) {
+      const m = this.menu;
+      card = `<div class="card menu" role="listbox" aria-label="Choices" style="top:${p.y + RH}px;left:${p.x}px;min-width:${Math.max(cw, 140)}px;max-height:260px;overflow:auto">${m.options.map((o) => `<button type="button" role="option" class="btn btn-g" style="justify-content:flex-start;width:100%;border-radius:0" data-act="pick-option" data-v="${esc(o)}">${esc(o) || '(empty)'}</button>`).join('')}</div>`;
     } else if (err) {
       card = this.calloutHtml(err, sideLeft(300), sideTop(260));
     } else if (edit && sel.sheet === sheet.name) {

@@ -84,6 +84,12 @@ export interface ControlDescriptor {
   /** `status` slot: the text to show; `cell` slot: whether the cell carries the mark. */
   text?(snap: Snapshot, sel: Selection): string;
   appliesTo?(cell: CellContext): boolean;
+  /** A dropdown instead of a button (format-row, selbar, cellbar): its choices, the current one, what choosing does. */
+  options?(snap: Snapshot, sel: Selection): { value: string; label: string }[];
+  value?(snap: Snapshot, sel: Selection): string;
+  choose?(store: WorkbookStore, sel: Selection, value: string): void;
+  /** `cell` slot: the choices the mark's menu offers for this cell (W-18's list arrow); picking calls `choose`. */
+  cellOptions?(cell: CellContext): string[];
 }
 
 export interface Plugin {

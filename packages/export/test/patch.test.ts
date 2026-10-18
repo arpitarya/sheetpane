@@ -164,3 +164,14 @@ describe('freeze panes (W-24 DoD 4)', () => {
     expect(un['xl/worksheets/sheet1.xml']).not.toContain('<pane');
   });
 });
+
+describe('merged ranges (core)', () => {
+  it('rewrites <mergeCells> to exactly the given ranges, in schema position, and removes it when empty', async () => {
+    const orig = await original();
+    const z = unzipText(await patchXlsx(orig, [], { merges: [{ sheet: 'Notes', ranges: ['A1:B1'] }, { sheet: 'Data', ranges: [] }] }));
+    expect(z['xl/worksheets/sheet2.xml']).toContain('<mergeCells count="1"><mergeCell ref="A1:B1"/></mergeCells>');
+    expect(z['xl/worksheets/sheet1.xml']).not.toContain('mergeCell');
+    const wb = await readBack(await patchXlsx(orig, [], { merges: [{ sheet: 'Notes', ranges: ['A1:B1'] }] }));
+    expect(wb.getWorksheet('Notes')!.model.merges).toEqual(['A1:B1']);
+  });
+});

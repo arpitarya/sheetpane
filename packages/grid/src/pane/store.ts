@@ -256,7 +256,7 @@ export class WorkbookStore {
     if (prev && same(prev.now, now)) return false;
     const changes = new Map(this.snap.changes);
     if (backToOriginal) changes.delete(k);
-    else changes.set(k, { kind: 'value', was: orig.value, now });
+    else changes.set(k, { kind: typeof now === 'string' && now.startsWith('=') && this.plugins.some((x) => x.provides.includes('derive')) ? 'formula' : 'value', was: orig.value, now });
     const commitOpts: { coalesce?: string } = {};
     if (o.coalesce) commitOpts.coalesce = `type:${k}`;
     this.commit({ changes, errors: this.snap.errors }, [k], o.origin, [{ type: 'change', origin: o.origin, sheet, ref: a1, kind: 'value', was: prev ? prev.now : orig.value, now: backToOriginal ? orig.value : now }], commitOpts);
@@ -280,6 +280,24 @@ export class WorkbookStore {
     const changes = new Map(this.snap.changes);
     changes.delete(k);
     this.commit({ changes, errors: this.snap.errors }, [k], origin, [{ type: 'change', origin, sheet, ref, kind: prev.kind, was: prev.now, now: prev.was }]);
+  }
+
+  // ── merged ranges: core, changed by plugins as kind `merge` (key `sheet!#merge:A1:C1`, now true | false) ──
+  merges(sheet: string): string[] {
+    const s = this.sheet(sheet);
+    if (!s) return [];
+    const out = new Set(s.merges ?? []);
+    for (const [k, c] of this.snap.changes) {
+      if (c.kind !== 'merge' || !k.startsWith(`${sheet}!#merge:`)) continue;
+      const r = k.slice(sheet.length + 8);
+      if (c.now) out.add(r); else out.delete(r);
+    }
+    return [...out];
+  }
+  /** Merges (`true`) or unmerges (`false`) a range; undoable. */
+  setMerge(sheet: string, range: string, merged: boolean, origin?: Origin): void {
+    const was = (this.sheet(sheet)?.merges ?? []).includes(range);
+    this.setChange(sheet, `#merge:${range}`, 'merge', merged, was, origin);
   }
 
   // ── freeze panes (W-24): view state, a change of kind `freeze` ─────────
@@ -505,7 +523,9 @@ export class WorkbookStore {
     const ctx = this.pluginContext();
     const hooks: ExportPatchHook[] = [...(o.extraPatch ?? []), ...this.plugins.filter((p) => p.provides.includes('exportPatch')).map((p) => (patch: Parameters<ExportPatchHook>[0]) => p.exportPatch!(patch, ctx))];
     const freeze = [...this.snap.changes].filter(([k, c]) => c.kind === 'freeze' && k.endsWith('!#freeze')).map(([k, c]) => ({ sheet: splitKey(k).sheet, ...(c.now as { rows: number; cols: number }) }));
-    const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(freeze.length ? { freeze } : {}) });
+    const mergeSheets = new Set([...this.snap.changes].filter(([, c]) => c.kind === 'merge').map(([k]) => k.slice(0, k.indexOf('!#merge:'))));
+    const merges = [...mergeSheets].map((sheet) => ({ sheet, ranges: this.merges(sheet) }));
+    const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(freeze.length ? { freeze } : {}), ...(merges.length ? { merges } : {}) });
     return { blob: new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), kind: 'xlsx', name: src.name, guarded: [] };
   }
 

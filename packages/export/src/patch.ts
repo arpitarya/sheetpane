@@ -44,6 +44,8 @@ export interface PatchOptions extends WriteOptions, ZipLimits {
   onStripped?: (refs: string[]) => void;
   /** Freeze panes to write (W-24); `rows: 0, cols: 0` unfreezes. Sheets not named keep their `<pane>` untouched. */
   freeze?: { sheet: string; rows: number; cols: number }[];
+  /** A sheet's merged ranges, whole: its `<mergeCells>` is rewritten to exactly these. Sheets not named keep theirs. */
+  merges?: { sheet: string; ranges: string[] }[];
 }
 
 const dirOf = (p: string) => p.slice(0, p.lastIndexOf('/') + 1);
@@ -333,6 +335,26 @@ export function setPane(xml: string, f: { rows: number; cols: number }): string 
   return xml.replace(view[0], `${open}>${pane}${kept}</${P}sheetView>`);
 }
 
+/** Rewrites a worksheet's `<mergeCells>` to exactly these ranges (removed when empty), in schema position. */
+export function setMergeCells(xml: string, ranges: string[]): string {
+  const P = /<(\w+:)?worksheet\b/.exec(xml)?.[1] ?? '';
+  const cur = new RegExp(`<${P}mergeCells\\b[^>]*?(?:/>|>[\\s\\S]*?</${P}mergeCells>)`).exec(xml);
+  const el = ranges.length ? `<${P}mergeCells count="${ranges.length}">${ranges.map((r) => `<${P}mergeCell ref="${escapeAttr(r)}"/>`).join('')}</${P}mergeCells>` : '';
+  if (cur) return xml.replace(cur[0], el);
+  if (!el) return xml;
+  const close = xml.indexOf(`</${P}sheetData>`);
+  let at = close >= 0 ? close + `</${P}sheetData>`.length : -1;
+  if (close < 0) { const self = new RegExp(`<${P}sheetData\\b[^>]*/>`).exec(xml); at = self ? self.index + self[0].length : xml.lastIndexOf(`</${P}worksheet>`); }
+  // skip elements that come between sheetData and mergeCells (sheetCalcPr … customSheetViews)
+  const before = ['sheetCalcPr', 'sheetProtection', 'protectedRanges', 'scenarios', 'autoFilter', 'sortState', 'dataConsolidate', 'customSheetViews'];
+  for (;;) {
+    const m = new RegExp(`^\\s*<${P}(${before.join('|')})\\b[^>]*?(?:/>|>[\\s\\S]*?</${P}\\1>)`).exec(xml.slice(at));
+    if (!m) break;
+    at += m[0].length;
+  }
+  return xml.slice(0, at) + el + xml.slice(at);
+}
+
 /** Elements that follow `<calcPr>` in CT_Workbook's sequence. */
 const AFTER_CALCPR = ['oleSize', 'customWorkbookViews', 'pivotCaches', 'smartTagPr', 'smartTagTypes', 'webPublishing', 'fileRecoveryPr', 'webPublishObjects', 'extLst'];
 
@@ -381,6 +403,12 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
     const r = patchSheetXml(xml, name, cells, stripped);
     formulaTouched ||= r.formulaTouched;
     parts.write(path, r.xml);
+  }
+  for (const m of o.merges ?? []) {
+    const sheet = sheets.find((s) => s.name === m.sheet);
+    if (!sheet) throw new ExportError('no-sheet', `no sheet named "${m.sheet}" in the workbook`, { sheet: m.sheet });
+    for (const r of m.ranges) if (!parseRange(r) || !r.includes(':')) throw new ExportError('bad-merge', `sheet "${m.sheet}" merge "${r}" is not a range`, { sheet: m.sheet, ref: r });
+    parts.write(sheet.path, setMergeCells((await parts.text(sheet.path))!, m.ranges));
   }
   for (const f of o.freeze ?? []) {
     const sheet = sheets.find((s) => s.name === f.sheet);

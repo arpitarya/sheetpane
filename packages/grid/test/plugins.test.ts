@@ -248,3 +248,61 @@ describe('W-01 DoD 15 — stale marks and the pivot badge', () => {
     expect($(el, '.badge').textContent).toBe('pivot table — refreshes in Excel');
   });
 });
+
+describe('core support the plugins build on', () => {
+  it('merge changes: drawn by the core, undoable, written to <mergeCells> on export', async () => {
+    const el = await mountExcel({ mode: 'edit' });
+    const s = el.workbook!;
+    s.setMerge('Holdings', 'B3:C3', true);
+    await frame();
+    expect(cellEl(el, 2, 1)!.classList.contains('merge')).toBe(true);
+    expect(cellEl(el, 2, 2)).toBeNull();
+    const { read } = await import('@sheetpane/import');
+    const back = await read(new Uint8Array(await (await s.exportFile()).blob.arrayBuffer()), { name: 'x.xlsx' });
+    expect(back.sheets[0]!.merges!.sort()).toEqual(['A1:J1', 'B3:C3']);
+    s.setMerge('Holdings', 'A1:J1', false);
+    expect(s.merges('Holdings')).toEqual(['B3:C3']);
+    s.undo(); s.undo();
+    expect(s.merges('Holdings')).toEqual(['A1:J1']);
+  });
+  it('a control with options renders as a select and chooses', async () => {
+    let chosen = '';
+    const p: Plugin = { id: 'pick', provides: [], controls: [{ id: 'fmt-menu', slot: 'format-row', group: 'n', label: 'Number format', mode: 'edit', options: () => [{ value: 'g', label: 'General' }, { value: 'p', label: 'Percent' }], value: () => 'g', choose: (_s, _sel, v) => { chosen = v; } }] };
+    const el = await mountExcel({ mode: 'edit' });
+    const s = createWorkbook({ plugins: [p] });
+    el.workbook = s;
+    await s.load(await sampleXlsx(), 's.xlsx');
+    s.setMode('edit');
+    await frame();
+    const sel = $(el, 'select[data-control=fmt-menu]') as HTMLSelectElement;
+    expect(sel.getAttribute('aria-label')).toBe('Number format');
+    sel.value = 'p';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(chosen).toBe('p');
+  });
+  it('a cell control with cellOptions opens a menu; picking calls choose', async () => {
+    const p: Plugin = { id: 'list', provides: [], controls: [{ id: 'list-arrow', slot: 'cell', group: 'v', label: 'Choose a value', mode: 'edit', appliesTo: (c) => c.ref === 'J3', cellOptions: () => ['Core', 'Income'], choose: (s, sel, v) => s.setCell(sel.sheet, sel.ref, v) }] };
+    const el = await mountExcel({ mode: 'edit' });
+    const s = createWorkbook({ plugins: [p] });
+    el.workbook = s;
+    await s.load(await sampleXlsx(), 's.xlsx');
+    s.setMode('edit');
+    await frame();
+    cellEl(el, 2, 9)!.querySelector('.mk')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true, button: 0 }));
+    await frame();
+    const opts = [...shadow(el).querySelectorAll('.menu [data-act=pick-option]')] as HTMLButtonElement[];
+    expect(opts.map((o) => o.textContent)).toEqual(['Core', 'Income']);
+    opts[1]!.click();
+    expect(s.text('Holdings', 'J3')).toBe('Income');
+  });
+  it('with a derive plugin, typing =… is a formula change', async () => {
+    const s = createWorkbook({ plugins: [twice] });
+    await s.load(await sampleXlsx(), 's.xlsx');
+    s.setCell('Holdings', 'H3', '=F3*G3');
+    expect(s.changeOf('Holdings', 'H3')!.kind).toBe('formula');
+    const plain = createWorkbook();
+    await plain.load(await sampleXlsx(), 's.xlsx');
+    plain.setCell('Holdings', 'H3', '=F3*G3');
+    expect(plain.changeOf('Holdings', 'H3')!.kind).toBe('value');
+  });
+});
