@@ -1,0 +1,57 @@
+{
+  "file": "packages/fixtures/files/edge/hidden-sheet.xlsx",
+  "format": "xlsx",
+  "activeSheet": "Visible",
+  "plugins": [],
+  "sheets": [
+    {
+      "name": "Visible",
+      "rows": 1,
+      "columns": 1,
+      "dimension": "A1:A1",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Shown",
+          "type": "empty",
+          "blanks": 0,
+          "distinct": 0,
+          "values": []
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "Secret",
+      "hidden": true,
+      "rows": 1,
+      "columns": 1,
+      "dimension": "A1:A1",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Hidden in Excel",
+          "type": "empty",
+          "blanks": 0,
+          "distinct": 0,
+          "values": []
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    }
+  ]
+}

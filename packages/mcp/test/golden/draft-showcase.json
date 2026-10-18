@@ -1,0 +1,118 @@
+{
+  "draft": true,
+  "note": "A draft from the file as it is — review every rule before using it: a column with no blanks today may allow them, and oneOf lists only the values seen.",
+  "rules": {
+    "$schema": "https://unpkg.com/@sheetpane/grid/rules.schema.json",
+    "version": 1,
+    "sheets": {
+      "Numbers": {
+        "columns": {
+          "What it is": {
+            "required": true,
+            "type": "text"
+          },
+          "Value": {
+            "required": true
+          }
+        }
+      },
+      "Styles": {
+        "columns": {
+          "Style": {
+            "required": true,
+            "type": "text"
+          },
+          "Example": {
+            "required": true,
+            "type": "text"
+          }
+        }
+      },
+      "Formulas": {
+        "columns": {
+          "Item": {
+            "required": true,
+            "type": "text"
+          },
+          "Amount": {
+            "required": true,
+            "type": "integer"
+          }
+        }
+      },
+      "Validation": {
+        "columns": {
+          "Account": {
+            "required": true,
+            "type": "text"
+          },
+          "Status": {
+            "required": true,
+            "type": "text",
+            "oneOf": [
+              "Active",
+              "Bogus",
+              "Inactive"
+            ]
+          },
+          "Units": {
+            "required": true,
+            "type": "integer"
+          }
+        }
+      },
+      "CondFmt": {
+        "columns": {
+          "Scale": {
+            "required": true,
+            "type": "integer"
+          },
+          "Bars": {
+            "required": true,
+            "type": "integer"
+          },
+          "Over 50": {
+            "required": true,
+            "type": "integer"
+          }
+        }
+      },
+      "Images": {
+        "columns": {
+          "A picture anchored to B3:E9": {}
+        }
+      },
+      "Charts": {
+        "columns": {
+          "Month": {
+            "required": true,
+            "type": "text"
+          },
+          "Sales": {
+            "required": true,
+            "type": "integer"
+          },
+          "Costs": {
+            "required": true,
+            "type": "integer"
+          }
+        }
+      },
+      "Comments": {
+        "columns": {
+          "Account": {
+            "required": true,
+            "type": "text"
+          },
+          "Price": {
+            "required": true,
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "notes": [
+    "“Numbers” column “Value” mixes types — no type drafted"
+  ]
+}

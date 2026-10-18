@@ -8,6 +8,11 @@ export declare const TOOLS: readonly string[];
 export declare function frontmatter(text: string): ({ keys: string[]; metadata: Record<string, string>; name: string; description: string } & Record<string, unknown>) | undefined;
 export declare function toKey(rel: string, p?: { sep: string }): string;
 export declare function fromKey(root: string, key: string, p?: { join(...parts: string[]): string }): string;
-export declare function putBlock(text: string, block: string): { text: string; prefix: string | null };
-export declare function getBlock(text: string): string | undefined;
-export declare function dropBlock(text: string, prefix: string | null | undefined): string;
+export declare function putBlock(text: string, block: string, markers?: [string, string]): { text: string; prefix: string | null };
+export declare function getBlock(text: string, markers?: [string, string]): string | undefined;
+export declare function dropBlock(text: string, prefix: string | null | undefined, markers?: [string, string]): string;
+/** The marks around the Codex `[mcp_servers.sheetpane]` block. */
+export declare const TOML_START: string;
+export declare const TOML_END: string;
+/** The MCP server entry each tool's config gets (W-39). */
+export declare const SERVER: { command: string; args: string[] };

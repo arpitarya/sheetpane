@@ -26,6 +26,15 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **`@sheetpane/mcp`** (W-39): `npx -y @sheetpane/mcp` — an MCP server
+  (2026-07-28, stateless; 2025 clients too) with deterministic, read-only
+  tools: inspect a workbook, draft and check a rules file, explain an SP
+  code, find a skill, describe the API. `sheetpane-skills install` registers
+  it for Claude Code, Kiro and Codex (`--no-mcp` to skip). Codes SP-7001…7007.
+- **`@sheetpane/import` reads `.xlsx` in Node** (W-39): a built-in XML reader
+  stands in when `DOMParser` is absent. **Removed:** the `needs-dom` refusal
+  (SP-1008, retired). `@sheetpane/testing`'s `readFile` uses it everywhere
+  and drops its own Node reader and its `@sheetpane/export` dependency.
 - **TSDoc on the whole public API** (W-36): every export's `.d.ts` carries a
   summary, parameters, returns, the elements' attributes and events, an example
   and a link to its record.

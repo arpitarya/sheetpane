@@ -70,11 +70,21 @@ flowchart LR
 4. **The installer** `bin/sheetpane-skills.mjs` (Node ≥ 20, no dependencies,
    no `postinstall`): `install` / `uninstall`, `--claude --kiro --codex
    --all`, `--skip` / `--only` (groups or skills), `--skills-only`,
-   `--dry-run`, `--force`, `--cwd`. With no tool flag it installs for the
-   tools whose folders exist. It edits only the marked blocks of `CLAUDE.md`
-   and `AGENTS.md`, refuses to overwrite a file changed since it wrote it
-   unless `--force`, and records every path in `.sheetpane-skills.json` so
-   `uninstall` removes exactly those.
+   `--no-mcp`, `--dry-run`, `--force`, `--cwd`. With no tool flag it installs
+   for the tools whose folders exist. It edits only the marked blocks of
+   `CLAUDE.md` and `AGENTS.md`, refuses to overwrite a file changed since it
+   wrote it unless `--force`, and records every path in
+   `.sheetpane-skills.json` so `uninstall` removes exactly those.
+4a. **The MCP server entry (W-39, SR-MCP decision 8):** unless `--no-mcp` or
+   `--skills-only`, install also registers `@sheetpane/mcp` (`npx -y
+   @sheetpane/mcp`) — the `sheetpane` key of `mcpServers` in `.mcp.json`
+   (Claude Code) and `.kiro/settings/mcp.json` (Kiro), every other key kept;
+   a `# sheetpane:start` … `# sheetpane:end` block holding
+   `[mcp_servers.sheetpane]` in `.codex/config.toml` (Codex). A config that is
+   not a JSON object, an entry edited since install, or a
+   `[mcp_servers.sheetpane]` outside the block is refused without `--force`;
+   `uninstall` removes the entry, and the file only when install created it
+   and nothing else is left.
 5. **The drift check** (`test/skills.test.ts`) reads every skill and fails on
    a frontmatter key outside the subset, a `name` ≠ folder, a description over
    250 characters or without its "not for", a `SKILL.md` over 200 lines, a

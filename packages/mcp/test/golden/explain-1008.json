@@ -1,0 +1,10 @@
+{
+  "code": "SP-1008",
+  "title": "Reading .xlsx needs a DOM",
+  "severity": "error",
+  "retired": true,
+  "meaning": "no longer raised. `.xlsx` once needed `DOMParser`; since W-39 the reader carries its own XML parser for runtimes without one, so `.xlsx` reads in Node, workers and server renders.",
+  "cause": "an older `@sheetpane/import`.",
+  "fix": "upgrade `@sheetpane/import`. The code is kept so it is never reused.",
+  "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-1008"
+}

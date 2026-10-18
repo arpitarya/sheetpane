@@ -140,6 +140,7 @@ Start from `TEMPLATE.md`.
 | [0115](0115_FIXTURES.md) | **SR-FIXTURES** | `@sheetpane/fixtures` — known workbooks and their manifest | accepted | yes |
 | [0116](0116_SKILLS.md) | **SR-SKILLS** | `@sheetpane/skills` — agent skills and their installer | accepted | yes |
 | [0118](0118_TESTING.md) | **SR-TESTING** | `@sheetpane/testing` — helpers for testing a host app | accepted | yes |
+| [0119](0119_MCP.md) | **SR-MCP** | `@sheetpane/mcp` — an MCP server agents can ask | accepted | yes |
 | [0117](0117_CODES.md) | **SR-CODES** | stable `SP-xxxx` error codes, one registry, `docs/ERRORS.md` | accepted | yes |
 
 ---
@@ -205,6 +206,7 @@ directions.
 | `packages/comments/` | SR-COMMENTS | `@sheetpane/comments` — comments in and out |
 | `packages/fixtures/` | SR-FIXTURES | `@sheetpane/fixtures` — test workbooks |
 | `packages/testing/` | SR-TESTING | `@sheetpane/testing` — host test helpers |
+| `packages/mcp/` | SR-MCP | `@sheetpane/mcp` — the MCP server (W-39) |
 | `packages/skills/` | SR-SKILLS | `@sheetpane/skills` — agent skills, the installer |
 | `packages/grid/src/skills-bin.ts` | SR-SKILLS | the grid's forwarding `sheetpane-skills` bin |
 | `test/skills.test.ts` | SR-SKILLS | the drift check and the installer tests |

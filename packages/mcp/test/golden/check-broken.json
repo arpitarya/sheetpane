@@ -1,0 +1,58 @@
+{
+  "ok": false,
+  "problems": [
+    {
+      "code": "SP-6013",
+      "found": "extra",
+      "message": "Unknown key “extra” in the rules file",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6013"
+    },
+    {
+      "code": "SP-6016",
+      "sheet": "Nope",
+      "found": "bogus",
+      "message": "Unknown rule word “bogus” for column “X”",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6016"
+    },
+    {
+      "code": "SP-6017",
+      "sheet": "Nope",
+      "found": "nope",
+      "message": "Unknown type “nope” for column “X” (text, number, integer, date, boolean)",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6017"
+    },
+    {
+      "code": "SP-6021",
+      "sheet": "*",
+      "found": "not a ref",
+      "message": "“not a ref” in sheet “*” is not a cell or a range",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6021"
+    },
+    {
+      "code": "SP-6022",
+      "sheet": "Nope",
+      "found": "Nope",
+      "message": "No sheet is named “Nope” — its rules are not checked",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6022"
+    },
+    {
+      "code": "SP-6023",
+      "sheet": "*",
+      "found": "No such title",
+      "message": "No column is titled “No such title” in any sheet — its rule is not checked",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6023"
+    }
+  ],
+  "rules": [
+    {
+      "sheet": "Nope",
+      "target": "column “X”",
+      "rule": ""
+    },
+    {
+      "sheet": "*",
+      "target": "column “No such title”",
+      "rule": "required"
+    }
+  ]
+}

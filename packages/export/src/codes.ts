@@ -7,7 +7,7 @@
 // Ranges: 1xxx import · 2xxx export · 3xxx grid · 4xxx errors element ·
 // 5xxx plugins (5100 numfmt · 5200 formulas · 5300 styles · 5400 validation ·
 // 5500 condfmt · 5600 images · 5700 charts · 5800 comments) · 6xxx rules ·
-// 7xxx mcp (reserved).
+// 7xxx mcp.
 
 /** One registry entry: a code's short title and how serious it is. */
 export interface CodeInfo {
@@ -111,7 +111,14 @@ const TABLE = {
   'SP-6024': { title: 'Two columns share a title', severity: 'note' },
   'SP-6025': { title: 'Rules file rule replaces the element’s', severity: 'note' },
 
-  // ── 7xxx · @sheetpane/mcp — reserved, none raised yet ───────────────────
+  // ── 7xxx · @sheetpane/mcp — tool errors (W-39) ──────────────────────────
+  'SP-7001': { title: 'Tool input is missing or malformed', severity: 'error' },
+  'SP-7002': { title: 'No file at that path', severity: 'error' },
+  'SP-7003': { title: 'File too large for the tool', severity: 'error' },
+  'SP-7004': { title: 'Workbook could not be read', severity: 'error' },
+  'SP-7005': { title: 'No sheet by that name', severity: 'error' },
+  'SP-7006': { title: 'Not a sheetpane code', severity: 'error' },
+  'SP-7007': { title: 'Server data file missing', severity: 'error' },
 } as const satisfies Record<`SP-${number}`, CodeInfo>;
 
 /** Every code sheetpane has ever issued. */

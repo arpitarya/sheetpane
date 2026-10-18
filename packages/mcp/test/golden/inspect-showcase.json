@@ -1,0 +1,401 @@
+{
+  "file": "packages/fixtures/files/showcase.xlsx",
+  "format": "xlsx",
+  "activeSheet": "Numbers",
+  "plugins": [
+    "@sheetpane/charts",
+    "@sheetpane/comments",
+    "@sheetpane/condfmt",
+    "@sheetpane/formulas",
+    "@sheetpane/images",
+    "@sheetpane/numfmt",
+    "@sheetpane/styles",
+    "@sheetpane/validation"
+  ],
+  "sheets": [
+    {
+      "name": "Numbers",
+      "rows": 7,
+      "columns": 2,
+      "dimension": "A1:B7",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "What it is",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "Colour by sign",
+            "Currency",
+            "Date",
+            "Fraction",
+            "General",
+            "Percent"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Value",
+          "type": "mixed",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "$1,234.50",
+            "-987",
+            "1 Oct 2026",
+            "1.25",
+            "12.3%",
+            "1234.5678"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "Styles",
+      "rows": 7,
+      "columns": 2,
+      "dimension": "A1:B7",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Style",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "Banner",
+            "Fill and border",
+            "Green fill",
+            "Italic, coloured",
+            "Right, top, wrapped",
+            "Thick bottom border"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Example",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "A long line that wraps inside its cell",
+            "Green",
+            "Red italic",
+            "Underlined cell",
+            "White on blue, centred",
+            "Yellow fill, thin box"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "Formulas",
+      "rows": 8,
+      "columns": 2,
+      "dimension": "A1:B8",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Item",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 7,
+          "values": [
+            "Doubled",
+            "From Numbers",
+            "Rent",
+            "Salaries",
+            "Software",
+            "Total",
+            "Travel"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Amount",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 7,
+          "values": [
+            "1200",
+            "15200",
+            "2469",
+            "380",
+            "5400",
+            "620",
+            "7600"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 3,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "Validation",
+      "rows": 5,
+      "columns": 3,
+      "dimension": "A1:C5",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Account",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 4,
+          "values": [
+            "AC-10021",
+            "AC-10037",
+            "AC-10042",
+            "AC-10051"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Status",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 3,
+          "values": [
+            "Active",
+            "Bogus",
+            "Inactive"
+          ]
+        },
+        {
+          "column": "C",
+          "title": "Units",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 4,
+          "values": [
+            "-2",
+            "1200",
+            "300",
+            "640"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 2,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "CondFmt",
+      "rows": 9,
+      "columns": 3,
+      "dimension": "A1:C9",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Scale",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 8,
+          "values": [
+            "12",
+            "30",
+            "45",
+            "5",
+            "50",
+            "64",
+            "71",
+            "88"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Bars",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 8,
+          "values": [
+            "12",
+            "30",
+            "45",
+            "5",
+            "50",
+            "64",
+            "71",
+            "88"
+          ]
+        },
+        {
+          "column": "C",
+          "title": "Over 50",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 8,
+          "values": [
+            "12",
+            "30",
+            "45",
+            "5",
+            "50",
+            "64",
+            "71",
+            "88"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 3,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "Images",
+      "rows": 1,
+      "columns": 1,
+      "dimension": "A1:A1",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "A picture anchored to B3:E9",
+          "type": "empty",
+          "blanks": 0,
+          "distinct": 0,
+          "values": []
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 1,
+      "charts": 0,
+      "notes": 0
+    },
+    {
+      "name": "Charts",
+      "rows": 7,
+      "columns": 3,
+      "dimension": "A1:C7",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Month",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "Apr",
+            "Feb",
+            "Jan",
+            "Jun",
+            "Mar",
+            "May"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Sales",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "120",
+            "128",
+            "135",
+            "160",
+            "172",
+            "190"
+          ]
+        },
+        {
+          "column": "C",
+          "title": "Costs",
+          "type": "integer",
+          "blanks": 0,
+          "distinct": 6,
+          "values": [
+            "101",
+            "110",
+            "80",
+            "88",
+            "90",
+            "95"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 2,
+      "notes": 0
+    },
+    {
+      "name": "Comments",
+      "rows": 3,
+      "columns": 2,
+      "dimension": "A1:B3",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Account",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 2,
+          "values": [
+            "AC-10021",
+            "AC-10037"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Price",
+          "type": "number",
+          "blanks": 0,
+          "distinct": 2,
+          "values": [
+            "268.4",
+            "74.85"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 4
+    }
+  ]
+}

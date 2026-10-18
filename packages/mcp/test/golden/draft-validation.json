@@ -1,0 +1,31 @@
+{
+  "draft": true,
+  "note": "A draft from the file as it is — review every rule before using it: a column with no blanks today may allow them, and oneOf lists only the values seen.",
+  "rules": {
+    "$schema": "https://unpkg.com/@sheetpane/grid/rules.schema.json",
+    "version": 1,
+    "sheets": {
+      "Validation": {
+        "columns": {
+          "Account": {
+            "required": true,
+            "type": "text"
+          },
+          "Status": {
+            "required": true,
+            "type": "text",
+            "oneOf": [
+              "Active",
+              "Bogus",
+              "Inactive"
+            ]
+          },
+          "Units": {
+            "required": true,
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

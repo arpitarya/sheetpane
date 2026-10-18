@@ -1,0 +1,9 @@
+{
+  "code": "SP-1002",
+  "title": "Password-protected workbook",
+  "severity": "error",
+  "meaning": "the file is an encrypted `.xlsx` (an OLE file holding an `EncryptedPackage`).",
+  "cause": "the workbook was saved with a password to open.",
+  "fix": "remove the password in Excel (File → Info → Protect Workbook), save, and open it again.",
+  "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-1002"
+}

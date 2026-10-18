@@ -1,0 +1,22 @@
+{
+  "matches": [
+    {
+      "name": "sheetpane-rules-file",
+      "path": "node_modules/@sheetpane/skills/skills/sheetpane-rules-file/SKILL.md",
+      "description": "Use when valid and invalid values ship as a JSON file per sheet, column or cell, checked on load and listed only in the errors panel - rules / rules-src, its JSON Schema, flagging=\"off\". Not for rules written in code (sheetpane-column-rules).",
+      "score": 10
+    },
+    {
+      "name": "sheetpane-column-rules",
+      "path": "node_modules/@sheetpane/skills/skills/sheetpane-column-rules/SKILL.md",
+      "description": "Use when the host checks what users type by column title in code - columns, validate(ctx, signal), on-invalid flag or block, header-row. Not for rules shipped as a JSON file (sheetpane-rules-file) or the workbook's own validation (sheetpane-plugins).",
+      "score": 7
+    },
+    {
+      "name": "sheetpane-file-work-item",
+      "path": "node_modules/@sheetpane/skills/skills/sheetpane-file-work-item/SKILL.md",
+      "description": "Use when contributing to the sheetpane repo and filing a new work item W-nn - the next free id, the item file, its OPEN-WORK row and ball, the worklog and NOW. Not for host apps that use sheetpane.",
+      "score": 3
+    }
+  ]
+}

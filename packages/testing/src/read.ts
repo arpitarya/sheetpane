@@ -1,8 +1,5 @@
-// Reading a workbook back as plain values, for assertions (W-41 DoD 4).
-// Where a DOM exists (Vitest browser mode, a page) @sheetpane/import reads it; in Node
-// — Playwright's test process — a values-only reader over @sheetpane/export's ZIP reader
-// does, because the import package needs DOMParser for .xlsx (SP-1008).
-import { inflateEntry, readZip } from '@sheetpane/export';
+// Reading a workbook back as plain values, for assertions (W-41 DoD 4) — through
+// @sheetpane/import, which reads .xlsx and .csv in a page and in Node alike (SR-IMPORT decision 8).
 import { read } from '@sheetpane/import';
 
 /** One cell's value as read back: text, a number, a boolean, or `null` for empty. */
@@ -11,12 +8,10 @@ export type Value = string | number | boolean | null;
 export interface Values { names: string[]; sheets: Record<string, Record<string, Value>> }
 
 const colName = (i: number) => { let s = ''; for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s; return s; };
-const unesc = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&amp;/g, '&');
-const texts = (xml: string) => [...xml.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map((m) => unesc(m[1]!)).join('');
 
 /**
  * Reads `.xlsx` or `.csv` bytes into values. `name` tells the kind (default: by the ZIP signature).
- * Where a DOM exists `@sheetpane/import` reads it; in Node a values-only reader does.
+ * `@sheetpane/import` reads it, in a page or in Node.
  *
  * @param bytes - The file's bytes, e.g. a `Download`'s.
  * @param name - The file name; its extension tells .xlsx from .csv.
@@ -32,41 +27,11 @@ const texts = (xml: string) => [...xml.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/
 export async function readFile(bytes: Uint8Array, name?: string): Promise<Values> {
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
   const fileName = name ?? (isZip ? 'workbook.xlsx' : 'data.csv');
-  if (!isZip || typeof (globalThis as { DOMParser?: unknown }).DOMParser === 'function') {
-    const book = await read(bytes, { name: fileName });
-    const out: Values = { names: book.sheets.map((s) => s.name), sheets: {} };
-    for (const s of book.sheets) {
-      const m: Record<string, Value> = (out.sheets[s.name] = {});
-      s.rows.forEach((row, r) => row.forEach((v, c) => { if (v !== null && v !== '') m[`${colName(c)}${r + 1}`] = v as Value; }));
-    }
-    return out;
-  }
-  // Node: the parts that hold values, read as text
-  const entries = readZip(bytes);
-  const text = async (path: string) => { const e = entries.find((x) => x.name === path); return e ? new TextDecoder().decode(await inflateEntry(bytes, e)) : ''; };
-  const wb = await text('xl/workbook.xml'), rels = await text('xl/_rels/workbook.xml.rels');
-  const shared = [...(await text('xl/sharedStrings.xml')).matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => texts(m[1]!));
-  const target = (id: string) => /Target="([^"]+)"/.exec([...rels.matchAll(/<Relationship\b[^>]*>/g)].map((m) => m[0]).find((r) => r.includes(`Id="${id}"`)) ?? '')?.[1] ?? '';
-  const out: Values = { names: [], sheets: {} };
-  for (const m of wb.matchAll(/<sheet\b[^>]*\bname="([^"]*)"[^>]*\br:id="([^"]+)"[^>]*\/?>/g)) {
-    const name = unesc(m[1]!), path = target(m[2]!).replace(/^\/?(xl\/)?/, 'xl/');
-    out.names.push(name);
-    const cells: Record<string, Value> = (out.sheets[name] = {});
-    const xml = await text(path);
-    for (const c of xml.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
-      const attrs = c[1]!, body = c[2] ?? '';
-      const ref = /\br="([A-Z]+\d+)"/.exec(attrs)?.[1], t = /\bt="([^"]+)"/.exec(attrs)?.[1];
-      const v = /<v>([\s\S]*?)<\/v>/.exec(body)?.[1];
-      if (!ref) continue;
-      let val: Value = null;
-      if (t === 'inlineStr') val = texts(body);
-      else if (v === undefined) continue;
-      else if (t === 's') val = shared[Number(v)] ?? '';
-      else if (t === 'str' || t === 'e') val = unesc(v);
-      else if (t === 'b') val = v === '1';
-      else val = Number(v);
-      if (val !== null && val !== '') cells[ref] = val;
-    }
+  const book = await read(bytes, { name: fileName });
+  const out: Values = { names: book.sheets.map((s) => s.name), sheets: {} };
+  for (const s of book.sheets) {
+    const m: Record<string, Value> = (out.sheets[s.name] = {});
+    s.rows.forEach((row, r) => row.forEach((v, c) => { if (v !== null && v !== '') m[`${colName(c)}${r + 1}`] = v as Value; }));
   }
   return out;
 }

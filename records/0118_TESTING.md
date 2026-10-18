@@ -50,7 +50,7 @@ flowchart LR
 1. **The package** has three entries: `.` (`readFile`, `changesBetween`,
    `valueAt`, `matchers`, the driver types), `./playwright` (`sheetpane(page,
    { excel?, errors? })`) and `./dom` (`sheetpane(element, { errors? })`).
-   Dependencies `@sheetpane/export`, `@sheetpane/import`, `@sheetpane/skills`;
+   Dependencies `@sheetpane/import` and `@sheetpane/skills`;
    `@playwright/test` and `vitest` are optional peers — Playwright's Page and
    Locator are typed structurally, never imported.
 2. **One API** for both drivers: `waitForLoad`, `ref`, `select`, `edit`,
@@ -65,10 +65,10 @@ flowchart LR
    button (Playwright's download event; in the DOM driver `sheetpane-export`
    is captured and the browser's save prevented); `flag` fills the form where
    it opens (SR-GRID decision 13) and waits for it to close.
-5. **Reading back:** `readFile` uses `@sheetpane/import` where a DOM exists
-   and, in Node, a values-only reader over `@sheetpane/export`'s ZIP reader
-   (shared strings, inline strings, numbers, booleans, errors) — the import
-   package needs `DOMParser` for `.xlsx` (SP-1008).
+5. **Reading back:** `readFile` reads through `@sheetpane/import` in a page
+   and in Node alike — the import package reads `.xlsx` without `DOMParser`
+   since W-39 (SR-IMPORT decision 8), so the values-only Node reader this
+   package carried at first is gone: one reader.
 6. **Dogfood:** `scripts/demo-check.mjs` drives the review steps (load, flag,
    resolve, edit, Download read back) with these helpers.
 
@@ -82,8 +82,9 @@ flowchart LR
 
 ### Alternatives considered
 
-- Requiring a DOM shim in Node to read `.xlsx` — rejected: a values-only
-  reader is small and needs no dependency.
+- Requiring a DOM shim in Node to read `.xlsx` — rejected. A values-only
+  reader of its own served until the import package read `.xlsx` in Node
+  (W-39); two readers of one format was the cost, now paid off.
 - Locating by CSS classes — rejected: restyling would break every host's tests.
 
 ### Reference (required)

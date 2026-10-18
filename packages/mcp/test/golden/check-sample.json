@@ -1,0 +1,36 @@
+{
+  "ok": true,
+  "problems": [],
+  "rules": [
+    {
+      "sheet": "Validation",
+      "target": "column “Account”",
+      "rule": "matching /^AC-\\d{5}$/; required"
+    },
+    {
+      "sheet": "Validation",
+      "target": "column “Units”",
+      "rule": "a whole number of at least 1"
+    },
+    {
+      "sheet": "Validation",
+      "target": "column “Status”",
+      "rule": "one of Active, Inactive"
+    },
+    {
+      "sheet": "Formulas",
+      "target": "column “Amount”",
+      "rule": "a number of at most 5000"
+    },
+    {
+      "sheet": "Formulas",
+      "target": "cell A1",
+      "rule": "exactly Item"
+    },
+    {
+      "sheet": "Numbers",
+      "target": "cell B3",
+      "rule": "a number of at most 0.1"
+    }
+  ]
+}

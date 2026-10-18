@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path, { join } from 'node:path';
-import { frontmatter, fromKey, main, putBlock, dropBlock, toKey, START, END } from '../packages/skills/bin/sheetpane-skills.mjs';
+import { frontmatter, fromKey, main, putBlock, dropBlock, toKey, START, END, SERVER, TOML_START } from '../packages/skills/bin/sheetpane-skills.mjs';
 
 const root = join(import.meta.dirname, '..');
 const SK = join(root, 'packages/skills/skills');
@@ -76,6 +76,8 @@ describe('the installer (W-35 DoD 5, 7)', () => {
         expect((await run(['install', `--${tool}`, '--cwd', d])).code).toBe(0);
         const dir = { claude: '.claude/skills', kiro: '.kiro/skills', codex: '.agents/skills' }[tool]!;
         expect(existsSync(join(d, dir, 'sheetpane/SKILL.md'))).toBe(true);
+        const mcp = { claude: '.mcp.json', kiro: '.kiro/settings/mcp.json', codex: '.codex/config.toml' }[tool]!;
+        expect(readFileSync(join(d, mcp), 'utf8')).toContain('@sheetpane/mcp');
         const again = await run(['install', `--${tool}`, '--cwd', d]);
         expect(again.out).toContain('Nothing to do');
         expect((await run(['uninstall', '--cwd', d])).code).toBe(0);
@@ -118,6 +120,36 @@ describe('the installer (W-35 DoD 5, 7)', () => {
       expect((await run(['install', '--skip', 'contributor', '--cwd', d])).code).toBe(0); // detects .claude
       expect(existsSync(join(d, '.claude/skills/sheetpane-records'))).toBe(false);
       expect(existsSync(join(d, '.claude/skills/sheetpane-embed'))).toBe(true);
+    } finally { rmSync(d, { recursive: true, force: true }); }
+  });
+
+  it('the MCP server entry (W-39 DoD 9): merged into a config that exists, edits refused, --no-mcp', async () => {
+    const d = tmp();
+    try {
+      const other = { mcpServers: { github: { command: 'gh-mcp' } }, keep: true };
+      writeFileSync(join(d, '.mcp.json'), JSON.stringify(other, null, 2) + '\n');
+      mkdirSync(join(d, '.codex'));
+      writeFileSync(join(d, '.codex/config.toml'), 'model = "o3"\n');
+      expect((await run(['install', '--claude', '--codex', '--cwd', d])).code).toBe(0);
+      expect(JSON.parse(readFileSync(join(d, '.mcp.json'), 'utf8'))).toEqual({ ...other, mcpServers: { ...other.mcpServers, sheetpane: SERVER } });
+      const toml = readFileSync(join(d, '.codex/config.toml'), 'utf8');
+      expect(toml.startsWith('model = "o3"\n')).toBe(true);
+      expect(toml).toContain(`${TOML_START}\n[mcp_servers.sheetpane]\ncommand = "npx"\nargs = ["-y", "@sheetpane/mcp"]`);
+      // an entry edited by hand is refused, and kept
+      const edited = JSON.parse(readFileSync(join(d, '.mcp.json'), 'utf8'));
+      edited.mcpServers.sheetpane.args.push('--x');
+      writeFileSync(join(d, '.mcp.json'), JSON.stringify(edited));
+      expect((await run(['uninstall', '--cwd', d])).code).toBe(1);
+      expect((await run(['uninstall', '--force', '--cwd', d])).code).toBe(0);
+      expect(JSON.parse(readFileSync(join(d, '.mcp.json'), 'utf8'))).toEqual(other);
+      expect(readFileSync(join(d, '.codex/config.toml'), 'utf8')).toBe('model = "o3"\n');
+      // not a JSON object: refused, nothing written
+      writeFileSync(join(d, '.mcp.json'), '{ broken');
+      const r = await run(['install', '--claude', '--cwd', d]);
+      expect(r.code).toBe(1);
+      expect(r.out).toMatch(/\.mcp\.json \(sheetpane MCP server\) — is not a JSON object/);
+      expect((await run(['install', '--claude', '--no-mcp', '--cwd', d])).code).toBe(0);
+      expect(readFileSync(join(d, '.mcp.json'), 'utf8')).toBe('{ broken');
     } finally { rmSync(d, { recursive: true, force: true }); }
   });
 

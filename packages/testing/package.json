@@ -38,7 +38,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@sheetpane/export": "workspace:*",
     "@sheetpane/import": "workspace:*",
     "@sheetpane/skills": "workspace:*"
   },

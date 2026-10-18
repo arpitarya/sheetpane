@@ -1,0 +1,58 @@
+{
+  "file": "packages/fixtures/files/csv/semicolon.csv",
+  "format": "csv",
+  "delimiter": ";",
+  "activeSheet": "semicolon",
+  "plugins": [],
+  "sheets": [
+    {
+      "name": "semicolon",
+      "rows": 3,
+      "columns": 3,
+      "dimension": "A1:C3",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Account",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 2,
+          "values": [
+            "AC-10021",
+            "AC-10037"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Units",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 2,
+          "values": [
+            "1200",
+            "430"
+          ]
+        },
+        {
+          "column": "C",
+          "title": "Price",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 2,
+          "values": [
+            "268,4",
+            "74,85"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    }
+  ]
+}

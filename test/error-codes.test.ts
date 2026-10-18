@@ -23,7 +23,8 @@ const SKIP = new Set(['fixtures', 'testing']);
 const RANGES: Record<string, RegExp> = {
   import: /^SP-1/, export: /^SP-2/, grid: /^SP-[346]/,
   numfmt: /^SP-51/, formulas: /^SP-52/, styles: /^SP-53/, validation: /^SP-54/, condfmt: /^SP-55/, images: /^SP-56/, charts: /^SP-57/, comments: /^SP-58/,
-  mcp: /^SP-7/,
+  // the MCP server raises its own 7xxx codes and reports the rules file's 60xx notes as check_rules finds them
+  mcp: /^SP-[67]/,
 };
 
 /** A throw whose expression starts like this carries a code by construction. */
@@ -31,6 +32,7 @@ const CODED = [
   'spError(', // the helper: `code` and `spCode`
   'new ExportError(', // typed reason → EXPORT_SP_CODES
   'new ImportError(', // typed reason → importSpCode
+  'new ToolError(', // @sheetpane/mcp: a code first, by its constructor
   'cfbRefusal(', // returns an ImportError
   'tooBig(', // returns an ImportError
 ];
@@ -155,9 +157,9 @@ describe('W-40 — every message in src carries a registered code', () => {
 });
 
 describe('W-40 — the registry and the helper', () => {
-  it('codes are SP- and four digits, in a known range; 4xxx and 7xxx hold none yet', () => {
+  it('codes are SP- and four digits, in a known range; 4xxx holds none yet', () => {
     for (const c of codes) expect(c).toMatch(/^SP-[1-7]\d{3}$/);
-    expect(codes.filter((c) => /^SP-[47]/.test(c))).toEqual([]);
+    expect(codes.filter((c) => /^SP-4/.test(c))).toEqual([]);
   });
   it('no code ever issued leaves the registry; a new code is added to the lock', () => {
     expect(LOCK.filter((c) => !(c in CODES)), 'removed from the registry — mark it retired instead').toEqual([]);

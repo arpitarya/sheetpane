@@ -1,0 +1,58 @@
+{
+  "file": "packages/fixtures/files/edge/merged.xlsx",
+  "format": "xlsx",
+  "activeSheet": "Merged",
+  "plugins": [
+    "@sheetpane/styles"
+  ],
+  "sheets": [
+    {
+      "name": "Merged",
+      "rows": 2,
+      "columns": 3,
+      "dimension": "A1:C2",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "A banner over three columns",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 1,
+          "values": [
+            "a"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 1,
+          "values": [
+            "b"
+          ]
+        },
+        {
+          "column": "C",
+          "title": "",
+          "type": "text",
+          "blanks": 0,
+          "distinct": 1,
+          "values": [
+            "c"
+          ]
+        }
+      ],
+      "merges": [
+        "A1:C1"
+      ],
+      "formulas": 0,
+      "dataValidations": 0,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
+    }
+  ]
+}

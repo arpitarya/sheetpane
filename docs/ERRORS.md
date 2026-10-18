@@ -118,6 +118,13 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-6023](#sp-6023) | No column has this title | note |
 | [SP-6024](#sp-6024) | Two columns share a title | note |
 | [SP-6025](#sp-6025) | Rules file rule replaces the element’s | note |
+| [SP-7001](#sp-7001) | Tool input is missing or malformed | error |
+| [SP-7002](#sp-7002) | No file at that path | error |
+| [SP-7003](#sp-7003) | File too large for the tool | error |
+| [SP-7004](#sp-7004) | Workbook could not be read | error |
+| [SP-7005](#sp-7005) | No sheet by that name | error |
+| [SP-7006](#sp-7006) | Not a sheetpane code | error |
+| [SP-7007](#sp-7007) | Server data file missing | error |
 <!-- index:end -->
 
 ---
@@ -747,4 +754,58 @@ throws: each problem is one `note` error, `author: 'host'`, with its `code`.
 
 ## 7xxx · mcp
 
-Reserved for `@sheetpane/mcp`; no code yet.
+### SP-7001
+
+**Tool input is missing or malformed** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** a tool was called without an argument it needs, or with one of the wrong kind.
+- **Likely cause:** the agent left out `path`, `rules`, `code` or `task`, passed an empty string, or a task with no searchable words.
+- **Fix:** call the tool again with the argument its input schema names (`tools/list` shows it).
+
+### SP-7002
+
+**No file at that path** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** the path given to `inspect_workbook`, `draft_rules` or `check_rules` names nothing.
+- **Likely cause:** a typo, or a path relative to a different folder — relative paths are read from where the server runs.
+- **Fix:** pass an absolute path, or one relative to the server's working directory.
+
+### SP-7003
+
+**File too large for the tool** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** the file is over the 256 MB the server reads.
+- **Likely cause:** a very large export.
+- **Fix:** inspect a smaller extract, or read it with `@sheetpane/import` in your own script.
+
+### SP-7004
+
+**Workbook could not be read** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** the import package failed on the file without one of its own SP-10xx codes.
+- **Likely cause:** an internal failure while reading.
+- **Fix:** report it with the file if you can share it; the reader's own refusals (SP-1001…SP-1007) are passed through with their codes.
+
+### SP-7005
+
+**No sheet by that name** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** `draft_rules` was asked for a sheet the workbook does not have.
+- **Likely cause:** a misspelt or renamed sheet; names are matched exactly.
+- **Fix:** use a name from the list in the message, or leave `sheet` out for every sheet.
+
+### SP-7006
+
+**Not a sheetpane code** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** `explain_code` was given something that is not in the registry.
+- **Likely cause:** a typo, or a code from another library.
+- **Fix:** codes look like `SP-1002`; the message lists nearby codes when there are any.
+
+### SP-7007
+
+**Server data file missing** · error · [SR-MCP](../records/0119_MCP.md) decision 7
+
+- **Meaning:** the server could not find `ERRORS.md` beside it.
+- **Likely cause:** an incomplete install, or a build run without its copy step.
+- **Fix:** reinstall `@sheetpane/mcp`; from the repository, run `pnpm --filter @sheetpane/mcp build`.

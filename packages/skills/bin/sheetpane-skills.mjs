@@ -5,7 +5,8 @@
 // nothing is written until a person runs this.
 //
 // Write rules:
-//   - only under .claude/, .kiro/, .agents/ and inside the marked block of CLAUDE.md / AGENTS.md;
+//   - only under .claude/, .kiro/, .agents/, inside the marked block of CLAUDE.md / AGENTS.md /
+//     .codex/config.toml, and the one `sheetpane` key of .mcp.json / .kiro/settings/mcp.json;
 //   - a file (or block) changed since this tool wrote it is never overwritten without --force;
 //   - every path written is listed in .sheetpane-skills.json, and `uninstall` removes exactly those.
 import { createHash } from 'node:crypto';
@@ -17,14 +18,19 @@ const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 export const MANIFEST = '.sheetpane-skills.json';
 export const START = '<!-- sheetpane:start -->';
 export const END = '<!-- sheetpane:end -->';
+export const TOML_START = '# sheetpane:start';
+export const TOML_END = '# sheetpane:end';
 export const TOOLS = ['claude', 'kiro', 'codex'];
+/** The MCP server entry (W-39) each tool's config gets. */
+export const SERVER = { command: 'npx', args: ['-y', '@sheetpane/mcp'] };
+const SERVER_TOML = `${TOML_START}\n[mcp_servers.sheetpane]\ncommand = "npx"\nargs = ["-y", "@sheetpane/mcp"]\n${TOML_END}`;
 export const GROUPS = ['host', 'contributor'];
 
 /** Where each tool looks. Keys of the manifest are POSIX paths relative to the host root. */
 const LAYOUT = {
-  claude: { skills: '.claude/skills', files: [['entry/claude-agent.md', '.claude/agents/sheetpane-integrator.md']], block: ['entry/claude.md', 'CLAUDE.md'], detect: ['.claude', 'CLAUDE.md'] },
-  kiro: { skills: '.kiro/skills', files: [['entry/kiro-steering.md', '.kiro/steering/sheetpane.md'], ['entry/kiro-agent.json', '.kiro/agents/sheetpane-integrator.json']], block: null, detect: ['.kiro'] },
-  codex: { skills: '.agents/skills', files: [], block: ['entry/agents.md', 'AGENTS.md'], detect: ['.agents', 'AGENTS.md'] },
+  claude: { skills: '.claude/skills', files: [['entry/claude-agent.md', '.claude/agents/sheetpane-integrator.md']], block: ['entry/claude.md', 'CLAUDE.md'], mcp: ['json', '.mcp.json'], detect: ['.claude', 'CLAUDE.md'] },
+  kiro: { skills: '.kiro/skills', files: [['entry/kiro-steering.md', '.kiro/steering/sheetpane.md'], ['entry/kiro-agent.json', '.kiro/agents/sheetpane-integrator.json']], block: null, mcp: ['json', '.kiro/settings/mcp.json'], detect: ['.kiro'] },
+  codex: { skills: '.agents/skills', files: [], block: ['entry/agents.md', 'AGENTS.md'], mcp: ['toml', '.codex/config.toml'], detect: ['.agents', 'AGENTS.md'] },
 };
 
 const HELP = `sheetpane-skills — install sheetpane's agent skills into this repository
@@ -34,21 +40,26 @@ Usage
   npx sheetpane-skills uninstall [options]
 
 Tools (default: every tool whose folder or entry file already exists here)
-  --claude          .claude/skills/, .claude/agents/sheetpane-integrator.md, a block in CLAUDE.md
-  --kiro            .kiro/skills/, .kiro/steering/sheetpane.md, .kiro/agents/sheetpane-integrator.json
-  --codex           .agents/skills/, a block in AGENTS.md
+  --claude          .claude/skills/, .claude/agents/sheetpane-integrator.md, a block in CLAUDE.md,
+                    the sheetpane MCP server in .mcp.json
+  --kiro            .kiro/skills/, .kiro/steering/sheetpane.md, .kiro/agents/sheetpane-integrator.json,
+                    the sheetpane MCP server in .kiro/settings/mcp.json
+  --codex           .agents/skills/, a block in AGENTS.md, the sheetpane MCP server in
+                    .codex/config.toml (Codex reads it in trusted projects)
   --all             all three
 
 Options
   --skip <list>     leave out a group or skill: contributor | host | <skill-name>, comma-separated
   --only <list>     install only these groups or skills (same words as --skip)
-  --skills-only     copy the skill folders; write no CLAUDE.md / AGENTS.md block, steering or agent file
+  --skills-only     copy the skill folders; write no CLAUDE.md / AGENTS.md block, steering, agent file or MCP entry
+  --no-mcp          leave the MCP server (@sheetpane/mcp, run with npx) out of the tools' config
   --dry-run         list every path and what would happen to it; write nothing
   --force           overwrite (or remove) files changed since they were installed
   --cwd <dir>       the repository root (default: the current directory)
   -h, --help        this text
 
-Only the marked block (${START} … ${END}) of CLAUDE.md and AGENTS.md is
+Only the marked block (${START} … ${END}) of CLAUDE.md and AGENTS.md, the
+marked block of .codex/config.toml and the "sheetpane" key of an MCP JSON file are
 ever edited. What was written is listed in ${MANIFEST}; \`uninstall\` removes exactly that.
 `;
 
@@ -65,7 +76,7 @@ export const sha = (s) => createHash('sha256').update(s).digest('hex').slice(0, 
 
 /** Parses `--flag value` / `--flag` lists. */
 export function parseArgs(argv) {
-  const o = { cmd: undefined, tools: new Set(), skip: [], only: [], skillsOnly: false, dryRun: false, force: false, cwd: undefined, help: false, errors: [] };
+  const o = { cmd: undefined, tools: new Set(), skip: [], only: [], skillsOnly: false, noMcp: false, dryRun: false, force: false, cwd: undefined, help: false, errors: [] };
   const list = (v) => (v ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -75,6 +86,7 @@ export function parseArgs(argv) {
     else if (a === '--skip' || a === '--only') { const v = argv[++i]; if (!v || v.startsWith('--')) o.errors.push(`${a} needs a value`); else o[a.slice(2)].push(...list(v)); }
     else if (a.startsWith('--skip=') || a.startsWith('--only=')) o[a.slice(2, 6)].push(...list(a.slice(7)));
     else if (a === '--skills-only') o.skillsOnly = true;
+    else if (a === '--no-mcp') o.noMcp = true;
     else if (a === '--dry-run') o.dryRun = true;
     else if (a === '--force') o.force = true;
     else if (a === '--cwd') { const v = argv[++i]; if (!v) o.errors.push('--cwd needs a directory'); else o.cwd = v; }
@@ -112,23 +124,23 @@ export function listSkills(root = PKG_ROOT) {
 function walk(d) { return readdirSync(d).flatMap((f) => { const p = path.join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; }); }
 
 /** Replaces the marked block in `text`, or appends one. Returns the new text and how it was placed. */
-export function putBlock(text, block) {
-  const s = text.indexOf(START), e = text.indexOf(END);
-  if (s >= 0 && e > s) return { text: text.slice(0, s) + block + text.slice(e + END.length), prefix: null };
+export function putBlock(text, block, [start, end] = [START, END]) {
+  const s = text.indexOf(start), e = text.indexOf(end);
+  if (s >= 0 && e > s) return { text: text.slice(0, s) + block + text.slice(e + end.length), prefix: null };
   if (text === '') return { text: block + '\n', prefix: '' };
   const prefix = text.endsWith('\n\n') ? '' : text.endsWith('\n') ? '\n' : '\n\n';
   return { text: text + prefix + block + '\n', prefix };
 }
 /** The current marked block in `text`, or undefined. */
-export function getBlock(text) {
-  const s = text.indexOf(START), e = text.indexOf(END);
-  return s >= 0 && e > s ? text.slice(s, e + END.length) : undefined;
+export function getBlock(text, [start, end] = [START, END]) {
+  const s = text.indexOf(start), e = text.indexOf(end);
+  return s >= 0 && e > s ? text.slice(s, e + end.length) : undefined;
 }
 /** Removes the marked block and what `putBlock` added around it (`prefix` and the trailing newline). */
-export function dropBlock(text, prefix) {
-  const s = text.indexOf(START), e = text.indexOf(END);
+export function dropBlock(text, prefix, [start, end] = [START, END]) {
+  const s = text.indexOf(start), e = text.indexOf(end);
   if (s < 0 || e < s) return text;
-  let a = s, b = e + END.length;
+  let a = s, b = e + end.length;
   if (prefix !== null && prefix !== undefined) {
     if (text.slice(b, b + 1) === '\n') b += 1;
     if (prefix && text.slice(a - prefix.length, a) === prefix) a -= prefix.length;
@@ -140,9 +152,62 @@ export function dropBlock(text, prefix) {
 
 function readManifest(root) {
   const f = path.join(root, MANIFEST);
-  if (!existsSync(f)) return { version: 1, files: {}, blocks: {}, dirs: [] };
+  if (!existsSync(f)) return { version: 1, files: {}, blocks: {}, servers: {}, dirs: [] };
   const m = JSON.parse(readFileSync(f, 'utf8'));
-  return { version: 1, files: m.files ?? {}, blocks: m.blocks ?? {}, dirs: m.dirs ?? [] };
+  return { version: 1, files: m.files ?? {}, blocks: m.blocks ?? {}, servers: m.servers ?? {}, dirs: m.dirs ?? [] };
+}
+
+// ── the MCP entry (W-39): one key of a JSON config, or a marked block of TOML ─
+
+const TOML = [TOML_START, TOML_END];
+/** A JSON config's text, parsed; `undefined` when absent, `null` when it is not a JSON object. */
+function readJson(text) {
+  if (text === undefined || text.trim() === '') return undefined;
+  try { const v = JSON.parse(text); return v && typeof v === 'object' && !Array.isArray(v) ? v : null; } catch { return null; }
+}
+/** The entry as it stands in the file now: what the sha in the manifest is taken of. */
+function currentServer(kind, text) {
+  if (kind === 'toml') return text === undefined ? undefined : getBlock(text, TOML);
+  const j = readJson(text);
+  const e = j?.mcpServers?.sheetpane;
+  return e === undefined ? undefined : JSON.stringify(e);
+}
+/** Plans the MCP entry for one tool: write · same · update · refuse. */
+function planServer(root, man, tool, force) {
+  const [kind, key] = LAYOUT[tool].mcp;
+  const text = readOr(fromKey(root, key));
+  const want = kind === 'toml' ? SERVER_TOML : JSON.stringify(SERVER);
+  if (kind === 'json' && readJson(text) === null) return { key, kind: 'server', format: kind, action: 'refuse', tool, why: 'is not a JSON object — fix it, or add the server by hand' };
+  if (kind === 'toml' && text !== undefined && getBlock(text, TOML) === undefined && /^\s*\[mcp_servers\.sheetpane\]/m.test(text)) return { key, kind: 'server', format: kind, action: 'refuse', tool, why: 'already names [mcp_servers.sheetpane] outside the sheetpane block' };
+  const cur = currentServer(kind, text), known = man.servers[key];
+  let action;
+  if (cur === undefined) action = 'write';
+  else if (cur === want) action = 'same';
+  else if (known && sha(cur) === known.sha) action = 'update';
+  else action = force ? 'update' : 'refuse';
+  return { key, kind: 'server', format: kind, action, tool, content: want, created: text === undefined, why: action === 'refuse' ? (known ? 'the sheetpane server entry was edited since it was installed' : 'already has a sheetpane server entry sheetpane-skills did not write') : undefined };
+}
+/** Writes the entry into the file, keeping everything else in it. */
+function putServer(abs, r) {
+  const text = readOr(abs);
+  if (r.format === 'toml') return putBlock(text ?? '', r.content, TOML);
+  const j = readJson(text) ?? {};
+  j.mcpServers = { ...(j.mcpServers ?? {}), sheetpane: SERVER };
+  return { text: JSON.stringify(j, null, 2) + '\n', prefix: null };
+}
+/** Takes the entry out, and the file too when install made it and nothing else is left. */
+function dropServer(abs, format, rec) {
+  const text = readFileSync(abs, 'utf8');
+  if (format === 'toml') {
+    const next = dropBlock(text, rec.prefix, TOML);
+    if (rec.created && next.trim() === '') unlinkSync(abs); else writeFileSync(abs, next);
+    return;
+  }
+  const j = readJson(text);
+  if (!j?.mcpServers) return;
+  delete j.mcpServers.sheetpane;
+  if (Object.keys(j.mcpServers).length === 0) delete j.mcpServers;
+  if (rec.created && Object.keys(j).length === 0) unlinkSync(abs); else writeFileSync(abs, JSON.stringify(j, null, 2) + '\n');
 }
 const readOr = (f) => (existsSync(f) ? readFileSync(f, 'utf8') : undefined);
 
@@ -166,7 +231,7 @@ export function detectTools(root, flags) {
  * `write` (new) · `update` (ours, unchanged since, now different) · `same` · `refuse`
  * (changed since we wrote it, or not ours) · `remove` (ours, no longer selected).
  */
-export function planInstall(root, { tools, skills, skillsOnly, force, pkgRoot = PKG_ROOT }) {
+export function planInstall(root, { tools, skills, skillsOnly, noMcp = false, force, pkgRoot = PKG_ROOT }) {
   const man = readManifest(root);
   const rows = [];
   const want = new Map(); // key -> { content, tool }
@@ -208,6 +273,7 @@ export function planInstall(root, { tools, skills, skillsOnly, force, pkgRoot = 
       else action = force ? 'update' : 'refuse';
       rows.push({ key: dst, kind: 'block', action, tool: t, content: block, created: !existsSync(fromKey(root, dst)), why: action === 'refuse' ? (known ? 'the sheetpane block was edited since it was installed' : 'holds a sheetpane block sheetpane-skills did not write') : undefined });
     }
+    if (!noMcp) for (const t of tools) rows.push(planServer(root, man, t, force));
   }
   return { rows, manifest: man };
 }
@@ -228,7 +294,7 @@ function applyInstall(root, { rows, manifest }) {
       if (r.action === 'write' || r.action === 'update' || r.action === 'same') m.files[r.key] = { sha: sha(r.content), tool: r.tool };
       if (r.action === 'remove') { unlinkSync(abs); delete m.files[r.key]; }
       if (r.action === 'forget') delete m.files[r.key];
-    } else {
+    } else if (r.kind === 'block') {
       const text = readOr(abs) ?? '';
       const had = m.blocks[r.key];
       if (r.action === 'write' || r.action === 'update') {
@@ -236,6 +302,14 @@ function applyInstall(root, { rows, manifest }) {
         writeFileSync(abs, put.text);
         m.blocks[r.key] = { sha: sha(r.content), tool: r.tool, created: had ? had.created : r.created, prefix: had ? had.prefix : put.prefix };
       } else if (r.action === 'same') m.blocks[r.key] = had ?? { sha: sha(r.content), tool: r.tool, created: false, prefix: null };
+    } else if (r.kind === 'server') {
+      const had = m.servers[r.key];
+      if (r.action === 'write' || r.action === 'update') {
+        mk(abs);
+        const put = putServer(abs, r);
+        writeFileSync(abs, put.text);
+        m.servers[r.key] = { sha: sha(r.content), tool: r.tool, format: r.format, created: had ? had.created : r.created, prefix: had ? had.prefix : put.prefix };
+      } else if (r.action === 'same') m.servers[r.key] = had ?? { sha: sha(r.content), tool: r.tool, format: r.format, created: false, prefix: null };
     }
   }
   m.dirs = [...dirs].sort();
@@ -260,6 +334,12 @@ export function planUninstall(root, { force }) {
     else if (sha(cur) === rec.sha || force) rows.push({ key, kind: 'block', action: 'remove', rec });
     else rows.push({ key, kind: 'block', action: 'refuse', why: 'the sheetpane block was edited since it was installed' });
   }
+  for (const [key, rec] of Object.entries(man.servers)) {
+    const cur = currentServer(rec.format, readOr(fromKey(root, key)));
+    if (cur === undefined) rows.push({ key, kind: 'server', action: 'forget' });
+    else if (sha(cur) === rec.sha || force) rows.push({ key, kind: 'server', action: 'remove', rec });
+    else rows.push({ key, kind: 'server', action: 'refuse', why: 'the sheetpane server entry was edited since it was installed' });
+  }
   return { rows, manifest: man };
 }
 
@@ -271,6 +351,7 @@ function applyUninstall(root, { rows, manifest }) {
       const next = dropBlock(readFileSync(abs, 'utf8'), r.rec.prefix);
       if (r.rec.created && next.trim() === '') unlinkSync(abs); else writeFileSync(abs, next);
     }
+    if (r.kind === 'server' && r.action === 'remove') dropServer(abs, r.rec.format, r.rec);
   }
   // folders install made, deepest first, only when empty
   for (const d of [...manifest.dirs].sort((a, b) => b.split('/').length - a.split('/').length || b.localeCompare(a))) {
@@ -281,7 +362,7 @@ function applyUninstall(root, { rows, manifest }) {
 }
 
 const SIGN = { write: '+', update: '~', same: '=', refuse: '!', remove: '-', forget: '?', keep: '!' };
-const describe = (r) => `  ${SIGN[r.action]} ${r.action.padEnd(7)} ${r.key}${r.kind === 'block' ? ' (sheetpane block)' : ''}${r.why ? ` — ${r.why}` : ''}`;
+const describe = (r) => `  ${SIGN[r.action]} ${r.action.padEnd(7)} ${r.key}${r.kind === 'block' ? ' (sheetpane block)' : r.kind === 'server' ? ' (sheetpane MCP server)' : ''}${r.why ? ` — ${r.why}` : ''}`;
 
 // ── the command ──────────────────────────────────────────────────────────────
 
@@ -317,7 +398,7 @@ export async function main(argv, io = {}) {
   let skills;
   try { skills = selectSkills(listSkills(pkgRoot), o.skip, o.only); }
   catch (e) { err(`sheetpane-skills: ${e.message}`); return 2; }
-  const plan = planInstall(root, { tools, skills, skillsOnly: o.skillsOnly, force: o.force, pkgRoot });
+  const plan = planInstall(root, { tools, skills, skillsOnly: o.skillsOnly, noMcp: o.noMcp, force: o.force, pkgRoot });
   out(`${o.dryRun ? 'Would install' : 'Installing'} ${skills.length} skill(s) for ${tools.join(', ')} in ${root}:`);
   plan.rows.forEach((r) => out(describe(r)));
   const refused = plan.rows.filter((r) => r.action === 'refuse');

@@ -40,7 +40,7 @@ here. Read that record before changing anything below it.
 - 🟢 **W-37** `agent` · Ship `custom-elements.json` for the elements; generate VS Code / JetBrains editor data and React, Vue, Svelte, Solid typings from it; a test keeps the manifest equal to the code. Filed by Arpit (Cowork). [detail](open/W-37-custom-elements-manifest.md)
 
 
-- 🟡 **W-39** `agent` · New package `@sheetpane/mcp`: a stdio MCP server with deterministic tools (describe the API, inspect a workbook, draft and check rules, explain an error code); registered for Claude, Kiro and Codex by the skills installer. — waiting on W-37. Filed by Arpit (Cowork). [detail](open/W-39-mcp-server.md)
+- 🟡 **W-39** `agent` · New package `@sheetpane/mcp`: a stdio MCP server with deterministic tools (describe the API, inspect a workbook, draft and check rules, explain an error code); registered for Claude, Kiro and Codex by the skills installer. Built: the server, five of six tools with goldens, the installer entry, SR-MCP; `describe_api` is built and answers once W-37's manifest lands — waiting on W-37. Filed by Arpit (Cowork). [detail](open/W-39-mcp-server.md)
 
 
 - 🟢 **W-43** `agent` · `npm create sheetpane` scaffolds a working host (vanilla, React, Next.js, Vue, Angular, Svelte): grid + errors in a tab, sample and rules files, one test, skills installed; CI builds every template. Filed by Arpit (Cowork). [detail](open/W-43-create-sheetpane.md)

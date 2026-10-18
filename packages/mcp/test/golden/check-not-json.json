@@ -1,0 +1,9 @@
+{
+  "ok": false,
+  "problems": [
+    {
+      "code": "SP-6011",
+      "message": "The rules file is not JSON — Expected property name or '}' in JSON at position 2 (line 1 column 3)"
+    }
+  ]
+}
