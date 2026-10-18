@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — W-25 (research) and W-26–W-28 filed: editing events, column rules, React hooks  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *list the grid APIs; propose React hooks, events and callbacks for editing and the current cell, and a way to check per column title whether what is typed is correct; then: create work items for everything proposed.*
+- **Done:** W-25 (`research`, `cowork`, 🟢) carries the chat's proposal and ten questions; W-26 (events), W-27 (column rules), W-28 (React hooks) filed `build`, 🟡, waiting on W-25 and their build prerequisites. INTERVIEW §2, glossary (column rules), registry. Not committed.
+- **Decided / left open:** read in: host rules run as a core provider on W-14's `validate` hook with `author: "host"` (fits the plugins verdict without a seventh hook); no error-schema change needed. Put to Arpit in W-25: auto-resolve for host errors (W-18 sets it for workbook errors), flag vs block, missing or duplicate headers, rules changing after load vs the frozen plugin set, `@sheetpane/react` (overrules "no wrappers in v1") vs recipes.
+- **Mistakes:** none. Found mid-session that parallel sessions had filed W-14–W-24 (plugins); the new items were fitted to them rather than duplicating W-18.
+- **Next:** W-25 in Cowork.
+
+---
+
 ## 2026-10-18 — plugin split decided; eight plugin packages scaffolded; W-14–W-24 filed  ·  Claude (Cowork, claude-fable-5-1)
 
 - **Asked:** *compare sheetpane with the top Excel libraries, components and two creative ones, then with Excel itself; propose separate plugin packages for styles, formulas, number formats; whether plugins can add UI to the grid; then: "Let's create separate packages, plugins for number format, formulas, styles. Merge cells, freeze panes, data validation, conditional formatting, images, charts, pivots, comments, notes. Decide, do some research and have them as separate packages or plugins."*

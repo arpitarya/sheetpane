@@ -124,6 +124,7 @@ Start from `TEMPLATE.md`.
 | [0060](0060_WORK-registry.md) | **SR-WORK-REGISTRY** | The doc registry — rules in §2, the table in §3 | accepted | yes |
 | [0101](0101_DOWNLOAD.md) | **SR-DOWNLOAD** | `download()` — export output in, a saved `.xlsx` or `.csv` out | proposed | no — not built (W-12); home package waits on W-08 |
 | [0102](0102_BUILD.md) | **SR-BUILD** | The monorepo build — pnpm, just, tsc, Vitest, CI, lockstep release | accepted | yes |
+| [0103](0103_EXPORT.md) | **SR-EXPORT** | `@sheetpane/export` — toXlsx, patchXlsx, toCsv, the shared ZIP and XML code | accepted | yes |
 
 ---
 
@@ -158,7 +159,7 @@ directions.
 | `scripts/pack-check.mjs` | SR-BUILD | the tarballs as npm sees them |
 | `scripts/release.mjs` | SR-BUILD | one version on every package |
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |
-| `packages/export/` | W-03 | `@sheetpane/export`; until its component record exists |
+| `packages/export/` | SR-EXPORT | `@sheetpane/export` — the writers and the shared ZIP / XML code |
 | `packages/grid/` | W-01 | `@sheetpane/grid`, the UI package — the sheet and the pane; until its component record exists |
 | `packages/grid/src/errors/` | W-02 | `<SheetPaneErrors>` — a different item from the sheet |
 | `packages/grid/src/plugins/` | W-14 | the plugin host — hooks, slots, descriptors; until W-01's record (or its own) exists |

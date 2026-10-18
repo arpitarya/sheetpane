@@ -48,12 +48,17 @@ here. Read that record before changing anything below it.
 - 🟡 **W-20** `agent` · Build `@sheetpane/images`: anchored pictures drawn in sheet space, view only — waiting on W-14, W-13. Filed by Arpit (Cowork). [detail](open/W-20-images.md)
 - 🟡 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types — waiting on W-20. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
 - 🟡 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — waiting on W-14, W-13, W-02, W-03. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
+- 🟡 **W-26** `agent` · Editing and position events: edit start, typing, before-save (cancellable), cancel, sheet switch; column title on every event — waiting on W-25, W-01. Filed by Arpit (Cowork). [detail](open/W-26-edit-events.md)
+- 🟡 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list — waiting on W-25, W-14, W-26, W-02. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
+- 🟡 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as a package or recipes — waiting on W-25, W-26, W-01. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)
 
 ### testing
 
 ### record update
 
 ### research
+
+- 🟢 **W-25** `cowork` · Research the grid's editing events, host column rules and React hooks; Arpit rules on auto-resolve, block vs flag, headers and package vs recipes. Filed by Arpit (Cowork). [detail](open/W-25-research-events-rules-hooks.md)
 
 
 ---

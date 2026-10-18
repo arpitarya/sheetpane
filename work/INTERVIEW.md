@@ -77,6 +77,12 @@ open to override (plugins verdict decision 9):
   W-16 formulas → W-23 undo → W-17 styles → W-18 validation → W-19 condfmt →
   W-20 images → W-21 charts → W-22 comments; W-24 freeze panes beside W-01. Every verdict they build from is in `work/compare/`;
   read the five docs before writing code.
+- **Host-facing contract additions (filed 2026-10-18):** W-25 (research, Cowork)
+  settles editing and position events, column rules by header title, and React
+  hooks; then W-26 events → W-27 column rules (on W-14's `validate` hook,
+  `author: "host"`) → W-28 hooks. Arpit rules in W-25 on auto-resolve for host
+  errors, block vs flag, missing headers, and `@sheetpane/react` vs recipes
+  (a package would overrule "no wrappers in v1").
 - **Owed by the decider, when convenient:** install `scripts/sr-guard.sh` as the
   `commit-msg` hook (W-04 DoD 7); create the `@sheetpane` npm org before the
   first publish; open the sample `.xlsx` in Excel when W-03 asks (DoD 8);

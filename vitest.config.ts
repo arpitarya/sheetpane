@@ -7,10 +7,13 @@ import { playwright } from '@vitest/browser-playwright';
 
 const browsers = (process.env.SP_BROWSERS ?? 'chromium').split(',') as ('chromium' | 'firefox' | 'webkit')[];
 const resolve = { conditions: ['source'] };
-const browserPackages = ['import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments'];
+// Workbook fixtures load in browser tests as assets (`?inline` data URLs).
+const assetsInclude = ['**/*.xlsx', '**/*.csv'];
+const browserPackages = ['export-browser', 'import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments'];
 
 export default defineConfig({
   resolve,
+  assetsInclude,
   test: {
     coverage: {
       provider: 'v8',
@@ -20,12 +23,13 @@ export default defineConfig({
     },
     projects: [
       { resolve, test: { name: 'repo', include: ['test/**/*.test.ts'], environment: 'node' } },
-      { resolve, test: { name: 'export', include: ['packages/export/test/**/*.test.ts'], environment: 'node' } },
+      { resolve, test: { name: 'export', include: ['packages/export/test/**/*.test.ts'], exclude: ['**/*.browser.test.ts'], environment: 'node' } },
       ...browserPackages.map((name) => ({
         resolve,
+        assetsInclude,
         test: {
           name,
-          include: [`packages/${name}/test/**/*.test.ts`],
+          include: name === 'export-browser' ? ['packages/export/test/**/*.browser.test.ts'] : [`packages/${name}/test/**/*.test.ts`],
           passWithNoTests: true,
           browser: {
             enabled: true,

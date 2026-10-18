@@ -83,8 +83,12 @@ pnpm and a justfile; the testing verdict chose the runner.
    pointing at `src/`, so type-check and tests read sibling packages without a
    build. `publishConfig.exports` drops it from the published manifest.
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
-   Node; every other package runs in browser mode on Playwright. `SP_BROWSERS`
-   selects the engines. Coverage (v8) is reported on every run; 90 % lines on
+   Node; every other package runs in browser mode on Playwright, and so do
+   `@sheetpane/export`'s `*.browser.test.ts` files (project `export-browser`,
+   the engine-determinism proof). `SP_BROWSERS` selects the engines.
+   `.xlsx` and `.csv` fixtures load as assets (`?inline`). Dev-only readers
+   for read-back tests (ExcelJS, PapaParse, fflate) are dev dependencies of
+   the package that uses them. Coverage (v8) is reported on every run; 90 % lines on
    `packages/export/src/**` fails the run.
 7. **Package checks** (`test/packages.test.ts`): each package is public,
    `@sheetpane/<dir>`, MIT, ESM with types; one version across all (lockstep);
