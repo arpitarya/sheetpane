@@ -140,6 +140,8 @@ else.
 10. **No runtime dependencies** (SR-LAW-2). `download()` lives in this
     package too — [SR-DOWNLOAD](0101_DOWNLOAD.md).
 
+**Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107.
+
 ### Consequences
 
 - **Enforced today:** the Node tests (`just test-export`) and the browser

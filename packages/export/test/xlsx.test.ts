@@ -70,6 +70,7 @@ describe('toXlsx input rules', () => {
     expect(await bad({ sheets: [{ name: 'Data', rows: [] }, { name: 'DATA', rows: [] }] })).toMatch(/used twice/);
     expect(await bad({ sheets: [] })).toMatch(/at least one sheet/);
     expect(await bad({ sheets: [{ name: 'A', rows: [], hidden: true }] })).toMatch(/visible/);
+    expect(await bad({ sheets: [] })).toMatch(/^sheet-count: SP-2002: No visible sheet — a workbook needs at least one sheet \(https:\/\/github\.com\/arpitarya\/sheetpane\/blob\/main\/docs\/ERRORS\.md#sp-2002\)$/); // W-40
   });
   it('names the sheet and the cell past the row and column limits', async () => {
     expect(await bad({ sheets: [{ name: 'Big', rows: new Array(1_048_577).fill([]) }] })).toMatch(/"Big" has 1048577 rows.*A1048577/);

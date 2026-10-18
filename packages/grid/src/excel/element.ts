@@ -1,7 +1,7 @@
 // <sheetpane-excel> — the sheet: the view and edit components as two modes of one
 // element (W-01). Plain DOM in an open shadow root (grid verdict decisions 2, 6);
 // every byte of state lives in the pane's store (L7); the contract is the DOM's (L4).
-import { cellRef, colName, download, parseRange, parseRef, type Cell, type RangePos } from '@sheetpane/export';
+import { cellRef, codeOf, colName, detailOf, download, parseRange, parseRef, spError, spMessage, type Cell, type RangePos } from '@sheetpane/export';
 import type { ImportedSheet } from '@sheetpane/import';
 import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
@@ -31,7 +31,7 @@ export async function bytesFromSrc(src: string): Promise<{ bytes: Uint8Array; na
   }
   if (src.length > 64 && /^[A-Za-z0-9+/=\s]+$/.test(src)) { const bytes = b64(src); return { bytes, name: guessName(bytes) }; }
   const res = await fetch(src, { credentials: 'same-origin' });
-  if (!res.ok) throw new Error(`could not read ${src} (HTTP ${res.status})`);
+  if (!res.ok) throw spError('SP-3015', `could not read ${src} (HTTP ${res.status})`);
   const name = decodeURIComponent(new URL(src, location.href).pathname.split('/').pop() || 'workbook.xlsx');
   return { bytes: new Uint8Array(await res.arrayBuffer()), name };
 }
@@ -102,7 +102,7 @@ export class SheetpaneExcel extends ElementBase {
   /** `rules-src`: a URL read with a GET, like `src` (nothing is sent); a failure is a note in the errors, never a throw. */
   private async loadRules(url: string): Promise<void> {
     let doc: unknown;
-    try { const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) throw new Error(`HTTP ${res.status}`); doc = JSON.parse(await res.text()); }
+    try { const res = await fetch(url, { credentials: 'same-origin' }); doc = res.ok ? JSON.parse(await res.text()) : { __error: `${url}: HTTP ${res.status}` }; }
     catch (e) { doc = { __error: `${url}: ${(e as Error).message}` }; }
     if (this.getAttribute('rules-src') === url) this.rules = doc;
   }
@@ -137,7 +137,7 @@ export class SheetpaneExcel extends ElementBase {
     let data: Uint8Array | Blob | ArrayBuffer, nm = name;
     if (typeof src === 'string') {
       try { const r = await bytesFromSrc(src); data = r.bytes; nm ??= r.name; }
-      catch (e) { this.showEmpty = false; store.failLoad(name ?? src, e instanceof Error ? e.message : String(e), this); return; }
+      catch (e) { this.showEmpty = false; store.failLoad(name ?? src, detailOf(e), this, codeOf(e)); return; }
     } else {
       data = src;
       if (!nm && typeof File !== 'undefined' && src instanceof File) nm = src.name;
@@ -463,7 +463,7 @@ export class SheetpaneExcel extends ElementBase {
     if (!b) return true;
     // refused: the value is never stored (L6); the message stays at the cell until the selection moves
     this.ruleMsg = { sheet, ref, outcome: b, blocked: true };
-    fire(this, 'sheetpane-editcancel', { sheet, ref, reason: 'blocked', message: b.message });
+    fire(this, 'sheetpane-editcancel', { sheet, ref, reason: 'blocked', code: 'SP-6003', message: b.message });
     this.schedule();
     return false;
   }
@@ -1090,7 +1090,7 @@ export class SheetpaneExcel extends ElementBase {
     if (!this.showEmpty && snap.load.status === 'error') {
       const f = snap.load;
       const pw = f.detail === 'password';
-      html = `<div class="msg ${pw ? 'warn' : 'fail'}" role="alert"><span class="g ${pw ? 'g-warning' : 'g-error'}">${pw ? '!' : '✕'}</span><div style="display:flex;flex-direction:column;gap:8px"><span class="t">${pw ? 'Password protected' : 'Can’t open this file'}</span><span>${esc(f.message)}</span><div><button type="button" class="btn again">Choose another file</button></div></div></div>`;
+      html = `<div class="msg ${pw ? 'warn' : 'fail'}" role="alert"><span class="g ${pw ? 'g-warning' : 'g-error'}">${pw ? '!' : '✕'}</span><div style="display:flex;flex-direction:column;gap:8px"><span class="t">${pw ? 'Password protected' : 'Can’t open this file'}</span><span>${esc(f.message)}</span><span class="xs faint code">${esc(f.spCode)}</span><div><button type="button" class="btn again">Choose another file</button></div></div></div>`;
     } else if (snap.load.status === 'loading') {
       html = `<div class="msg" role="status"><div style="display:flex;flex-direction:column;gap:6px"><span class="t">Reading</span><span>${esc(snap.load.name)}</span></div></div>`;
     } else {
@@ -1300,7 +1300,7 @@ export class SheetpaneExcel extends ElementBase {
     if (!providers.length) { layer?.remove(); return; }
     if (!layer) { layer = document.createElement('div'); layer.className = 'plug'; layer.style.cssText = 'position:absolute;inset:0;pointer-events:none'; ov.prepend(layer); }
     const geometry = this.geometryFor(sheet.name)!;
-    const items = providers.flatMap((p) => { try { return p.overlay!(sheet.name, { ...s.pluginContext(), geometry }); } catch (e) { console.error(`sheetpane: plugin "${p.id}" overlay failed`, e); return []; } });
+    const items = providers.flatMap((p) => { try { return p.overlay!(sheet.name, { ...s.pluginContext(), geometry }); } catch (e) { console.error(spMessage('SP-3014', `sheetpane: plugin "${p.id}" overlay failed`), e); return []; } });
     const keep = new Set<string>();
     for (const it of items) {
       const id = `${sheet.name}|${it.id}`;
@@ -1319,7 +1319,7 @@ export class SheetpaneExcel extends ElementBase {
   private calloutHtml(e: SheetpaneError, left: number, top: number): string {
     const s = this._store!, sv = SEVERITY[e.severity], t = this._errorTypes.find((x) => x.id === e.type);
     const tags = [e.matchesExpected ? '<span class="chip chip-pass">matches suggestion</span>' : '', s.isStale(e) ? '<span class="chip">stale</span>' : ''].join('');
-    const meta = [sv.name, e.author || '', e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '', e.cellChanged ? 'cell changed' : ''].filter(Boolean).join(' · ');
+    const meta = [sv.name, e.author || '', e.code ?? '', e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '', e.cellChanged ? 'cell changed' : ''].filter(Boolean).join(' · ');
     const ro = machineAuthored(e.author);
     return `<div class="card callout" role="group" aria-label="Error details" style="top:${top}px;left:${left}px;width:300px">
 <div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>

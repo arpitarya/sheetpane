@@ -26,6 +26,11 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **Stable error codes** (W-40): every thrown error, console warning, rules
+  note, refused load and blocked edit carries an `SP-xxxx` code with an entry
+  in `docs/ERRORS.md`; `spCode` / `codeOf()` read it. Messages keep their old
+  text after the code.
+
 - **A rules file** (W-33): `rules-src="./sheetpane.rules.json"` or
   `excel.rules = object` — rules per sheet (`"*"` for all), by column title
   and by cell or range, with `equals`, `noneOf` and `note`; a JSON Schema

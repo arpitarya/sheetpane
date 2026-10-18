@@ -3,6 +3,7 @@
 // each changed cell's `s` repointed. Nothing else in the package is touched
 // (SR-LAW-6 fidelity). Text-level edits, like the core's: no XML round trip.
 import type { PatchContext } from '@sheetpane/export';
+import { spError } from '@sheetpane/grid';
 import { builtinIdOf } from './fmt.js';
 
 /** A change to apply: the cell, the style index it had, the code it now shows. */
@@ -54,7 +55,7 @@ const DEFAULT_XF = '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"
 
 /** xl/styles.xml with the edits' formats added; returns the new text and the new `s` for every (was, code) pair. */
 export function patchStyles(xml: string, edits: readonly FormatEdit[]): { xml: string; styleOf: (was: number, code: string) => number } {
-  if (!/<styleSheet\b/.test(xml)) throw new Error('sheetpane numfmt: xl/styles.xml is not a style sheet');
+  if (!/<styleSheet\b/.test(xml)) throw spError('SP-5102', 'sheetpane numfmt: xl/styles.xml is not a style sheet');
   // custom formats already in the file
   const nm = NUMFMTS_RE.exec(xml);
   const idOfCode = new Map<string, number>();
@@ -173,7 +174,7 @@ export async function applyFormatEdits(patch: PatchContext, edits: readonly Form
   if (!edits.length) return;
   const path = await stylesPath(patch);
   const text = await patch.readText(path);
-  if (text === undefined) throw new Error(`sheetpane numfmt: the package has no ${path}, so number formats cannot be written`);
+  if (text === undefined) throw spError('SP-5103', `sheetpane numfmt: the package has no ${path}, so number formats cannot be written`);
   const { xml, styleOf } = patchStyles(text, edits);
   patch.write(path, xml);
   const bySheet = new Map<string, Map<string, number>>();

@@ -24,13 +24,14 @@ describe('ZIP', () => {
     const z64 = z.slice(); const v = new DataView(z64.buffer);
     v.setUint16(z64.length - 22 + 10, 0xffff, true);
     expect(() => readZip(z64)).toThrow(/ZIP64/);
+    expect(() => readZip(z64)).toThrow(/^SP-2009: ZIP64 archive refused — /); // W-40
     const bad = z.slice(); bad[37] = bad[37]! ^ 0xff; // flip a data byte of a.txt
     await expect(inflateEntry(bad, readZip(bad)[0]!)).rejects.toThrow(/CRC-32/);
   });
   it('caps the inflated size of an entry (ZIP bomb guard)', async () => {
     const z = await writeZip([{ name: 'big', data: new Uint8Array(4 * 2 ** 20) }], { compression: 'deflate' });
     const e = readZip(z)[0]!;
-    await expect(inflateEntry(z, e, { maxEntrySize: 2 ** 20 })).rejects.toMatchObject({ code: 'over-limit' });
+    await expect(inflateEntry(z, e, { maxEntrySize: 2 ** 20 })).rejects.toMatchObject({ code: 'over-limit', spCode: 'SP-2013' });
     await expect(inflateEntry(z, { ...e, size: 1 }, { maxEntrySize: 2 ** 20 })).rejects.toMatchObject({ code: 'over-limit' });
     expect(() => readZip(z, { maxTotalSize: 2 ** 20 })).toThrow(/inflates past/);
   });

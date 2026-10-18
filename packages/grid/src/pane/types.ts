@@ -1,6 +1,6 @@
 // The shared state of one pane (contract verdict decisions 1–9; plugins verdict
 // decisions 2–6; W-23 undo; W-24 freeze). Everything here is plain objects (L9).
-import type { Cell } from '@sheetpane/export';
+import type { Cell, SpCode } from '@sheetpane/export';
 import type { ImportedWorkbook } from '@sheetpane/import';
 
 export type Mode = 'view' | 'edit';
@@ -30,6 +30,8 @@ export interface SheetpaneError {
   author: string;
   /** ISO 8601. */
   createdAt: string;
+  /** The stable SP code (W-40) when sheetpane itself raised the error — a rules-engine note, e.g. `"SP-6023"`; see docs/ERRORS.md. Optional: v1 stays valid without it. */
+  code?: SpCode;
 }
 
 /** Plugins verdict decision 6. */
@@ -60,7 +62,8 @@ export type LoadState =
   | { status: 'empty' }
   | { status: 'loading'; name: string }
   | { status: 'ready' }
-  | { status: 'error'; code: string; detail?: string; message: string; name: string };
+  /** `code` is the reader's typed reason (`corrupt`, `password-or-legacy`, `unreadable`…); `spCode` its stable SP code (W-40). */
+  | { status: 'error'; code: string; spCode: SpCode; detail?: string; message: string; name: string };
 
 export interface Source {
   name: string;

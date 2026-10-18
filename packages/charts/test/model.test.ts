@@ -87,6 +87,8 @@ describe('parseChart', () => {
   it('malformed XML throws', () => {
     expect(() => parseChart('<c:chartSpace')).toThrow();
     expect(() => parseChart('<chartSpace/>')).toThrow(/c:chart/);
+    expect(() => parseChart('<c:chartSpace')).toThrow(/^SP-5701: /); // W-40
+    expect(() => parseChart('<chartSpace/>')).toThrow(/^SP-5702: /);
   });
 
   it('namespace prefixes do not matter (strict OOXML, other prefixes)', () => {

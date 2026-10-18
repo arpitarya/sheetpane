@@ -34,6 +34,7 @@ const ui: Plugin = { id: 'ui', provides: [], controls: [
 describe('registration (W-14 DoD 1, 2)', () => {
   it('a single-provider hook with two providers throws, naming both', () => {
     expect(() => createWorkbook({ plugins: [fmt, { ...fmt, id: 'fmt2' }] })).toThrow(/"format" has one provider per pane — fmt and fmt2/);
+    expect(() => createWorkbook({ plugins: [fmt, { ...fmt, id: 'fmt2' }] })).toThrow(/^SP-3006: Hook has one provider per pane — /); // W-40
     expect(() => createWorkbook({ plugins: [twice, { ...twice, id: 't2' }] })).toThrow(/derive/);
   });
   it('a duplicate control id, a missing hook function or a decorate loop throws', () => {

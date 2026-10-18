@@ -151,6 +151,7 @@ pnpm and a justfile; the testing verdict chose the runner.
 
 ### Consequences
 
+- **Codes (W-40):** `test/error-codes.test.ts` and its append-only `test/error-codes.lock.json` are SR-CODES' (carved out of `test/`); `test/ssr.test.ts` asserts the SSR refusal's code.
 - **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
   pack-check`, locally and in CI.
 - **Owed by the decider:** the `@sheetpane` npm organisation, before the first

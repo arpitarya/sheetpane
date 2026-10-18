@@ -101,6 +101,7 @@ does not need). Anchors are SR-IMAGES' arithmetic.
 
 ### Consequences
 
+- **Codes (W-40, SR-CODES):** a malformed chart part is logged as SP-5701, a part with no chart as SP-5702.
 - **Enforced today:** `just test-pkg charts` — 43 tests (the model of every
   type; frames at their anchors; Show source cells; the tag and undo; stage 2
   against the series' values — bar lengths proportional, line points linear,

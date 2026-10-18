@@ -97,6 +97,7 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 
 ### Consequences
 
+- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet).
 - **Enforced today:** `just test-pkg comments` — 26 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`

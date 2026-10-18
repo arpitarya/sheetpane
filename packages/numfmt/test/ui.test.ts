@@ -195,5 +195,6 @@ describe('limits', () => {
     expect(store.changeCount).toBe(MAX_CELLS);
     expect(said).toHaveLength(1);
     expect(said[0]).toMatch(/larger than 10000 cells/);
+    expect(said[0]).toMatch(/^SP-5101: .* \(https:\/\/github\.com\/arpitarya\/sheetpane\/blob\/main\/docs\/ERRORS\.md#sp-5101\)$/); // W-40: the code first, the docs link last
   }, 60_000);
 });

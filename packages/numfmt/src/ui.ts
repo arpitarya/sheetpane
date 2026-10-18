@@ -2,7 +2,7 @@
 // a number-format dropdown and ± decimals in `format-row` (Edit mode). Opt-in:
 // the headless entry never imports this file. Importing it makes
 // `plugins="numfmt"` enable the plugin *with* its controls.
-import { cellKey, kindRef, registerPlugin } from '@sheetpane/grid';
+import { cellKey, kindRef, registerPlugin, spMessage } from '@sheetpane/grid';
 import type { ControlDescriptor, Plugin, Selection, Snapshot, WorkbookStore } from '@sheetpane/grid';
 import { numfmt, originalCode, type NumfmtOptions } from './index.js';
 import { adjustDecimals, categoryOf, CATEGORIES, documentLocale, fixedCode, generalDecimals, isValidCode, presetCode, type Category } from './fmt.js';
@@ -35,7 +35,7 @@ function numericCells(store: WorkbookStore, sel: Selection): { ref: string; valu
       const v = store.value(sel.sheet, ref);
       if (typeof v !== 'number' || !Number.isFinite(v)) continue;
       out.push({ ref, value: v });
-      if (out.length >= MAX_CELLS) { console.warn(`sheetpane numfmt: the selection is larger than ${MAX_CELLS} cells; only the first ${MAX_CELLS} were formatted`); return out; }
+      if (out.length >= MAX_CELLS) { console.warn(spMessage('SP-5101', `sheetpane numfmt: the selection is larger than ${MAX_CELLS} cells; only the first ${MAX_CELLS} were formatted`)); return out; }
     }
   }
   return out;

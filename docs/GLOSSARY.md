@@ -24,6 +24,7 @@ description: "Recurring terms, defined once."
 | sheetpane-errors | working name of the web component that is the error component |
 | justfile | the root file of recipes for `just`, a command runner; `just --list` shows every repo command (W-10) |
 | column rules | checks a host supplies per column header title (`columns`, `validate`); failures become errors with `author: "host"` that resolve themselves when the cell passes (SR-GRID decision 22) |
+| SP code | a permanent `SP-xxxx` code on every error, warning, note and refusal sheetpane shows, listed in `docs/ERRORS.md` (SR-CODES) |
 | rules file | a JSON document of column, cell and range rules per sheet (`"*"` for every sheet), given as `rules` or `rules-src`; checked by the same engine as column rules (SR-GRID decision 22d) |
 | flagging | whether people can flag issues on the sheet; `flagging="off"` removes Flag issue, the composer and the callout card, leaving the errors panel as the one place errors are read (SR-GRID decision 22e) |
 | Proof | the colour and spacing tokens sheetpane shares with PDF Suite — `work/reference/design/boards/proof.css`; its fonts do not ship (SR-LAW-5) |

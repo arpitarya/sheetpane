@@ -34,6 +34,16 @@ describe('download() file names (SR-DOWNLOAD decisions 4–5)', () => {
     expect(() => name('a,b\n1,2', 'sales.xlsx')).toThrow(`"sales.xlsx" — text can't be saved as .xlsx; use .csv`);
     expect(() => name(bytes, '  .xlsx')).toThrow(/nothing is left/);
   });
+  it('each refusal carries its SP code (W-40)', () => {
+    const codeOf = (f: () => unknown) => { try { f(); } catch (e) { return [(e as { code?: string }).code, (e as { spCode?: string }).spCode, (e as Error).message.slice(0, 9)]; } return undefined; };
+    expect(codeOf(() => name(bytes, 'sales.pdf'))).toEqual(['SP-2102', 'SP-2102', 'SP-2102: ']);
+    expect(codeOf(() => name(new Blob([bytes]), 'mystery'))?.[0]).toBe('SP-2103');
+    expect(codeOf(() => name('a,b', 'sales.xlsx'))?.[0]).toBe('SP-2104');
+    expect(codeOf(() => name(bytes, '  .xlsx'))?.[0]).toBe('SP-2105');
+    expect(codeOf(() => name(bytes, undefined as unknown as string))?.[0]).toBe('SP-2101');
+    expect(codeOf(() => download(42 as unknown as string, 'x.csv'))?.[0]).toBe('SP-2107');
+    expect(codeOf(() => download(bytes, 'sales.xlsx'))?.[0]).toBe('SP-2106');
+  });
 });
 
 describe('download() outside a page (SR-DOWNLOAD decisions 7–8)', () => {

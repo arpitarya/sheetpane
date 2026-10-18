@@ -108,6 +108,7 @@ W-16 asked for recalculation on the plugins verdict's single-provider
 
 ### Consequences
 
+- **Codes (W-40, SR-CODES):** a failed recalculation is logged as SP-5201, an engine that did not load as SP-5202.
 - **Enforced today:** `just test-pkg formulas` — 34 tests (derive on load
   and change, undo, revert, paste, cross-sheet and quoted names, defined
   names, CSV, cycles, errors, unsupported; export of typed and recalculated

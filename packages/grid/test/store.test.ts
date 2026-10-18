@@ -29,6 +29,14 @@ describe('the store: loading and reading', () => {
     await s.load(new Uint8Array([1, 2, 3]), 'old.xls');
     expect(s.getSnapshot().load).toMatchObject({ status: 'error', code: 'unsupported-format', name: 'old.xls' });
   });
+  it('the load state carries the SP code beside the reader’s code, and the human message without it (W-40)', async () => {
+    const s = createWorkbook();
+    await s.load(new Uint8Array([1, 2, 3]), 'old.xls');
+    expect(s.getSnapshot().load).toMatchObject({ status: 'error', code: 'unsupported-format', spCode: 'SP-1001', message: '"old.xls" is a .xls file — sheetpane opens .xlsx and .csv only' });
+    s.failLoad('x.xlsx', 'could not read x.xlsx (HTTP 404)');
+    expect(s.getSnapshot().load).toMatchObject({ status: 'error', code: 'unreadable', spCode: 'SP-3015' });
+    await expect(createWorkbook().exportFile()).rejects.toMatchObject({ code: 'SP-3001', spCode: 'SP-3001' });
+  });
 });
 
 describe('cell changes (SR-LAW-6)', () => {

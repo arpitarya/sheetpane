@@ -176,3 +176,17 @@ describe('always in sync (SR-LAW-7, B-020)', () => {
     });
   }
 });
+
+describe('stable codes (W-40)', () => {
+  it('a rules-engine note shows its SP code in the expanded row', async () => {
+    const { excel, errors } = await pair();
+    excel.columns = { Nowhere: { required: true } };
+    let note: { id: string; code?: string } | undefined;
+    for (let i = 0; i < 100 && !note; i++) { await frame(); note = excel.getErrors().find((e) => e.severity === 'note'); }
+    expect(note?.code).toBe('SP-6023');
+    await frame();
+    ($(errors, `[data-id="${note!.id}"] .issue`) as HTMLButtonElement).click();
+    await frame();
+    expect($(errors, '.detail').textContent).toContain('SP-6023');
+  });
+});

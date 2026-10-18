@@ -8,7 +8,7 @@
 //
 // Where a cell's rule comes from, weakest first: the element's `columns`, the
 // rules file's `"*"` sheet, the rules file's named sheet (SR-GRID 22, 22d).
-import { cellRef, colName, parseRange, parseRef, type RangePos } from '@sheetpane/export';
+import { cellRef, colName, parseRange, parseRef, spError, spMessage, type RangePos, type SpCode } from '@sheetpane/export';
 import type { Cell } from '@sheetpane/import';
 import { serialToParts } from '@sheetpane/import';
 import type { ErrorDraft, Plugin } from '../plugins/types.js';
@@ -126,6 +126,8 @@ interface CellRule { ref: string; box: RangePos; rule: ColumnRule; re: RegExp | 
 interface CellPos { sheet: string; row: number; col: number; text?: string | undefined }
 /** One sheet's rules once the element's `columns` and the rules file are merged. */
 interface SheetRules { headerRow: number; columns: [string, ColumnRule, RegExp | undefined][]; cells: CellRule[] }
+/** One problem found in a rules file: a `note`, never a throw; `code` is its SP code (W-40). */
+export interface DocProblem { code: SpCode; sheet?: string; found: string; message: string }
 interface DocSheet { headerRow?: number; columns: Record<string, ColumnRule>; cells: Record<string, ColumnRule> }
 
 export class HostRules {
@@ -133,7 +135,7 @@ export class HostRules {
   /** The element's patterns, compiled (an invalid one throws at `configure`). */
   private patterns = new Map<ColumnRule, RegExp>();
   /** The rules file, checked: per sheet (`*` and named), and the problems found in it. */
-  private doc: { sheets: Map<string, DocSheet>; problems: { sheet?: string; found: string; message: string }[] } | undefined;
+  private doc: { sheets: Map<string, DocSheet>; problems: DocProblem[] } | undefined;
   private sheetRules = new Map<string, SheetRules>();
   /** Per sheet, per column: the rule its title resolves to (resolved once per load, not per cell). */
   private colRules = new Map<string, Map<number, { header: string; rule: ColumnRule; re: RegExp | undefined }>>();
@@ -167,7 +169,7 @@ export class HostRules {
     const patterns = new Map<ColumnRule, RegExp>();
     for (const [title, r] of Object.entries(c.columns ?? {})) {
       if (r.pattern === undefined) continue;
-      try { patterns.set(r, new RegExp(r.pattern)); } catch (e) { throw new TypeError(`sheetpane: the "${title}" column rule's pattern is not a regular expression: ${(e as Error).message}`); }
+      try { patterns.set(r, new RegExp(r.pattern)); } catch (e) { throw spError('SP-6001', `sheetpane: the "${title}" column rule's pattern is not a regular expression: ${(e as Error).message}`, TypeError); }
     }
     this.patterns = patterns;
     this.cfg = { columns: { ...(c.columns ?? {}) }, validate: c.validate, onInvalid: c.onInvalid ?? 'flag', headerRow: Math.max(1, Math.floor(c.headerRow ?? 1)), document: c.document };
@@ -195,7 +197,7 @@ export class HostRules {
     const byTitle = new Map<string, [string, ColumnRule, RegExp | undefined]>();
     const put = (title: string, rule: ColumnRule, re: RegExp | undefined, from: string) => {
       const k = title.trim().toLowerCase(), had = byTitle.get(k);
-      if (had && from !== 'element' && this.cfg.columns[had[0]] === had[1]) this.notes.push(this.note(name, `A${this.cfg.headerRow}`, title, `The rules file's rule for “${title}” replaces the one set on the element`, `override:${k}`));
+      if (had && from !== 'element' && this.cfg.columns[had[0]] === had[1]) this.notes.push(this.note('SP-6025', name, `A${this.cfg.headerRow}`, title, `The rules file's rule for “${title}” replaces the one set on the element`, `override:${k}`));
       byTitle.set(k, [title, rule, re]);
     };
     for (const [t, r] of Object.entries(this.cfg.columns)) put(t, r, this.patterns.get(r), 'element');
@@ -214,8 +216,8 @@ export class HostRules {
     const sheets = this.host.bookSheets() ?? [];
     const first = sheets[0];
     // the rules file's own problems, and the sheets it names that the workbook lacks
-    for (const p of this.doc?.problems ?? []) this.notes.push(this.note(p.sheet && sheets.some((s) => s.name === p.sheet) ? p.sheet : first?.name ?? '', 'A1', p.found, p.message, `doc:${p.message}`));
-    for (const name of this.doc?.sheets.keys() ?? []) if (name !== '*' && first && !sheets.some((s) => s.name === name)) this.notes.push(this.note(first.name, 'A1', name, `No sheet is named “${name}” — its rules are not checked`, `sheet:${name}`));
+    for (const p of this.doc?.problems ?? []) this.notes.push(this.note(p.code, p.sheet && sheets.some((s) => s.name === p.sheet) ? p.sheet : first?.name ?? '', 'A1', p.found, p.message, `doc:${p.message}`));
+    for (const name of this.doc?.sheets.keys() ?? []) if (name !== '*' && first && !sheets.some((s) => s.name === name)) this.notes.push(this.note('SP-6022', first.name, 'A1', name, `No sheet is named “${name}” — its rules are not checked`, `sheet:${name}`));
     const found = new Map<string, Set<string>>(); // title → sheets that have it
     for (const s of sheets) {
       const sr = this.compileSheet(s.name);
@@ -230,7 +232,7 @@ export class HostRules {
         if (!t) continue;
         const k = t.toLowerCase();
         if (byTitle.has(k)) {
-          if (this.ruleFor(s.name, t)) this.notes.push(this.note(s.name, cellRef(hr, c), t, `Two columns are titled “${t}” — the rules check column ${colName(byTitle.get(k)!)}, the first`));
+          if (this.ruleFor(s.name, t)) this.notes.push(this.note('SP-6024', s.name, cellRef(hr, c), t, `Two columns are titled “${t}” — the rules check column ${colName(byTitle.get(k)!)}, the first`));
           continue;
         }
         byTitle.set(k, c);
@@ -245,16 +247,17 @@ export class HostRules {
     if (!first) return;
     // a title nobody has: the element's and "*"'s across the workbook; a named sheet's on that sheet
     const general = new Set([...Object.keys(this.cfg.columns), ...Object.keys(this.doc?.sheets.get('*')?.columns ?? {})]);
-    for (const title of general) if (!found.has(title.trim().toLowerCase())) this.notes.push(this.note(first.name, cellRef(this.cfg.headerRow - 1, 0), title, `No column is titled “${title}” — its rule is not checked`, `title:${title}`));
+    for (const title of general) if (!found.has(title.trim().toLowerCase())) this.notes.push(this.note('SP-6023', first.name, cellRef(this.cfg.headerRow - 1, 0), title, `No column is titled “${title}” — its rule is not checked`, `title:${title}`));
     for (const [name, d] of this.doc?.sheets ?? []) {
       if (name === '*' || !this.headers.has(name)) continue;
       const hr = this.sheetRules.get(name)!.headerRow;
-      for (const title of Object.keys(d.columns)) if (!found.get(title.trim().toLowerCase())?.has(name)) this.notes.push(this.note(name, cellRef(hr - 1, 0), title, `No column is titled “${title}” in row ${hr} of “${name}” — its rule is not checked`, `title:${title}`));
+      for (const title of Object.keys(d.columns)) if (!found.get(title.trim().toLowerCase())?.has(name)) this.notes.push(this.note('SP-6023', name, cellRef(hr - 1, 0), title, `No column is titled “${title}” in row ${hr} of “${name}” — its rule is not checked`, `title:${title}`));
     }
   }
 
-  private note(sheet: string, range: string, found: string, message: string, key?: string): ErrorDraft {
-    const d: ErrorDraft = { sheet, range, type: RULE_TYPE, severity: 'note', found, expected: '', message, author: 'host' };
+  /** A `note` error about the rules themselves; it carries its SP code (W-40). */
+  private note(code: SpCode, sheet: string, range: string, found: string, message: string, key?: string): ErrorDraft {
+    const d: ErrorDraft = { sheet, range, type: RULE_TYPE, severity: 'note', found, expected: '', message, author: 'host', code };
     if (key) d.key = key; // several notes may share a cell
     return d;
   }
@@ -412,11 +415,11 @@ export class HostRules {
       return true;
     };
     let r: ReturnType<ValidateFn>;
-    try { r = f(this.context(phase, sheet, row, col, value), ac.signal); } catch (e) { console.error('sheetpane: the column-rules validate function threw', e); return undefined; }
+    try { r = f(this.context(phase, sheet, row, col, value), ac.signal); } catch (e) { console.error(spMessage('SP-6002', 'sheetpane: the column-rules validate function threw'), e); return undefined; }
     if (r && typeof (r as Promise<unknown>).then === 'function') {
       return (r as Promise<RuleResult | null | undefined>).then(
         (x) => { if (land(x) && phase !== 'load') this.host.revalidate([sheet]); },
-        (e: unknown) => { if (!ac.signal.aborted) console.error('sheetpane: the column-rules validate function failed', e); },
+        (e: unknown) => { if (!ac.signal.aborted) console.error(spMessage('SP-6002', 'sheetpane: the column-rules validate function failed'), e); },
       );
     }
     land(r as RuleResult | null | undefined);
@@ -588,31 +591,31 @@ function filePattern(r: ColumnRule): RegExp | undefined {
  * is named (an unknown key, version or word, a bad ref or pattern) and the rest
  * still applies; nothing throws.
  */
-export function checkDocument(doc: unknown): { sheets: Map<string, DocSheet>; problems: { sheet?: string; found: string; message: string }[] } {
-  const problems: { sheet?: string; found: string; message: string }[] = [];
+export function checkDocument(doc: unknown): { sheets: Map<string, DocSheet>; problems: DocProblem[] } {
+  const problems: DocProblem[] = [];
   const sheets = new Map<string, DocSheet>();
   const obj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
-  if (!obj(doc)) return { sheets, problems: [{ found: typeof doc, message: 'The rules file is not a JSON object — no rule from it is checked' }] };
-  if ('__error' in doc) return { sheets, problems: [{ found: String(doc.__error), message: `The rules file could not be read — ${String(doc.__error)}` }] };
-  if (doc.version !== 1) return { sheets, problems: [{ found: String(doc.version), message: `Rules file version ${JSON.stringify(doc.version)} is not one this grid reads (1) — no rule from it is checked` }] };
-  for (const k of Object.keys(doc)) if (!['$schema', 'version', 'sheets'].includes(k)) problems.push({ found: k, message: `Unknown key “${k}” in the rules file` });
-  if (!obj(doc.sheets)) { problems.push({ found: 'sheets', message: 'The rules file has no “sheets” object' }); return { sheets, problems }; }
+  if (!obj(doc)) return { sheets, problems: [{ code: 'SP-6010', found: typeof doc, message: 'The rules file is not a JSON object — no rule from it is checked' }] };
+  if ('__error' in doc) return { sheets, problems: [{ code: 'SP-6011', found: String(doc.__error), message: `The rules file could not be read — ${String(doc.__error)}` }] };
+  if (doc.version !== 1) return { sheets, problems: [{ code: 'SP-6012', found: String(doc.version), message: `Rules file version ${JSON.stringify(doc.version)} is not one this grid reads (1) — no rule from it is checked` }] };
+  for (const k of Object.keys(doc)) if (!['$schema', 'version', 'sheets'].includes(k)) problems.push({ code: 'SP-6013', found: k, message: `Unknown key “${k}” in the rules file` });
+  if (!obj(doc.sheets)) { problems.push({ code: 'SP-6014', found: 'sheets', message: 'The rules file has no “sheets” object' }); return { sheets, problems }; }
   const rule = (r: unknown, where: string, sheet: string): ColumnRule | undefined => {
-    if (!obj(r)) { problems.push({ sheet, found: where, message: `The rule for ${where} is not an object` }); return undefined; }
-    for (const k of Object.keys(r)) if (!RULE_WORDS.has(k)) problems.push({ sheet, found: k, message: `Unknown rule word “${k}” for ${where}` });
-    if (r.type !== undefined && !TYPES.has(String(r.type))) problems.push({ sheet, found: String(r.type), message: `Unknown type “${String(r.type)}” for ${where} (text, number, integer, date, boolean)` });
-    if (r.pattern !== undefined) { try { new RegExp(String(r.pattern)); } catch (e) { problems.push({ sheet, found: String(r.pattern), message: `The pattern for ${where} is not a regular expression (${(e as Error).message}) — it is not tested` }); } }
-    for (const k of ['oneOf', 'noneOf'] as const) if (r[k] !== undefined && !Array.isArray(r[k])) problems.push({ sheet, found: k, message: `“${k}” for ${where} is not a list` });
+    if (!obj(r)) { problems.push({ code: 'SP-6015', sheet, found: where, message: `The rule for ${where} is not an object` }); return undefined; }
+    for (const k of Object.keys(r)) if (!RULE_WORDS.has(k)) problems.push({ code: 'SP-6016', sheet, found: k, message: `Unknown rule word “${k}” for ${where}` });
+    if (r.type !== undefined && !TYPES.has(String(r.type))) problems.push({ code: 'SP-6017', sheet, found: String(r.type), message: `Unknown type “${String(r.type)}” for ${where} (text, number, integer, date, boolean)` });
+    if (r.pattern !== undefined) { try { new RegExp(String(r.pattern)); } catch (e) { problems.push({ code: 'SP-6018', sheet, found: String(r.pattern), message: `The pattern for ${where} is not a regular expression (${(e as Error).message}) — it is not tested` }); } }
+    for (const k of ['oneOf', 'noneOf'] as const) if (r[k] !== undefined && !Array.isArray(r[k])) problems.push({ code: 'SP-6019', sheet, found: k, message: `“${k}” for ${where} is not a list` });
     return r as ColumnRule;
   };
   for (const [name, s] of Object.entries(doc.sheets)) {
-    if (!obj(s)) { problems.push({ sheet: name, found: name, message: `The rules for sheet “${name}” are not an object` }); continue; }
-    for (const k of Object.keys(s)) if (!['headerRow', 'columns', 'cells'].includes(k)) problems.push({ sheet: name, found: k, message: `Unknown key “${k}” in sheet “${name}”` });
+    if (!obj(s)) { problems.push({ code: 'SP-6015', sheet: name, found: name, message: `The rules for sheet “${name}” are not an object` }); continue; }
+    for (const k of Object.keys(s)) if (!['headerRow', 'columns', 'cells'].includes(k)) problems.push({ code: 'SP-6013', sheet: name, found: k, message: `Unknown key “${k}” in sheet “${name}”` });
     const d: DocSheet = { columns: {}, cells: {} };
-    if (s.headerRow !== undefined) { if (typeof s.headerRow === 'number' && s.headerRow >= 1) d.headerRow = s.headerRow; else problems.push({ sheet: name, found: String(s.headerRow), message: `“headerRow” in sheet “${name}” is not a row number` }); }
+    if (s.headerRow !== undefined) { if (typeof s.headerRow === 'number' && s.headerRow >= 1) d.headerRow = s.headerRow; else problems.push({ code: 'SP-6020', sheet: name, found: String(s.headerRow), message: `“headerRow” in sheet “${name}” is not a row number` }); }
     if (obj(s.columns)) for (const [t, r] of Object.entries(s.columns)) { const x = rule(r, `column “${t}”`, name); if (x) d.columns[t] = x; }
     if (obj(s.cells)) for (const [ref, r] of Object.entries(s.cells)) {
-      if (!parseRange(ref)) { problems.push({ sheet: name, found: ref, message: `“${ref}” in sheet “${name}” is not a cell or a range` }); continue; }
+      if (!parseRange(ref)) { problems.push({ code: 'SP-6021', sheet: name, found: ref, message: `“${ref}” in sheet “${name}” is not a cell or a range` }); continue; }
       const x = rule(r, `cell ${ref}`, name); if (x) d.cells[ref] = x;
     }
     sheets.set(name, d);

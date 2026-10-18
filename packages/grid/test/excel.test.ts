@@ -59,6 +59,17 @@ describe('refusals (W-01 DoD 3; SR-LAW-3)', () => {
     expect($(el, '.state').textContent).toContain('Can’t open this file');
     expect($(el, '.state').textContent).toContain('.xls');
   });
+  it('the refusal shows its SP code, and sheetpane-load names it (W-40)', async () => {
+    const el = document.createElement('sheetpane-excel');
+    document.body.append(el);
+    const loads: Record<string, unknown>[] = [];
+    el.addEventListener('sheetpane-load', (e) => loads.push((e as CustomEvent).detail));
+    await el.load(new Uint8Array([0x50, 0x4b, 3, 4]), 'holdings.xls');
+    await frame();
+    expect($(el, '.state .code').textContent).toBe('SP-1001');
+    expect(loads.at(-1)).toMatchObject({ status: 'error', code: 'unsupported-format', spCode: 'SP-1001' });
+    el.remove();
+  });
   it('shows the password state for a password-protected .xlsx', async () => {
     const el = document.createElement('sheetpane-excel');
     document.body.append(el);

@@ -116,6 +116,8 @@ carry over unchanged; the plugins verdict added what plugins read.
 9. **One implementation:** ZIP, inflate, CRC-32, A1 helpers and
    `shiftFormula` come from `@sheetpane/export` — the only runtime dependency.
 
+**Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
+
 ### Consequences
 
 - **Enforced today:** `just test-pkg import` — Chromium per push, WebKit and

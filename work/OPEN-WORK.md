@@ -43,7 +43,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-39** `agent` · New package `@sheetpane/mcp`: a stdio MCP server with deterministic tools (describe the API, inspect a workbook, draft and check rules, explain an error code); registered for Claude, Kiro and Codex by the skills installer. — waiting on W-37. Filed by Arpit (Cowork). [detail](open/W-39-mcp-server.md)
 
-- 🟢 **W-40** `agent` · Give every thrown error, warning, `note` and refused load a stable code (`SP-1001`…) with a docs entry and link; a test fails on an uncoded message or an undocumented code. Filed by Arpit (Cowork). [detail](open/W-40-error-codes.md)
 
 - 🟢 **W-43** `agent` · `npm create sheetpane` scaffolds a working host (vanilla, React, Next.js, Vue, Angular, Svelte): grid + errors in a tab, sample and rules files, one test, skills installed; CI builds every template. Filed by Arpit (Cowork). [detail](open/W-43-create-sheetpane.md)
 

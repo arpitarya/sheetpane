@@ -5,7 +5,7 @@
 // workbook's person list — plus their rels and content types. A part the file
 // already has is extended, never replaced. String-level XML only: this runs in
 // browsers and in Node.
-import type { Plugin, SheetpaneError } from '@sheetpane/grid';
+import { spError, spMessage, type Plugin, type SheetpaneError } from '@sheetpane/grid';
 import { errorGuids, personGuid } from './guid.js';
 import {
   XML_DECL, anchorOf, attr, cleanXml, escAttr, escText, freeName, parseCellRef, parseRels, relativeTarget, resolveTarget, unesc, withAttr,
@@ -106,7 +106,7 @@ function parseThreads(xml: string): Entry[] {
 /** Rebuilds an element list inside a container part: `<root …>` + items + `</root>`; a self-closed root opens. */
 function fillContainer(xml: string, root: string, items: string): string {
   const open = new RegExp(`<(\\w+:)?${root}\\b[^>]*?(/?)>`).exec(xml);
-  if (!open) throw new Error(`sheetpane comments: no <${root}> element`);
+  if (!open) throw spError('SP-5801', `sheetpane comments: no <${root}> element`);
   const P = open[1] ?? '';
   const start = open.index, headEnd = start + open[0].length;
   const tag = open[2] === '/' ? open[0].replace(/\s*\/>$/, '>') : open[0];
@@ -150,7 +150,7 @@ function tailChildren(xml: string): { name: string; start: number }[] {
 /** Adds `<legacyDrawing r:id>` in schema position (and `xmlns:r` on the root when missing). */
 export function addLegacyDrawing(xml: string, rId: string): string {
   const root = /<(\w+:)?worksheet\b[^>]*>/.exec(xml);
-  if (!root) throw new Error('sheetpane comments: not a worksheet');
+  if (!root) throw spError('SP-5802', 'sheetpane comments: not a worksheet');
   const P = root[1] ?? '';
   let out = xml;
   let rp = 'r';
@@ -343,9 +343,9 @@ export async function writeReview(patch: PatchContext, errors: readonly Sheetpan
       // 3 · the VML the sheet already has, extended
       const existingVml = vmlPath && patch.has(vmlPath) ? await patch.readText(vmlPath) : undefined;
       vmlXml = existingVml === undefined ? undefined : extendVml(existingVml, [...legacy.keys()].map((r) => parseCellRef(r)!));
-      if (vmlXml === undefined && !/<(?:\w+:)?worksheet\b/.test(sheetXml)) throw new Error('not a worksheet');
+      if (vmlXml === undefined && !/<(?:\w+:)?worksheet\b/.test(sheetXml)) throw spError('SP-5802', `sheetpane comments: sheet "${sheet}" is not a worksheet`);
     } catch (err) {
-      console.error(`sheetpane comments: sheet "${sheet}" not written`, err);
+      console.error(spMessage('SP-5803', `sheetpane comments: sheet "${sheet}" not written`), err);
       const ids = new Set(items.map(({ e }) => e.id));
       report.written = report.written.filter((id) => !ids.has(id));
       for (const id of ids) if (!report.skipped.some((x) => x.id === id)) report.skipped.push({ id, reason: 'unreadable-part' });

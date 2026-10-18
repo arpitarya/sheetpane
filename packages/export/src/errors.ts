@@ -1,17 +1,33 @@
 // Every throw names what it is about: the sheet, the cell, the file part.
+// `code` stays the typed reason hosts already read; `spCode` is its stable
+// SP code (W-40) and the message starts with it and ends with its docs link.
+import { spMessage, type SpCode, type SpCoded } from './codes.js';
 
 export type ExportErrorCode =
   | 'sheet-name' | 'sheet-count' | 'too-large' | 'bad-ref' | 'bad-value' | 'no-sheet' | 'bad-merge'
   | 'not-zip' | 'zip64' | 'encrypted' | 'unsupported-compression' | 'corrupt' | 'over-limit' | 'not-workbook';
 
-export class ExportError extends Error {
+/** One SP code per typed reason (docs/ERRORS.md). */
+export const EXPORT_SP_CODES: Readonly<Record<ExportErrorCode, SpCode>> = {
+  'sheet-name': 'SP-2001', 'sheet-count': 'SP-2002', 'too-large': 'SP-2003', 'bad-ref': 'SP-2004', 'bad-value': 'SP-2005',
+  'no-sheet': 'SP-2006', 'bad-merge': 'SP-2007', 'not-zip': 'SP-2008', zip64: 'SP-2009', encrypted: 'SP-2010',
+  'unsupported-compression': 'SP-2011', corrupt: 'SP-2012', 'over-limit': 'SP-2013', 'not-workbook': 'SP-2014',
+};
+
+export class ExportError extends Error implements SpCoded {
   readonly code: ExportErrorCode;
+  readonly spCode: SpCode;
+  /** The message without its code, title or link. */
+  readonly spDetail: string;
   readonly sheet: string | undefined;
   readonly ref: string | undefined;
   constructor(code: ExportErrorCode, message: string, where: { sheet?: string; ref?: string } = {}) {
-    super(message);
+    const sp = EXPORT_SP_CODES[code];
+    super(spMessage(sp, message));
     this.name = 'ExportError';
     this.code = code;
+    this.spCode = sp;
+    this.spDetail = message;
     this.sheet = where.sheet;
     this.ref = where.ref;
   }

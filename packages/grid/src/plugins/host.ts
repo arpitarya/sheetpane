@@ -1,5 +1,6 @@
 // Registration (plugins verdict decisions 2–3, 5): a package registers its id on
 // import; only plugins a pane lists are enabled; the set is fixed per pane.
+import { spError } from '@sheetpane/export';
 import { SINGLE_PROVIDER, SLOTS, type ControlDescriptor, type Plugin, type StyleSubset } from './types.js';
 
 export type PluginFactory = () => Plugin | Plugin[];
@@ -18,7 +19,7 @@ export function registeredPluginIds(): string[] {
 export function pluginsFromIds(ids: readonly string[]): Plugin[] {
   return ids.flatMap((id) => {
     const f = registry.get(id);
-    if (!f) throw new Error(`sheetpane: no plugin "${id}" is registered — import its package before the element connects`);
+    if (!f) throw spError('SP-3002', `sheetpane: no plugin "${id}" is registered — import its package before the element connects`);
     const p = f();
     return Array.isArray(p) ? p : [p];
   });
@@ -28,19 +29,19 @@ export function pluginsFromIds(ids: readonly string[]): Plugin[] {
 export function checkPlugins(list: readonly Plugin[]): Plugin[] {
   const ids = new Set<string>();
   for (const p of list) {
-    if (!p || typeof p.id !== 'string' || !Array.isArray(p.provides)) throw new Error('sheetpane: a plugin is an object with an id and a provides list');
-    if (ids.has(p.id)) throw new Error(`sheetpane: plugin "${p.id}" is listed twice`);
+    if (!p || typeof p.id !== 'string' || !Array.isArray(p.provides)) throw spError('SP-3003', 'sheetpane: a plugin is an object with an id and a provides list');
+    if (ids.has(p.id)) throw spError('SP-3004', `sheetpane: plugin "${p.id}" is listed twice`);
     ids.add(p.id);
-    for (const h of p.provides) if (typeof (p as unknown as Record<string, unknown>)[h] !== 'function') throw new Error(`sheetpane: plugin "${p.id}" provides "${h}" but has no ${h}() function`);
+    for (const h of p.provides) if (typeof (p as unknown as Record<string, unknown>)[h] !== 'function') throw spError('SP-3005', `sheetpane: plugin "${p.id}" provides "${h}" but has no ${h}() function`);
   }
   for (const hook of SINGLE_PROVIDER) {
     const providers = list.filter((p) => p.provides.includes(hook));
-    if (providers.length > 1) throw new Error(`sheetpane: "${hook}" has one provider per pane — ${providers.map((p) => p.id).join(' and ')} both provide it`);
+    if (providers.length > 1) throw spError('SP-3006', `sheetpane: "${hook}" has one provider per pane — ${providers.map((p) => p.id).join(' and ')} both provide it`);
   }
   const controls = new Set<string>();
   for (const c of list.flatMap((p) => p.controls ?? [])) {
-    if (controls.has(c.id)) throw new Error(`sheetpane: two controls share the id "${c.id}"`);
-    if (!SLOTS.includes(c.slot)) throw new Error(`sheetpane: control "${c.id}" names an unknown slot "${c.slot}"`);
+    if (controls.has(c.id)) throw spError('SP-3007', `sheetpane: two controls share the id "${c.id}"`);
+    if (!SLOTS.includes(c.slot)) throw spError('SP-3008', `sheetpane: control "${c.id}" names an unknown slot "${c.slot}"`);
     controls.add(c.id);
   }
   // decorate order: a plugin comes after every plugin it names in `after`.
@@ -48,7 +49,7 @@ export function checkPlugins(list: readonly Plugin[]): Plugin[] {
   const ordered: Plugin[] = [];
   const visit = (p: Plugin, path: string[]) => {
     if (ordered.includes(p)) return;
-    if (path.includes(p.id)) throw new Error(`sheetpane: decorate order loops: ${[...path, p.id].join(' → ')}`);
+    if (path.includes(p.id)) throw spError('SP-3009', `sheetpane: decorate order loops: ${[...path, p.id].join(' → ')}`);
     for (const a of p.after ?? []) { const dep = deco.find((d) => d.id === a); if (dep) visit(dep, [...path, p.id]); }
     ordered.push(p);
   };
@@ -62,7 +63,7 @@ export function mergeDecorations(results: { id: string; style: StyleSubset | und
   for (const { id, style } of results) {
     if (!style) continue;
     if (Object.keys(style).some((k) => k.toLowerCase() === 'font-family' || k === 'fontFamily')) {
-      throw new Error(`sheetpane: plugin "${id}" returned font-family from decorate — the host's font is the font (SR-LAW-5)`);
+      throw spError('SP-3010', `sheetpane: plugin "${id}" returned font-family from decorate — the host's font is the font (SR-LAW-5)`);
     }
     Object.assign(out, style);
   }

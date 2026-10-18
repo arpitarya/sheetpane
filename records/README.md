@@ -138,6 +138,7 @@ Start from `TEMPLATE.md`.
 | [0113](0113_CHARTS.md) | **SR-CHARTS** | `@sheetpane/charts` — charts as frames and SVG | accepted | yes |
 | [0114](0114_CONDFMT.md) | **SR-CONDFMT** | `@sheetpane/condfmt` — conditional formatting, drawn | accepted | yes |
 | [0115](0115_FIXTURES.md) | **SR-FIXTURES** | `@sheetpane/fixtures` — known workbooks and their manifest | accepted | yes |
+| [0117](0117_CODES.md) | **SR-CODES** | stable `SP-xxxx` error codes, one registry, `docs/ERRORS.md` | accepted | yes |
 
 ---
 
@@ -181,6 +182,10 @@ directions.
 | `README.md` | SR-BUILD | the root README: packages, demos, commands |
 | `packages/export/src/download/` | SR-DOWNLOAD | `download()` — a different decision from the writers |
 | `packages/export/` | SR-EXPORT | `@sheetpane/export` — the writers and the shared ZIP / XML code |
+| `packages/export/src/codes.ts` | SR-CODES | the code registry (carved out of SR-EXPORT's package) |
+| `docs/ERRORS.md` | SR-CODES | one entry per `SP-xxxx` code |
+| `test/error-codes.test.ts` | SR-CODES | the code check (carved out of SR-BUILD's `test/`) |
+| `test/error-codes.lock.json` | SR-CODES | every code ever issued, append-only |
 | `packages/import/` | SR-IMPORT | `@sheetpane/import` — the reader |
 | `packages/grid/` | SR-GRID | `@sheetpane/grid` — the store, the sheet, the plugin host, undo, freeze |
 | `packages/grid/src/errors/` | SR-ERRORS | `<sheetpane-errors>` — a different element from the sheet |

@@ -2,6 +2,7 @@
 // type, the title, the series with their `c:f` references and cached points, explicit fills.
 // Namespace-agnostic (local names only), so strict and transitional parts read the same.
 // Uses DOMParser, so it runs only in a browser — and only when a chart item renders.
+import { spError } from '@sheetpane/grid';
 import type { ColorSpec } from './colors.js';
 import { parseFormulaRefs, uniqueRanges, type SourceRange } from './refs.js';
 
@@ -230,10 +231,10 @@ const PLOT_TYPES = new Set(Object.keys(LABELS));
 /** Parses a chart part's XML. Throws when the XML is not well-formed or holds no `chart`. */
 export function parseChart(xml: string): ChartModel {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length) throw new Error('chart part is not well-formed XML');
+  if (doc.getElementsByTagName('parsererror').length) throw spError('SP-5701', 'sheetpane charts: the chart part is not well-formed XML');
   const root = doc.documentElement;
   const chart = kid(root, 'chart');
-  if (!chart) throw new Error('chart part has no c:chart');
+  if (!chart) throw spError('SP-5702', 'sheetpane charts: the chart part has no c:chart');
   const plot = kid(chart, 'plotArea');
   const groups = plot ? Array.from(plot.children).filter((c) => PLOT_TYPES.has(c.localName)).map(group) : [];
   const all = groups.flatMap((g) => g.series);

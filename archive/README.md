@@ -27,6 +27,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 
 | file | closed | where the live answer lives now |
 |---|---|---|
+| `W-40-error-codes.md` | 2026-10-18 | [SR-CODES](../records/0117_CODES.md) |
 | `W-42-fixtures-package.md` | 2026-10-18 | [SR-FIXTURES](../records/0115_FIXTURES.md) |
 | `W-33-rules-file.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 22d, 22e |
 | `W-34-download-split-button.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 10, 17 |

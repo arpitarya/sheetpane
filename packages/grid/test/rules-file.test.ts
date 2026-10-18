@@ -83,6 +83,8 @@ describe('the document (DoD 1, 2, 5)', () => {
       '“not a ref” in sheet “Accounts” is not a cell or a range',
     ].sort());
     expect(new Set(host(s).filter((e) => e.severity === 'note').map((e) => e.id)).size).toBe(8);
+    // W-40: every note names its stable code
+    expect(host(s).filter((e) => e.severity === 'note').map((e) => e.code).sort()).toEqual(['SP-6013', 'SP-6013', 'SP-6016', 'SP-6017', 'SP-6018', 'SP-6021', 'SP-6022', 'SP-6023']);
   });
 
   it('an unknown version is one note and no rule applies', async () => {

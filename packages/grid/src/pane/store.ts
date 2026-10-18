@@ -2,7 +2,7 @@
 // SR-LAW-7, SR-LAW-9). Framework-free: subscribe / getSnapshot, and mutators.
 // Every mutation goes through commit(): undo (W-23), derive and validate
 // (W-14), "matches suggestion" (B-022) and one notification.
-import { cellRef, parseRange, parseRef, patchXlsx, rangesIntersect, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook } from '@sheetpane/export';
+import { cellRef, detailOf, parseRange, parseRef, patchXlsx, rangesIntersect, spError, spMessage, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook, type SpCode } from '@sheetpane/export';
 import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
@@ -124,8 +124,8 @@ export class WorkbookStore {
       book = await read(bytes, { name });
     } catch (e) {
       if (seq !== this.loadSeq) return;
-      const err = e instanceof ImportError ? e : new ImportError('corrupt', e instanceof Error ? e.message : String(e));
-      const load: LoadState = { status: 'error', code: err.code, message: err.message, name };
+      const err = e instanceof ImportError ? e : new ImportError('corrupt', detailOf(e));
+      const load: LoadState = { status: 'error', code: err.code, spCode: err.spCode, message: err.spDetail, name };
       if (err.detail) load.detail = err.detail;
       this.set({ load, book: undefined, source: undefined }, [{ type: 'load', origin }]);
       return;
@@ -141,9 +141,9 @@ export class WorkbookStore {
   }
 
   /** A source that could not even be fetched (a bad URL): the pane shows the refusal state. */
-  failLoad(name: string, message: string, origin?: Origin): void {
+  failLoad(name: string, message: string, origin?: Origin, spCode: SpCode = 'SP-3015'): void {
     this.loadSeq++;
-    this.set({ load: { status: 'error', code: 'unreadable', message, name }, book: undefined, source: undefined }, [{ type: 'load', origin }]);
+    this.set({ load: { status: 'error', code: 'unreadable', spCode, message, name }, book: undefined, source: undefined }, [{ type: 'load', origin }]);
   }
 
   // ── reading ──────────────────────────────────────────────────────────────
@@ -531,7 +531,7 @@ export class WorkbookStore {
     if (!p?.derive || !this.snap.book) return;
     const load = this.loadSeq;
     let out: DerivedChange[];
-    try { out = await p.derive(input, this.pluginContext()); } catch (e) { console.error(`sheetpane: plugin "${p.id}" derive failed`, e); return; }
+    try { out = await p.derive(input, this.pluginContext()); } catch (e) { console.error(spMessage('SP-3012', `sheetpane: plugin "${p.id}" derive failed`), e); return; }
     if (load !== this.loadSeq) return; // a newer workbook replaced this one
     const derived = new Map(input.kind === 'load' ? [] : this.snap.derived);
     for (const d of out) {
@@ -568,7 +568,7 @@ export class WorkbookStore {
     for (const p of vs) {
       for (const sheet of sheets) {
         let drafts: ErrorDraft[];
-        try { drafts = p.validate!(sheet, this.pluginContext()); } catch (e) { console.error(`sheetpane: plugin "${p.id}" validate failed`, e); continue; }
+        try { drafts = p.validate!(sheet, this.pluginContext()); } catch (e) { console.error(spMessage('SP-3013', `sheetpane: plugin "${p.id}" validate failed`), e); continue; }
         const seen = new Set<string>();
         for (const d of drafts) {
           const k = `${p.id}|${d.sheet}|${d.range}|${d.type}${d.key ? `|${d.key}` : ''}`;
@@ -583,13 +583,15 @@ export class WorkbookStore {
           }
           if (i < 0) {
             const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString() }; // `key` stays out of the error
+            if (d.code) e.code = d.code;
             this.pluginErrors.set(k, e.id);
             at.set(e.id, errors.length);
             errors.push(e);
             changed = true;
-          } else if (errors[i]!.author !== 'file' && (errors[i]!.status === 'resolved' || errors[i]!.found !== d.found || errors[i]!.message !== d.message || errors[i]!.severity !== d.severity)) {
+          } else if (errors[i]!.author !== 'file' && (errors[i]!.status === 'resolved' || errors[i]!.found !== d.found || errors[i]!.message !== d.message || errors[i]!.severity !== d.severity || errors[i]!.code !== d.code)) {
             // a machine-authored error follows the cell: reopened, and its found / message refreshed
-            errors[i] = { ...errors[i]!, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found, severity: d.severity };
+            const { code: _was, ...rest } = errors[i]!;
+            errors[i] = { ...rest, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found, severity: d.severity, ...(d.code ? { code: d.code } : {}) };
             changed = true;
           }
         }
@@ -677,7 +679,7 @@ export class WorkbookStore {
   /** Every change applied; the upload never modified (SR-LAW-6). */
   async exportFile(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>>; format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[]; converted: boolean }> {
     const src = this.snap.source, book = this.snap.book;
-    if (!src || !book) throw new Error('sheetpane: nothing is loaded to export');
+    if (!src || !book) throw spError('SP-3001', 'sheetpane: nothing is loaded to export');
     const base = src.name.replace(/\.(xlsx|csv)$/i, '');
     if (o.format === 'csv' && src.kind === 'xlsx') {
       // CSV holds one sheet and no formatting: the chosen (else the selected) sheet, as it shows now

@@ -41,10 +41,10 @@ export async function toBytes(data: ArrayBuffer | Uint8Array | Blob): Promise<Ui
 function mapZipError(e: unknown): never {
   if (e instanceof ExportError) {
     switch (e.code) {
-      case 'zip64': case 'over-limit': throw new ImportError('too-large', e.message);
-      case 'encrypted': throw new ImportError('password-or-legacy', e.message);
-      case 'not-zip': throw new ImportError('not-workbook', e.message);
-      default: throw new ImportError('corrupt', e.message);
+      case 'zip64': case 'over-limit': throw new ImportError('too-large', e.spDetail);
+      case 'encrypted': throw new ImportError('password-or-legacy', e.spDetail);
+      case 'not-zip': throw new ImportError('not-workbook', e.spDetail);
+      default: throw new ImportError('corrupt', e.spDetail);
     }
   }
   throw e;

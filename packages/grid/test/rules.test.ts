@@ -69,6 +69,7 @@ describe('the JSON vocabulary (DoD 1, 4)', () => {
   it('a bad pattern throws at once; a pattern is not tested on values over 10,000 characters', async () => {
     const s = createWorkbook();
     expect(() => s.setColumnRules({ columns: { X: { pattern: '(' } } })).toThrow(/"X" column rule's pattern/);
+    expect(() => s.setColumnRules({ columns: { X: { pattern: '(' } } })).toThrow(expect.objectContaining({ code: 'SP-6001', name: 'TypeError' })); // W-40
     const long = 'a'.repeat(10_001);
     const t = await people({ X: { pattern: '^b' } }, {}, `X\n${long}\na`);
     expect(hostErrors(t).filter((e) => e.status === 'open').map((e) => e.range)).toEqual(['A3']);
@@ -233,7 +234,7 @@ describe('in <sheetpane-excel> (DoD 3, 5, 8, 9)', () => {
     expect(el.workbook!.value('people', 'C2')).toBe('36');
     expect(el.workbook!.changeCount).toBe(0);
     expect(changes).toEqual([]);
-    expect(cancels).toEqual([{ sheet: 'people', ref: 'C2', reason: 'blocked', message: 'Age: must be at least 18 (min)' }]);
+    expect(cancels).toEqual([{ sheet: 'people', ref: 'C2', reason: 'blocked', code: 'SP-6003', message: 'Age: must be at least 18 (min)' }]);
     // the element-wide default
     el.columns = { Status: { oneOf: ['Active', 'Inactive'] } };
     el.onInvalid = 'block';

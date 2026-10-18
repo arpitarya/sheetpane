@@ -94,6 +94,7 @@ installed — the plugins verdict's `format` hook.
 
 ### Consequences
 
+- **Codes (W-40, SR-CODES):** SP-5101 (a selection too large to format, a warning), SP-5102 / SP-5103 (no usable style sheet on export).
 - **Enforced today:** `just test-pkg numfmt` — 42 tests (every built-in id
   and 50 custom codes through load → text; 1904; fallback; locales `de-DE`,
   `en-IN`; the dropdown, ranges, ± decimals, Custom…; export and read-back;

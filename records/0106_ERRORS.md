@@ -101,6 +101,10 @@ the store and the contract are the contract verdict's and
 10. **Font (L5):** no font family; every control is `font: inherit`.
     Severity is a glyph and a colour, never colour alone.
 
+11. **Codes (W-40, SR-CODES):** `SheetpaneError` gains an optional `code`
+    (`SP-xxxx`, additive to v1); a machine-authored note from the rules engine
+    always sets it, and the expanded row shows it beside the author and time.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,

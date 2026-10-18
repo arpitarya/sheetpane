@@ -6,7 +6,7 @@
 // state except for the values it computes.
 //
 // Importing this module registers the plugin id `formulas` and touches no WASM.
-import { formulaRefs, registerPlugin, type DeriveInput, type DerivedChange, type Plugin, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
+import { formulaRefs, registerPlugin, spMessage, type DeriveInput, type DerivedChange, type Plugin, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
 import { cellRef, isError, parseRef, type Book, type BookSheet, type Cell } from './cells.js';
 import { patchWorkbook, type FormulaCell } from './export.js';
 import { CIRCULAR, ENGINE_ERRORS, FormulaModel, engineFormula, loadEngine, type WasmSource } from './model.js';
@@ -109,7 +109,7 @@ class Engine {
     const p = this.chain.then(fn);
     this.chain = p.catch(() => undefined);
     return p.catch((e: unknown) => {
-      console.error('sheetpane formulas: recalculation failed; the saved values stay until the next workbook', e);
+      console.error(spMessage('SP-5201', 'sheetpane formulas: recalculation failed; the saved values stay until the next workbook'), e);
       this.reset();
       this.failed = true;
       return [];
@@ -368,7 +368,7 @@ class Engine {
 /** The formulas plugin: `derive` recalculates through IronCalc; `exportPatch` writes `<f>` and cached `<v>`. */
 export function formulas(o: FormulasOptions = {}): FormulasPlugin {
   const e = new Engine(o);
-  if (o.preload) loadEngine(o.wasm).catch((err: unknown) => console.error('sheetpane formulas: the engine did not load', err));
+  if (o.preload) loadEngine(o.wasm).catch((err: unknown) => console.error(spMessage('SP-5202', 'sheetpane formulas: the engine did not load'), err));
   const list = (s: Set<string>): CellAddress[] => {
     const order = (a: CellAddress) => { const p = parseRef(a.ref)!; return [e.book?.sheets.findIndex((x) => x.name === a.sheet) ?? 0, p.row, p.col] as const; };
     return [...s].map((key) => { const i = key.lastIndexOf('!'); return { sheet: key.slice(0, i), ref: key.slice(i + 1) }; })

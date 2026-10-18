@@ -1,6 +1,7 @@
 // One store per `pane` id, shared by every element that names it (contract
 // verdict decision 1): created by the first element that asks, released when
 // the last one disconnects. Elements without a pane get a private store.
+import { spMessage } from '@sheetpane/export';
 import { pluginsFromIds } from '../plugins/host.js';
 import { createWorkbook, type WorkbookStore } from './store.js';
 
@@ -15,7 +16,7 @@ export function acquirePane(id: string, el: Element, plugins: readonly string[])
     e = { store: createWorkbook({ plugins: pluginsFromIds(plugins) }), users: new Set(), plugins: plugins.join(' ') };
     panes.set(id, e);
   } else if (plugins.length && plugins.join(' ') !== e.plugins) {
-    console.warn(`sheetpane: pane "${id}" already runs plugins "${e.plugins}"; "${plugins.join(' ')}" on a later element is ignored (the set is fixed per pane)`);
+    console.warn(spMessage('SP-3011', `sheetpane: pane "${id}" already runs plugins "${e.plugins}"; "${plugins.join(' ')}" on a later element is ignored (the set is fixed per pane)`));
   }
   e.users.add(el);
   return e.store;

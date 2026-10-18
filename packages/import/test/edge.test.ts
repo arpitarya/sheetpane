@@ -5,19 +5,29 @@ import { pkg, XML } from './helpers.js';
 
 const { NS, R } = XML;
 const code = (p: Promise<unknown>) => p.then(() => 'ok', (e: ImportError) => e.code);
+const spCode = (p: Promise<unknown>) => p.then(() => 'ok', (e: ImportError) => e.spCode);
 
 describe('refusals (reading verdict decision 4; SR-LAW-3)', () => {
   it.each(['xls', 'xlsm', 'xlsb', 'ods', 'numbers', 'tsv', 'pdf'])('refuses a .%s by its extension, before reading', async (ext) => {
     expect(await code(read(new Uint8Array([1, 2, 3]), { name: `f.${ext}` }))).toBe('unsupported-format');
+    expect(await spCode(read(new Uint8Array([1, 2, 3]), { name: `f.${ext}` }))).toBe('SP-1001');
   });
   it('refuses an OLE compound file as password-protected or legacy, whatever its name', async () => {
     const cfb = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
     expect(await code(read(cfb, { name: 'locked.xlsx' }))).toBe('password-or-legacy');
     expect(await code(read(cfb))).toBe('password-or-legacy');
     const enc = new Uint8Array([...cfb, ...Array.from('EncryptedPackage', (c) => [c.charCodeAt(0), 0]).flat()]);
-    expect(await read(enc, { name: 'fees.xlsx' }).catch((e: ImportError) => [e.detail, e.message])).toEqual(['password', '"fees.xlsx" is password-protected — remove the password in Excel and open it again']);
+    expect(await read(enc, { name: 'fees.xlsx' }).catch((e: ImportError) => [e.detail, e.spCode, e.spDetail])).toEqual(['password', 'SP-1002', '"fees.xlsx" is password-protected — remove the password in Excel and open it again']);
+    expect(await read(enc, { name: 'fees.xlsx' }).catch((e: ImportError) => e.message)).toMatch(/^SP-1002: Password-protected workbook — "fees\.xlsx" is password-protected .* \(https:\/\/github\.com\/arpitarya\/sheetpane\/blob\/main\/docs\/ERRORS\.md#sp-1002\)$/);
     expect(await read(cfb, { name: 'holdings.xls' }).catch((e: ImportError) => e.code)).toBe('unsupported-format');
-    expect(await read(cfb, { name: 'old.xlsx' }).catch((e: ImportError) => e.detail)).toBe('legacy');
+    expect(await read(cfb, { name: 'old.xlsx' }).catch((e: ImportError) => [e.detail, e.spCode])).toEqual(['legacy', 'SP-1003']);
+  });
+  it('a ZIP refusal mapped from @sheetpane/export carries one code, not two (W-40)', async () => {
+    const z = zipSync({ 'a.txt': strToU8('hi') });
+    new DataView(z.buffer, z.byteOffset).setUint16(z.length - 22 + 10, 0xffff, true); // claims ZIP64
+    const e = await read(z, { name: 'big.xlsx' }).catch((x: ImportError) => x);
+    expect(e).toMatchObject({ code: 'too-large', spCode: 'SP-1006', spDetail: 'ZIP64 archives are refused' });
+    expect((e as ImportError).message.match(/SP-\d{4}/gi)).toEqual(['SP-1006', 'sp-1006']); // the code, and its link's anchor — no SP-2xxx inside
   });
   it('refuses a ZIP that is not a workbook, text named .xlsx, and a ZIP named .csv', async () => {
     const notWb = zipSync({ 'a.txt': strToU8('hi') });

@@ -193,6 +193,7 @@ writing that itself would duplicate it and get the timing wrong.
 
 ### Consequences
 
+- **Codes (W-40, SR-CODES):** `download()` refuses with SP-2101 to SP-2107, each error carrying `spCode`.
 - **Built and tested:** `packages/export/src/download/index.ts`; Node tests
   for decisions 4, 5, 7, 8 (`download.test.ts`) and real downloads caught by
   Playwright for examples 1–5, 7 and 8 (`download.browser.test.ts`) — Chromium

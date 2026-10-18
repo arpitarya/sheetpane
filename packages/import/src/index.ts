@@ -3,6 +3,6 @@
 export { read, type ReadAnyOptions } from './read.js';
 export { fromXlsx, type ReadOptions } from './xlsx.js';
 export { fromCsv, detectDelimiter, parseCsv, sheetNameFrom, type CsvOptions, type Delimiter } from './csv.js';
-export { ImportError, type ImportErrorCode } from './errors.js';
+export { ImportError, importSpCode, type ImportErrorCode } from './errors.js';
 export { formatCode, general, inSubset, subsetCode, serialToParts, BUILTIN as BUILTIN_FORMATS } from './numfmt.js';
 export type * from './types.js';

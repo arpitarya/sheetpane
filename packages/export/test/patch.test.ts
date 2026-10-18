@@ -116,7 +116,7 @@ describe('patchXlsx', () => {
   });
   it('refuses an unknown sheet and a malformed ref, naming them', async () => {
     const orig = await original();
-    await expect(patchXlsx(orig, [{ sheet: 'Nope', ref: 'A1', value: 1 }])).rejects.toMatchObject({ code: 'no-sheet', sheet: 'Nope' });
+    await expect(patchXlsx(orig, [{ sheet: 'Nope', ref: 'A1', value: 1 }])).rejects.toMatchObject({ code: 'no-sheet', spCode: 'SP-2006', sheet: 'Nope' });
     await expect(patchXlsx(orig, [{ sheet: 'Data', ref: 'A0', value: 1 }])).rejects.toThrow(ExportError);
     await expect(patchXlsx(orig, [{ sheet: 'Data', ref: 'A1', value: Infinity }])).rejects.toThrow(/Data!A1/);
   });
