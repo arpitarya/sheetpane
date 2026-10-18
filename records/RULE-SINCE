@@ -1,0 +1,5 @@
+# The guard's baseline. Commits after this sha are subject to "changed an
+# owned component without touching its owning record". Written at setup;
+# moved forward only after a bulk review, and each move is noted here with
+# its reason — the cost is that commits before it are no longer re-auditable.
+<sha of the setup commit — fill in after the first commit>
