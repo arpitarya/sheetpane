@@ -11,6 +11,8 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-12 | `download()` in `packages/export/src/download/` — SR-DOWNLOAD decisions 1–9; revoke delay measured; README §Save the file | landed — open on DoD 7 (iPhone) and DoD 9 (acceptance), both the decider's | `download.test.ts` (Node) + `download.browser.test.ts`: 22 tests green in Chromium 156 and WebKit; Firefox via nightly |
+| 2026-10-18 | W-03 | `@sheetpane/export`: `toXlsx`, `patchXlsx`, `toCsv`, ZIP / CRC-32 / XML / A1 helpers; SR-EXPORT (0103) | landed — open on DoD 8 (the decider opens the sample in Excel) | `206c093`; 50 Node + 2 browser tests; ExcelJS / PapaParse / fflate read-back; store golden equal in Node and Chromium; 93.7 % lines |
 | 2026-10-18 | W-04 | the toolchain: tsc builds with `.d.ts`, grid `style.css` from tokens; Vitest 5 (Node + Chromium browser mode), coverage gating export at 90 %; package checks (B-015, B-023, B-012 half); CI + nightly; `just release` / `pack-check`; commit guard installed; SR-BUILD written | closed | `just check` + `just pack-check` green locally; GitHub Actions ci run 39122100445 green on `0be1bfa` |
 | 2026-10-18 | W-10 | pnpm workspace (`pnpm-workspace.yaml`, `pnpm-lock.yaml`, `packageManager pnpm@10.28.2`), `workspace:*` links, root `justfile`; npm workspaces and `package-lock.json` removed | closed | clean-copy `pnpm install --frozen-lockfile && just --list && just check` exit 0 |
 | 2026-10-18 | — | `docs/ARCHITECTURE.md` and `docs/architecture.svg` — the map of packages, elements, workbook, flows, contract, laws, build order | landed | the files; the SVG rendered and checked in Chromium |

@@ -6,7 +6,7 @@ item: W-12
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -18,8 +18,8 @@ ball: agent
 |---|---|---|---|
 | 1 | Write the record for the downloader | one spec: [SR-DOWNLOAD](../../records/0101_DOWNLOAD.md) | ✅ 2026-10-18 (proposed) |
 | 2 | Settle which package the downloader lives in | one home, no duplicate helper | ✅ `@sheetpane/export` (ruled 2026-10-18) |
-| 3 | Build `download()`: bytes or text in, the browser's save prompt out | three lines of Blob and link code become one call | ⏳ |
-| 4 | Prove it saves in Chromium, Firefox and WebKit | it works in the browsers people actually use | ⏳ |
+| 3 | Build `download()`: bytes or text in, the browser's save prompt out | three lines of Blob and link code become one call | ✅ |
+| 4 | Prove it saves in Chromium, Firefox and WebKit | it works in the browsers people actually use | ✅ Chromium, WebKit · ⏳ Firefox (nightly), iOS (Arpit) |
 
 **Arpit, 2026-10-18:** *"Create a work item for downloader."* Then: *"Create
 an SR document for download … keep the examples in the work document as
@@ -48,7 +48,7 @@ download(await toXlsx(book), 'sales.xlsx');
 
 **2 · CSV text**
 ```ts
-download(toCsv(sheet, { bom: true }), 'sales.csv');
+download(toCsv(sheet, { bom: true }).text, 'sales.csv');
 // saves sales.csv, type text/csv;charset=utf-8; the BOM is kept so Excel shows "José" correctly
 ```
 
@@ -60,7 +60,7 @@ download(new Blob([bytes]), 'report.xlsx');
 **4 · Missing extension gets added**
 ```ts
 download(await toXlsx(book), 'Q3 report');   // → Q3 report.xlsx  (bytes)
-download(toCsv(sheet), 'Q3 report');         // → Q3 report.csv   (text)
+download(toCsv(sheet).text, 'Q3 report');         // → Q3 report.csv   (text)
 ```
 
 **5 · Unsafe file names get cleaned**
@@ -112,21 +112,19 @@ button.addEventListener('click', async () => {
 | DoD | what | state |
 |---|---|---|
 | 1 · record | SR-DOWNLOAD written, registered (`proposed`) | ✅ |
-| 2 · home | **`@sheetpane/export`** (ruled 2026-10-18): `download` is exported from its index; `@sheetpane/grid`'s Export button calls it; SR-DOWNLOAD `owns:` and the Ownership table gain `packages/export/src/download/` in the change that lands the code (SR-DOWNLOAD decision 1) | ⏳ |
-| 3 · behaviour | input, file type, extensions, file names, mechanism, no-page error and error messages, as SR-DOWNLOAD decisions 2–8 state | ⏳ |
-| 4 · revoke delay | measured, and written into SR-DOWNLOAD decision 6 | ⏳ |
-| 5 · zero-dep | no runtime dependency (SR-DOWNLOAD decision 9) | ⏳ |
-| 6 · tests | a Vitest browser-mode test on Playwright ([`testing.compare.md`](../compare/testing.compare.md)) catches the download in Chromium per push and Firefox and WebKit nightly: name, size and first bytes for examples 1–5, and every error in example 7; what was run is written here | ⏳ |
-| 7 · iOS | what iOS Safari does is tested and recorded in SR-DOWNLOAD Consequences | ⏳ |
-| 8 · docs | the owning package's README documents `download` with the examples above and the iframe note | ⏳ |
+| 2 · home | **`@sheetpane/export`** (ruled 2026-10-18): `download` is exported from its index; `@sheetpane/grid`'s Export button calls it; SR-DOWNLOAD `owns:` and the Ownership table gain `packages/export/src/download/` in the change that lands the code (SR-DOWNLOAD decision 1) | ✅ `packages/export/src/download/index.ts`, exported from the package index; SR-DOWNLOAD `owns: [packages/export/src/download/]` and the Ownership row added |
+| 3 · behaviour | input, file type, extensions, file names, mechanism, no-page error and error messages, as SR-DOWNLOAD decisions 2–8 state | ✅ decisions 2–8 — `download.test.ts` (Node: names, extensions, no-page and type errors) and `download.browser.test.ts` (real saves) |
+| 4 · revoke delay | measured, and written into SR-DOWNLOAD decision 6 | ✅ measured 2026-10-18 with a 64 MB file: Chromium 156 and WebKit (Safari 27.2) save it whole even revoked in the click's task; 30 s kept as the margin until Firefox and iOS are measured — written into SR-DOWNLOAD decision 6 |
+| 5 · zero-dep | no runtime dependency (SR-DOWNLOAD decision 9) | ✅ no import outside the package; the package check holds `dependencies: {}` |
+| 6 · tests | a Vitest browser-mode test on Playwright ([`testing.compare.md`](../compare/testing.compare.md)) catches the download in Chromium per push and Firefox and WebKit nightly: name, size and first bytes for examples 1–5, and every error in example 7; what was run is written here | ✅ Playwright catches each download through `armDownload` / `takeDownload` (`test/commands.ts`): name, size and first bytes for examples 1–5 and 8, every error of example 7, no link left behind — **Chromium 156 and WebKit (macOS) green locally, 22 tests**; Firefox cannot launch on this Mac (`work/MACHINE.md`) and runs in the nightly workflow |
+| 7 · iOS | what iOS Safari does is tested and recorded in SR-DOWNLOAD Consequences | ⏳ 🔴 Arpit — no iOS device or simulator reachable from the build machine |
+| 8 · docs | the owning package's README documents `download` with the examples above and the iframe note | ✅ `packages/export/README.md` §Save the file — examples 1–10 and the iframe note |
 | 9 · accepted | Arpit moves SR-DOWNLOAD from `proposed` to `accepted`; the register says `built: yes` | ⏳ 🔴 Arpit |
 
 ## Blockers
 
-Waiting on **W-04** (build and tests must run). The home, the input types
-(`Uint8Array` from `toXlsx`/`patchXlsx`, `string` from `toCsv`) and the runner
-are decided. DoD 9 (Arpit accepts SR-DOWNLOAD) is the closing act, not a
-blocker to building.
+The code is built. Two rows are the decider's: DoD 7 (open the demo on an
+iPhone and press Export) and DoD 9 (accept SR-DOWNLOAD).
 
 ## Record affected
 

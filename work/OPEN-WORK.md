@@ -22,8 +22,10 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-
-*Empty since 2026-10-18 — nothing waits on a ruling; the next gate is W-03 DoD 8 (Arpit opens the sample in Excel).*
+| Open `packages/export/test/fixtures/sheetpane-sample.xlsx` in Excel and LibreOffice — any repair prompt? — and `sheetpane-sample.csv` in Excel — accents right? (W-03 DoD 8) | 2026-10-18 | 0 days |
+| ↳ **blocks:** W-03 (closing only — the code has landed) | | |
+| Accept SR-DOWNLOAD (`proposed` → `accepted`), and press Export on an iPhone once W-09's demo runs (W-12 DoD 7, 9) | 2026-10-18 | 0 days |
+| ↳ **blocks:** W-12 (closing only — the code has landed) | | |
 
 ---
 
@@ -31,14 +33,14 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-03** `agent` · Build `@sheetpane/export`: `toXlsx`, `patchXlsx`, `toCsv`, `download`, no runtime dependencies. Filed by Arpit (Cowork). [detail](open/W-03-export-package.md)
-- 🟢 **W-12** `agent` · Build the downloader SR-DOWNLOAD specifies, in `@sheetpane/export`: `download(data, filename)` saves export output as `.xlsx` or `.csv`. Filed by Arpit (Cowork). [detail](open/W-12-downloader.md)
-- 🟡 **W-13** `agent` · Build `@sheetpane/import`: `.xlsx` or `.csv` in, the JavaScript `Workbook` object out, for `@sheetpane/grid` — waiting on W-03. Filed by Arpit (Cowork). [detail](open/W-13-import-package.md)
-- 🟡 **W-01** `agent` · Build the `<sheetpane-excel>` web component and its in-memory workbook: read, View/Edit, edits, flag, export — waiting on W-03, W-13. Filed by Arpit (Cowork). [detail](open/W-01-sheetpane-excel.md)
+- 🔴 **W-03** `agent` · `@sheetpane/export` built (`toXlsx`, `patchXlsx`, `toCsv`, `download`) — blocked on the decider opening the sample in Excel (DoD 8). Filed by Arpit (Cowork). [detail](open/W-03-export-package.md)
+- 🔴 **W-12** `agent` · `download()` built and tested in Chromium and WebKit — blocked on the decider accepting SR-DOWNLOAD and an iPhone check (DoD 7, 9). Filed by Arpit (Cowork). [detail](open/W-12-downloader.md)
+- 🟢 **W-13** `agent` · Build `@sheetpane/import`: `.xlsx` or `.csv` in, the JavaScript `Workbook` object out, for `@sheetpane/grid`. Filed by Arpit (Cowork). [detail](open/W-13-import-package.md)
+- 🟡 **W-01** `agent` · Build the `<sheetpane-excel>` web component and its in-memory workbook: read, View/Edit, edits, flag, export — waiting on W-13. Filed by Arpit (Cowork). [detail](open/W-01-sheetpane-excel.md)
 - 🟡 **W-02** `agent` · Build the `<sheetpane-errors>` web component: list, form, resolve, Show in sheet, always in sync — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-02-sheetpane-errors.md)
 - 🟡 **W-09** `agent` · Demo apps — React and plain `index.html` — that take `@sheetpane/grid` as a dependency — waiting on W-01, W-02. Filed by Arpit (Cowork). [detail](open/W-09-demo-apps.md)
 - 🟡 **W-14** `agent` · Build the plugin host in `@sheetpane/grid`: six hooks, six slots, the `plugins` attribute, change kinds — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-14-plugin-host.md)
-- 🟡 **W-24** `agent` · Freeze panes in core: read `<pane>`, sticky rows and columns, Freeze/Unfreeze, export — waiting on W-01, W-13, W-03. Filed by Arpit (Cowork). [detail](open/W-24-freeze-panes.md)
+- 🟡 **W-24** `agent` · Freeze panes in core: read `<pane>`, sticky rows and columns, Freeze/Unfreeze, export — waiting on W-01, W-13. Filed by Arpit (Cowork). [detail](open/W-24-freeze-panes.md)
 - 🟡 **W-23** `agent` · Undo / redo over every change and error, one stack per pane (B-027 promoted) — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-23-undo-redo.md)
 - 🟡 **W-15** `agent` · Build `@sheetpane/numfmt`: every Excel number format through the `numfmt` library, format dropdown — waiting on W-14, W-13. Filed by Arpit (Cowork). [detail](open/W-15-numfmt.md)
 - 🟡 **W-16** `agent` · Build `@sheetpane/formulas`: live recalculation through IronCalc (WASM, lazy), `fx` cell bar, status sums — waiting on W-14, W-13. Filed by Arpit (Cowork). [detail](open/W-16-formulas.md)
@@ -47,7 +49,7 @@ here. Read that record before changing anything below it.
 - 🟡 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — waiting on W-17. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
 - 🟡 **W-20** `agent` · Build `@sheetpane/images`: anchored pictures drawn in sheet space, view only — waiting on W-14, W-13. Filed by Arpit (Cowork). [detail](open/W-20-images.md)
 - 🟡 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types — waiting on W-20. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
-- 🟡 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — waiting on W-14, W-13, W-02, W-03. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
+- 🟡 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — waiting on W-14, W-13, W-02. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
 - 🟡 **W-26** `agent` · Editing and position events: edit start, typing, before-save (cancellable), cancel, sheet switch; column title on every event — waiting on W-25, W-01. Filed by Arpit (Cowork). [detail](open/W-26-edit-events.md)
 - 🟡 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list — waiting on W-25, W-14, W-26, W-02. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
 - 🟡 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as a package or recipes — waiting on W-25, W-26, W-01. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)

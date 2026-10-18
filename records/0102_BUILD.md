@@ -86,7 +86,9 @@ pnpm and a justfile; the testing verdict chose the runner.
    Node; every other package runs in browser mode on Playwright, and so do
    `@sheetpane/export`'s `*.browser.test.ts` files (project `export-browser`,
    the engine-determinism proof). `SP_BROWSERS` selects the engines.
-   `.xlsx` and `.csv` fixtures load as assets (`?inline`). Dev-only readers
+   `.xlsx` and `.csv` fixtures load as assets (`?inline`). Two browser
+   commands (`test/commands.ts`), `armDownload` and `takeDownload`, let a test
+   catch a real download through Playwright. Dev-only readers
    for read-back tests (ExcelJS, PapaParse, fflate) are dev dependencies of
    the package that uses them. Coverage (v8) is reported on every run; 90 % lines on
    `packages/export/src/**` fails the run.

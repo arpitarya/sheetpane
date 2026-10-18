@@ -4,6 +4,7 @@
 // (chromium per push; chromium,firefox,webkit nightly).
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
+import { armDownload, takeDownload } from './test/commands.ts';
 
 const browsers = (process.env.SP_BROWSERS ?? 'chromium').split(',') as ('chromium' | 'firefox' | 'webkit')[];
 const resolve = { conditions: ['source'] };
@@ -35,6 +36,7 @@ export default defineConfig({
             enabled: true,
             headless: true,
             provider: playwright(),
+            commands: { armDownload, takeDownload },
             instances: browsers.map((browser) => ({ browser })),
           },
         },

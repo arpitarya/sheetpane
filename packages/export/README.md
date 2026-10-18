@@ -75,8 +75,46 @@ about: a bad sheet name (1–31 characters, none of `[ ] : * ? / \`, unique
 ignoring case), more than 1,048,576 rows or 16,384 columns, `NaN` or
 `Infinity`, text over 32,767 characters, overlapping merges.
 
-## Save the file
+## Save the file — `download(data, filename, options?)`
 
-`download(data, filename)` — see below.
+One call turns export output into a file the browser saves. `.xlsx` and
+`.csv` only; the bytes are never changed. The spec is
+[SR-DOWNLOAD](../../records/0101_DOWNLOAD.md).
+
+```ts
+import { toXlsx, toCsv, download } from '@sheetpane/export';
+
+download(await toXlsx(book), 'sales.xlsx');                 // 1 · bytes → sales.xlsx
+download(toCsv(sheet, { bom: true }).text, 'sales.csv');    // 2 · text, BOM kept: Excel shows "José"
+download(new Blob([bytes]), 'report.xlsx');                 // 3 · a Blob you already have
+download(await toXlsx(book), 'Q3 report');                  // 4 · → Q3 report.xlsx (text → .csv)
+download(bytes, 'FY26: North/South?.xlsx');                 // 5 · → FY26_ North_South_.xlsx
+download(text, 'data.csv', { type: 'text/csv;charset=utf-8;header=present' }); // 6 · your own type
+```
+
+**7 · Errors are explicit, never silent.** Each names the file:
+
+```ts
+download(bytes, 'sales.pdf');            // ✗ "sales.pdf" — sheetpane saves .xlsx or .csv only
+download(new Blob([bytes]), 'mystery');  // ✗ "mystery" — add .xlsx or .csv; the type can't be told from this Blob
+download('a,b', 'sales.xlsx');           // ✗ "sales.xlsx" — text can't be saved as .xlsx; use .csv
+download(bytes, 'sales.xlsx');           // in Node or a worker:
+                                         // ✗ download() needs a browser page (no document); write the bytes yourself
+```
+
+**8 · After an `await` in a click handler** works — tested in Chromium and WebKit:
+
+```ts
+button.addEventListener('click', async () => download(await toXlsx(book), 'sales.xlsx'));
+```
+
+**9 · With the grid,** `<sheetpane-excel>`'s Export button calls `download` for you.
+
+**10 · Inside an iframe** the host must allow downloads, or the browser blocks
+the save silently:
+
+```html
+<iframe src="app.html" sandbox="allow-scripts allow-downloads"></iframe>
+```
 
 The spec is the record [SR-EXPORT](../../records/0103_EXPORT.md).

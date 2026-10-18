@@ -135,8 +135,9 @@ else.
 
 ### Consequences
 
-- **Enforced today:** 50 Node tests and 2 browser tests (`just test-export`,
-  `just test-pkg export-browser`): independent read-back through ExcelJS,
+- **Enforced today:** the Node tests (`just test-export`) and the browser
+  tests (`just test-pkg export-browser`, which also catch real downloads —
+  SR-DOWNLOAD): independent read-back through ExcelJS,
   PapaParse and fflate; fast-check properties (CSV identity, `toXlsx`
   identity, `patchXlsx` changes exactly the named cells, string escape);
   the committed golden `sheetpane-sample.store.xlsx` reproduced in Node and

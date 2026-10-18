@@ -16,3 +16,6 @@ export { getAttr, setAttr, removeAttr, parseRels, resolveTarget, relsPathOf, typ
 export { colName, colIndex, parseRef, cellRef, parseRange, rangeRef, rangesIntersect, MAX_ROWS, MAX_COLS, type CellPos, type RangePos } from './refs.js';
 export { shiftFormula } from './formula.js';
 export { checkSheetName } from './validate.js';
+
+// Saving a file in the browser — SR-DOWNLOAD.
+export { download, type DownloadOptions } from './download/index.js';

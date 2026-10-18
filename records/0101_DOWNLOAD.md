@@ -7,7 +7,7 @@ description: "One function, download(data, filename, options?), turns what @shee
 status: proposed
 date: 2026-10-18
 feature: saving an export as a file
-owns: []
+owns: [packages/export/src/download/]
 laws: [L2, L3, L6]
 timestamp: 2026-10-18T10:05:00Z
 content_sha: ""
@@ -28,9 +28,8 @@ wrong.
 file names that Windows or macOS would reject. It never changes the bytes it is
 given (L6). It throws a clear error instead of failing silently.
 
-**Where it lives is not settled.** It ships in `@sheetpane/export` or
-`@sheetpane/grid`, whichever W-08 picks. The examples import from
-`@sheetpane/export`.
+**It lives in `@sheetpane/export`**, beside the writers whose output it
+saves; `@sheetpane/grid`'s Export button calls the same function.
 
 ```mermaid
 flowchart LR
@@ -69,7 +68,7 @@ download(await toXlsx(book), 'sales.xlsx');
 
 **2 · CSV text**
 ```ts
-download(toCsv(sheet, { bom: true }), 'sales.csv');
+download(toCsv(sheet, { bom: true }).text, 'sales.csv');
 // saves sales.csv, type text/csv;charset=utf-8; the BOM is kept so Excel shows "José" correctly
 ```
 
@@ -81,7 +80,7 @@ download(new Blob([bytes]), 'report.xlsx');
 **4 · Missing extension gets added**
 ```ts
 download(await toXlsx(book), 'Q3 report');   // → Q3 report.xlsx  (bytes)
-download(toCsv(sheet), 'Q3 report');         // → Q3 report.csv   (text)
+download(toCsv(sheet).text, 'Q3 report');         // → Q3 report.csv   (text)
 ```
 
 **5 · Unsafe file names get cleaned**
@@ -158,6 +157,9 @@ writing that itself would duplicate it and get the timing wrong.
 
    `options.type` overrides it.
 4. **Extensions (L3).** The extension is matched case-insensitively.
+   - **What counts as an extension:** the letters and digits after the
+     last `.` of the cleaned name (`/\.([A-Za-z0-9]+)$/`); a name like
+     `Q3 report` has none.
    - **Other extensions:** anything except `.xlsx` or `.csv` throws.
    - **No extension:** one is added. `Uint8Array` → `.xlsx`, `string` → `.csv`.
      For a `Blob`, its `type` decides when it is one of the two MIME types
@@ -169,8 +171,14 @@ writing that itself would duplicate it and get the timing wrong.
    the extension kept. A name left empty by cleaning throws.
 6. **Mechanism.** Blob → `URL.createObjectURL` → a hidden `<a download>`
    appended to `document.body`, clicked, and removed at once. The URL is
-   revoked on a later task after a delay, never in the same task as the
-   click. W-12 measures the delay and writes it here.
+   revoked on a later task after **30 seconds** (`REVOKE_DELAY_MS`), never in
+   the same task as the click. **Measured 2026-10-18** (W-12,
+   `download.browser.test.ts`, a 64 MB file): Chromium 156 and WebKit (Safari
+   27.2, macOS) save the whole file even when the URL is revoked in the
+   click's own task. Firefox could not be launched on the measuring machine
+   (`work/MACHINE.md`); its result comes from the nightly run. The 30-second
+   margin stays until Firefox and iOS Safari are measured — it costs only the
+   Blob's memory for that long.
 7. **No page, no download.** Where `document` is undefined (Node, a worker),
    the call throws an `Error` saying a browser page is needed. Never a silent
    no-op.
@@ -185,14 +193,13 @@ writing that itself would duplicate it and get the timing wrong.
 
 ### Consequences
 
-- **Owed by W-12:**
-  - The code, and browser tests in Chromium, Firefox and WebKit using W-11's
-    runner.
-  - The revoke delay (decision 6).
-  - What iOS Safari does, recorded here.
-  - The README section.
-- **Owed by W-12:** when the code lands, `owns:` here and the register's
-  Ownership table gain `packages/export/src/download/` in the same change.
+- **Built and tested:** `packages/export/src/download/index.ts`; Node tests
+  for decisions 4, 5, 7, 8 (`download.test.ts`) and real downloads caught by
+  Playwright for examples 1–5, 7 and 8 (`download.browser.test.ts`) — Chromium
+  on every push, WebKit and Firefox nightly.
+- **iOS Safari: not tested.** No iOS device or simulator is reachable from the
+  build machine; the decider tests it on a phone (W-12 DoD 7). Desktop WebKit
+  passes every example.
 - **Hosts in sandboxed iframes** must add `allow-downloads`. The README says so.
 - **Easier:** a host saves an export in one line. The grid's Export button
   uses the same call.
@@ -225,7 +232,7 @@ writing that itself would duplicate it and get the timing wrong.
   download, or
 - `download` accepts an extension other than `.xlsx` or `.csv`.
 
-**How to check it:** `grep -rlE 'createObjectURL' packages/*/src | wc -l` prints `0` (not built) or `1`; and W-12's test for decision 4 passes.
+**How to check it:** `grep -rlE 'createObjectURL' packages/*/src | wc -l` prints `1`; and `just test-export -t 'file names'` passes.
 
 ---
 
