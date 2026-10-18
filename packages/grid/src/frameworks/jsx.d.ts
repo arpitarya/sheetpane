@@ -16,6 +16,8 @@ export type SheetpaneExcelReactProps = SheetpaneExcelAttributes & SheetpaneExcel
   'onsheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'onsheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select']) => void) | undefined;
+  /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
+  'onsheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize']) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'onsheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet']) => void) | undefined;
   /** `{ mode }` when the pane switches between View and Edit. */

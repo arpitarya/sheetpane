@@ -11,6 +11,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-errors': CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'sheetpane-select': CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>;
+  /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
+  'sheetpane-resize': CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>;
   /** `{ sheet }` when the selection moves to another sheet. */
   'sheetpane-sheet': CustomEvent<{ sheet: string }>;
   /** `{ mode }` when the pane switches between View and Edit. */
@@ -83,6 +85,8 @@ export interface SheetpaneExcelProperties {
   validate?: SheetpaneExcel['validate'] | undefined;
   /** Whether the pop-up is shown (the `open` attribute). */
   open?: SheetpaneExcel['open'] | undefined;
+  /** The column widths and row heights a user set, px at 100 % zoom: `{ [sheet]: { cols: { B: 120 }, rows: { 4: 40 } } }` (columns by letter, rows by number). A view setting like zoom — not a change, not undone, not in the download; a new file clears it. Set it to restore what a host saved from `sheetpane-resize` (W-47). */
+  sizes?: SheetpaneExcel['sizes'] | undefined;
   /** The `src` attribute; `null`, `undefined` or `''` removes it. */
   src?: SheetpaneExcel['src'] | undefined;
 }

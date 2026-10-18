@@ -3,8 +3,10 @@
 import { parseRange, type RangePos } from '@sheetpane/export';
 import type { ImportedSheet } from '@sheetpane/import';
 
-/** A row's height in pixels at 100 % zoom. */
+/** A row's height in pixels at 100 % zoom, unless the file or the user sets one (W-47). */
 export const ROW_H = 28;
+/** Column and row size limits in pixels at 100 % zoom (W-47 DoD 1). */
+export const COL_MIN = 16, COL_MAX = 1200, ROW_MIN = 12, ROW_MAX = 600;
 /** The column-header row's height in pixels at 100 % zoom. */
 export const HEAD_H = 24;
 /** The row-header column's width in pixels at 100 % zoom. */
@@ -22,8 +24,16 @@ export interface SheetGeometry {
   cols: number;
   /** Column left edges at 100 %, length cols + 1. */
   colX: Float64Array;
+  /** Row top edges at 100 %, length rows + 1 — a prefix sum, so rows may differ in height (W-47). */
+  rowY: Float64Array;
   merges: RangePos[];
 }
+
+/** The user's sizes for one sheet, px at 100 %: column and row indexes (0-based) to a size (W-47). */
+export interface SheetSizes { cols?: Readonly<Record<number, number>>; rows?: Readonly<Record<number, number>> }
+
+/** Points (the file's row heights) to pixels at 100 %. */
+export const ptToPx = (pt: number) => Math.round((pt * 96) / 72);
 
 /**
  * A sheet's size and column edges at 100 % zoom (SR-GRID decision 11): the file's column widths,
@@ -31,9 +41,10 @@ export interface SheetGeometry {
  * rule ranges and drawing anchors past the data.
  * @param s - The sheet as read.
  * @param mergeList - The merged ranges to draw; the file's by default.
- * @returns The row and column counts, the column left edges and the merges.
+ * @param sizes - The user's column widths and row heights, px at 100 % (W-47); they win over the file's.
+ * @returns The row and column counts, the column and row edges and the merges.
  */
-export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? []): SheetGeometry {
+export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? [], sizes: SheetSizes = {}): SheetGeometry {
   const dataCols = s.rows.reduce((m, r) => Math.max(m, r.length), 0);
   const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
   const ruled = [...(s.dataValidations ?? []).flatMap((v) => v.sqref), ...(s.conditionalFormats ?? []).flatMap((f) => f.sqref)]
@@ -57,9 +68,42 @@ export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s
       for (let r = 0; r < Math.min(200, s.text.length); r++) ch = Math.max(ch, (s.text[r]?.[c] ?? '').length);
       w = Math.min(320, Math.max(DEFAULT_COL_PX, ch * 7 + 18));
     }
-    colX[c + 1] = colX[c]! + w;
+    const own = sizes.cols?.[c];
+    colX[c + 1] = colX[c]! + (own !== undefined ? own : w);
   }
-  return { rows, cols, colX, merges };
+  // rows: the user's height, else the file's custom height (points), else 28 px
+  const rowY = new Float64Array(rows + 1);
+  const fileRows = s.rowHeights ?? [], ownRows = sizes.rows ?? {};
+  for (let r = 0; r < rows; r++) {
+    const own = ownRows[r], pt = fileRows[r];
+    rowY[r + 1] = rowY[r]! + (own !== undefined ? own : pt !== undefined ? Math.min(ROW_MAX, Math.max(ROW_MIN, ptToPx(pt))) : ROW_H);
+  }
+  return { rows, cols, colX, rowY, merges };
+}
+
+/** A row's top at 100 %; past the drawn rows each row is 28 px. */
+export function rowTop(g: SheetGeometry, r: number): number {
+  return r <= g.rows ? g.rowY[Math.max(0, r)]! : g.rowY[g.rows]! + (r - g.rows) * ROW_H;
+}
+
+/** A row's height at 100 %. */
+export function rowHeight(g: SheetGeometry, r: number): number {
+  return r < g.rows ? g.rowY[r + 1]! - g.rowY[r]! : ROW_H;
+}
+
+/** A column's width at 100 %. */
+export function colWidth(g: SheetGeometry, c: number): number {
+  return c < g.cols ? g.colX[c + 1]! - g.colX[c]! : DEFAULT_COL_PX;
+}
+
+/** The row whose bottom edge is past `y` (100 % pixels) — a binary search over the row tops. */
+export function rowAt(g: SheetGeometry, y: number): number {
+  let lo = 0, hi = g.rows - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (g.rowY[mid + 1]! <= y) lo = mid + 1; else hi = mid;
+  }
+  return lo;
 }
 
 /** The first column whose right edge is past `x` (100 % pixels). */
@@ -81,9 +125,8 @@ export interface Window { r0: number; r1: number; c0: number; c1: number }
 
 /** The rows and columns to render for a scroll position (zoom-scaled pixels), with overscan. */
 export function visibleWindow(g: SheetGeometry, z: number, scrollTop: number, scrollLeft: number, height: number, width: number, frozen: { rows: number; cols: number }): Window {
-  const rh = ROW_H * z;
-  const r0 = Math.max(frozen.rows, Math.floor(scrollTop / rh) - OVERSCAN);
-  const r1 = Math.min(g.rows - 1, Math.ceil((scrollTop + height) / rh) + OVERSCAN);
+  const r0 = Math.max(frozen.rows, rowAt(g, scrollTop / z) - OVERSCAN);
+  const r1 = Math.min(g.rows - 1, rowAt(g, (scrollTop + height) / z) + OVERSCAN);
   if (g.cols <= COL_VIRTUAL_AFTER) return { r0, r1, c0: frozen.cols, c1: g.cols - 1 };
   const x0 = scrollLeft / z, x1 = (scrollLeft + width) / z;
   return { r0, r1, c0: Math.max(frozen.cols, colAt(g, x0) - 2), c1: Math.min(g.cols - 1, colAt(g, x1) + 2) };

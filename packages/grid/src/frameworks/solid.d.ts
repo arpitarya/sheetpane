@@ -53,6 +53,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'prop:validate'?: SheetpaneExcel['validate'] | undefined;
   /** Whether the pop-up is shown (the `open` attribute). */
   'prop:open'?: SheetpaneExcel['open'] | undefined;
+  /** The column widths and row heights a user set, px at 100 % zoom: `{ [sheet]: { cols: { B: 120 }, rows: { 4: 40 } } }` (columns by letter, rows by number). A view setting like zoom — not a change, not undone, not in the download; a new file clears it. Set it to restore what a host saved from `sheetpane-resize` (W-47). */
+  'prop:sizes'?: SheetpaneExcel['sizes'] | undefined;
   /** The `src` attribute; `null`, `undefined` or `''` removes it. */
   'prop:src'?: SheetpaneExcel['src'] | undefined;
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
@@ -63,6 +65,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select']) => void) | undefined;
+  /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
+  'on:sheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize']) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'on:sheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet']) => void) | undefined;
   /** `{ mode }` when the pane switches between View and Edit. */

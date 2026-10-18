@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — W-35 closed without the tool trial; W-48 filed; W-45 unblocked  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"The testing of skills create a separate work item for it. I'll do it later on. Do not block work item 35 for it."*
+- **Done:** W-35 DoD 8 → new W-48 (`arpit`, testing lane); the inbox row removed (inbox empty); W-35 closed and archived (map row → SR-SKILLS); W-45 re-balled 🟢 (it needs the shipped skills and installer, not the trial). Not committed.
+- **Decided / left open:** Arpit: W-35 ships without the in-tool trial. Earlier review's other recommendations (B-030 narrow the veto, B-032 status line stands, B-026 as an agent item) still await his word.
+- **Mistakes:** none.
+- **Next:** W-44, W-45, W-47 for agents; W-30 and W-48 are Arpit's.
+
+---
+
 ## 2026-10-18 — smoother range selection and column/row resizing: researched, W-46 and W-47 filed  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Can there be a smoother selection of multiple cells? File a work item for this. Can we increase the height and width of columns and rows? File a work item for this. Research and then file it with the best user experience."*

@@ -7,6 +7,13 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Changed
 
+- **Resize columns and rows** (W-47): drag a header edge (a guide and the
+  size while you drag), double-click to fit the text, several selected at
+  once, or right-click a header for Fit · width… · Reset. Rows keep the
+  file's custom heights and wrapped text wraps in them. Sizes are a view
+  setting — not a change, not in the download — with `sizes` and
+  `sheetpane-resize` for a host to keep them.
+
 - **Range selection is smooth and does more** (W-46). The selection is one
   layer — a fill, one border, the active cell left clear — so a drag no longer
   redraws the cells (on 250,000 rows: no dropped frame dragging with

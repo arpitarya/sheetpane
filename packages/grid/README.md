@@ -257,6 +257,17 @@ inside a range. On a range, Ctrl/⌘+C copies it so Excel and Google Sheets past
 `sheetpane-select` carries `range` (`B3:D8`) and fires once a drag is released. On a touch screen a finger
 scrolls, a tap selects, and a range shows two handles to extend it.
 
+**Resizing:** drag a column header's right edge or a row header's bottom edge; double-click it to fit the
+text; with several whole columns or rows selected, one drag or fit sizes them all. Right-click a header (or
+Shift+F10 with a whole column or row selected) for *Fit to data*, *Column width…* and *Reset*. Rows keep the
+file's heights. Sizes are a view setting, like zoom — not a change, not in the download; save and restore
+them with the `sizes` property and the `sheetpane-resize` event:
+
+```js
+excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
+excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
 ## Column rules
 
 Check what a user types, by column title. Rules are plain JSON — save and load

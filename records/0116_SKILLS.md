@@ -103,8 +103,8 @@ flowchart LR
   outside kept, uninstall restoring the repo, `--dry-run`, `--skip
   contributor`, Windows paths); `test/packages.test.ts` (the package shape
   and its font scan of `skills/`, `entry/`, `bin/`); `pack-check`.
-- **Owed:** one real prompt per tool from the packed tarballs — the
-  decider's (W-35 DoD 8). Skill 18 (`sheetpane-frameworks`) was written with
+- **Owed:** one real prompt per tool from the packed tarballs — W-48, the
+  decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
 
 ### Alternatives considered

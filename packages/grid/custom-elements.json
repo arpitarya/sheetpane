@@ -235,6 +235,15 @@
             },
             {
               "kind": "field",
+              "name": "sizes",
+              "privacy": "public",
+              "type": {
+                "text": "Record<string, { cols: Record<string, number>; rows: Record<string, number> }>"
+              },
+              "description": "The column widths and row heights a user set, px at 100 % zoom: `{ [sheet]: { cols: { B: 120 }, rows: { 4: 40 } } }`\n(columns by letter, rows by number). A view setting like zoom — not a change, not undone, not in the\ndownload; a new file clears it. Set it to restore what a host saved from `sheetpane-resize` (W-47)."
+            },
+            {
+              "kind": "field",
               "name": "src",
               "privacy": "public",
               "type": {
@@ -469,6 +478,13 @@
                 "text": "CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>"
               },
               "description": "`{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release."
+            },
+            {
+              "name": "sheetpane-resize",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>"
+              },
+              "description": "`{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47)."
             },
             {
               "name": "sheetpane-sheet",

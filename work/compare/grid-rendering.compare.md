@@ -64,8 +64,13 @@ dependencies. The errors panel and the forms are small enough to write with
 
 ## Decisions
 
-1. **Rendering:** option A. Row height is fixed per sheet (28 px at 100 %
-   zoom; zoom scales the container with `transform` — no reflow of cells).
+1. **Rendering:** option A. ~~Row height is fixed per sheet (28 px at 100 %
+   zoom; zoom scales the container with `transform` — no reflow of cells).~~
+   **Superseded 2026-10-18** by Arpit's ask in W-47: rows have their own
+   heights (the file's, then the user's) as a prefix sum, and zoom scales the
+   geometry, not a transform — [SR-GRID](../../records/0105_GRID.md) decision 11.
+   Decision 5's 16 ms budget stays the test (re-measured: 250,000 rows, 5 s
+   scroll, worst 16.8 ms, none dropped).
 2. **Shadow DOM, open.** Styles are isolated; inherited properties — `font`,
    `color`, `direction` — cross the boundary, which is exactly what L5 needs.
    Form controls inside get `font: inherit`.

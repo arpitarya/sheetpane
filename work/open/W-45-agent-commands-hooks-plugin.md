@@ -43,7 +43,7 @@ Beyond reading skills, each agent can run sheetpane tasks as commands and is che
 
 ## Blockers
 
-Waiting on W-35 (the skills and the installer). The check needs [W-33](W-33-rules-file.md); the plugin's MCP entry needs [W-39](W-39-mcp-server.md).
+None. W-35 has closed (the skills and the installer shipped; its tool trial is W-48, which does not block this). The check needs [W-33](W-33-rules-file.md); the plugin's MCP entry needs [W-39](W-39-mcp-server.md).
 
 ## Record affected
 

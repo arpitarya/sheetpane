@@ -95,6 +95,17 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .ch.on{box-shadow:inset 0 -2px 0 var(--sp-accent)}
 .rh.on{box-shadow:inset -2px 0 0 var(--sp-accent)}
 .ch,.rh,.corner{cursor:default;user-select:none}
+/* header edges resize (W-47): an 8 px zone across each boundary, a 2 px accent line on hover */
+.ch .rz{position:absolute;top:0;bottom:0;width:4px;cursor:col-resize;z-index:1;touch-action:none}
+.ch .rzs{left:0}.ch .rze{right:0}
+.ch .rzs:hover{box-shadow:inset 2px 0 0 var(--sp-accent)}.ch .rze:hover{box-shadow:inset -2px 0 0 var(--sp-accent)}
+.rh .rz{position:absolute;left:0;right:0;height:4px;cursor:row-resize;z-index:1;touch-action:none}
+.rh .rzs{top:0}.rh .rze{bottom:0}
+.rh .rzs:hover{box-shadow:inset 0 2px 0 var(--sp-accent)}.rh .rze:hover{box-shadow:inset 0 -2px 0 var(--sp-accent)}
+@media (pointer:coarse){.ch.on .rze,.rh.on .rze{background:var(--sp-accent);opacity:.5;width:24px;margin-right:-10px}.rh.on .rze{width:auto;height:24px;margin:0 0 -10px}}
+.rzguide{position:absolute;background:var(--sp-accent);pointer-events:none!important;z-index:5}
+.rztip{position:absolute;padding:2px 6px;border-radius:4px;background:var(--sp-ink);color:var(--sp-cell);font-size:12px;white-space:nowrap;pointer-events:none!important;z-index:5}
+.szpop .field input{width:100%}
 .c.hit::before{background:var(--sp-hit);opacity:.85}
 .c.hit.cur::before{background:var(--sp-hit-current)}
 .c.chg::after{content:"";position:absolute;top:0;right:0;z-index:2;border-style:solid;border-width:0 7px 7px 0;border-color:transparent var(--sp-changed) transparent transparent;filter:drop-shadow(0 0 1px var(--sp-cell))}

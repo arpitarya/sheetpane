@@ -334,6 +334,17 @@ inside a range. On a range, Ctrl/⌘+C copies it so Excel and Google Sheets past
 `sheetpane-select` carries `range` (`B3:D8`) and fires once a drag is released. On a touch screen a finger
 scrolls, a tap selects, and a range shows two handles to extend it.
 
+**Resizing:** drag a column header's right edge or a row header's bottom edge; double-click it to fit the
+text; with several whole columns or rows selected, one drag or fit sizes them all. Right-click a header (or
+Shift+F10 with a whole column or row selected) for *Fit to data*, *Column width…* and *Reset*. Rows keep the
+file's heights. Sizes are a view setting, like zoom — not a change, not in the download; save and restore
+them with the `sizes` property and the `sheetpane-resize` event:
+
+```js
+excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
+excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
 ## Column rules
 
 Check what a user types, by column title. Rules are plain JSON — save and load
@@ -5024,7 +5035,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    shadow root; plain DOM. Attributes `pane`, `src` (URL — read with a GET,
    nothing is sent — data URL or base64), `mode`, `display` (`tab` ·
    `popup`), `open`, `author`, `plugins`; properties `workbook`, `errors`,
-   `errorTypes`, `file`, `mode`, `open`, `src`; methods `load()`, `export()`,
+   `errorTypes`, `file`, `mode`, `open`, `src`, `sizes` (W-47: `{ [sheet]:
+   { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set);
+   methods `load()`, `export()`,
    `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
    `shortcuts()`, `column()`; attribute `header-row` (default 1); events
    `sheetpane-load`, `-change {sheet, ref, kind, was, now}`, `-errors
@@ -5034,7 +5047,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    {…, value}` (cancellable: the cell stays read-only), `-input {…, draft,
    was}`, `-beforechange {…, was, now}` (cancellable: the value is refused
    before the change map, undo, derive or validate see it), `-editcancel`,
-   `-sheet {sheet}`, every payload naming `column: {index, letter, header}`
+   `-sheet {sheet}`, `-resize {sheet, axis, indexes, px, via}` (W-47: on
+   release; `via` is `drag`, `fit`, `menu` or `reset`), every payload naming `column: {index, letter, header}`
    (W-26, the events verdict); `-mode`, `-history`,
    `-close`, `-export {blob, kind, name, guarded, format, converted,
    original?}` (cancelable: the Download control downloads only when no
@@ -5062,7 +5076,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `data-sp="resolve"`, the form's `data-sp="add-error"`, and the form fields
     `data-field="type" | "message" | "expected"`; the column headers
     `data-hc="<index>"`, row headers `data-hr="<index>"`, the corner
-    `data-hall` and the status line's totals `data-sp="totals"` (W-46).
+    `data-hall` and the status line's totals `data-sp="totals"` (W-46); the
+    header edges `data-rz-c` / `data-rz-r` and the header menu
+    `data-sp="header-menu"` (W-47).
     `@sheetpane/testing`
     (SR-TESTING) uses only these, roles and labels.
 10. **Layout:** toolbar (file, kind and size, View/Edit, open counts, find,
@@ -5084,7 +5100,33 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     are 28 px, headers 24 px, the row-header column 52 px, at 100 %. **Zoom
     scales the geometry and the font size**, not a CSS transform (see
     *Alternatives*). Column widths come from the file (Excel character units
-    × 7 + 5 px), else from the text in the first 200 rows of a CSV.
+    × 7 + 5 px), else from the text in the first 200 rows of a CSV — then
+    the user's (W-47). **Rows have their own heights:** the user's, else the
+    file's custom height (points × 96 / 72), else 28 px; row tops are a prefix
+    sum and `rowAt` a binary search, which the virtualiser, find, the
+    selection layer, frozen rows and `Geometry.rowY` / `rowHeight` (plugins'
+    overlays) all use. Wrapped text (`white-space` from a `decorate` plugin)
+    wraps inside its row and is clipped by it; vertical alignment comes from
+    the file, else centred. **Resizing (W-47):** an 8 px zone across each
+    column header's right edge and row header's bottom edge (`col-resize` /
+    `row-resize`, a 2 px accent line on hover; a coarse pointer shows a 24 px
+    grip on a selected header); a drag follows live, once per frame, with a
+    guide line and a tip ("Width 120 px"), under pointer capture; release
+    commits, Esc cancels, a click without movement changes nothing; columns
+    16–1,200 px, rows 12–600 px, at 100 % and scaled by zoom. Double-click
+    fits: a column to its widest display text (each cell's size and weight,
+    padding included; canvas `measureText` over up to 20,000 rows plus the
+    rendered ones; at least 64 px, at most 480; merged cells ignored), a row
+    to its tallest wrapped text at the current widths (at least 28 px). With
+    whole columns (rows) selected and the edge one of them, a drag or a fit
+    applies to all. Right-click a header — or Shift+F10 / the Menu key with
+    a whole column or row selected — opens a `role="menu"`: Fit to data ·
+    Column width… (Row height…) · Reset to the file's size; *width…* opens a
+    labelled px field (arrows ±1, Shift ±10, Enter applies to every selected
+    one, Esc cancels). **Sizes are a view setting**, per element and sheet,
+    in memory: not a change, not undone, not in the download (an untouched
+    file still downloads as its bytes); a new file clears them. On release a
+    polite live region says "Column C, 120 pixels".
 11a. **The cell bar edits a draft:** Enter, Tab and blur commit it through
     `sheetpane-beforechange`; Esc restores it (`sheetpane-editcancel`).
     Paste (Ctrl/⌘+V, Edit) writes tab- and line-separated text from the
@@ -5133,7 +5175,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     otherwise Enter or F2 edits; a printable
     key replaces the cell; Delete clears (a range: decision 11a); F flags; Esc
     cancels the innermost thing — a drag, a menu, the form, find, the copied
-    outline — or closes the pop-up; Ctrl/⌘+Z, Ctrl+Y, ⌘+Shift+Z; Ctrl/⌘+C copies;
+    outline, a resize, the header menu — or closes the pop-up; Ctrl/⌘+Z, Ctrl+Y, ⌘+Shift+Z; Ctrl/⌘+C copies;
     Shift+F10 and the Menu key open the selection actions (decision 13).
     `aria-rowcount` / `aria-colcount` give the sheet's true size.
 13. **Review — nothing floats over the cells (W-31):** the selection actions
@@ -5353,7 +5395,14 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   `aria-selected`; the announcement; axe with a range in View and Edit; a
   5 s drag with autoscroll on 250,000 rows — 301 frames, worst 16.8 ms at a
   16.7 ms vsync, none dropped, Chromium 156 headless, 10 cores, load average
-  ~4, reported); `theme.test.ts` (every token has a hex dark
+  ~4, reported); `resize.test.ts` (W-47: `rowAt` against a linear scan, a
+  fast-check property; the file's row heights; a live drag, Esc, the limits,
+  a click; fit for long text, numbers, bold and an ignored merge; several
+  columns at once; the header menu and the width field by keyboard; a resize
+  is not a change and the download stays the original; `sizes` round-trip;
+  overlays follow; a column-edge drag on 250,000 rows — 181 frames in 3 s,
+  worst 16.8 ms, none dropped; the 5 s scroll with per-row heights — worst
+  16.8 ms, none dropped, also with 2 frozen rows); `theme.test.ts` (every token has a hex dark
   value, the contrast table in both themes, the attribute restyling chrome
   while a `decorate` fill stays as saved, a host override winning);
   `rules.test.ts` (the four-column example: every rule kind, commit, undo,
@@ -6921,8 +6970,8 @@ flowchart LR
   outside kept, uninstall restoring the repo, `--dry-run`, `--skip
   contributor`, Windows paths); `test/packages.test.ts` (the package shape
   and its font scan of `skills/`, `entry/`, `bin/`); `pack-check`.
-- **Owed:** one real prompt per tool from the packed tarballs — the
-  decider's (W-35 DoD 8). Skill 18 (`sheetpane-frameworks`) was written with
+- **Owed:** one real prompt per tool from the packed tarballs — W-48, the
+  decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
 
 ### Alternatives considered

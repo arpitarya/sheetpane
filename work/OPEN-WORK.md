@@ -22,9 +22,8 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| **W-35 DoD 8** — try the skills: install from `demo-packed`'s tarballs into a scratch host and give one real prompt per tool (Claude Code, Kiro, Codex), e.g. *"embed sheetpane in a React tab with an errors panel"*; write the prompt, tool version and result in [W-35](open/W-35-agent-skills-package.md) | 2026-10-18 | 0 d |
 
-*The iPhone download check is backlog B-031; the real-app files are W-30 (`arpit` lane).*
+*Empty since 2026-10-18 — W-35 DoD 8 became W-48 (`arpit` lane) on the decider's ruling. The iPhone download check is backlog B-031; the real-app files are W-30 (`arpit` lane).*
 
 ---
 
@@ -32,17 +31,15 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟡 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Built: all 23 skills, entry files, installer (with the MCP entry), drift check (SR-SKILLS); DoD 8 (a prompt in each tool) is the decider's. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
-
 - 🟢 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
-- 🟡 **W-45** `agent` · Invocable commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), hooks that check a rules file on save (Claude Code, Kiro), and the agent set as a Claude Code plugin + marketplace. — waiting on W-35. Filed by Arpit (Cowork). [detail](open/W-45-agent-commands-hooks-plugin.md)
-
-- 🟢 **W-47** `agent` · Resize columns and rows: drag a header edge, double-click to fit, several at once, a header menu for keys; per-row heights and wrapped text from the file. (W-46 landed: whole-column and whole-row selection.) Filed by Arpit (Cowork). [detail](open/W-47-resize-columns-rows.md)
+- 🟢 **W-45** `agent` · Invocable commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), hooks that check a rules file on save (Claude Code, Kiro), and the agent set as a Claude Code plugin + marketplace.. Filed by Arpit (Cowork). [detail](open/W-45-agent-commands-hooks-plugin.md)
 
 ### testing
 
 - 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
+
+- 🟢 **W-48** `arpit` · Try the skills package in Claude Code, Kiro and Codex: install from the tarballs into a scratch host, one real prompt each, note the result (split from W-35 DoD 8). Filed by Arpit (Cowork). [detail](open/W-48-try-skills-in-each-tool.md)
 
 ### record update
 
