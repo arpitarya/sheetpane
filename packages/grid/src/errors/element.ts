@@ -10,7 +10,8 @@ import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, typ
 import { BASE_CSS } from '../excel/styles.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 
-const CSS = `${BASE_CSS}
+const CSS = `.grp{padding:8px 12px 2px;font-size:11px;font-weight:600;color:var(--sp-ink-3);text-transform:uppercase;letter-spacing:.04em}
+${BASE_CSS}
 :host{display:block}
 .spe{display:flex;flex-direction:column;height:100%;min-height:240px;background:var(--sp-surface);border:1px solid var(--sp-line);border-radius:var(--sp-r-lg);overflow:hidden}
 .hd{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--sp-line);flex-wrap:wrap}
@@ -240,13 +241,13 @@ export class SheetpaneErrors extends ElementBase {
     const sevBtns = ([['all', `All ${counts.all}`, 'All severities'], ['error', `✕ ${counts.error}`, 'Errors'], ['warning', `! ${counts.warning}`, 'Warnings'], ['note', `i ${counts.note}`, 'Notes']] as const)
       .map(([v, label, name]) => `<button type="button" data-act="filter" data-v="${v}" aria-pressed="${this.filter === v}" aria-label="${name}: ${counts[v]}">${label}</button>`).join('');
     const authorBtns = authors.size > 1 || (authors.size === 1 && !authors.has('person'))
-      ? `<span class="sep" aria-hidden="true"></span>${(['all', 'person', 'workbook', 'host', 'file'] as const).filter((a) => a === 'all' || authors.has(a)).map((a) => `<button type="button" data-act="author" data-v="${a}" aria-pressed="${this.authorFilter === a}">${a === 'all' ? 'Anyone' : a === 'person' ? 'People' : a === 'workbook' ? 'Workbook rules' : a === 'host' ? 'Column rules' : 'File comments'}</button>`).join('')}`
+      ? `<span class="sep" aria-hidden="true"></span>${(['all', 'person', 'workbook', 'host', 'file'] as const).filter((a) => a === 'all' || authors.has(a)).map((a) => `<button type="button" data-act="author" data-v="${a}" aria-pressed="${this.authorFilter === a}">${a === 'all' ? 'Anyone' : a === 'person' ? 'People' : a === 'workbook' ? 'Workbook rules' : a === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rules') : 'File comments'}</button>`).join('')}`
       : '';
     q('.filters').innerHTML = sevBtns + authorBtns;
     // the form (contract decision 4: this element shows it whenever it is connected to the pane)
     const formbox = q('.formbox');
     const c = snap.composing;
-    if (c && !this.readOnly && snap.mode === 'edit') {
+    if (c && !this.readOnly && snap.mode === 'edit' && s.flagging) { // flagging="off" (W-33): no New error
       const key = `${c.sheet}!${c.range ?? c.ref}|${this.draft.type}|${this.draft.severity}|${this._errorTypes.length}`;
       if (key !== this.formKey) { this.formKey = key; formbox.innerHTML = this.formHtml(); (formbox.querySelector('textarea') as HTMLElement | null)?.focus(); }
     } else if (formbox.innerHTML) { formbox.innerHTML = ''; this.formKey = ''; }
@@ -254,17 +255,23 @@ export class SheetpaneErrors extends ElementBase {
     const list = errors
       .filter((e) => (this.filter === 'all' || e.severity === this.filter) && (this.authorFilter === 'all' || this.authorKind(e) === this.authorFilter))
       .sort((a, b) => (a.status === b.status ? errNum(a) - errNum(b) : a.status === 'open' ? -1 : 1));
+    // rule rows are read by sheet (W-33): under the host filter, grouped by the workbook's sheet order
+    const grouped = this.authorFilter === 'host' && new Set(list.map((e) => e.sheet)).size > 1;
+    if (grouped) { const order = (snap.book?.sheets ?? []).map((x) => x.name); list.sort((a, b) => order.indexOf(a.sheet) - order.indexOf(b.sheet)); }
+    let lastSheet = '';
     const types = new Map([...Object.entries(BUILTIN_TYPE_NAMES), ...this._errorTypes.map((t) => [t.id, t.name] as [string, string])]);
     const sel = snap.selection;
     const html = list.length ? list.map((e) => {
+      const head = grouped && e.sheet !== lastSheet ? `<div class="grp" role="presentation">${esc(e.sheet)}</div>` : '';
+      lastSheet = e.sheet;
       const r = parseRange(e.range);
       const on = this.expanded === e.id || (!!r && e.sheet === sel.sheet && parseRef(sel.ref) && r.top === parseRef(sel.ref)!.row && r.left <= parseRef(sel.ref)!.col && r.right >= parseRef(sel.ref)!.col);
       const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : ''].filter(Boolean);
       const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
-      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? 'Column rule' : e.author, time].filter(Boolean).join(' · '))}</span><div class="acts"><button type="button" class="btn" data-act="reveal">Show in sheet</button>${ro ? '' : `<button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
-      return `<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${esc(e.sheet)} ${esc(e.range)}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span><span class="ba"><span class="found">${esc(e.found)}</span> → <span class="want">${esc(e.expected || '—')}</span></span><span class="m">${esc(e.range)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
+      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, time].filter(Boolean).join(' · '))}</span><div class="acts"><button type="button" class="btn" data-act="reveal">Show in sheet</button>${ro ? '' : `<button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
+      return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${esc(e.sheet)} ${esc(e.range)}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span><span class="ba"><span class="found">${esc(e.found)}</span> → <span class="want">${esc(e.expected || '—')}</span></span><span class="m">${esc(e.range)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
     if (listEl.dataset.html !== html) { listEl.innerHTML = html; listEl.dataset.html = html; }

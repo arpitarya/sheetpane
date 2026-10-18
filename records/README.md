@@ -168,7 +168,7 @@ directions.
 | `tsconfig.json` | SR-BUILD | the root type-check over `test/` and the Vitest config |
 | `vitest.config.ts` | SR-BUILD | the one test runner config — Node and browser projects |
 | `test/` | SR-BUILD | repo-level package checks (lockstep, no framework peer, no font, runtime allow-list) |
-| `scripts/build-grid-css.mjs` | SR-BUILD | writes `@sheetpane/grid`'s `dist/style.css` from its tokens |
+| `scripts/build-grid-css.mjs` | SR-BUILD | writes `@sheetpane/grid`'s `dist/style.css` from its tokens and copies `rules.schema.json` into `dist/` |
 | `scripts/pack-check.mjs` | SR-BUILD | the tarballs as npm sees them |
 | `scripts/release.mjs` | SR-BUILD | one version on every package |
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |

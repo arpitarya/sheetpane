@@ -127,7 +127,9 @@ pnpm and a justfile; the testing verdict chose the runner.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
-    plugins. Every gallery tab opens one showcase workbook
+    plugins · Rules file (W-33: `examples/shared/sheetpane.rules.json`,
+    copied into both demos by the generator — `rules-src` in HTML, the `rules`
+    prop in React — with `flagging="off"`). Every gallery tab opens one showcase workbook
     (`examples/shared/make-showcase.mjs` → `showcase.xlsx` in both demos,
     zipped by `writeZip`, hand-built, not Excel-saved; `just showcase`) on its
     own `pane`, mounted when the tab first opens and kept after; a plugin's
@@ -137,7 +139,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     `demo-check` asserts per tab: Vanilla plain (1.25, no overlay, no errors);
     1 1/4; the yellow fill; B6 recalculated; two rule errors; a data bar; the
     picture; both charts; the note and the thread; all of them together; lazy
-    mounting and edits kept.
+    mounting and edits kept; the Rules file tab's six errors with no Flag issue
+    and no card on F or a click.
 
 ### Consequences
 

@@ -23,7 +23,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./style.css": "./dist/style.css"
+    "./style.css": "./dist/style.css",
+    "./rules.schema.json": "./dist/rules.schema.json"
   },
   "files": [
     "dist"
@@ -43,7 +44,8 @@
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
       },
-      "./style.css": "./dist/style.css"
+      "./style.css": "./dist/style.css",
+      "./rules.schema.json": "./dist/rules.schema.json"
     }
   }
 }

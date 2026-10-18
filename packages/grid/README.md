@@ -101,6 +101,8 @@ const units = useSheetpane(sheet, (store) => store.value('Holdings', 'F3'), null
 | attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it, and column rules match by it |
 | attribute | `theme` | `light` (default), `dark` or `auto` (follows the page's `prefers-color-scheme`) |
 | attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
+| attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
+| attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
 | property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
@@ -190,6 +192,65 @@ excel.validate = async (ctx, signal) =>
   touched, and a rule never edits a cell.
 - Rules belong to the pane: `workbook.setColumnRules({ columns, validate,
   onInvalid, headerRow })` does the same without an element.
+
+## Rules file
+
+Ship the rules next to your code as JSON and point the sheet at them; every
+cell they cover is checked on load and the failures are listed in
+`<sheetpane-errors>`. With `flagging="off"` the sheet shows no Flag issue and
+opens no pop-up — the errors panel is the one place errors are read.
+
+```html
+<sheetpane-excel pane="q3" src="./q3.xlsx" rules-src="./sheetpane.rules.json" flagging="off"></sheetpane-excel>
+<sheetpane-errors pane="q3"></sheetpane-errors>
+```
+
+```json
+{
+  "$schema": "https://unpkg.com/@sheetpane/grid/rules.schema.json",
+  "version": 1,
+  "sheets": {
+    "*": {
+      "columns": { "Email": { "pattern": "^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$", "unique": true } }
+    },
+    "Accounts": {
+      "headerRow": 2,
+      "columns": {
+        "Account ID": { "required": true, "pattern": "^AC-\\d{5}$", "message": "Account IDs are AC- and five digits" },
+        "Units":      { "type": "integer", "min": 0 },
+        "Status":     { "oneOf": ["Active", "Inactive"], "noneOf": ["TBD", "N/A"], "severity": "warning" }
+      },
+      "cells": {
+        "B1":     { "equals": "Q3 review", "note": "the title cell the export pipeline reads" },
+        "H3:H40": { "type": "number", "min": 0, "max": 1 }
+      }
+    }
+  }
+}
+```
+
+- **`sheets`** by name; `"*"` applies to every sheet and a named sheet's rule
+  for the same title wins. Each sheet has `headerRow`, `columns` (by title,
+  as [Column rules](#column-rules)) and `cells` (an A1 cell or range).
+- **The words** are Column rules' plus `equals` (the one valid value; a blank
+  cell fails it), `noneOf` (values never valid) and `note` (for whoever
+  maintains the file — never shown as the message).
+- **`$schema`** gives your editor autocomplete and red squiggles: the schema
+  ships as `@sheetpane/grid/rules.schema.json`.
+- **Never silent, never a throw:** an unknown key, word or version, a sheet,
+  title or cell the workbook lacks, or a pattern that is not a regular
+  expression becomes one `note` in the errors panel; the rest still applies.
+- `rules-src` is read with a GET like `src`; `excel.rules = object` does the
+  same without a fetch. Setting either checks every row again. The element's
+  `columns` and `validate` still work beside it — the file's rule wins for the
+  same title, with a note.
+- **YAML or TOML:** parse it yourself and pass the object — the package reads
+  JSON only, so it carries no parser:
+
+  ```js
+  import { parse } from 'yaml';      // or: import { parse } from 'smol-toml';
+  excel.rules = parse(await (await fetch('./sheetpane.rules.yaml')).text());
+  ```
 
 ## `<sheetpane-errors>`
 

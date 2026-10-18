@@ -55,6 +55,15 @@ async function gallery(page, name) {
   check((await text(t.x.locator('#c5_1'))) === '1 1/4' && (await items(t.e)) >= 4, `${name}: All plugins — formats, rules and comments on one pane`);
   t = await tab('Formulas', 'formulas', 'Formulas');
   check((await text(t.x.locator('#c1_1'))) === '2000' && (await page.locator('[role=tabpanel] sheetpane-excel').count()) === 10, `${name}: a tab opened again keeps its edits; ten grids, one per opened tab`);
+  // W-33: the rules file, flagging="off"
+  t = await tab('Rules file', 'rules', 'Validation');
+  await t.e.locator('.item').nth(5).waitFor({ timeout: 15000 });
+  const ruleRows = await items(t.e);
+  await t.x.locator('#c2_2').click(); // C3, a failing cell
+  await t.x.locator('.grid').press('f');
+  await page.waitForTimeout(200);
+  const quiet = (await t.x.locator('.dock [data-act=flag]').count()) === 0 && (await t.x.locator('.cardslot').evaluate((el) => el.innerHTML)) === '' && (await t.x.evaluate((el) => el.workbook.getSnapshot().composing)) === null;
+  check(ruleRows === 6 && quiet, `${name}: Rules file lists 6 failing cells; flagging="off" — no Flag issue, F and a click open nothing (${ruleRows})`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

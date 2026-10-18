@@ -1,0 +1,79 @@
+---
+type: Handoff
+name: W-45
+description: "Arpit, 2026-10-18: invocable commands (e.g. /sheetpane-embed), hooks that check a rules file on save in Claude Code and Kiro, and the agent set offered as a Claude Code plugin with a marketplace in the repo."
+item: W-45
+filed: 2026-10-18
+filed_by: "Arpit (Cowork, claude-opus-5-5)"
+updated: 2026-10-18
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
+ball: agent
+---
+
+# W-45 — Agent commands, hooks and a Claude Code plugin
+
+## At a glance
+
+| step | what we do | what it gives us | state |
+|---|---|---|---|
+| 1 | Make the task skills invocable: `/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test` | one command does an integration step | ⏳ |
+| 2 | Hooks: after an edit to `*.rules.json`, run `sheetpane-skills check-rules` — Claude Code `PostToolUse`, Kiro `PostFileSave` | a broken rules file is caught as it is written | ⏳ |
+| 3 | Package skills, subagent, hooks and the MCP server as a Claude Code plugin; add `.claude-plugin/marketplace.json` to the repo | `/plugin marketplace add arpitarya/sheetpane`, then install | ⏳ |
+
+**Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
+
+**Model:** Sonnet — W-35's files in each tool's packaging format.
+
+## Goal
+
+Beyond reading skills, each agent can run sheetpane tasks as commands and is checked automatically when it writes a rules file. Claude Code users can install everything as one plugin.
+
+## Definition of done
+
+| DoD | what | state |
+|---|---|---|
+| 1 · commands | `sheetpane-embed`, `sheetpane-rules`, `sheetpane-test` are user-invocable skills (Claude Code runs a skill as `/name`; Codex deprecated custom prompts for skills, so skills are its command form too); each takes an argument (framework, workbook path) | ⏳ |
+| 2 · check command | `sheetpane-skills check-rules <file>` validates against the W-33 schema; exits non-zero with [W-40](W-40-error-codes.md) codes | ⏳ |
+| 3 · Claude hook | `hooks.json`: `PostToolUse` on Edit/Write with a path matching `\.rules\.json$` → the check, its output fed back | ⏳ |
+| 4 · Kiro hook | `.kiro/hooks/sheetpane-rules.json`: `version: "v1"`, trigger `PostFileSave`, `matcher` on the path, `action.type: "command"` | ⏳ |
+| 5 · Codex | if Codex's Hooks or Plugins fit, the same check; otherwise the `AGENTS.md` block tells Codex to run it — decide at build and record why | ⏳ |
+| 6 · Claude plugin | `plugins/sheetpane/.claude-plugin/plugin.json` with the skills, subagent, hooks and `.mcp.json` ([W-39](W-39-mcp-server.md)); `.claude-plugin/marketplace.json` at the repo root; tried with `--plugin-dir` and an eval | ⏳ |
+| 7 · installer | `sheetpane-skills install` writes the hooks for the chosen tools; `uninstall` removes them | ⏳ |
+| 8 · record | SR-SKILLS (from W-35) gains commands, hooks and the plugin | ⏳ |
+
+## Blockers
+
+Waiting on W-35 (the skills and the installer). The check needs [W-33](W-33-rules-file.md); the plugin's MCP entry needs [W-39](W-39-mcp-server.md).
+
+## Record affected
+
+SR-SKILLS (created by [W-35](W-35-agent-skills-package.md)).
+
+## Hazards
+
+- **An enabled Claude plugin costs context in every session** (each skill's name and description) — keep descriptions short; the plugin is opt-in.
+- **Hooks run as the user** — the check reads one file, writes nothing, no network.
+- **Kiro and Codex formats move** — record the doc dates in SR-SKILLS.
+
+## Research
+
+- Claude Code plugin: manifest `.claude-plugin/plugin.json`; components `skills/`, `agents/`, `hooks/hooks.json`, `.mcp.json`; a marketplace is a repo with `.claude-plugin/marketplace.json`; installed via `/plugin`.
+- Kiro hooks: JSON in `.kiro/hooks/`, `version: "v1"`, `hooks[]` with `trigger` (`PostFileSave`, `PreToolUse`, `PostToolUse`, `Stop`, …), `matcher`, `action` (`command` or `agent`).
+- Codex: custom prompts (`~/.codex/prompts/`) are deprecated in favour of skills; Codex documents Hooks and Plugins pages — format to confirm at build.
+
+## Reference
+
+- [Claude Code plugins](https://code.claude.com/docs/en/plugins/overview) · [Kiro hooks](https://kiro.dev/docs/hooks/) · [Codex custom prompts (deprecated)](https://developers.openai.com/codex/custom-prompts)
+- [W-35](W-35-agent-skills-package.md) · [W-33](W-33-rules-file.md) · [W-39](W-39-mcp-server.md) · [W-40](W-40-error-codes.md)
+
+## Prompt — paste into Claude Code
+
+```text
+You are building W-45 in the sheetpane monorepo.
+
+1. Explore. Read CLAUDE.md, work/INTERVIEW.md, work/open/W-35-agent-skills-package.md and packages/skills/ (once it exists) and this file
+   (work/open/W-45-agent-commands-hooks-plugin.md). Check the state of: W-33, W-35, W-39, W-40.
+2. Plan each tool's format and the installer changes before writing code. Re-check the external formats linked under Research; note anything that changed.
+3. Implement the command skills, the hooks, the plugin and marketplace, the installer changes.
+4. Verify: just check; every DoD row above. Then do what SR-WORK-DOCS decision 10 says every task owes.
+```

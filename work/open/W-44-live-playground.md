@@ -1,0 +1,71 @@
+---
+type: Handoff
+name: W-44
+description: "Arpit, 2026-10-18: publish the plugin gallery as a live site on every release and give each starter template an Open-in-StackBlitz link, so anyone can try sheetpane without installing it."
+item: W-44
+filed: 2026-10-18
+filed_by: "Arpit (Cowork, claude-opus-5-5)"
+updated: 2026-10-18
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
+ball: agent
+---
+
+# W-44 — A live playground: the demo gallery online, templates in StackBlitz
+
+## At a glance
+
+| step | what we do | what it gives us | state |
+|---|---|---|---|
+| 1 | CI builds the HTML and React demos (the W-32 gallery) and deploys them to GitHub Pages on each release tag | try every plugin in a browser, no install | ⏳ |
+| 2 | An "Open in StackBlitz" link per template ([W-43](W-43-create-sheetpane.md)) | edit a real project in the browser | ⏳ |
+| 3 | Link both from the READMEs, `llms.txt` and the setup skill | people and agents find them | ⏳ |
+
+**Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
+
+**Model:** Haiku — a CI job and links.
+
+## Goal
+
+One URL shows the latest release's gallery; one click per template opens an editable project.
+
+## Definition of done
+
+| DoD | what | state |
+|---|---|---|
+| 1 · deploy | a GitHub Actions job on release tags builds both demos and publishes them to GitHub Pages (`/` the HTML gallery, `/react/` the React one), version in the header | ⏳ |
+| 2 · StackBlitz | a `stackblitz.com/github/arpitarya/sheetpane/tree/<tag>/…` link per template, checked to load in CI | ⏳ |
+| 3 · links | package READMEs, `llms.txt` ([W-38](W-38-llms-txt.md)), the setup skill | ⏳ |
+| 4 · record | SR-BUILD (the deploy job) | ⏳ |
+
+## Blockers
+
+None for DoD 1 and 3; DoD 2 after [W-43](W-43-create-sheetpane.md).
+
+## Record affected
+
+[SR-BUILD](../../records/0102_BUILD.md).
+
+## Hazards
+
+- **Pages serves the built output**, not the workspace — the import map must point at files inside the deploy.
+- **No analytics, no third-party scripts** on the site.
+
+## Research
+
+- GitHub Pages deploys from Actions (`actions/deploy-pages`); StackBlitz opens a public GitHub path directly, no account needed to view.
+
+## Reference
+
+- [W-32](../../archive/open/W-32-plugin-gallery-demos.md) · [W-43](W-43-create-sheetpane.md) · [W-38](W-38-llms-txt.md)
+
+## Prompt — paste into Claude Code
+
+```text
+You are building W-44 in the sheetpane monorepo.
+
+1. Explore. Read CLAUDE.md, work/INTERVIEW.md, .github/workflows/, examples/, records/0102_BUILD.md and this file
+   (work/open/W-44-live-playground.md). Check the state of: W-38, W-43.
+2. Plan the deploy job and the link list before writing code. Re-check the external formats linked under Research; note anything that changed.
+3. Implement the workflow and the README links.
+4. Verify: just check; every DoD row above. Then do what SR-WORK-DOCS decision 10 says every task owes.
+```

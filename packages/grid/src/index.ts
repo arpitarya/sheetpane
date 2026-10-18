@@ -8,7 +8,7 @@ import { define } from './shared/dom.js';
 export { SheetpaneExcel, SheetpaneErrors };
 export { WorkbookStore, createWorkbook, parseInput, formulaRefs, key as cellKey, splitKey, kindRef, baseRef, SLOTTED_KINDS, HISTORY_CAP, type StoreOptions, type StoreEvent, type Origin } from './pane/store.js';
 export { acquirePane, releasePane, paneStore } from './pane/registry.js';
-export { describeRule, RULE_TYPE, type ColumnRule, type ColumnRules, type ColumnRulesConfig, type OnInvalid, type RuleContext, type RuleOutcome, type RulePhase, type RuleResult, type ValidateFn } from './pane/rules.js';
+export { checkDocument, describeRule, RULE_TYPE, CELL_RULE_TYPE, type RulesDocument, type ColumnRule, type ColumnRules, type ColumnRulesConfig, type OnInvalid, type RuleContext, type RuleOutcome, type RulePhase, type RuleResult, type ValidateFn } from './pane/rules.js';
 export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored } from './pane/types.js';
 // for plugins whose rules are written against a range's top-left (validation, condfmt): the one implementation
 export { shiftFormula } from '@sheetpane/export';

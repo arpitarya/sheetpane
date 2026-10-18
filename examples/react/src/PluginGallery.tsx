@@ -11,8 +11,9 @@ import '@sheetpane/charts/ui';
 import '@sheetpane/comments';
 import type { SheetpaneExcel } from '@sheetpane/grid';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import rulesDoc from './sheetpane.rules.json';
 
-export interface GalleryTab { id: string; label: string; plugins?: string; sheet?: string; blurb?: string }
+export interface GalleryTab { id: string; label: string; plugins?: string; sheet?: string; blurb?: string; rules?: boolean }
 export const TABS: readonly GalleryTab[] = [
   { id: 'review', label: 'Review' },
   { id: 'vanilla', label: 'Vanilla', plugins: '', sheet: 'Numbers', blurb: 'The grid alone: values as stored (Numbers!B6 reads 1.25), saved formula results marked stale after an edit, no fills, rules, pictures or charts.' },
@@ -25,6 +26,7 @@ export const TABS: readonly GalleryTab[] = [
   { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'charts (needs images) — a column and a line chart drawn at their anchors; Show source cells selects the data.' },
   { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'comments — the note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
   { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
+  { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (sheetpane.rules.json, passed as the rules prop) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
 ];
 
 /** The tab row (APG tabs: arrows move between tabs, Home/End to the ends). */
@@ -61,9 +63,10 @@ function Panel({ tab, hidden }: { tab: GalleryTab; hidden: boolean }) {
     return () => el.removeEventListener('sheetpane-load', open);
   }, [tab.sheet]);
   const plugins = tab.plugins ? { plugins: tab.plugins } : {};
+  const rules = tab.rules ? { rules: rulesDoc, flagging: 'off' as const } : {};
   return (
     <div role="tabpanel" data-tab={tab.id} aria-labelledby={`tab-${tab.id}`} hidden={hidden} style={{ display: hidden ? 'none' : 'flex', gap: 16, padding: '12px 24px 16px' }}>
-      <sheetpane-excel ref={sheet} pane={`gallery-${tab.id}`} mode="edit" author="Demo reviewer" src="/showcase.xlsx" {...plugins} style={{ flex: 1, minWidth: 0, height: 'calc(100vh - 170px)' }} />
+      <sheetpane-excel ref={sheet} pane={`gallery-${tab.id}`} mode="edit" author="Demo reviewer" src="/showcase.xlsx" {...plugins} {...rules} style={{ flex: 1, minWidth: 0, height: 'calc(100vh - 170px)' }} />
       <sheetpane-errors pane={`gallery-${tab.id}`} author="Demo reviewer" {...plugins} style={{ width: 340, flex: 'none', height: 'calc(100vh - 170px)' }} />
     </div>
   );

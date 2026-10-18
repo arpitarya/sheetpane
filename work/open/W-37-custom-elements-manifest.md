@@ -1,0 +1,78 @@
+---
+type: Handoff
+name: W-37
+description: "Arpit, 2026-10-18: ship a custom-elements.json and, from it, VS Code and JetBrains editor data and typings for React, Vue, Svelte and Solid, so attributes and events autocomplete everywhere."
+item: W-37
+filed: 2026-10-18
+filed_by: "Arpit (Cowork, claude-opus-5-5)"
+updated: 2026-10-18
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
+ball: agent
+---
+
+# W-37 — Custom Elements Manifest, editor data and framework types
+
+## At a glance
+
+| step | what we do | what it gives us | state |
+|---|---|---|---|
+| 1 | Generate `custom-elements.json` for `<sheetpane-excel>` and `<sheetpane-errors>`; point `package.json`'s `customElements` field at it | one machine-readable list of every attribute, property, method, event, CSS part and `--sp-*` token | ⏳ |
+| 2 | Generate VS Code `html.customData` + CSS custom data and JetBrains web-types from it | autocomplete and hover docs in plain HTML | ⏳ |
+| 3 | Ship typings: React JSX, Vue `GlobalComponents`, Svelte, Solid; document Angular's `CUSTOM_ELEMENTS_SCHEMA` | typed props and events in every framework | ⏳ |
+| 4 | A test: manifest attributes equal `observedAttributes`, its events equal what the elements dispatch | it can't drift | ⏳ |
+
+**Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
+
+**Model:** Sonnet — generation and typing; the contract is fixed.
+
+## Goal
+
+One manifest describes the elements; editors and frameworks read it. The hand-written `examples/react/src/elements.d.ts` moves into the package as a generated, exported typing, so no host writes its own.
+
+## Definition of done
+
+| DoD | what | state |
+|---|---|---|
+| 1 · manifest | `packages/grid/custom-elements.json` (schema 2.x) built from source and TSDoc ([W-36](W-36-tsdoc-public-api.md)); `"customElements": "custom-elements.json"` in `package.json`; in `files` | ⏳ |
+| 2 · editor data | `dist/vscode.html-custom-data.json`, `dist/vscode.css-custom-data.json` (`--sp-*`), `dist/web-types.json` for JetBrains; README says how to point `html.customData` at them | ⏳ |
+| 3 · framework types | exported entries `@sheetpane/grid/jsx` (React 19), `/vue`, `/svelte`, `/solid` — attributes, properties and `onsheetpane-…` events typed; `examples/react` imports `@sheetpane/grid/jsx` and drops its own file | ⏳ |
+| 4 · Angular | README and the frameworks skill show `CUSTOM_ELEMENTS_SCHEMA` and event binding; no Angular package | ⏳ |
+| 5 · check | a test compares the manifest with `observedAttributes`, dispatched event names and CSS tokens; a fixture per framework type-checks a usage | ⏳ |
+| 6 · record | SR-GRID names the manifest as the element contract's machine form; SR-BUILD the generators | ⏳ |
+
+## Blockers
+
+None. Better after [W-36](W-36-tsdoc-public-api.md) (the analyzer reads TSDoc); can start in parallel.
+
+## Record affected
+
+[SR-GRID](../../records/0105_GRID.md) · [SR-BUILD](../../records/0102_BUILD.md).
+
+## Hazards
+
+- **Dev dependencies only, FOSS only** (SR-LAW-2): the analyzer and the manifest-to-integration generators — confirm each licence and pin it; if one isn't FOSS, hand-write that output from the manifest.
+- **Type entries import types only** (`import type`), never a framework at runtime (the repo's "no framework peer" check).
+- **React 19 custom-event typing** is the fiddly part — test with the real `onsheetpane-change` usage from `examples/react`.
+
+## Research
+
+- **Custom Elements Manifest** — open-wc's schema; `@custom-elements-manifest/analyzer` reads JSDoc/TSDoc (`@fires`, `@attr`, `@cssprop`, `@csspart`).
+- **Generators from a manifest** (break-stuff / wc-toolkit): VS Code custom data, JetBrains web-types, JSX, Vue, Svelte, SolidJS integrations, React wrappers — exact package names and licences to confirm at build.
+- VS Code reads `html.customData` / `css.customData` paths from workspace settings.
+
+## Reference
+
+- [custom-elements-manifest (open-wc)](https://github.com/open-wc/custom-elements-manifest) · [wc-toolkit](https://github.com/wc-toolkit) · [Dave Rupert on the manifest](https://daverupert.com/2025/10/custom-elements-manifest-killer-feature/)
+- `examples/react/src/elements.d.ts` — today's hand-written typing
+
+## Prompt — paste into Claude Code
+
+```text
+You are building W-37 in the sheetpane monorepo.
+
+1. Explore. Read CLAUDE.md, work/INTERVIEW.md, packages/grid/src/excel/element.ts, packages/grid/src/errors/, packages/grid/README.md, examples/react/src/elements.d.ts and this file
+   (work/open/W-37-custom-elements-manifest.md). Check the state of: W-36.
+2. Plan the manifest build, each generated output, and the type entries before writing code. Re-check the external formats linked under Research; note anything that changed.
+3. Implement packages/grid (manifest, editor data, type entries) and the framework fixtures.
+4. Verify: just check; every DoD row above. Then do what SR-WORK-DOCS decision 10 says every task owes.
+```

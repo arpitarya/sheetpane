@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/@sheetpane/grid/rules.schema.json",
+  "title": "sheetpane rules file",
+  "description": "Rules a host ships for <sheetpane-excel>: per sheet (\"*\" for every sheet), by column title and by cell or range. Failures become errors in <sheetpane-errors>. SR-GRID decision 22d.",
+  "type": "object",
+  "required": ["version", "sheets"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1, "description": "The document's version; this grid reads 1." },
+    "sheets": {
+      "type": "object",
+      "description": "Keyed by sheet name; \"*\" applies to every sheet, and a named sheet's rule for the same title wins.",
+      "additionalProperties": { "$ref": "#/$defs/sheet" }
+    }
+  },
+  "$defs": {
+    "sheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "headerRow": { "type": "integer", "minimum": 1, "description": "The row holding the column titles (1-based)." },
+        "columns": { "type": "object", "description": "Rules by column title, matched trimmed and case-insensitive.", "additionalProperties": { "$ref": "#/$defs/rule" } },
+        "cells": { "type": "object", "description": "Rules by A1 cell or range, e.g. \"B1\" or \"H3:H40\".", "propertyNames": { "pattern": "^\\$?[A-Za-z]{1,3}\\$?[0-9]+(:\\$?[A-Za-z]{1,3}\\$?[0-9]+)?$" }, "additionalProperties": { "$ref": "#/$defs/rule" } }
+      }
+    },
+    "value": { "type": ["string", "number", "boolean"] },
+    "bound": { "type": ["number", "string"], "description": "A number, or for type \"date\" an ISO date or a serial." },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean" },
+        "type": { "enum": ["text", "number", "integer", "date", "boolean"] },
+        "min": { "$ref": "#/$defs/bound" },
+        "max": { "$ref": "#/$defs/bound" },
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 0 },
+        "pattern": { "type": "string", "description": "A regular expression tested against the cell's text (not over 10,000 characters)." },
+        "oneOf": { "type": "array", "items": { "$ref": "#/$defs/value" }, "description": "The valid values." },
+        "noneOf": { "type": "array", "items": { "$ref": "#/$defs/value" }, "description": "Values that are never valid." },
+        "equals": { "$ref": "#/$defs/value", "description": "The one valid value." },
+        "unique": { "type": "boolean", "description": "No other row of the column holds it (column rules)." },
+        "message": { "type": "string", "description": "Replaces the generated message." },
+        "note": { "type": "string", "description": "For whoever maintains the rules; never shown as the message." },
+        "severity": { "enum": ["error", "warning", "note"] },
+        "onInvalid": { "enum": ["flag", "block"] }
+      }
+    }
+  }
+}

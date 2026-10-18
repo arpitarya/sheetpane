@@ -44,6 +44,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — consumer tooling beyond skills: W-36 to W-45 filed, W-35 widened  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Other than codemods. File work item for everything else. Research and then file work items."*
+- **Done:** researched each format (Custom Elements Manifest and its generators, llms.txt, MCP 2026-07-28, Kiro hooks, Claude Code plugins, Codex prompts → skills). Filed W-36 TSDoc · W-37 manifest, editor data, framework types · W-38 llms.txt · W-39 `@sheetpane/mcp` (🟡 waiting on W-37) · W-40 error codes · W-41 `@sheetpane/testing` · W-42 `@sheetpane/fixtures` · W-43 `create-sheetpane` · W-44 live playground · W-45 commands, hooks, Claude plugin (🟡 waiting on W-35). W-35 gains skills 17–23 (router, frameworks, backend, performance, security, a11y, migrate); descriptions ≤ 250 chars. Not committed.
+- **Decided / left open:** codemods out (Arpit). Read in: MCP server hand-written, no SDK (a compare doc owed); error-code registry in `@sheetpane/export`; new records SR-MCP, SR-CODES, SR-TESTING, SR-FIXTURES, SR-CREATE numbered at build.
+- **Mistakes:** the first generator script was too long for one shell call (E2BIG); split into parts.
+- **Next:** W-33, then W-35–W-45 in Claude Code, per their balls.
+
+---
+
 ## 2026-10-18 — agent skills package: W-35 filed  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Research and create a work item for all the skills … part of a new package … grid, export, import, all of them are going to use this package as a dependency."*

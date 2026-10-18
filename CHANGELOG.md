@@ -26,6 +26,12 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **A rules file** (W-33): `rules-src="./sheetpane.rules.json"` or
+  `excel.rules = object` — rules per sheet (`"*"` for all), by column title
+  and by cell or range, with `equals`, `noneOf` and `note`; a JSON Schema
+  ships as `@sheetpane/grid/rules.schema.json`. **`flagging="off"`** hides
+  Flag issue and every pop-up: errors are read in the panel.
+
 - Dark theme: `theme="light" | "dark" | "auto"` on both elements (W-29).
 - Column rules by title — `columns`, `validate`, `onInvalid` (W-27).
 - Plugins: `@sheetpane/numfmt`, `formulas`, `styles`, `validation`,

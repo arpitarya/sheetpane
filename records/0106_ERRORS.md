@@ -71,7 +71,8 @@ the store and the contract are the contract verdict's and
    sheet; disconnecting releases it.
 3. **The list:** "n open"; severity filter (All · ✕ · ! · i, each with its
    count) and — when errors come from more than people — an author filter
-   (People · Workbook rules · Column rules · File comments); rows open first then resolved,
+   (People · Workbook rules · Column rules — "Rules file" when the pane has
+   a rules file, its rows then grouped by sheet — · File comments); rows open first then resolved,
    by number; each row shows the number (✓ when resolved), the type's name,
    Found → Should be, the range and severity, and tags (cell changed ·
    resolved · matches suggestion · stale). Picking a row selects its cell
@@ -79,7 +80,8 @@ the store and the contract are the contract verdict's and
    sheet**, Resolve / Reopen, Delete.
 4. **Show in sheet** selects the cell and dispatches `sheetpane-reveal
    {error}`, so the host can switch tab or open the pop-up.
-5. **The form** (while the pane is composing, in Edit): the cell, Found (the
+5. **The form** (while the pane is composing, in Edit, and never when the
+   pane is `flagging="off"` — SR-GRID 22e): the cell, Found (the
    uploaded text), Column (the header text found above, and the letter), Row
    (number and first value); type chips from `errorTypes` (each with its
    default severity); What’s wrong; What it should be; **Also change the cell

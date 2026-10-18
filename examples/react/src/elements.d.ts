@@ -12,6 +12,8 @@ declare module 'react' {
       'sheetpane-excel': ExcelBase & {
         pane?: string; mode?: 'view' | 'edit'; display?: 'tab' | 'popup'; open?: boolean; author?: string; src?: string;
         'header-row'?: string; theme?: 'light' | 'dark' | 'auto'; 'on-invalid'?: 'flag' | 'block'; plugins?: string;
+        /** A rules file as an object (W-33); `rules-src` reads one by URL. */
+        rules?: unknown; 'rules-src'?: string; flagging?: 'on' | 'off';
         file?: File | Blob | null;
         'onsheetpane-change'?: On<{ sheet: string; ref: string; kind: string; was: unknown; now: unknown }>;
         'onsheetpane-close'?: On<object>;

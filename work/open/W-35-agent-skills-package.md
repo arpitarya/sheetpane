@@ -1,7 +1,7 @@
 ---
 type: Handoff
 name: W-35
-description: "Arpit asked on 2026-10-18 for a new package, @sheetpane/skills, carrying the whole agent-facing set for Claude, Kiro and Codex — 16 skills plus each tool's entry files — that grid, export, import and the plugins depend on."
+description: "Arpit asked on 2026-10-18 for a new package, @sheetpane/skills, carrying the whole agent-facing set for Claude, Kiro and Codex — 23 skills plus each tool's entry files — that grid, export, import and the plugins depend on."
 item: W-35
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
@@ -17,15 +17,17 @@ ball: agent
 | step | what we do | what it gives us | state |
 |---|---|---|---|
 | 1 | Create `packages/skills` — files only, no runtime code — and make every other package depend on it | installing any sheetpane package brings the agent docs along, at the same version | ⏳ |
-| 2 | Write 16 skills in the one `SKILL.md` format all three tools read | one copy of each skill, three tools served | ⏳ |
+| 2 | Write 23 skills in the one `SKILL.md` format all three tools read | one copy of each skill, three tools served | ⏳ |
 | 3 | Add each tool's entry files: a `CLAUDE.md` block, an `AGENTS.md` block, a Kiro steering file, agent files | each tool knows the skills exist and when to reach for them | ⏳ |
 | 4 | Ship an `install` command that copies them into the host repo's `.claude/`, `.kiro/` and `.agents/` folders | none of the three tools reads `node_modules`; this puts the files where they look | ⏳ |
 | 5 | A check that every API name in every skill exists in the packages' exports | the skills can't drift from the code | ⏳ |
 
+Skills 17–23 added the same day (*"File work item for everything else"*).
+
 **Arpit, 2026-10-18:** *"Research and create a work item for all the skills listed here. Not just version one, even for should have, later, and the additional ones … all these skills will be part of a new package, a separate package … grid, export, import, all of them are going to use this package as a dependency."*
 Scope answers, same session: **the whole agent-facing set** (not skills alone); **ship the two contributor skills in the package too.**
 
-**Model:** Opus — 16 skills must match the records exactly, and the installer writes into other people's repos.
+**Model:** Opus — 23 skills must match the records exactly, and the installer writes into other people's repos.
 
 ## Goal
 
@@ -45,7 +47,7 @@ Scope answers, same session: **the whole agent-facing set** (not skills alone); 
 
 **What this forces:**
 - **One source, the common subset:** frontmatter `name` (= folder name, `sheetpane-…`) and `description` only, plus optional `license` and `metadata`. Valid for all three.
-- **Short descriptions:** ≤ 300 characters each, so 16 skills fit Codex's 8,000-character list alongside the host's own skills.
+- **Short descriptions:** ≤ 250 characters each — 23 × 250 = 5,750, leaving room in Codex's 8,000-character list for the host's own skills.
 - **`SKILL.md` ≤ 200 lines;** API tables and long examples go in `references/`.
 - **An installer is required.** No tool reads skills from `node_modules`. **No `postinstall`:** pnpm blocks lifecycle scripts by default, and writing into a repo without being asked is wrong.
 - **The bin has to be reachable.** npm and pnpm link only direct dependencies' bins, and a host installs `@sheetpane/grid`, not `@sheetpane/skills`. So `@sheetpane/grid` also exposes `sheetpane-skills`, forwarding to the skills package.
@@ -72,7 +74,7 @@ packages/skills/
 - `uninstall` removes exactly what `install` wrote.
 - With no flag, it installs for the tools whose folders already exist.
 
-## The 16 skills
+## The 23 skills
 
 | # | skill | covers | grounded in |
 |---|---|---|---|
@@ -92,6 +94,13 @@ packages/skills/
 | 14 | `sheetpane-upgrade` | reading `CHANGELOG.md`; breaking changes (e.g. W-31 removed the second download button) | `CHANGELOG.md` · `scripts/release.mjs` |
 | 15 | `sheetpane-file-work-item` *(contributor)* | filing a `W-nn`: the next id, the file shape, the OPEN-WORK row and its ball, WORKLOG, NOW, re-deriving `git status` | SR-WORK-OPEN-QUEUE · `work/open/README.md` · SR-WORK-SESSION |
 | 16 | `sheetpane-records` *(contributor)* | the SR records: laws, ownership, the commit guard, where a rule lives, archive-not-evidence | SR-LAW-0 · SR-WORK-* · `records/README.md` |
+| 17 | `sheetpane` *(router)* | which skill for which task: View vs Edit, tab vs pop-up, column rules vs rules file vs the validation plugin, which plugin for which feature — a decision table pointing at skills 1–23 | all of the above |
+| 18 | `sheetpane-frameworks` | Vue (`isCustomElement`), Angular (`CUSTOM_ELEMENTS_SCHEMA`), Svelte, Solid, Next.js (client-only import); the typed entries | [W-37](W-37-custom-elements-manifest.md) · [W-43](W-43-create-sheetpane.md) |
+| 19 | `sheetpane-backend` | the server round trip: upload the exported blob, store the review JSON, restore with `setErrors()` after `sheetpane-load`, conflict when the file changed | SR-ERRORS · SR-LAW-6 · SR-LAW-9 |
+| 20 | `sheetpane-performance` | large files: load-time slicing, lazy-mounting tabs, what to measure; the unmeasured memory ceiling (B-026) | SR-GRID 22b · SR-LAW-9 |
+| 21 | `sheetpane-security` | untrusted uploads, regex from a rules file, CSP with shadow DOM and constructed styles, no network from the grid beyond `src` | SR-LAW-6 · SR-GRID · W-33 hazards |
+| 22 | `sheetpane-a11y` | the keyboard contract, focus inside a modal or tabs, labelling the host's tab, the pop-up's focus return | SR-GRID · `work/reference/specs/a11y/` |
+| 23 | `sheetpane-migrate` | from SheetJS, Handsontable, AG Grid: their concepts mapped to sheetpane's elements, events and plugins; what has no equivalent (formulas UI, pivots) | the grid README · `work/proposals/pivots.md` |
 
 Each skill: a `description` naming when to use it **and when not**; steps or a decision table; one working example; the pitfalls; a `references/` link back to the record it summarises. **A skill points to a record; it never restates a rule as its own** (SR-LAW-0).
 
@@ -100,11 +109,11 @@ Each skill: a `description` naming when to use it **and when not**; steps or a d
 | DoD | what | state |
 |---|---|---|
 | 1 · package | `packages/skills` in the workspace; `@sheetpane/skills` in `dependencies` of export, import, grid and all eight plugins; it depends on nothing; `pack-check` shows only `skills/`, `entry/`, `bin/` | ⏳ |
-| 2 · skills 1–8, 10–16 | written to the shape above; frontmatter `name` + `description` only (± `license`, `metadata`); name = folder; description ≤ 300 chars; `SKILL.md` ≤ 200 lines | ⏳ |
-| 3 · skill 9 | `sheetpane-rules-file` lands with or after W-33 | ⏳ |
+| 2 · skills 1–8, 10–17, 19–23 | written to the shape above; frontmatter `name` + `description` only (± `license`, `metadata`); name = folder; description ≤ 250 chars; `SKILL.md` ≤ 200 lines | ⏳ |
+| 3 · skills 9 and 18 | `sheetpane-rules-file` lands with or after W-33; `sheetpane-frameworks` with or after W-37; skill 12 cites W-40's codes once they exist | ⏳ |
 | 4 · entry files | `CLAUDE.md` / `AGENTS.md` blocks (≤ 30 lines: what sheetpane is, the laws a host meets, which skill for what); Kiro steering with `fileMatch`; Claude subagent; Kiro custom agent with `skill://` resources; `agents/openai.yaml` on skills that need tools | ⏳ |
 | 5 · installer | `install` / `uninstall`, the flags above, marker-bounded edits, no `postinstall`, `--dry-run` lists every path; `@sheetpane/grid` exposes `sheetpane-skills` | ⏳ |
-| 6 · drift check | a test reads every skill and fails on: an element attribute, property, method or event not in the packages' public types; a record link that doesn't resolve; a description over 300 chars; a `name` ≠ folder; a frontmatter key outside the common subset | ⏳ |
+| 6 · drift check | a test reads every skill and fails on: an element attribute, property, method or event not in the packages' public types; a record link that doesn't resolve; a description over 250 chars; a `name` ≠ folder; a frontmatter key outside the common subset | ⏳ |
 | 7 · installer tests | in a temp repo: install for each tool and for all; re-run is a no-op; a hand-edited file is refused without `--force`; the marked block is replaced and text outside it kept; uninstall leaves the repo as before; Windows paths | ⏳ |
 | 8 · tried in each tool | from `demo-packed`'s tarballs, install into a scratch host; one real prompt per tool ("embed sheetpane in a React tab with an errors panel") picks the right skill — the prompt, tool version and result written here | ⏳ |
 | 9 · dogfood | the repo installs its own contributor skills (15–16) for Claude Code, Kiro and Codex, so the next filing uses `sheetpane-file-work-item` | ⏳ |
@@ -112,7 +121,7 @@ Each skill: a `description` naming when to use it **and when not**; steps or a d
 
 ## Blockers
 
-None. Skill 9 waits on W-33 (DoD 3); everything else can start.
+None. Skills 9 and 18 follow W-33 and W-37 (DoD 3); everything else can start.
 
 ## Record affected
 
@@ -123,7 +132,7 @@ None. Skill 9 waits on W-33 (DoD 3); everything else can start.
 - **Second source of truth.** A skill that restates a rule drifts the day the record changes. Every skill links its record, and DoD 6 fails on API names that don't exist. Coherence beyond names is still judgement (B-006's price).
 - **Contributor skills ship to hosts** (Arpit's choice). They describe this repo's `work/` and `records/`, which a host app doesn't have. Their descriptions must say *"only in the sheetpane repo"* so they never trigger elsewhere; `--skip contributor` leaves them out.
 - **Writing into a host's repo.** Only inside `.claude/`, `.kiro/`, `.agents/` and the marked blocks; never on install of the npm package; always listed.
-- **Codex's list budget is shared** with the host's own skills; 16 long descriptions would crowd them out.
+- **Codex's list budget is shared** with the host's own skills; 23 long descriptions would crowd them out.
 - **Tool formats move.** The table above is from the vendors' docs on 2026-10-18; re-check before building and record the date in SR-SKILLS.
 - **The runtime allow-list test** (`test/packages.test.ts`) checks third-party names only; a workspace `@sheetpane/skills` passes. The SSR and lockstep tests must cover it.
 - **Editing this repo's agent-steering files** (DoD 9) is governed by SR-WORK-DOCS decisions 6–8 — read them first.
@@ -135,6 +144,7 @@ None. Skill 9 waits on W-33 (DoD 3); everything else can start.
 - Kiro — [Skills](https://kiro.dev/docs/skills/) · [CLI skills](https://kiro.dev/docs/cli/skills/)
 - Codex — [Agent Skills](https://developers.openai.com/codex/skills)
 - [`../../packages/grid/README.md`](../../packages/grid/README.md) — the API the skills summarise
+- Siblings filed the same day: [W-36](W-36-tsdoc-public-api.md) TSDoc · [W-37](W-37-custom-elements-manifest.md) manifest + types · [W-38](W-38-llms-txt.md) llms.txt · [W-39](W-39-mcp-server.md) MCP · [W-40](W-40-error-codes.md) codes · [W-41](W-41-testing-package.md) testing · [W-42](W-42-fixtures-package.md) fixtures · [W-43](W-43-create-sheetpane.md) create · [W-44](W-44-live-playground.md) playground · [W-45](W-45-agent-commands-hooks-plugin.md) commands, hooks, plugin
 - [W-28](../../archive/open/W-28-react-hooks.md) · [W-29](../../archive/open/W-29-dark-theme-and-slot-tokens.md) · [W-33](W-33-rules-file.md)
 
 ## Prompt — paste into Claude Code

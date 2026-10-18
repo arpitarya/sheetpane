@@ -6,7 +6,7 @@ item: W-33
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,11 +16,11 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Define one JSON rules document (`version`, per sheet, per column title, per cell or range) with a published JSON Schema | rules written once, beside the code, with autocomplete in the editor | ⏳ |
-| 2 | Accept it as a `rules` property (object) or a `rules-src` attribute (URL to a `.json`) | link the file to the component; no rules → nothing changes | ⏳ |
-| 3 | Run it through the existing column-rules engine (W-27), widened to sheet scope, cell ranges, `equals` and `noneOf` | one checker, no second engine | ⏳ |
-| 4 | Add `flagging="off"`: no Flag issue, no `F` key, no composer, no callout card over the grid | errors appear only on the right, in `<sheetpane-errors>` | ⏳ |
-| 5 | A **Rules file** tab in both demos (W-32's gallery) | anyone can see it work | ⏳ |
+| 1 | Define one JSON rules document (`version`, per sheet, per column title, per cell or range) with a published JSON Schema | rules written once, beside the code, with autocomplete in the editor | ✅ |
+| 2 | Accept it as a `rules` property (object) or a `rules-src` attribute (URL to a `.json`) | link the file to the component; no rules → nothing changes | ✅ |
+| 3 | Run it through the existing column-rules engine (W-27), widened to sheet scope, cell ranges, `equals` and `noneOf` | one checker, no second engine | ✅ |
+| 4 | Add `flagging="off"`: no Flag issue, no `F` key, no composer, no callout card over the grid | errors appear only on the right, in `<sheetpane-errors>` | ✅ |
+| 5 | A **Rules file** tab in both demos (W-32's gallery) | anyone can see it work | ✅ |
 
 **Arpit, 2026-10-18:** *"While we are coding it out, we create some kind of file which says that this cell should have, this is a valid value and this is invalid value … And we link it with the tool … whenever that component gets rendered, if any value is incorrect, according to that file, it shows up on right-hand side section. And I don't want, in that case, any flag issues or to pop up. It should be an optional component which can be controlled through a prop."*
 
@@ -71,25 +71,24 @@ excel.rules = rulesJson;            // or an object parsed from YAML/TOML by the
 
 | DoD | what | state |
 |---|---|---|
-| 1 · document | `version: 1`; `sheets` keyed by sheet name, `"*"` for every sheet (a named sheet's rule for the same title wins); each sheet has optional `headerRow`, `columns` (by title, W-27's matching) and `cells` (an A1 ref or range); an unknown key, an unknown version or a sheet/ref the file lacks is one `note` error naming it — never silent, never a throw at render | ⏳ |
-| 2 · vocabulary | everything in SR-GRID 22a, plus `equals` (the one valid value), `noneOf` (listed invalid values) and `note` (free text for the author, never shown as the message); `oneOf` stays the valid list | ⏳ |
-| 3 · schema | `packages/grid/rules.schema.json` (JSON Schema 2020-12) shipped in the package and exported as `@sheetpane/grid/rules.schema.json`; `$schema` gives VS Code autocomplete and red squiggles; a test validates the README example against it | ⏳ |
-| 4 · linking | `rules` property takes the object; `rules-src` attribute loads a URL (same loader and same B-030 handling as `src`); setting either re-checks every row (SR-GRID 22c); `columns` and `validate` keep working and merge with the file (the file's rule wins for the same title, one `note`) | ⏳ |
-| 5 · one engine | the file compiles to the existing `host-rules` provider: same `type: 'column-rule'` (or `cell-rule` for `cells`), same caching, 8 ms load slices and progress line; no second checker | ⏳ |
-| 6 · `flagging="off"` | removes Flag issue from the cell bar and the context menu (W-31's places), the `F` key and its line in the `?` list; never opens the composer or the error callout card; the cell's error mark stays and clicking it selects the row in `<sheetpane-errors>`; `<sheetpane-errors>` hides "New error" when its pane is `flagging="off"`; default is `on` | ⏳ |
-| 7 · panel | rule errors are read-only rows ("Rules file" in the author filter), grouped by sheet, each with **Show in sheet** | ⏳ |
-| 8 · React | the React demo passes `rules` and `flagging` as props; `elements.d.ts` types both | ⏳ |
-| 9 · demo | an 11th tab, **Rules file**, in both demos' gallery (W-32): the showcase workbook plus a checked-in `examples/shared/sheetpane.rules.json` that fails a handful of cells, `flagging="off"`, the errors panel open; `demo-check` asserts the expected error count, that no Flag issue control exists, and that pressing `F` and clicking a cell open no card | ⏳ |
-| 10 · tests | in Chromium: `*` vs named sheet; column vs cell vs range; `equals`, `noneOf`; bad version / unknown key / missing sheet → notes; edit a failing cell to pass → error resolves; `flagging="off"` → no flag UI, no cards; 250,000 rows × the README file loads without a frame gap over 50 ms (measure and write the machine here) | ⏳ |
-| 11 · docs + record | grid README "Rules file" section with the example and a YAML/TOML host-side recipe (parse yourself, pass the object); SR-GRID decision 22 gains 22d (the document, `rules`, `rules-src`) and the flagging attribute; SR-ERRORS for the hidden "New error" | ⏳ |
-
+| 1 · document | `version: 1`; `sheets` keyed by sheet name, `"*"` for every sheet (a named sheet's rule for the same title wins); each sheet has optional `headerRow`, `columns` (by title, W-27's matching) and `cells` (an A1 ref or range); an unknown key, an unknown version or a sheet/ref the file lacks is one `note` error naming it — never silent, never a throw at render | ✅ `version: 1`; `sheets` by name with `"*"` (a named sheet's rule wins); `headerRow`, `columns`, `cells` per sheet; an unknown key/word/type/version, a missing sheet or title, a bad ref or pattern → one `note` each (keyed, so several share a cell); an unknown version applies nothing; never a throw — tests |
+| 2 · vocabulary | everything in SR-GRID 22a, plus `equals` (the one valid value), `noneOf` (listed invalid values) and `note` (free text for the author, never shown as the message); `oneOf` stays the valid list | ✅ SR-GRID 22a plus `equals` (blank fails it), `noneOf`, `note` (never the message); `oneOf` stays the valid list — tests |
+| 3 · schema | `packages/grid/rules.schema.json` (JSON Schema 2020-12) shipped in the package and exported as `@sheetpane/grid/rules.schema.json`; `$schema` gives VS Code autocomplete and red squiggles; a test validates the README example against it | ✅ `packages/grid/rules.schema.json` (JSON Schema 2020-12), exported as `@sheetpane/grid/rules.schema.json` and in the tarball; a test validates the README example and the demos' file against it (a small 2020-12 subset checker, no Ajv) and catches a typo |
+| 4 · linking | `rules` property takes the object; `rules-src` attribute loads a URL (same loader and same B-030 handling as `src`); setting either re-checks every row (SR-GRID 22c); `columns` and `validate` keep working and merge with the file (the file's rule wins for the same title, one `note`) | ✅ `rules` property and `rules-src` attribute (a GET like `src`, B-030 alike; a failure is a note); setting either re-checks every row; `columns` and `validate` still work, the file's rule wins for the same title with a note — tests |
+| 5 · one engine | the file compiles to the existing `host-rules` provider: same `type: 'column-rule'` (or `cell-rule` for `cells`), same caching, 8 ms load slices and progress line; no second checker | ✅ compiled into the existing `host-rules` provider (`column-rule`, `cell-rule`), same caching, slices (now on `requestIdleCallback`) and progress line |
+| 6 · `flagging="off"` | removes Flag issue from the cell bar and the context menu (W-31's places), the `F` key and its line in the `?` list; never opens the composer or the error callout card; the cell's error mark stays and clicking it selects the row in `<sheetpane-errors>`; `<sheetpane-errors>` hides "New error" when its pane is `flagging="off"`; default is `on` | ✅ no Flag issue in the cell bar or context menu, no `F` or its help line, no composer (a host `compose()` is cancelled), no callout card; the mark stays and selecting it marks the row in the panel; `<sheetpane-errors>` never shows New error; default `on` — tests |
+| 7 · panel | rule errors are read-only rows ("Rules file" in the author filter), grouped by sheet, each with **Show in sheet** | ✅ read-only host rows; the author filter says "Rules file" when a file is in force and groups its rows by sheet; Show in sheet on each — test |
+| 8 · React | the React demo passes `rules` and `flagging` as props; `elements.d.ts` types both | ✅ the React demo passes `rules` (an imported JSON) and `flagging` as props; `elements.d.ts` types `rules`, `rules-src`, `flagging` |
+| 9 · demo | an 11th tab, **Rules file**, in both demos' gallery (W-32): the showcase workbook plus a checked-in `examples/shared/sheetpane.rules.json` that fails a handful of cells, `flagging="off"`, the errors panel open; `demo-check` asserts the expected error count, that no Flag issue control exists, and that pressing `F` and clicking a cell open no card | ✅ the 11th gallery tab, **Rules file**, in both demos: the showcase plus `examples/shared/sheetpane.rules.json` (copied in by `just showcase`), `flagging="off"`, errors open; demo-check asserts 6 errors, no Flag issue, F and a click open no card |
+| 10 · tests | in Chromium: `*` vs named sheet; column vs cell vs range; `equals`, `noneOf`; bad version / unknown key / missing sheet → notes; edit a failing cell to pass → error resolves; `flagging="off"` → no flag UI, no cards; 250,000 rows × the README file loads without a frame gap over 50 ms (measure and write the machine here) | ✅ `rules-file.test.ts` (11) in Chromium; scale on Arpit's MacBook (headless Chromium 156, load ≈ 2.5): 250,000 rows × the README file — CSV: rules 0.72 s, longest frame gap 18 ms; `.xlsx`: 0.88 s, 18 ms (read 5.6 s) |
+| 11 · docs + record | grid README "Rules file" section with the example and a YAML/TOML host-side recipe (parse yourself, pass the object); SR-GRID decision 22 gains 22d (the document, `rules`, `rules-src`) and the flagging attribute; SR-ERRORS for the hidden "New error" | ✅ grid README "Rules file" with the example and the YAML/TOML recipe; SR-GRID 22a widened, 22d, 22e; SR-ERRORS 3, 5; SR-BUILD 11a; glossary; CHANGELOG |
 ## Blockers
 
-None. W-31 has landed (`f09b1fa`), so Flag issue's places are fixed. DoD 9 lands in W-32's gallery — build W-32 first, or add the tab in the same change.
+None.
 
 ## Record affected
 
-[SR-GRID](../../records/0105_GRID.md) decision 22 (new 22d, 22a widened) · [SR-ERRORS](../../records/0106_ERRORS.md) (New error hidden under `flagging="off"`) · [SR-BUILD](../../records/0102_BUILD.md) decision 11 (the demo tab, with W-32).
+**[SR-GRID](../../records/0105_GRID.md)** decisions 22a, 22d, 22e; [SR-ERRORS](../../records/0106_ERRORS.md) 3, 5; [SR-BUILD](../../records/0102_BUILD.md) 11a.
 
 ## Hazards
 

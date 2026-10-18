@@ -76,6 +76,7 @@ export class WorkbookStore {
     bookSheets: () => this.snap.book?.sheets,
     date1904: () => this.snap.book?.date1904 ?? false,
     value: (sheet, ref) => this.value(sheet, ref),
+    valueAt: (sheet, row, col) => (this.snap.changes.size || this.snap.derived.size ? this.value(sheet, cellRef(row, col)) : (this.sheet(sheet)?.rows[row]?.[col] ?? null)),
     text: (sheet, ref) => this.text(sheet, ref),
     original: (sheet, ref) => this.original(sheet, ref),
     revalidate: (sheets) => this.runValidate(sheets, undefined),
@@ -570,7 +571,7 @@ export class WorkbookStore {
         try { drafts = p.validate!(sheet, this.pluginContext()); } catch (e) { console.error(`sheetpane: plugin "${p.id}" validate failed`, e); continue; }
         const seen = new Set<string>();
         for (const d of drafts) {
-          const k = `${p.id}|${d.sheet}|${d.range}|${d.type}`;
+          const k = `${p.id}|${d.sheet}|${d.range}|${d.type}${d.key ? `|${d.key}` : ''}`;
           seen.add(k);
           const id = this.pluginErrors.get(k);
           const mine = (e: SheetpaneError | undefined) => !!e && e.sheet === d.sheet && e.range === d.range && e.type === d.type && e.author === d.author;
@@ -581,7 +582,7 @@ export class WorkbookStore {
             if (i >= 0) this.pluginErrors.set(k, errors[i]!.id);
           }
           if (i < 0) {
-            const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString() };
+            const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString() }; // `key` stays out of the error
             this.pluginErrors.set(k, e.id);
             at.set(e.id, errors.length);
             errors.push(e);
@@ -609,6 +610,13 @@ export class WorkbookStore {
   get columnRules(): Readonly<ColumnRulesConfig> { return this.rules.config; }
   /** The `load` phase's progress while it runs (rows checked of rows to check). */
   get ruleProgress(): { done: number; total: number } | undefined { return this.rules.progress; }
+  /** Whether a rules file (W-33) is in force for this pane. */
+  get hasRulesDocument(): boolean { return this.rules.hasDocument; }
+
+  // ── flagging (W-33): `off` leaves the errors panel as the one place errors are read ──
+  private flaggingOn = true;
+  get flagging(): boolean { return this.flaggingOn; }
+  setFlagging(on: boolean): void { if (on !== this.flaggingOn) { this.flaggingOn = on; if (!on && this.snap.composing) this.compose(null); this.set({}); } }
   /** The draft as typed, checked without storing anything (`input` phase). */
   checkInput(sheet: string, ref: string, input: string, signal: AbortSignal) {
     const now = this.snap.book ? parseInput(input, this.original(sheet, ref).value, this.snap.book.source) : input;

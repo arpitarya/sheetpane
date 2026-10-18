@@ -49,7 +49,8 @@ export type DeriveInput =
 export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string; clear?: boolean }
 
 /** What `validate` returns: an error without the fields the store owns. */
-export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean };
+/** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. */
+export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
 
 /** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
 /** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */

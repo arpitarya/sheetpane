@@ -104,7 +104,7 @@ export const DEFAULT_ERROR_TYPES: readonly ErrorType[] = [
 ];
 
 /** Names for the types plugins and the core write, shown when the host's `errorTypes` does not name them. */
-export const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = { validation: 'Workbook rule', comment: 'Comment', 'column-rule': 'Column rule' };
+export const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = { validation: 'Workbook rule', comment: 'Comment', 'column-rule': 'Column rule', 'cell-rule': 'Cell rule' };
 
 /** Errors the workbook, the file or a host rule wrote: shown, never resolved or deleted by hand. */
 export const machineAuthored = (author: string) => author === 'workbook' || author === 'file' || author === 'host';

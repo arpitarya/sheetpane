@@ -42,7 +42,7 @@ const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 export class SheetpaneExcel extends ElementBase {
-  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid'];
+  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -90,8 +90,25 @@ export class SheetpaneExcel extends ElementBase {
   get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
   set theme(t: Theme) { this.setAttribute('theme', t); }
 
-  // ── column rules (W-27): the pane's, set from here ─────────────────────
-  private rulesCfg: { columns?: ColumnRules; validate?: ValidateFn | undefined } | undefined;
+  // ── column rules (W-27) and the rules file (W-33): the pane's, set from here ──
+  private rulesCfg: { columns?: ColumnRules; validate?: ValidateFn | undefined; document?: unknown } | undefined;
+  /** A rules file (W-33) as an object: `{ version: 1, sheets: { "*": …, "Accounts": { headerRow, columns, cells } } }`. Also `rules-src`. */
+  get rules(): unknown { return this.rulesCfg?.document; }
+  set rules(doc: unknown) {
+    if (doc === undefined || doc === null) { if (this.rulesCfg) { const { document: _drop, ...rest } = this.rulesCfg; this.rulesCfg = rest; } }
+    else this.rulesCfg = { ...this.rulesCfg, document: doc };
+    this.applyRules();
+  }
+  /** `rules-src`: a URL read with a GET, like `src` (nothing is sent); a failure is a note in the errors, never a throw. */
+  private async loadRules(url: string): Promise<void> {
+    let doc: unknown;
+    try { const res = await fetch(url, { credentials: 'same-origin' }); if (!res.ok) throw new Error(`HTTP ${res.status}`); doc = JSON.parse(await res.text()); }
+    catch (e) { doc = { __error: `${url}: ${(e as Error).message}` }; }
+    if (this.getAttribute('rules-src') === url) this.rules = doc;
+  }
+  /** `flagging="off"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read. */
+  get flagging(): 'on' | 'off' { return this.getAttribute('flagging') === 'off' ? 'off' : 'on'; }
+  set flagging(v: 'on' | 'off') { this.setAttribute('flagging', v); }
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   get columns(): ColumnRules | undefined { return this.rulesCfg?.columns; }
   set columns(c: ColumnRules | undefined) { this.rulesCfg = { ...this.rulesCfg, columns: c ?? {} }; this.applyRules(); }
@@ -105,6 +122,7 @@ export class SheetpaneExcel extends ElementBase {
   private applyRules(): void {
     if (!this.rulesCfg || !this._store) return;
     const c: ColumnRulesConfig = { columns: this.rulesCfg.columns ?? {}, validate: this.rulesCfg.validate, onInvalid: this.onInvalid, headerRow: Math.max(1, Number(this.getAttribute('header-row') ?? 1) || 1) };
+    if (this.rulesCfg.document !== undefined) c.document = this.rulesCfg.document;
     this._store.setColumnRules(c);
   }
   get open(): boolean { return this.hasAttribute('open'); }
@@ -154,6 +172,8 @@ export class SheetpaneExcel extends ElementBase {
     if (m === 'edit' || m === 'view') this._store!.setMode(m, this);
     const src = this.getAttribute('src');
     if (src && this._store!.getSnapshot().load.status === 'empty') void this.load(src);
+    const rsrc = this.getAttribute('rules-src');
+    if (rsrc && this.rules === undefined) void this.loadRules(rsrc);
     addEventListener('beforeunload', this.onUnload);
     this.place();
     this.schedule();
@@ -172,6 +192,8 @@ export class SheetpaneExcel extends ElementBase {
     else if (name === 'mode' && (val === 'view' || val === 'edit')) this._store?.setMode(val, this);
     else if (name === 'display' || name === 'open') this.place();
     else if (name === 'header-row' || name === 'on-invalid') this.applyRules();
+    else if (name === 'rules-src') { if (val) void this.loadRules(val); else this.rules = undefined; }
+    else if (name === 'flagging') this._store?.setFlagging(val !== 'off');
     this.schedule();
   }
 
@@ -191,6 +213,7 @@ export class SheetpaneExcel extends ElementBase {
     attach(s, this);
     this.unsub.push(s.subscribe(() => this.schedule()), s.on((e) => this.onStoreEvent(e)), () => detach(s, this));
     this.applyRules();
+    if (this.hasAttribute('flagging')) s.setFlagging(this.getAttribute('flagging') !== 'off');
   }
 
   private unbind(): void {
@@ -524,7 +547,7 @@ export class SheetpaneExcel extends ElementBase {
   private actionItems(edit: boolean, err: SheetpaneError | undefined, o: { flag: boolean; plugins: boolean }): string {
     const s = this._store!, snap = s.getSnapshot();
     const item = (act: string, label: string, kbd = '') => `<button type="button" role="menuitem" class="mi" data-act="${act}">${esc(label)}${kbd ? `<span class="kbd">${esc(kbd)}</span>` : ''}</button>`;
-    const out = [o.flag && edit && !err ? item('flag', 'Flag issue', 'F') : '', item('copy-ref', 'Copy ref'), item('copy-value', 'Copy value', 'Ctrl/⌘+C')];
+    const out = [o.flag && edit && !err && s.flagging ? item('flag', 'Flag issue', 'F') : '', item('copy-ref', 'Copy ref'), item('copy-value', 'Copy value', 'Ctrl/⌘+C')];
     if (o.plugins && edit) for (const c of controlsFor(s.plugins, 'selbar', 'edit')) {
       const label = c.labelFor?.(snap, snap.selection) ?? c.label;
       const off = c.disabled?.(snap, snap.selection) ?? false;
@@ -620,7 +643,7 @@ export class SheetpaneExcel extends ElementBase {
       ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value'], ['Shift + F10 or Menu', 'Selection actions'],
     ].map(([keys, what]) => ({ keys: keys!, what: what! }));
     const plug = (this._store?.plugins ?? []).flatMap((p) => p.controls ?? []).filter((c) => c.shortcut).map((c) => ({ keys: c.shortcut!, what: c.label }));
-    return [...own, ...plug];
+    return [...(this._store && !this._store.flagging ? own.filter((x) => x.keys !== 'F') : own), ...plug];
   }
 
   /** Does a key event match a control's shortcut, e.g. `Mod+B`, `Ctrl+Shift+5`, `B`? */
@@ -735,6 +758,7 @@ export class SheetpaneExcel extends ElementBase {
   /** Flag issue (`F`): the store decides which form opens (contract decision 4). */
   private flag(): void {
     const s = this._store!, sel = s.getSnapshot().selection;
+    if (!s.flagging) return; // flagging="off" (W-33)
     const t = this._errorTypes[0]!;
     this.draft = { type: t.id, message: '', expected: '', severity: t.severity, change: false };
     this.composerKey = '';
@@ -1001,7 +1025,7 @@ export class SheetpaneExcel extends ElementBase {
     const typing = !!this.editing && this.shadow.activeElement === cell;
     q.dock.hidden = typing || composing;
     if (!q.dock.hidden) {
-      const flagBtn = edit && !err ? `<button type="button" class="btn btn-g" data-act="flag" title="Flag issue (F)" aria-label="Flag issue (F)">${ICON.flag}Flag issue<span class="kbd">F</span></button>` : '';
+      const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" title="Flag issue (F)" aria-label="Flag issue (F)">${ICON.flag}Flag issue<span class="kbd">F</span></button>` : '';
       const plug = edit ? this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit'), 'btn btn-g') : '';
       const more = `<button type="button" class="btn btn-g btn-i" data-act="more" aria-haspopup="menu" aria-expanded="${this.moreOpen}" title="More actions (Shift+F10)" aria-label="More actions (Shift+F10)">⋯</button>`;
       // the ⋯ menu: Copy ref, Copy value, and the plugin buttons, which show here only once they fold out of the bar
@@ -1242,7 +1266,7 @@ export class SheetpaneExcel extends ElementBase {
     } else if (this.menu && this.menu.sheet === sheet.name && this.menu.ref === sel.ref) {
       const m = this.menu;
       card = `<div class="card menu" role="listbox" aria-label="Choices" style="top:${p.y + RH}px;left:${p.x}px;min-width:${Math.max(cw, 140)}px;max-height:260px;overflow:auto">${m.options.map((o) => `<button type="button" role="option" class="btn btn-g" style="justify-content:flex-start;width:100%;border-radius:0" data-act="pick-option" data-v="${esc(o)}">${esc(o) || '(empty)'}</button>`).join('')}</div>`;
-    } else if (err) {
+    } else if (err && s.flagging) {
       card = this.calloutHtml(err, sideLeft(300), sideTop(260));
     }
     // the context menu (right-click, Shift+F10, the Menu key) sits just under the cell, above any card

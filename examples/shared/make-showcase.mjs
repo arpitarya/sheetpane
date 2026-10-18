@@ -7,7 +7,7 @@
 // compatibility — that is W-30's real-app files.
 //
 // Run after `just build`:  node examples/shared/make-showcase.mjs
-import { writeFileSync } from 'node:fs';
+import { copyFileSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { writeZip } from '@sheetpane/export';
 
@@ -176,4 +176,6 @@ const enc = (x) => (typeof x === 'string' ? new TextEncoder().encode(x) : new Ui
 // writeZip stamps every entry 1980-01-01, so the file is the same byte for byte on every run
 const bytes = await writeZip(Object.entries(parts).map(([name, data]) => ({ name, data: enc(data) })));
 for (const out of ['examples/html/showcase.xlsx', 'examples/react/public/showcase.xlsx']) writeFileSync(new URL(`../../${out}`, import.meta.url), bytes);
+// the Rules file tab (W-33): the HTML demo reads it with rules-src, the React demo imports it
+for (const out of ['examples/html/sheetpane.rules.json', 'examples/react/src/sheetpane.rules.json']) copyFileSync(new URL('./sheetpane.rules.json', import.meta.url), new URL(`../../${out}`, import.meta.url));
 console.log(`showcase.xlsx: ${bytes.length} bytes, ${sheets.length} sheets → examples/html, examples/react/public`);

@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-33 | A rules file (JSON per sheet / column / cell, `rules` / `rules-src`, schema shipped) compiled into the host-rules engine; `flagging="off"`; Rules file gallery tab; the load phase on idle callbacks with no per-cell allocation | closed | `rules-file.test.ts` (11) · demo-check · 250,000 rows: longest frame gap 18 ms |
 | 2026-10-18 | W-34 | Download as a neutral split button: main part in the upload's format; ▾ menu for .xlsx / .csv (converted: one sheet, latest values) and plugin export options (`Plugin.exportOptions`); `sheetpane-export` gains format, converted | closed | `actions.test.ts` (W-34, 4) · demo-check (47 ✓) |
 | 2026-10-18 | W-32 | Plugin gallery in both demos: Review + Vanilla, a tab per plugin, All plugins, on one generated showcase workbook; lazy-mounted panes; demo-check asserts every tab; demo-packed packs all plugins | closed | `just demo-check` (47 ✓) · `just demo-packed` (47 ✓) |
 | 2026-10-18 | W-31 | Selection actions docked at the cell bar's end and on right-click / Shift+F10 / Menu (no floating bar); one Download button (original bytes when untouched); a given workbook takes the element's mode; CHANGELOG created | closed | `packages/grid/test/actions.test.ts` (11) · demo-check (23 ✓) |
