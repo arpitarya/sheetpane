@@ -1,0 +1,39 @@
+{
+  "name": "@sheetpane/skills",
+  "version": "0.0.0",
+  "description": "Agent skills for sheetpane — Claude Code, Kiro and Codex — and the `sheetpane-skills` installer that copies them into a host repository.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/skills"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "sheetpane-skills": "./bin/sheetpane-skills.mjs"
+  },
+  "exports": {
+    "./bin": {
+      "types": "./bin/sheetpane-skills.d.mts",
+      "default": "./bin/sheetpane-skills.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "skills",
+    "entry",
+    "bin"
+  ],
+  "scripts": {
+    "build": "node -e \"\"",
+    "typecheck": "node -e \"\""
+  },
+  "dependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}

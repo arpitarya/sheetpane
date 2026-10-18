@@ -103,3 +103,5 @@ No font family is named anywhere (SR-LAW-5).
 
 Spec: [`work/open/W-16-formulas.md`](../../work/open/W-16-formulas.md).
 How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plugins.compare.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

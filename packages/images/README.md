@@ -76,3 +76,5 @@ the file keeps the anchors it had.
 the rendered cells (oneCell, twoCell, absolute, zoom), every format, laziness, object-URL
 revocation. Fixtures are hand-written packages and the ExcelJS 2×2 PNG; files saved by Excel and
 LibreOffice are owed by W-30.
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

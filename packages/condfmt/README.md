@@ -108,3 +108,5 @@ Colour never carries meaning alone.
 
 Spec: [`work/open/W-19-condfmt.md`](../../work/open/W-19-condfmt.md).
 How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plugins.compare.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

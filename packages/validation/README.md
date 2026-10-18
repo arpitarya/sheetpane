@@ -146,3 +146,5 @@ the rule rows when you need them.
   check runs on the edit, before the formula plugin has finished deriving.
 - `found` is fixed when the error is first made. If an error reopens, it shows
   the first failing value.
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

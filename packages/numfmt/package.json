@@ -41,6 +41,7 @@
     "@sheetpane/grid": "workspace:*"
   },
   "dependencies": {
+    "@sheetpane/skills": "workspace:*",
     "numfmt": "4.0.1"
   },
   "devDependencies": {

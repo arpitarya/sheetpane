@@ -26,6 +26,10 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **Agent skills** (W-35): `npx sheetpane-skills install` copies 23 skills for
+  Claude Code, Kiro and Codex into a repository, plus a short block in
+  `CLAUDE.md` / `AGENTS.md`; `uninstall` removes exactly what it wrote.
+
 - **Stable error codes** (W-40): every thrown error, console warning, rules
   note, refused load and blocked edit carries an `SP-xxxx` code with an entry
   in `docs/ERRORS.md`; `spCode` / `codeOf()` read it. Messages keep their old

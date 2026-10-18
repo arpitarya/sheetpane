@@ -126,3 +126,5 @@ from Excel (W-30). The parts follow the shapes Excel writes, but these tests
 check the parts sheetpane writes and reads, not Excel itself.
 
 Spec: [`work/open/W-22-comments.md`](../../work/open/W-22-comments.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

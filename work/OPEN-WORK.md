@@ -22,8 +22,9 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
+| **W-35 DoD 8** — try the skills: install from `demo-packed`'s tarballs into a scratch host and give one real prompt per tool (Claude Code, Kiro, Codex), e.g. *"embed sheetpane in a React tab with an errors panel"*; write the prompt, tool version and result in [W-35](open/W-35-agent-skills-package.md) | 2026-10-18 | 0 d |
 
-*Empty since 2026-10-18 — nothing waits on a ruling; the iPhone download check is backlog B-031, the real-app files are W-30 (`arpit` lane).*
+*The iPhone download check is backlog B-031; the real-app files are W-30 (`arpit` lane).*
 
 ---
 
@@ -33,7 +34,7 @@ here. Read that record before changing anything below it.
 
 
 
-- 🟢 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
+- 🟡 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Built: 22 of 23 skills, entry files, installer, drift check (SR-SKILLS); skill 18 waits on W-37, DoD 8 (a prompt in each tool) is the decider's. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
 
 - 🟢 **W-36** `agent` · Every public export documented with TSDoc (summary, params, events, one `@example`, a link to its record); a test fails on any undocumented export. Filed by Arpit (Cowork). [detail](open/W-36-tsdoc-public-api.md)
 

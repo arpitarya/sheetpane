@@ -140,6 +140,10 @@ importers:
         version: 8.3.4(@types/node@22.20.5)
 
   packages/charts:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/grid':
         specifier: workspace:*
@@ -149,12 +153,20 @@ importers:
         version: link:../images
 
   packages/comments:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid
 
   packages/condfmt:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/formulas':
         specifier: workspace:*
@@ -167,6 +179,10 @@ importers:
         version: link:../styles
 
   packages/export:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@types/papaparse':
         specifier: ^5.5.2
@@ -198,6 +214,9 @@ importers:
       '@ironcalc/wasm':
         specifier: 0.9.0
         version: 0.9.0
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/grid':
         specifier: workspace:*
@@ -211,8 +230,15 @@ importers:
       '@sheetpane/import':
         specifier: workspace:*
         version: link:../import
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
 
   packages/images:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/grid':
         specifier: workspace:*
@@ -223,6 +249,9 @@ importers:
       '@sheetpane/export':
         specifier: workspace:*
         version: link:../export
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       exceljs:
         specifier: 4.4.0
@@ -233,6 +262,9 @@ importers:
 
   packages/numfmt:
     dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
       numfmt:
         specifier: 4.0.1
         version: 4.0.1
@@ -241,13 +273,23 @@ importers:
         specifier: workspace:*
         version: link:../grid
 
+  packages/skills: {}
+
   packages/styles:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid
 
   packages/validation:
+    dependencies:
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
     devDependencies:
       '@sheetpane/export':
         specifier: workspace:*

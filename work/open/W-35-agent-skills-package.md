@@ -6,7 +6,7 @@ item: W-35
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -108,24 +108,23 @@ Each skill: a `description` naming when to use it **and when not**; steps or a d
 
 | DoD | what | state |
 |---|---|---|
-| 1 · package | `packages/skills` in the workspace; `@sheetpane/skills` in `dependencies` of export, import, grid and all eight plugins; it depends on nothing; `pack-check` shows only `skills/`, `entry/`, `bin/` | ⏳ |
-| 2 · skills 1–8, 10–17, 19–23 | written to the shape above; frontmatter `name` + `description` only (± `license`, `metadata`); name = folder; description ≤ 250 chars; `SKILL.md` ≤ 200 lines | ⏳ |
-| 3 · skills 9 and 18 | `sheetpane-rules-file` lands with or after W-33; `sheetpane-frameworks` with or after W-37; skill 12 cites W-40's codes once they exist | ⏳ |
-| 4 · entry files | `CLAUDE.md` / `AGENTS.md` blocks (≤ 30 lines: what sheetpane is, the laws a host meets, which skill for what); Kiro steering with `fileMatch`; Claude subagent; Kiro custom agent with `skill://` resources; `agents/openai.yaml` on skills that need tools | ⏳ |
-| 5 · installer | `install` / `uninstall`, the flags above, marker-bounded edits, no `postinstall`, `--dry-run` lists every path; `@sheetpane/grid` exposes `sheetpane-skills` | ⏳ |
-| 6 · drift check | a test reads every skill and fails on: an element attribute, property, method or event not in the packages' public types; a record link that doesn't resolve; a description over 250 chars; a `name` ≠ folder; a frontmatter key outside the common subset | ⏳ |
-| 7 · installer tests | in a temp repo: install for each tool and for all; re-run is a no-op; a hand-edited file is refused without `--force`; the marked block is replaced and text outside it kept; uninstall leaves the repo as before; Windows paths | ⏳ |
-| 8 · tried in each tool | from `demo-packed`'s tarballs, install into a scratch host; one real prompt per tool ("embed sheetpane in a React tab with an errors panel") picks the right skill — the prompt, tool version and result written here | ⏳ |
-| 9 · dogfood | the repo installs its own contributor skills (15–16) for Claude Code, Kiro and Codex, so the next filing uses `sheetpane-file-work-item` | ⏳ |
-| 10 · record + docs | new record **SR-SKILLS** (`records/0115_SKILLS.md`): the package, the common subset, the installer, the drift check; `records/README.md` ownership row for `packages/skills`; SR-BUILD (workspace member, dependency of every package); each package README gets one line pointing at `npx sheetpane-skills install` | ⏳ |
-
+| 1 · package | `packages/skills` in the workspace; `@sheetpane/skills` in `dependencies` of export, import, grid and all eight plugins; it depends on nothing; `pack-check` shows only `skills/`, `entry/`, `bin/` | ✅ `packages/skills` (no dependencies, no build); a dependency of export, import, grid and the eight plugins; `pack-check` shows `skills/`, `entry/`, `bin/` and the manifest only |
+| 2 · skills 1–8, 10–17, 19–23 | written to the shape above; frontmatter `name` + `description` only (± `license`, `metadata`); name = folder; description ≤ 250 chars; `SKILL.md` ≤ 200 lines | ✅ written to the shape: frontmatter `name` = folder, `description` ≤ 250 with its "not for", `license`, `metadata.audience`; every `SKILL.md` ≤ 200 lines; records linked on GitHub |
+| 3 · skills 9 and 18 | `sheetpane-rules-file` lands with or after W-33; `sheetpane-frameworks` with or after W-37; skill 12 cites W-40's codes once they exist | ⏳ skill 9 (rules file) ✅ (W-33 landed); skill 12 cites W-40's codes ✅; **skill 18 is a stub until W-37** |
+| 4 · entry files | `CLAUDE.md` / `AGENTS.md` blocks (≤ 30 lines: what sheetpane is, the laws a host meets, which skill for what); Kiro steering with `fileMatch`; Claude subagent; Kiro custom agent with `skill://` resources; `agents/openai.yaml` on skills that need tools | ✅ `entry/claude.md`, `entry/agents.md` (20 lines between the markers), `entry/kiro-steering.md` (`fileMatch`), `entry/claude-agent.md` and `entry/kiro-agent.json` (`sheetpane-integrator`, `skill://` resources) |
+| 5 · installer | `install` / `uninstall`, the flags above, marker-bounded edits, no `postinstall`, `--dry-run` lists every path; `@sheetpane/grid` exposes `sheetpane-skills` | ✅ `install` / `uninstall`, every flag, marked-block edits only, refusal without `--force`, `.sheetpane-skills.json`, no `postinstall`, `--dry-run` lists every path; `@sheetpane/grid` exposes `sheetpane-skills` (`dist/skills-bin.js`, runs `--help`) |
+| 6 · drift check | a test reads every skill and fails on: an element attribute, property, method or event not in the packages' public types; a record link that doesn't resolve; a description over 250 chars; a `name` ≠ folder; a frontmatter key outside the common subset | ✅ `test/skills.test.ts`: frontmatter subset, name = folder, ≤ 250, a "not for", ≤ 200 lines, links resolve, events / attributes / members exist in the elements' source |
+| 7 · installer tests | in a temp repo: install for each tool and for all; re-run is a no-op; a hand-edited file is refused without `--force`; the marked block is replaced and text outside it kept; uninstall leaves the repo as before; Windows paths | ✅ in temp repos: each tool and all, re-run no-op, hand-edit refused without `--force`, block replaced with the text around kept, uninstall restores the repo, `--dry-run`, `--skip contributor`, Windows paths |
+| 8 · tried in each tool | from `demo-packed`'s tarballs, install into a scratch host; one real prompt per tool ("embed sheetpane in a React tab with an errors panel") picks the right skill — the prompt, tool version and result written here | ⏳ the decider's: one real prompt per tool from `demo-packed`'s tarballs (Claude Code, Kiro, Codex) |
+| 9 · dogfood | the repo installs its own contributor skills (15–16) for Claude Code, Kiro and Codex, so the next filing uses `sheetpane-file-work-item` | ✅ the repo installs its contributor skills for all three tools (`--only contributor --skills-only`); the repo's `CLAUDE.md` is not written by the installer (SR-WORK-DOCS 6–8) |
+| 10 · record + docs | new record **SR-SKILLS** (`records/0115_SKILLS.md`): the package, the common subset, the installer, the drift check; `records/README.md` ownership row for `packages/skills`; SR-BUILD (workspace member, dependency of every package); each package README gets one line pointing at `npx sheetpane-skills install` | ✅ [SR-SKILLS](../../records/0116_SKILLS.md) (0116, as 0115 went to SR-FIXTURES); Ownership; SR-BUILD 7; each package README points at `npx sheetpane-skills install`; glossary; CHANGELOG |
 ## Blockers
 
-None. Skills 9 and 18 follow W-33 and W-37 (DoD 3); everything else can start.
+Skill 18 waits on **W-37**; DoD 8 (a real prompt in Claude Code, Kiro and Codex) is the decider's.
 
 ## Record affected
 
-**New SR-SKILLS** (`records/0115_SKILLS.md`) · [SR-BUILD](../../records/0102_BUILD.md) (workspace, dependencies, pack-check) · [`records/README.md`](../../records/README.md) §Ownership · the registry ([SR-WORK-REGISTRY](../../records/0060_WORK-registry.md) §3).
+**[SR-SKILLS](../../records/0116_SKILLS.md)**; SR-BUILD decision 7.
 
 ## Hazards
 

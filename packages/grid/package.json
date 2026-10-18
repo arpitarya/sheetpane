@@ -35,7 +35,8 @@
   },
   "dependencies": {
     "@sheetpane/export": "workspace:*",
-    "@sheetpane/import": "workspace:*"
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/skills": "workspace:*"
   },
   "publishConfig": {
     "access": "public",
@@ -47,5 +48,8 @@
       "./style.css": "./dist/style.css",
       "./rules.schema.json": "./dist/rules.schema.json"
     }
+  },
+  "bin": {
+    "sheetpane-skills": "./dist/skills-bin.js"
   }
 }

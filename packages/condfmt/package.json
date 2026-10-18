@@ -41,7 +41,9 @@
     "@sheetpane/grid": "workspace:*",
     "@sheetpane/styles": "workspace:*"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@sheetpane/skills": "workspace:*"
+  },
   "devDependencies": {
     "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",

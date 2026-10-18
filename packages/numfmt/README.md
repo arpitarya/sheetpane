@@ -101,3 +101,5 @@ there is no Excel on the build machine; regenerating the `expected` column with 
 
 Spec: [`work/open/W-15-numfmt.md`](../../work/open/W-15-numfmt.md).
 How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plugins.compare.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

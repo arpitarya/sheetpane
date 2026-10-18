@@ -39,7 +39,7 @@ describe('the package (DoD 1; SR-LAW-5)', () => {
     }
   });
   it('no runtime dependency; grid and styles are peers; the registration modules are the side effects', () => {
-    expect(pkg.dependencies).toEqual({});
+    expect(pkg.dependencies).toEqual({ '@sheetpane/skills': 'workspace:*' }); // the agent skills ship with every package (W-35)
     expect(pkg.peerDependencies).toEqual({ '@sheetpane/grid': 'workspace:*', '@sheetpane/styles': 'workspace:*' });
     expect(pkg.sideEffects).toEqual(['./dist/index.js', './dist/ui.js', './src/index.ts', './src/ui.ts']);
     expect(Object.keys(pkg.exports)).toEqual(['.', './ui']);

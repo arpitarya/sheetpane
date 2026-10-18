@@ -21,7 +21,7 @@ describe('the package (DoD 1; SR-LAW-5)', () => {
     expect(sources['../src/index.ts']).toContain("registerPlugin('comments', () => comments());");
   });
   it('no runtime dependency; grid is a peer; no ./ui; the registration module is the side effect', () => {
-    expect(pkg.dependencies).toEqual({});
+    expect(pkg.dependencies).toEqual({ '@sheetpane/skills': 'workspace:*' }); // the agent skills ship with every package (W-35)
     expect(pkg.peerDependencies).toEqual({ '@sheetpane/grid': 'workspace:*' });
     expect(pkg.sideEffects).toEqual(['./dist/index.js', './src/index.ts']);
     expect(Object.keys(pkg.exports)).toEqual(['.']);

@@ -2,7 +2,7 @@
 // B-023 publishable + lockstep (SR-LAW-8), B-012 no framework peer (SR-LAW-4),
 // B-015 no font shipped (SR-LAW-5), and the runtime-dependency allow-list (SR-LAW-2).
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
@@ -30,7 +30,14 @@ describe('SR-LAW-8 — every package is publishable, in lockstep (B-023)', () =>
     expect(p.name).toBe(`@sheetpane/${dir}`);
     expect(p.license).toBe('MIT');
     expect(p.type).toBe('module');
-    // @sheetpane/fixtures also ships its files, which url() reaches from src/ and dist/ alike (SR-BUILD decision 7)
+    // @sheetpane/fixtures also ships its files, which url() reaches from src/ and dist/ alike;
+    // @sheetpane/skills ships Markdown and an installer, no build (SR-BUILD decision 7)
+    if (dir === 'skills') {
+      expect(p.files).toEqual(['skills', 'entry', 'bin']);
+      expect(p.bin).toEqual({ 'sheetpane-skills': './bin/sheetpane-skills.mjs' });
+      expect(p.dependencies ?? {}).toEqual({});
+      return;
+    }
     expect(p.files).toEqual(dir === 'fixtures' ? ['dist', 'files'] : ['dist']);
     for (const [entry, target] of Object.entries<any>(p.exports)) {
       if (typeof target === 'string') continue; // a stylesheet
@@ -64,7 +71,9 @@ describe('SR-LAW-2 — runtime dependencies are only the allowed engines', () =>
 });
 
 describe('SR-LAW-5 — no font ships (B-015)', () => {
-  const files = dirs.flatMap((d) => walk(join(root, 'packages', d, 'src')));
+  // what each package ships as source: src/, or for @sheetpane/skills its Markdown and installer
+  const shipped = (d: string) => (d === 'skills' ? ['skills', 'entry', 'bin'] : ['src']).map((x) => join(root, 'packages', d, x)).filter((x) => existsSync(x));
+  const files = dirs.flatMap((d) => shipped(d).flatMap((x) => walk(x)));
   it('no font file, @font-face, web-font URL or named font-family in any package source', () => {
     const bad: string[] = [];
     for (const f of files) {

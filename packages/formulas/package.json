@@ -41,7 +41,8 @@
     "@sheetpane/grid": "workspace:*"
   },
   "dependencies": {
-    "@ironcalc/wasm": "0.9.0"
+    "@ironcalc/wasm": "0.9.0",
+    "@sheetpane/skills": "workspace:*"
   },
   "devDependencies": {
     "@sheetpane/grid": "workspace:*"

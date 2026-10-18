@@ -50,3 +50,5 @@ Every refusal is an `ImportError` with a `code`:
 | `needs-dom` | reading `.xlsx` in Node, which has no `DOMParser` (CSV works anywhere) |
 
 The spec is the record [SR-IMPORT](../../records/0104_IMPORT.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

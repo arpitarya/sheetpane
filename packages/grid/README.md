@@ -301,3 +301,5 @@ lists the defaults, and `theme="dark"` swaps in the dark set. The font is yours:
 
 The specs are the records [SR-GRID](../../records/0105_GRID.md) and
 [SR-ERRORS](../../records/0106_ERRORS.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

@@ -24,7 +24,7 @@ describe('the package (DoD 1; SR-LAW-5)', () => {
     }
   });
   it('numfmt is pinned exactly; grid is a peer; the registration modules are the side effects', () => {
-    expect(pkg.dependencies).toEqual({ numfmt: '4.0.1' });
+    expect(pkg.dependencies).toEqual({ '@sheetpane/skills': 'workspace:*', numfmt: '4.0.1' }); // the agent skills ship with every package (W-35)
     expect(pkg.peerDependencies).toEqual({ '@sheetpane/grid': 'workspace:*' });
     expect(pkg.sideEffects).toEqual(['./dist/index.js', './dist/ui.js', './src/index.ts', './src/ui.ts']);
     expect(Object.keys(pkg.exports)).toEqual(['.', './ui']);

@@ -105,7 +105,9 @@ pnpm and a justfile; the testing verdict chose the runner.
    each pinned exactly; no font file, `@font-face`, web-font URL or named
    `font-family` in any package source. Each package ships `dist` only —
    except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
-   reaches them from `src/` and `dist/` alike (W-42).
+   reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
+   which ships `skills/`, `entry/` and `bin/`, has no build and is a
+   dependency of every other package (W-35, SR-SKILLS).
 8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
    `just pack-check` on every push to `main` and every PR (Chromium);
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;

@@ -118,3 +118,5 @@ the save silently:
 ```
 
 The spec is the record [SR-EXPORT](../../records/0103_EXPORT.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

@@ -28,3 +28,5 @@ compatibility: files saved by Excel, Google Sheets, LibreOffice and Numbers
 join with the app named in `appSaved` (W-30). No dependencies.
 
 The spec is the record [SR-FIXTURES](../../records/0115_FIXTURES.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

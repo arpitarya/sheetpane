@@ -33,7 +33,9 @@
   "peerDependencies": {
     "@sheetpane/grid": "workspace:*"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@sheetpane/skills": "workspace:*"
+  },
   "devDependencies": {
     "@sheetpane/grid": "workspace:*"
   },

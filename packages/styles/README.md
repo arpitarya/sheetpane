@@ -90,3 +90,5 @@ Exported for reuse: `resolveColor`, `applyTint`, `paletteOf`, `DEFAULT_THEME`,
 
 Spec: [`work/open/W-17-styles.md`](../../work/open/W-17-styles.md).
 How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plugins.compare.md).
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.

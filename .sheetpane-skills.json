@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "note": "Written by sheetpane-skills; `npx sheetpane-skills uninstall` removes exactly these paths.",
+  "files": {
+    ".claude/skills/sheetpane-file-work-item/SKILL.md": {
+      "sha": "83f831bc4250cf9b",
+      "tool": "claude"
+    },
+    ".claude/skills/sheetpane-records/SKILL.md": {
+      "sha": "b74662c1b2be7620",
+      "tool": "claude"
+    },
+    ".kiro/skills/sheetpane-file-work-item/SKILL.md": {
+      "sha": "83f831bc4250cf9b",
+      "tool": "kiro"
+    },
+    ".kiro/skills/sheetpane-records/SKILL.md": {
+      "sha": "b74662c1b2be7620",
+      "tool": "kiro"
+    },
+    ".agents/skills/sheetpane-file-work-item/SKILL.md": {
+      "sha": "83f831bc4250cf9b",
+      "tool": "codex"
+    },
+    ".agents/skills/sheetpane-records/SKILL.md": {
+      "sha": "b74662c1b2be7620",
+      "tool": "codex"
+    }
+  },
+  "blocks": {},
+  "dirs": [
+    ".agents",
+    ".agents/skills",
+    ".agents/skills/sheetpane-file-work-item",
+    ".agents/skills/sheetpane-records",
+    ".claude/skills",
+    ".claude/skills/sheetpane-file-work-item",
+    ".claude/skills/sheetpane-records",
+    ".kiro",
+    ".kiro/skills",
+    ".kiro/skills/sheetpane-file-work-item",
+    ".kiro/skills/sheetpane-records"
+  ]
+}
