@@ -54,6 +54,21 @@ async function run(name, dir, spa) {
     check(await pop.evaluate((el) => el.shadowRoot.querySelector('dialog').open), `${name}: the pop-up opens on the same pane`);
     await page.keyboard.press('Escape');
     check(!(await pop.evaluate((el) => el.shadowRoot.querySelector('dialog').open)), `${name}: Esc closes the pop-up`);
+    if (name === 'react') {
+      // W-28: the hooks strip follows the sheet; Check columns turns on the column rules (W-27)
+      const strip = page.getByTestId('review-strip');
+      await excel.locator('#c4_5').click();
+      await strip.filter({ hasText: 'Units (F5): 430' }).waitFor({ timeout: 5000 });
+      check(true, `${name}: useSelection names the column and value under the sheet`);
+      const before = await errors.locator('.item').count();
+      await page.getByLabel('Check columns').check();
+      await errors.locator('.item').nth(before + 2).waitFor({ timeout: 10000 });
+      const rows = await errors.locator('.item').allTextContents();
+      check(rows.length === before + 3 && rows.some((r) => r.includes('AC-1O044')) && rows.some((r) => r.includes('-150')), `${name}: Check columns flags the sample's three mistakes by column title`);
+      await page.getByLabel('Check columns').uncheck();
+      await page.waitForFunction((n) => document.querySelector('sheetpane-errors').shadowRoot.querySelectorAll('.item').length === n, before, { timeout: 10000 });
+      check(true, `${name}: unchecking removes the column-rule errors`);
+    }
     // a .csv opens; any other format is refused
     await page.getByRole('button', { name: 'Load the CSV sample' }).click();
     await excel.locator('.meta').filter({ hasText: 'csv' }).waitFor();

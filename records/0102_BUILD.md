@@ -85,7 +85,9 @@ pnpm and a justfile; the testing verdict chose the runner.
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
    Node; every other package runs in browser mode on Playwright, and so do
    `@sheetpane/export`'s `*.browser.test.ts` files (project `export-browser`,
-   the engine-determinism proof). `SP_BROWSERS` selects the engines.
+   the engine-determinism proof), and so do the React hook recipes'
+   tests under `examples/react/test` (project `react-recipes`, against the
+   demo's own React). `SP_BROWSERS` selects the engines.
    Browser tests run at a 1280 × 800 viewport. Node projects carry the
    `source` condition in `ssr.resolve` as well, so
    they never read a stale `dist/`. `.xlsx` and `.csv` fixtures load as assets
@@ -117,7 +119,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     (Vite + React 19) are workspace members that depend on the packages by
     name and import only their public exports. `scripts/demo-check.mjs` uses
     both in Chromium (flag, resolve, edit + Export read back, font, pop-up,
-    CSV, refusal) — `just demo-check`, on every push; `scripts/demo-packed.mjs`
+    CSV, refusal; in React also the hooks strip and the column rules) —
+    `just demo-check`, on every push; `scripts/demo-packed.mjs`
     installs both from `pnpm pack` tarballs outside the workspace and runs the
     same check — `just demo-packed`, nightly.
 

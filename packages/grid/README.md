@@ -59,6 +59,33 @@ useEffect(() => {
 return <sheetpane-excel ref={ref} pane="q3" />;
 ```
 
+### React hooks (recipes)
+
+Not a package (SR-LAW-4: no framework wrappers in v1) — copy
+[`examples/react/src/sheetpane-hooks.ts`](../../examples/react/src/sheetpane-hooks.ts)
+into your app. Each hook takes a `ref` to `<sheetpane-excel>`, is built on
+`useSyncExternalStore` with a stable selector (a component re-renders only
+when what it reads changes), removes its listeners on unmount, and is safe
+under StrictMode. React 19 and 18.
+
+```tsx
+const sheet = useRef<SheetpaneExcel>(null);
+const sel = useSelection(sheet);         // { sheet, ref, range, column: { index, letter, header }, value, text }
+const edit = useCellEdit(sheet);         // { editing, ref, column, draft } while the user types
+const { count, canUndo } = useChanges(sheet);
+const { errors, open } = useErrors(sheet);
+const wb = useWorkbook(sheet);           // the pane's store
+const rules = useColumnRules(sheet, { Age: { type: 'integer', min: 18 } }); // { checking, done, total }
+useSheetpaneEvent(sheet, 'sheetpane-beforechange', (e) => { if (Number(e.detail.now) < 0) e.preventDefault(); });
+return <sheetpane-excel ref={sheet} pane="r1" mode="edit" src="people.xlsx" />;
+```
+
+The primitive under all of them, for a hook of your own:
+
+```ts
+const units = useSheetpane(sheet, (store) => store.value('Holdings', 'F3'), null);
+```
+
 ## `<sheetpane-excel>`
 
 | kind | name | what |
