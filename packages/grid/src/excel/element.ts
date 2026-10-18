@@ -16,7 +16,7 @@ import { COL_VIRTUAL_AFTER, HEAD_H, ROWHEAD_W, ROW_H, colAt, mergeAt, sheetGeome
 import { EXCEL_CSS } from './styles.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
 
 /** Turns a `src` attribute value into bytes: a data URL, raw base64, or a URL to fetch (a read; nothing is sent). */
@@ -131,9 +131,10 @@ export class SheetpaneExcel extends ElementBase {
   }
 
   /** Every change applied; the upload untouched. Also dispatches `sheetpane-export`. */
-  async export(options: Readonly<Record<string, unknown>> = {}): Promise<Blob> {
-    const r = await this.ensureStore().exportFile({ options });
-    this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded }, true), name: r.name };
+  async export(options: Readonly<Record<string, unknown>> = {}, o: { format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<Blob> {
+    const store = this.ensureStore();
+    const r = await store.exportFile({ options, ...o, ...(o.format === 'csv' && !o.sheet ? { sheet: store.getSnapshot().selection.sheet } : {}) });
+    this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded, format: r.kind, converted: r.converted }, true), name: r.name };
     return r.blob;
   }
   private lastExport: { ok: boolean; name: string } | undefined;
@@ -204,7 +205,7 @@ export class SheetpaneExcel extends ElementBase {
   /** One DOM event per action, on the element where it happened (or the pane's first sheet when nobody owns it). */
   private onStoreEvent(e: StoreEvent): void {
     if (e.type === 'select' && e.origin !== this) this.scrollToSel = true;
-    if (e.type === 'select' || e.type === 'load') { this.ctxOpen = false; this.moreOpen = false; } // a menu belongs to the cell it opened on
+    if (e.type === 'select' || e.type === 'load') { this.ctxOpen = false; this.moreOpen = false; if (e.type === 'load') this.dlOpen = false; } // a menu belongs to the cell it opened on
     const sheetBefore = this.lastSheet;
     if (e.type === 'load') this.lastSheet = this._store!.getSnapshot().selection.sheet;
     if (e.type === 'select') this.lastSheet = e.sheet;
@@ -252,7 +253,7 @@ export class SheetpaneExcel extends ElementBase {
    <button type="button" class="btn btn-g btn-i freeze" aria-label="Freeze panes at the selected cell" title="Freeze rows above and columns left of the selected cell">${ICON.freeze}</button>
    <span class="xs faint changes"></span>
   </span>
-  <button type="button" class="btn btn-p export">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button>
+  <span class="split dl"><button type="button" class="btn export">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button><button type="button" class="btn btn-i dlmore" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="false">▾</button><span class="dlslot"></span></span>
   <button type="button" class="btn btn-g btn-i help" aria-label="Keyboard shortcuts" aria-expanded="false" title="Keyboard shortcuts">?</button>
   <button type="button" class="btn btn-g btn-i close" aria-label="Close (Esc)" title="Close">${ICON.close}</button>
  </div>
@@ -282,7 +283,7 @@ export class SheetpaneExcel extends ElementBase {
     const $ = <T extends HTMLElement>(sel: string) => this.shadow.querySelector(sel) as T;
     this.q = {
       root: $('.sp'), dialog: $('dialog'), fname: $('.fname'), meta: $('.meta'), counts: $('.counts'), findin: $('.findin'), findcnt: $('.find .cnt'), zoom: $('.zoom'),
-      editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), close: $('.close'), dock: $('.dock'),
+      editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), dlmore: $('.dlmore'), dlslot: $('.dlslot'), close: $('.close'), dock: $('.dock'),
       help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
       grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
@@ -334,6 +335,17 @@ export class SheetpaneExcel extends ElementBase {
     q.redo.addEventListener('click', () => s().redo(this));
     q.freeze.addEventListener('click', () => this.toggleFreeze());
     q.export.addEventListener('click', () => void this.downloadFile());
+    q.dlmore.addEventListener('click', () => { this.dlOpen = !this.dlOpen; this.schedule(); if (this.dlOpen) requestAnimationFrame(() => this.q.dlslot.querySelector<HTMLElement>('[role^=menuitem]')?.focus()); });
+    q.dlslot.addEventListener('click', (e) => {
+      const t = (e.target as Element).closest<HTMLElement>('[data-fmt], [data-opt]');
+      if (!t) return;
+      if (t.dataset.opt) { this.exportChoice[t.dataset.opt] = !this.exportChoices()[t.dataset.opt]; this.schedule(); return; } // a checkbox keeps the menu open
+      this.dlOpen = false; this.schedule();
+      void this.downloadFile(t.dataset.fmt as 'xlsx' | 'csv');
+      this.q.dlmore.focus();
+    });
+    q.dlslot.addEventListener('keydown', (e) => this.onMenuKey(e, '.dlmenu'));
+    q.root.addEventListener('pointerdown', (e) => { if (this.dlOpen && !(e.target as Element).closest('.split')) { this.dlOpen = false; this.schedule(); } });
     q.dock.addEventListener('click', (e) => this.onDockClick(e));
     q.dock.addEventListener('keydown', (e) => this.onMenuKey(e, '.moremenu'));
     q.help.addEventListener('click', () => { this.helpOpen = !this.helpOpen; q.help.setAttribute('aria-expanded', String(this.helpOpen)); this.schedule(); });
@@ -535,9 +547,10 @@ export class SheetpaneExcel extends ElementBase {
     if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1]?.focus(); return true; }
     if (e.key === 'Escape' || e.key === 'Tab') {
       e.preventDefault(); e.stopPropagation();
-      const fromMore = sel === '.moremenu';
-      this.ctxOpen = false; this.moreOpen = false; this.schedule();
-      if (fromMore) this.q.dock.querySelector<HTMLElement>('[data-act=more]')?.focus(); else this.q.grid.focus({ preventScroll: true });
+      this.ctxOpen = false; this.moreOpen = false; this.dlOpen = false; this.schedule();
+      if (sel === '.moremenu') this.q.dock.querySelector<HTMLElement>('[data-act=more]')?.focus();
+      else if (sel === '.dlmenu') this.q.dlmore.focus();
+      else this.q.grid.focus({ preventScroll: true });
       return true;
     }
     return false;
@@ -565,17 +578,38 @@ export class SheetpaneExcel extends ElementBase {
     return s.changeCount === 0 && !(s.getSnapshot().errors.length && s.plugins.some((p) => p.provides.includes('exportPatch')));
   }
 
-  /** The one Download button (W-31): the original bytes when untouched, else `export()` with every change. Both fire `sheetpane-export`. */
-  private async downloadFile(): Promise<void> {
+  // ── Download (W-31, W-34): the main part in the upload's format; ▾ for either format and plugin options ──
+  private dlOpen = false;
+  private exportChoice: Record<string, boolean> = {};
+  /** Each plugin export option, its default unless the reviewer flipped it in the menu. */
+  private exportChoices(): Record<string, boolean> {
+    const out: Record<string, boolean> = {};
+    for (const o of (this._store?.plugins ?? []).flatMap((p) => p.exportOptions ?? [])) out[o.key] = this.exportChoice[o.key] ?? o.default;
+    return out;
+  }
+
+  /** The upload's format: the original bytes when untouched, else `export()` with every change. Another format converts. All fire `sheetpane-export`. */
+  private async downloadFile(format?: 'xlsx' | 'csv'): Promise<void> {
     const s = this._store, src = s?.getSnapshot().source;
     if (!s || !src) return;
-    if (this.untouched()) {
+    const fmt = format ?? src.kind;
+    if (fmt === src.kind && this.untouched()) {
       const blob = new Blob([src.bytes as BlobPart], { type: src.kind === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true }, true)) download(src.bytes, src.name);
+      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true, format: fmt, converted: false }, true)) download(src.bytes, src.name);
       return;
     }
-    const blob = await this.export();
+    const blob = await this.export(this.exportChoices(), { format: fmt });
     if (this.lastExport?.ok) download(blob, this.lastExport.name);
+  }
+
+  private downloadMenuHtml(kind: 'xlsx' | 'csv'): string {
+    const order: ('xlsx' | 'csv')[] = kind === 'xlsx' ? ['xlsx', 'csv'] : ['csv', 'xlsx'];
+    const note = (f: 'xlsx' | 'csv') => (f === kind ? '' : f === 'csv' ? 'The current sheet only — values as shown now, no formatting' : 'One sheet with the latest values');
+    const items = order.map((f) => `<button type="button" role="menuitem" class="mi" data-fmt="${f}"><span>Download as .${f}</span>${f === kind ? '<span class="kbd">default</span>' : ''}</button>${note(f) ? `<span class="mnote">${note(f)}</span>` : ''}`).join('');
+    const choices = this.exportChoices();
+    const opts = (this._store?.plugins ?? []).flatMap((p) => p.exportOptions ?? []);
+    const optHtml = opts.length ? `<div role="separator" class="msep"></div>${opts.map((o) => `<button type="button" role="menuitemcheckbox" class="mi" data-opt="${esc(o.key)}" aria-checked="${choices[o.key]}"><span>${choices[o.key] ? '✓ ' : ''}${esc(o.label)}</span></button>`).join('')}` : '';
+    return `<div class="card dlmenu" role="menu" aria-label="Download format">${items}${optHtml}</div>`;
   }
 
   /** The grid's keys, then every plugin control's shortcut (W-14 DoD 8). */
@@ -666,7 +700,7 @@ export class SheetpaneExcel extends ElementBase {
   private escape(): boolean {
     const s = this._store;
     if (this.menu) { this.menu = undefined; this.schedule(); return true; }
-    if (this.ctxOpen || this.moreOpen) { this.ctxOpen = false; this.moreOpen = false; this.schedule(); return true; }
+    if (this.ctxOpen || this.moreOpen || this.dlOpen) { this.ctxOpen = false; this.moreOpen = false; this.dlOpen = false; this.schedule(); return true; }
     if (s?.getSnapshot().composing) { s.compose(null); return true; }
     if (this.findText) { (this.q.findin as HTMLInputElement).value = ''; this.findText = ''; this.findHits = []; this.schedule(); return true; }
     return false;
@@ -923,6 +957,9 @@ export class SheetpaneExcel extends ElementBase {
     badge.hidden = n2 === 0; badge.textContent = String(n2);
     const tip = this.untouched() ? `Download the file as it was opened` : `Download with ${n2} change${n2 === 1 ? '' : 's'}${n2 === 0 ? ' (the review as comments)' : ''}`;
     q.export.title = tip; q.export.setAttribute('aria-label', `Download .${src.kind} — ${tip}`);
+    q.dlmore.setAttribute('aria-expanded', String(this.dlOpen));
+    const dl = this.dlOpen ? this.downloadMenuHtml(src.kind) : '';
+    if (q.dlslot.dataset.html !== dl) { q.dlslot.innerHTML = dl; q.dlslot.dataset.html = dl; }
     // cell bar
     const sel = snap.selection;
     const p = parseRef(sel.ref)!;

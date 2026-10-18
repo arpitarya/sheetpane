@@ -106,9 +106,9 @@ const units = useSheetpane(sheet, (store) => store.value('Holdings', 'F3'), null
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
 | method | `load(src, name?)` | read a file (any of the above) |
-| method | `export()` | `Promise<Blob>` — the upload with every change |
+| method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, original?}` (cancelable — prevent it to save the file yourself; `original: true` when the Download button hands back the untouched file), `sheetpane-close` | bubbling, composed |
+| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
 
 ### Following an edit
 

@@ -89,7 +89,10 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    own entries in place; replies added in Excel are kept and re-pointed.
 6. **Switches:** `write: false` for good; `ctx.exportOptions.comments ===
    false` (`<sheetpane-excel>.export({ comments: false })`, SR-GRID decision
-   6) for one export — then the parts are byte-identical to the input.
+   6) for one export — then the parts are byte-identical to the input. The
+   plugin declares `exportOptions: [{ key: 'comments', label: 'Write review
+   as Excel comments', default: true }]`, so the Download menu shows the
+   switch (W-34; none when `write: false`).
 7. **No font** is written: the legacy `<t>` is plain and the VML names none.
 
 ### Consequences

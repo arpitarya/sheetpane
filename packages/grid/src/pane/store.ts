@@ -2,7 +2,7 @@
 // SR-LAW-7, SR-LAW-9). Framework-free: subscribe / getSnapshot, and mutators.
 // Every mutation goes through commit(): undo (W-23), derive and validate
 // (W-14), "matches suggestion" (B-022) and one notification.
-import { cellRef, parseRange, parseRef, patchXlsx, rangesIntersect, toCsv, type Cell, type Change, type ExportPatchHook } from '@sheetpane/export';
+import { cellRef, parseRange, parseRef, patchXlsx, rangesIntersect, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook } from '@sheetpane/export';
 import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
@@ -636,6 +636,21 @@ export class WorkbookStore {
     return out;
   }
 
+  /** The sheet as it shows now: changes, typed formulas and recalculated cells as their values (a converted download). */
+  latestRows(sheet: string): Cell[][] {
+    const rows = this.currentRows(sheet);
+    const pre = `${sheet}!`;
+    for (const k of new Set([...this.snap.derived.keys(), ...[...this.snap.changes.keys()].filter((x) => !x.slice(pre.length).startsWith('#'))])) {
+      if (!k.startsWith(pre)) continue;
+      const ref = k.slice(pre.length), p = parseRef(ref);
+      if (!p) continue;
+      const row = (rows[p.row] ??= []);
+      while (row.length < p.col) row.push(null);
+      row[p.col] = this.value(sheet, ref);
+    }
+    return Array.from(rows, (r) => Array.from(r ?? [], (v) => v ?? null));
+  }
+
   /** The sheet's rows with every change applied (CSV export, `toXlsx`). */
   currentRows(sheet: string): Cell[][] {
     const s = this.sheet(sheet);
@@ -652,13 +667,27 @@ export class WorkbookStore {
   }
 
   /** Every change applied; the upload never modified (SR-LAW-6). */
-  async exportFile(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>> } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] }> {
+  async exportFile(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>>; format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[]; converted: boolean }> {
     const src = this.snap.source, book = this.snap.book;
     if (!src || !book) throw new Error('sheetpane: nothing is loaded to export');
+    const base = src.name.replace(/\.(xlsx|csv)$/i, '');
+    if (o.format === 'csv' && src.kind === 'xlsx') {
+      // CSV holds one sheet and no formatting: the chosen (else the selected) sheet, as it shows now
+      const name = o.sheet ?? this.snap.selection.sheet ?? book.sheets[0]!.name;
+      const { text, guarded } = toCsv({ name, rows: this.latestRows(name) });
+      return { blob: new Blob([text], { type: 'text/csv;charset=utf-8' }), kind: 'csv', name: `${base}.csv`, guarded, converted: true };
+    }
+    if (o.format === 'xlsx' && src.kind === 'csv') {
+      // one sheet with the latest values; numbers typed as text in the CSV become numbers, as Excel reads them
+      const sheet = book.sheets[0]!;
+      const rows = this.latestRows(sheet.name).map((r) => r.map((v) => (typeof v === 'string' && /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:e[-+]?\d+)?$/i.test(v.trim()) ? Number(v) : v)));
+      const bytes = await toXlsx({ sheets: [{ name: sheet.name, rows }] });
+      return { blob: new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), kind: 'xlsx', name: `${base}.xlsx`, guarded: [], converted: true };
+    }
     if (src.kind === 'csv') {
       const sheet = book.sheets[0]!;
       const { text, guarded } = toCsv({ name: sheet.name, rows: this.currentRows(sheet.name) }, { delimiter: book.delimiter ?? ',' });
-      return { blob: new Blob([text], { type: 'text/csv;charset=utf-8' }), kind: 'csv', name: src.name, guarded };
+      return { blob: new Blob([text], { type: 'text/csv;charset=utf-8' }), kind: 'csv', name: src.name, guarded, converted: false };
     }
     const ctx = { ...this.pluginContext(), exportOptions: o.options ?? {} };
     const hooks: ExportPatchHook[] = [...(o.extraPatch ?? []), ...this.plugins.filter((p) => p.provides.includes('exportPatch')).map((p) => (patch: Parameters<ExportPatchHook>[0]) => p.exportPatch!(patch, ctx))];
@@ -666,7 +695,7 @@ export class WorkbookStore {
     const mergeSheets = new Set([...this.snap.changes].filter(([, c]) => c.kind === 'merge').map(([k]) => k.slice(0, k.indexOf('!#merge:'))));
     const merges = [...mergeSheets].map((sheet) => ({ sheet, ranges: this.merges(sheet) }));
     const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(freeze.length ? { freeze } : {}), ...(merges.length ? { merges } : {}) });
-    return { blob: new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), kind: 'xlsx', name: src.name, guarded: [] };
+    return { blob: new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), kind: 'xlsx', name: src.name, guarded: [], converted: false };
   }
 
   // ── stale formula marks (W-01 DoD 15) ───────────────────────────────────

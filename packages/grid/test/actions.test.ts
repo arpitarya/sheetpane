@@ -175,3 +175,84 @@ describe('one Download button (DoD 5)', () => {
     expect($(el, 'button.export .lbl').textContent).toBe('Download .csv');
   });
 });
+
+describe('Download as a neutral split button (W-34)', () => {
+  const menuItems = (el: Element) => [...shadow(el).querySelectorAll<HTMLElement>('.dlmenu [role^=menuitem]')];
+  const openMenu = async (el: Element) => { ($(el, '.dlmore') as HTMLButtonElement).click(); await frame(); };
+  const exports = (el: Element) => { const got: Record<string, unknown>[] = []; el.addEventListener('sheetpane-export', (e) => { got.push((e as CustomEvent).detail); e.preventDefault(); }); return got; };
+
+  it('neutral, not the accent; ▾ is its own labelled button; the upload’s format comes first, marked default — View and Edit', async () => {
+    const el = await mountExcel({ mode: 'view' });
+    const main = $(el, 'button.export');
+    expect(main.classList.contains('btn-p')).toBe(false);
+    expect(getComputedStyle(main).backgroundColor).not.toBe(getComputedStyle(el).getPropertyValue('--sp-accent').trim());
+    const more = $(el, '.dlmore');
+    expect([more.getAttribute('aria-label'), more.getAttribute('aria-haspopup'), more.getAttribute('aria-expanded')]).toEqual(['Choose download format', 'menu', 'false']);
+    for (const mode of ['view', 'edit'] as const) {
+      el.workbook!.setMode(mode);
+      await openMenu(el);
+      expect(more.getAttribute('aria-expanded')).toBe('true');
+      expect(menuItems(el).map((b) => b.textContent)).toEqual(['Download as .xlsxdefault', 'Download as .csv']);
+      expect($(el, '.dlmenu').textContent).toContain('The current sheet only');
+      await userEvent.keyboard('{Escape}');
+      await frame();
+      expect(shadow(el).querySelector('.dlmenu')).toBeNull();
+      expect(shadow(el).activeElement).toBe(more);
+    }
+  });
+
+  it('a .csv upload: Download .csv first; .xlsx converts one sheet that reads back equal', async () => {
+    const el = await mountExcel({}, sampleCsv(), 'holdings.csv');
+    expect($(el, 'button.export .lbl').textContent).toBe('Download .csv');
+    await openMenu(el);
+    expect(menuItems(el).map((b) => b.dataset.fmt)).toEqual(['csv', 'xlsx']);
+    const got = exports(el);
+    el.workbook!.setCell(el.workbook!.book!.sheets[0]!.name, 'B2', 'Changed');
+    menuItems(el)[1]!.click();
+    await vi.waitFor(() => expect(got).toHaveLength(1));
+    expect(got[0]).toMatchObject({ format: 'xlsx', kind: 'xlsx', converted: true, name: 'holdings.xlsx' });
+    const { read } = await import('@sheetpane/import');
+    const back = await read(new Uint8Array(await (got[0]!.blob as Blob).arrayBuffer()), { name: 'x.xlsx' });
+    const s = el.workbook!, name = s.book!.sheets[0]!.name;
+    expect(back.sheets).toHaveLength(1);
+    expect(back.sheets[0]!.text[1]![1]).toBe('Changed');
+    expect(back.sheets[0]!.text.slice(0, 4).map((r) => r.slice(0, 3))).toEqual(s.latestRows(name).slice(0, 4).map((r) => r.slice(0, 3).map((v) => String(v ?? ''))));
+  });
+
+  it('an .xlsx to .csv is the current sheet, as it shows now; the event says format and converted', async () => {
+    const el = await mountExcel();
+    const s = el.workbook!, second = s.book!.sheets[1]!.name;
+    s.select({ sheet: second, ref: 'A1' });
+    const got = exports(el);
+    await openMenu(el);
+    (shadow(el).querySelector('.dlmenu [data-fmt=csv]') as HTMLButtonElement).click();
+    await vi.waitFor(() => expect(got).toHaveLength(1));
+    expect(got[0]).toMatchObject({ format: 'csv', converted: true, name: 'Client holdings — Q3 2026.csv' });
+    const { toCsv } = await import('@sheetpane/export');
+    // Blob.text() drops the BOM; the file keeps it
+    expect(new TextDecoder('utf-8', { ignoreBOM: true }).decode(await (got[0]!.blob as Blob).arrayBuffer())).toBe(toCsv({ name: second, rows: s.latestRows(second) }).text);
+    // the main part: the upload's format, untouched → original
+    ($(el, 'button.export') as HTMLButtonElement).click();
+    await vi.waitFor(() => expect(got).toHaveLength(2));
+    expect(got[1]).toMatchObject({ format: 'xlsx', converted: false, original: true });
+  });
+
+  it('a plugin’s export option sits under a separator; unticking it reaches exportPatch', async () => {
+    const seen: unknown[] = [];
+    const opt: Plugin = { id: 'opt', provides: ['exportPatch'], exportOptions: [{ key: 'notes', label: 'Write notes', default: true }], exportPatch: (_p, ctx) => { seen.push(ctx.exportOptions?.notes); } };
+    const el = await mountExcel({ mode: 'edit' });
+    el.workbook = createWorkbook({ plugins: [opt] });
+    await el.load(await sampleXlsx(), 'Client holdings — Q3 2026.xlsx');
+    el.workbook!.setCell('Holdings', 'B3', 'x');
+    exports(el);
+    await openMenu(el);
+    expect(shadow(el).querySelector('.dlmenu [role=separator]')).not.toBeNull();
+    const box = $(el, '.dlmenu [data-opt=notes]');
+    expect([box.getAttribute('role'), box.getAttribute('aria-checked')]).toEqual(['menuitemcheckbox', 'true']);
+    box.click();
+    await frame();
+    expect($(el, '.dlmenu [data-opt=notes]').getAttribute('aria-checked')).toBe('false');
+    ($(el, 'button.export') as HTMLButtonElement).click();
+    await vi.waitFor(() => expect(seen).toEqual([false]));
+  });
+});

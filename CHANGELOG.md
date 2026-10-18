@@ -18,6 +18,12 @@ Newest first. The specs are the records in [`records/`](records/README.md).
   right end of the cell bar; right-click, Shift+F10 or the Menu key opens
   the same actions under the cell. The `selbar` slot keeps its id.
 
+- **Download is a neutral split button** (W-34), not the accent colour: the
+  main part downloads in the upload's format; **▾** offers Download as .xlsx
+  or .csv (converting: one sheet, latest values) and each plugin's export
+  options (comments: "Write review as Excel comments"). `sheetpane-export`
+  gains `format` and `converted`.
+
 ### Added
 
 - Dark theme: `theme="light" | "dark" | "auto"` on both elements (W-29).

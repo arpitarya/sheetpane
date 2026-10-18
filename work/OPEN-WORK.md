@@ -33,7 +33,8 @@ here. Read that record before changing anything below it.
 
 
 - 🟢 **W-33** `agent` · A rules file (JSON, per sheet / column / cell) checked on render; failures only in the errors panel; `flagging="off"` hides Flag issue and pop-ups; a Rules file demo tab. Its demo tab goes into W-32's gallery. Filed by Arpit (Cowork). [detail](open/W-33-rules-file.md)
-- 🟢 **W-34** `agent` · Download as a neutral split button (not blue): the main part in the uploaded format, ▾ for Download as .xlsx or .csv. Filed by Arpit (Cowork). [detail](open/W-34-download-split-button.md)
+
+- 🟢 **W-35** `agent` · New package `@sheetpane/skills` — 16 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
 
 ### testing
 

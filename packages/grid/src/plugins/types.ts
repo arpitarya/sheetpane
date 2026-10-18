@@ -52,6 +52,9 @@ export interface DerivedChange { sheet: string; ref: string; value: Cell; text: 
 export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean };
 
 /** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
+/** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */
+export interface ExportOption { key: string; label: string; default: boolean }
+
 export interface OverlayItem {
   id: string;
   sheet: string;
@@ -117,4 +120,6 @@ export interface Plugin {
   overlay?(sheet: string, ctx: PluginContext & { geometry: Geometry }): OverlayItem[];
   exportPatch?(patch: PatchContext, ctx: PluginContext): void | Promise<void>;
   controls?: ControlDescriptor[];
+  /** Options this plugin reads from `ctx.exportOptions`, offered as checkboxes in the Download menu (W-34): `{ comments: true }`. */
+  exportOptions?: readonly ExportOption[];
 }

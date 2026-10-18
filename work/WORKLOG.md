@@ -34,6 +34,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — agent skills package: W-35 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Research and create a work item for all the skills … part of a new package … grid, export, import, all of them are going to use this package as a dependency."*
+- **Done:** researched how Claude Code, Kiro and Codex find skills (vendor docs, 2026-10-18); W-35 filed (🟢): `@sheetpane/skills`, 16 skills (14 for hosts, 2 for contributors), entry files per tool, `sheetpane-skills install`, a drift check, new record SR-SKILLS. Not committed.
+- **Decided / left open:** Arpit: the whole agent-facing set, not skills alone; contributor skills ship in the package. Read in: common frontmatter subset only; no `postinstall`; grid forwards the bin; skill 9 after W-33.
+- **Mistakes:** none.
+- **Next:** W-32 (in progress), then W-33, W-34, W-35 in Claude Code.
+
+---
+
 ## 2026-10-18 — predefined errors from a rules file: W-33 filed  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"some kind of file which says … this is a valid value and this is invalid value … it shows up on right-hand side section … I don't want any flag issues or to pop up … controlled through a prop … which would be the best file, YAML, TOML, or JSON?"*

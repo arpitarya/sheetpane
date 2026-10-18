@@ -32,6 +32,8 @@ export function comments(options: CommentsOptions = {}): CommentsPlugin {
   return {
     id: 'comments',
     provides: ['validate', 'exportPatch'],
+    // the Download menu's switch for this export (W-34): `export({ comments: false })` skips the parts
+    exportOptions: options.write === false ? [] : [{ key: 'comments', label: 'Write review as Excel comments', default: true }],
     get lastExport() { return last; },
     validate(sheet, ctx) {
       const ours = new Set(reviewOf(ctx).flatMap((e) => Object.values(errorGuids(e))));

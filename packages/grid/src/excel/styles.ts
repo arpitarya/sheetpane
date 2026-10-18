@@ -119,7 +119,13 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .moremenu .fold{display:none}
 @container (max-width: 720px){.dock .plug{display:none}.moremenu .fold{display:flex}}
 .warn-t{color:var(--sp-warn)}
-.export .badge-n{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--sp-on-solid);color:var(--sp-accent);font-size:11px;font-weight:700;line-height:18px;text-align:center}
+.export .badge-n{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--sp-sunken);color:var(--sp-ink);font-size:11px;font-weight:700;line-height:18px;text-align:center}
+.split{position:relative;display:inline-flex}
+.split>.export{border-top-right-radius:0;border-bottom-right-radius:0}
+.split>.dlmore{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;width:26px;padding:0}
+.dlmenu{position:absolute;top:calc(100% + 4px);right:0;z-index:12;min-width:250px;padding:4px}
+.mnote{display:block;padding:0 10px 6px;font-size:11px;color:var(--sp-ink-3)}
+.msep{height:1px;margin:4px 6px;background:var(--sp-line)}
 .export .badge-n[hidden]{display:none}
 .kbd{display:inline-block;font-size:11px;padding:2px 5px;border:1px solid rgba(255,255,255,.35);border-radius:4px}
 .card{position:absolute;background:var(--sp-surface);border:1px solid var(--sp-line);border-radius:var(--sp-r-lg);box-shadow:var(--sp-shadow);z-index:8;overflow:hidden;display:flex;flex-direction:column}
