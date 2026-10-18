@@ -35,6 +35,9 @@ end of life. Browsers are unaffected.
   (cause, meaning, fix) when `ERRORS.md` has CRLF line endings.
 - **MIT `LICENSE` in every package.**
 
+The *Changed* and *Added* lists below are the work first tagged as 0.1.0.
+This is the first version where you can install them.
+
 ### Changed
 
 - **Hidden rows, columns and sheets are honoured and marked** (W-49): the
@@ -133,3 +136,31 @@ end of life. Browsers are unaffected.
 - React hook recipes in `examples/react` (W-28).
 - A plugin gallery in both demos: Vanilla, a tab per plugin and All plugins on
   one showcase workbook (W-32).
+
+## 0.1.0 — 2026-10-19
+
+**Tagged, never published to npm.** Install
+[0.2.0](https://github.com/arpitarya/sheetpane/releases/tag/v0.2.0) instead:
+the same code, plus the release pipeline, and the first version on npm. The
+first publish needed the npm account's one-time code and was handed to CI
+instead. 0.2.0's notes list in full what this tag contains. CI at the tag passed every test
+and all six templates; the only failure was a stale generated `llms-full.txt`.
+
+The first complete cut of sheetpane, 17 packages at one version:
+
+- **`<sheetpane-excel>` and `<sheetpane-errors>`** (`@sheetpane/grid`): open,
+  edit and review `.xlsx` and `.csv` in the page. The sheet and its error
+  list stay in sync through one in-memory workbook. Download hands back the
+  original file with only your changes written in.
+- **Review:** column rules, a JSON rules file and the workbook's own
+  validation, with errors flagged on cells and listed beside the sheet.
+- **Editing basics:** range selection, copy and paste, undo and redo, find,
+  zoom, freeze panes, resize, and hidden rows, columns and sheets, with a
+  dark theme.
+- **Nine plugins:** `numfmt`, `formulas`, `styles`, `validation`, `condfmt`,
+  `images`, `charts`, `comments`, `visibility`.
+- **For hosts and agents:** `@sheetpane/testing`, `@sheetpane/fixtures`,
+  `@sheetpane/skills` and `@sheetpane/mcp`; typings for React, Vue, Svelte
+  and Solid; the custom-elements manifest.
+- **Requirements:** browsers with `DecompressionStream`; Node 20+ for
+  imports in Node (0.2.0 raises this to 22+). MIT licence.
