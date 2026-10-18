@@ -32,6 +32,7 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 - [@sheetpane/images](https://github.com/arpitarya/sheetpane/blob/main/packages/images/README.md): Images for sheetpane — pictures anchored in the sheet drawn in sheet space through the `overlay` hook; view only, kept on export.
 - [@sheetpane/charts](https://github.com/arpitarya/sheetpane/blob/main/packages/charts/README.md): Charts for sheetpane — each chart in a workbook shown at its anchor: a frame with its title, type, series count and Show source cells (stage 1), drawn as our own SVG for bar, column, line, pie and scatter (stage 2) — through the `overlay` hook.
 - [@sheetpane/comments](https://github.com/arpitarya/sheetpane/blob/main/packages/comments/README.md): Excel's comments and sheetpane's errors, in both directions. When a file loads, its notes and threaded comments show up in `<sheetpane-errors>`. When you export, every error in the review goes into the file as an Excel threaded comment on its cell.
+- [@sheetpane/visibility](https://github.com/arpitarya/sheetpane/blob/main/packages/visibility/README.md): Hide and unhide rows, columns and sheets in `<sheetpane-excel>` — as changes, written into the download.
 
 ## Rules and errors
 - [Column rules](https://github.com/arpitarya/sheetpane/blob/main/packages/grid/README.md#column-rules): checks by column title in code
@@ -106,4 +107,5 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 - [SR-TESTING](https://github.com/arpitarya/sheetpane/blob/main/records/0118_TESTING.md): One driver API for Playwright and Vitest browser mode — locators, actions, Download read back as values, matchers — built only on the grid's committed test hooks.
 - [SR-MCP](https://github.com/arpitarya/sheetpane/blob/main/records/0119_MCP.md): A stdio MCP server, hand-written, tools only: describe the API, inspect a workbook, draft and check a rules file, explain an SP code, find a skill — deterministic and read-only.
 - [SR-CREATE](https://github.com/arpitarya/sheetpane/blob/main/records/0120_CREATE.md): npm create sheetpane — six framework templates with the grid, the errors panel, the showcase and its rules file, one test, the skills and the MCP server; checked end to end in CI.
+- [SR-VISIBILITY](https://github.com/arpitarya/sheetpane/blob/main/records/0121_VISIBILITY.md): The plugin that lets an editor hide and unhide rows, columns and sheets and group outlines — menus, Google Sheets' keys, a marker click — written into the download. Seeing the file's hiding is core (SR-GRID 21c).
 

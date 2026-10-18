@@ -29,6 +29,9 @@ export interface SheetGeometry {
   merges: RangePos[];
 }
 
+/** What the grid hides: 0-based rows and columns drawn at 0 px (W-49) — the file's hiding, less what is revealed. */
+export interface SheetHidden { rows?: ReadonlySet<number>; cols?: ReadonlySet<number> }
+
 /** The user's sizes for one sheet, px at 100 %: column and row indexes (0-based) to a size (W-47). */
 export interface SheetSizes { cols?: Readonly<Record<number, number>>; rows?: Readonly<Record<number, number>> }
 
@@ -42,9 +45,10 @@ export const ptToPx = (pt: number) => Math.round((pt * 96) / 72);
  * @param s - The sheet as read.
  * @param mergeList - The merged ranges to draw; the file's by default.
  * @param sizes - The user's column widths and row heights, px at 100 % (W-47); they win over the file's.
+ * @param hidden - Rows and columns drawn at 0 px (W-49); a size set on one is kept for when it shows again.
  * @returns The row and column counts, the column and row edges and the merges.
  */
-export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? [], sizes: SheetSizes = {}): SheetGeometry {
+export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? [], sizes: SheetSizes = {}, hidden: SheetHidden = {}): SheetGeometry {
   const dataCols = s.rows.reduce((m, r) => Math.max(m, r.length), 0);
   const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
   const ruled = [...(s.dataValidations ?? []).flatMap((v) => v.sqref), ...(s.conditionalFormats ?? []).flatMap((f) => f.sqref)]
@@ -69,14 +73,14 @@ export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s
       w = Math.min(320, Math.max(DEFAULT_COL_PX, ch * 7 + 18));
     }
     const own = sizes.cols?.[c];
-    colX[c + 1] = colX[c]! + (own !== undefined ? own : w);
+    colX[c + 1] = colX[c]! + (hidden.cols?.has(c) ? 0 : own !== undefined ? own : w);
   }
   // rows: the user's height, else the file's custom height (points), else 28 px
   const rowY = new Float64Array(rows + 1);
   const fileRows = s.rowHeights ?? [], ownRows = sizes.rows ?? {};
   for (let r = 0; r < rows; r++) {
     const own = ownRows[r], pt = fileRows[r];
-    rowY[r + 1] = rowY[r]! + (own !== undefined ? own : pt !== undefined ? Math.min(ROW_MAX, Math.max(ROW_MIN, ptToPx(pt))) : ROW_H);
+    rowY[r + 1] = rowY[r]! + (hidden.rows?.has(r) ? 0 : own !== undefined ? own : pt !== undefined && pt > 0 ? Math.min(ROW_MAX, Math.max(ROW_MIN, ptToPx(pt))) : ROW_H);
   }
   return { rows, cols, colX, rowY, merges };
 }
@@ -131,3 +135,22 @@ export function visibleWindow(g: SheetGeometry, z: number, scrollTop: number, sc
   const x0 = scrollLeft / z, x1 = (scrollLeft + width) / z;
   return { r0, r1, c0: Math.max(frozen.cols, colAt(g, x0) - 2), c1: Math.min(g.cols - 1, colAt(g, x1) + 2) };
 }
+
+/**
+ * The spans of hidden rows or columns: runs of consecutive 0 px indexes (W-49).
+ * @param edges - `rowY` or `colX`.
+ * @param count - Rows or columns drawn.
+ * @returns Each run as `[first, last]`.
+ */
+export function hiddenSpans(edges: Float64Array, count: number): [number, number][] {
+  const out: [number, number][] = [];
+  for (let i = 0; i < count; i++) {
+    if (edges[i + 1]! !== edges[i]!) continue;
+    const last = out[out.length - 1];
+    if (last && last[1] === i - 1) last[1] = i; else out.push([i, i]);
+  }
+  return out;
+}
+
+/** True when a row (column) is drawn at 0 px — hidden (W-49). */
+export const isHiddenAt = (edges: Float64Array, i: number) => edges[i + 1] !== undefined && edges[i + 1]! === edges[i]!;

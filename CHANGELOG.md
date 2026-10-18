@@ -7,6 +7,15 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Changed
 
+- **Hidden rows, columns and sheets are honoured and marked** (W-49): the
+  grid no longer draws what the file hides as ordinary rows and tabs. A
+  ◂▸ / ▴▾ marker shows each hidden span (with its errors), *Show hidden* and
+  a marker click show it for viewing, hidden sheets are listed by a
+  *⊘ n hidden* button, outline groups get a gutter with +/− and levels, and
+  an error in a hidden place is shown when selected. Keys, copy, Delete and
+  totals skip hidden cells. **Deprecated:** `ImportedSheet.hidden` — use
+  `state` (`visible` · `hidden` · `veryHidden`).
+
 - **Resize columns and rows** (W-47): drag a header edge (a guide and the
   size while you drag), double-click to fit the text, several selected at
   once, or right-click a header for Fit · width… · Reset. Rows keep the
@@ -42,6 +51,12 @@ Newest first. The specs are the records in [`records/`](records/README.md).
   gains `format` and `converted`.
 
 ### Added
+
+- **`@sheetpane/visibility`** (W-49): hide and unhide rows, columns and
+  sheets, and group outlines, in Edit — the selection bar, the cell, header
+  and tab menus, Google Sheets' keys, a marker click — written into the
+  download (`patchXlsx`'s new `hidden` option). `sheetpane-visibility` event;
+  `store.setHidden`, `setSheetState`, `setOutline`.
 
 - **`npm create sheetpane`** (W-43): a working app in one command — vanilla,
   React, Next.js, Vue, Angular or Svelte — with the grid and the errors panel,

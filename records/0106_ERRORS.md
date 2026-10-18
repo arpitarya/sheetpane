@@ -75,7 +75,9 @@ the store and the contract are the contract verdict's and
    a rules file, its rows then grouped by sheet — · File comments); rows open first then resolved,
    by number; each row shows the number (✓ when resolved), the type's name,
    Found → Should be, the range and severity, and tags (cell changed ·
-   resolved · matches suggestion · stale). Picking a row selects its cell
+   resolved · matches suggestion · stale · hidden row · hidden column ·
+   hidden sheet — W-49: picking such a row shows the place in the sheet,
+   SR-GRID 21c). Picking a row selects its cell
    (selection syncs) and expands it: the message, author and time, **Show in
    sheet**, Resolve / Reopen, Delete.
 4. **Show in sheet** selects the cell and dispatches `sheetpane-reveal

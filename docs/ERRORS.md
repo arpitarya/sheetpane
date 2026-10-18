@@ -220,7 +220,7 @@ plain `Error`s or `TypeError`s.
 **No visible sheet** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'sheet-count'`
 
 - **Meaning:** a workbook needs at least one sheet, and at least one visible.
-- **Likely cause:** `sheets: []`, or every sheet `hidden: true`.
+- **Likely cause:** `sheets: []`, or every sheet `hidden: true`; or a `patchXlsx` `hidden` option that would leave no sheet `visible`.
 - **Fix:** add a sheet, or un-hide one.
 
 ### SP-2003
@@ -236,7 +236,7 @@ plain `Error`s or `TypeError`s.
 **Not a cell reference** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'bad-ref'`
 
 - **Meaning:** a change names a `ref` that is not an A1 cell.
-- **Likely cause:** `A0`, a range, or a typo in a `patchXlsx` change.
+- **Likely cause:** `A0`, a range, or a typo in a `patchXlsx` change; or a `patchXlsx` `hidden` row or column index that is not a whole number from 0 to 1,048,575 (rows) or 16,383 (columns).
 - **Fix:** pass one A1 cell per change (`B7`).
 
 ### SP-2005
@@ -244,7 +244,7 @@ plain `Error`s or `TypeError`s.
 **Value a workbook cannot store** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'bad-value'`
 
 - **Meaning:** a cell holds something a workbook cell cannot.
-- **Likely cause:** `NaN` or `Infinity`; text over 32,767 characters; an object or `undefined`; `rows` not an array of arrays.
+- **Likely cause:** `NaN` or `Infinity`; text over 32,767 characters; an object or `undefined`; `rows` not an array of arrays; a `patchXlsx` `hidden` outline level outside 0–7 or a `state` other than `visible`, `hidden`, `veryHidden`.
 - **Fix:** store text, a finite number, a boolean or `null`; the message names the cell.
 
 ### SP-2006

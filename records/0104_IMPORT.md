@@ -72,6 +72,8 @@ carry over unchanged; the plugins verdict added what plugins read.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
    `path`, `styleIndex`, `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
+   `state`, `rowOutline`, `colOutline`, `outline`, `autoFilter?` (W-49;
+   `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
    `conditionalFormats`, `drawings`, `notes`, `threadedComments`,
    `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
@@ -108,8 +110,10 @@ carry over unchanged; the plugins verdict added what plugins read.
    1,048,576 rows or 16,384 columns → `too-large`; bad DEFLATE, CRC or XML →
    `corrupt` (`needs-dom`, SP-1008, is retired — decision 8). No name and no ZIP:
    NUL bytes in the first 8 KB → `unsupported-format`, else CSV.
-7. **Sheets:** every worksheet in workbook order; hidden and very-hidden
-   marked `hidden`; chartsheets and dialog sheets are skipped (they hold no
+7. **Sheets:** every worksheet in workbook order. `state` is `<sheet state>`
+   (`visible`, `hidden`, `veryHidden`; anything else is `visible`); `hidden`
+   is kept, equal to `state !== 'visible'` and deprecated, for one minor
+   release (W-49). Chartsheets and dialog sheets are skipped (they hold no
    cells); `activeSheet` follows the kept list.
 8. **Runtimes:** CSV and `.xlsx` read anywhere. `.xlsx` parts are parsed
    with `DOMParser` where the runtime has it, else with the built-in reader
@@ -119,6 +123,20 @@ carry over unchanged; the plugins verdict added what plugins read.
    Importing the package in Node is safe (SR-LAW-8).
 9. **One implementation:** ZIP, inflate, CRC-32, A1 helpers and
    `shiftFormula` come from `@sheetpane/export` — the only runtime dependency.
+
+10. **What a sheet hides (W-49):** `hiddenRows` / `hiddenCols` are 0-based
+    and sorted; a row is hidden by `hidden="1"` or `ht="0"`, a column by
+    `hidden="1"` or `width="0"` on its `<col>`, spans expanded per column.
+    `rowOutline` / `colOutline` are sparse `{ level, collapsed? }` arrays
+    (index 0 = row 1 / column A), an entry only when the level is above 0 or
+    `collapsed="1"`, levels clamped to 0–7. `outline` is `{ levelRow,
+    levelCol, summaryBelow, summaryRight }` — the levels from `sheetFormatPr
+    outlineLevelRow/Col` (else the deepest read), the flags from
+    `sheetPr/outlinePr` (default `true`). `autoFilter` is `<autoFilter ref>`,
+    absent when there is none, so the grid can tell a filtered row from a
+    hidden one. A CSV hides nothing (`state: 'visible'`, empty lists, outline
+    `{0, 0, true, true}`). The built-in XML reader reads the same (a parity
+    test).
 
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 

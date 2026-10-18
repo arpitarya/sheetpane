@@ -11,6 +11,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-errors': CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'sheetpane-select': CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>;
+  /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
+  'sheetpane-visibility': CustomEvent<{ sheet: string; axis: 'row' | 'col' | 'sheet'; indexes: number[]; hidden: boolean; via: 'menu' | 'key' | 'marker' | 'reveal' }>;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'sheetpane-resize': CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>;
   /** `{ sheet }` when the selection moves to another sheet. */

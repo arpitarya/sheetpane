@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-19 | W-49 | Hide and show: core honours, marks and reveals the file's hidden rows, columns and sheets (0 px geometry, ◂▸/▴▾ markers, ⊘ hidden-sheets list, Show hidden, outline gutter), keys and range acts skip hidden cells; `@sheetpane/visibility` hides, unhides and groups as changes; import reads state and outline; `patchXlsx` writes them | closed | `hidden.test.ts` (12), `visibility.test.ts` (4), import (9) and export (13) hidden tests; demo-check 51 |
 | 2026-10-18 | W-45 | Commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), `sheetpane-skills check-rules` and its hooks for Claude Code, Codex and Kiro (installed and removed by the installer), and the agent set as a Claude Code plugin + marketplace | closed | `test/skills.test.ts`; `claude plugin validate --strict` |
 | 2026-10-18 | W-35 | `@sheetpane/skills`: 23 skills in the common `SKILL.md` subset, Claude / Kiro / Codex entry files, the `sheetpane-skills` installer (with the MCP entry), the drift check; the in-tool trial split to W-48 on the decider's ruling | closed | `test/skills.test.ts`; `pack-check` |
 | 2026-10-18 | W-47 | Resize columns and rows: header-edge drag with a guide, double-click fit, several at once, the header menu and a px field; per-row heights (prefix sum, `rowAt`) incl. the file's; sizes a view setting with `sizes` / `sheetpane-resize` | closed | `packages/grid/test/resize.test.ts` (11); demo-check 49 ✓ |

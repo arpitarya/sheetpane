@@ -65,6 +65,15 @@ async function gallery(page, name) {
   await page.waitForTimeout(200);
   const quiet = (await t.x.locator('.dock [data-act=flag]').count()) === 0 && (await t.x.locator('.cardslot').evaluate((el) => el.innerHTML)) === '' && (await t.x.evaluate((el) => el.workbook.getSnapshot().composing)) === null;
   check(ruleRows === 6 && quiet, `${name}: Rules file lists 6 failing cells; flagging="off" — no Flag issue, F and a click open nothing (${ruleRows})`);
+  // W-49: Hide and show — hide a row from its header menu, see the marker, click it to unhide
+  t = await tab('Hide and show', 'visibility', 'Numbers');
+  await t.x.locator('.rh[data-hr="2"]').click({ button: 'right' });
+  await t.x.locator('[data-sp=header-menu] [data-control=visibility-hide-rows]').click();
+  await t.x.locator('.hmk[data-hid="rows:2-2"]').waitFor();
+  const gone = (await t.x.locator('#c2_0').count()) === 0;
+  await t.x.locator('.hmk[data-hid="rows:2-2"]').click();
+  await t.x.locator('#c2_0').waitFor();
+  check(gone && (await t.x.evaluate((el) => el.workbook.hidden('Numbers').rows.length)) === 0, `${name}: Hide and show hides row 3 from its header menu, marks it, and a marker click unhides it`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

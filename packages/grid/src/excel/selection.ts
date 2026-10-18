@@ -122,13 +122,15 @@ const htmlEsc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').re
  * The clipboard payload for a range: TSV (display text) and an HTML table, so Excel and Sheets paste a grid.
  * @param r - The range.
  * @param text - A cell's display text.
+ * @param shown - Which rows and columns are shown; the others are left out (W-49).
  * @returns `text/plain` and `text/html`.
  */
-export function clipOf(r: RangePos, text: (row: number, col: number) => string): { tsv: string; html: string } {
+export function clipOf(r: RangePos, text: (row: number, col: number) => string, shown: { row?: (i: number) => boolean; col?: (i: number) => boolean } = {}): { tsv: string; html: string } {
   const lines: string[] = [], trs: string[] = [];
   for (let row = r.top; row <= r.bottom; row++) {
+    if (shown.row && !shown.row(row)) continue; // hidden rows and columns are left out (W-49)
     const cells: string[] = [];
-    for (let col = r.left; col <= r.right; col++) cells.push(text(row, col));
+    for (let col = r.left; col <= r.right; col++) if (!shown.col || shown.col(col)) cells.push(text(row, col));
     // a tab or line break inside a cell would split it: Excel quotes such a cell in TSV
     lines.push(cells.map((t) => (/[\t\n"]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t)).join('\t'));
     trs.push(`<tr>${cells.map((t) => `<td>${htmlEsc(t)}</td>`).join('')}</tr>`);
@@ -144,12 +146,15 @@ export interface Totals { count: number; numbers: number; sum: number }
  * @param r - The range.
  * @param value - A cell's value.
  * @param lastRow - The last row holding data (rows past it are empty).
+ * @param shown - Which rows and columns are shown; hidden ones are left out (W-49).
  * @returns Count, how many were numbers, and their sum.
  */
-export function totalsOf(r: RangePos, value: (row: number, col: number) => Cell | undefined, lastRow: number): Totals {
+export function totalsOf(r: RangePos, value: (row: number, col: number) => Cell | undefined, lastRow: number, shown: { row?: (i: number) => boolean; col?: (i: number) => boolean } = {}): Totals {
   const t: Totals = { count: 0, numbers: 0, sum: 0 };
   for (let row = r.top; row <= Math.min(r.bottom, lastRow); row++) {
+    if (shown.row && !shown.row(row)) continue;
     for (let col = r.left; col <= r.right; col++) {
+      if (shown.col && !shown.col(col)) continue;
       const v = value(row, col);
       if (!filled(v)) continue;
       t.count++;

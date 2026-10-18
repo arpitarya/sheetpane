@@ -51,6 +51,24 @@ of the file — charts, pivot tables, comments, names, styles — is copied byte
 for byte. Excel is asked to recalculate formulas on open, and pivot tables
 whose source changed to refresh.
 
+Options also rewrite a sheet's frozen pane (`freeze`), its merged ranges
+(`merges`) and what it hides (`hidden`):
+
+```ts
+await patchXlsx(originalBytes, [], {
+  hidden: [
+    { sheet: 'Holdings', rows: [3, 4, 5], cols: [2], outline: { rows: { 3: 1, 4: 1, 5: 1 } } },
+    { sheet: 'Workings', state: 'hidden' },   // 'visible' | 'hidden' | 'veryHidden'
+  ],
+});
+```
+
+Each `hidden` list is the sheet's **whole** set after the edit (0-based): the
+listed rows and columns are hidden and every other one is shown. `<col>` spans
+are split and merged so widths and styles stay put. When the active sheet is
+hidden, the workbook opens on the first visible one. Hiding every sheet is
+refused (`SP-2002`).
+
 ## Write CSV
 
 ```ts
@@ -73,7 +91,8 @@ so your app can say so. Turn it off with `{ guardFormulas: false }`.
 Every refusal is an `ExportError` with a `code` and the `sheet` / `ref` it is
 about: a bad sheet name (1–31 characters, none of `[ ] : * ? / \`, unique
 ignoring case), more than 1,048,576 rows or 16,384 columns, `NaN` or
-`Infinity`, text over 32,767 characters, overlapping merges.
+`Infinity`, text over 32,767 characters, overlapping merges, a `hidden`
+option that would leave no sheet visible.
 
 ## Save the file — `download(data, filename, options?)`
 

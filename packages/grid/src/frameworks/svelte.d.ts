@@ -16,6 +16,8 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
+  'on:sheetpane-visibility'?: ((event: SheetpaneExcelEventMap['sheetpane-visibility'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'on:sheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
@@ -44,6 +46,8 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'onsheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'onsheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
+  'onsheetpane-visibility'?: ((event: SheetpaneExcelEventMap['sheetpane-visibility'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'onsheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */

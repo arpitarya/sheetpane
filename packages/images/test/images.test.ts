@@ -24,9 +24,11 @@ describe('anchors against the cells they sit on (DoD 2, 4)', () => {
   it('oneCell: the ExcelJS fixture\'s 2×2 PNG at G6, 40×20 px', async () => {
     const { el } = await open(fromDataUrl(features), 'features.xlsx');
     expect(olays(el)).toHaveLength(1);
-    const o = olay(el), g6 = cellEl(el, 5, 6);
-    expect(rect(o).left).toBeCloseTo(rect(g6).left, 0);
-    expect(rect(o).top).toBeCloseTo(rect(g6).top, 0);
+    // the fixture hides row 6 (W-49 honours it: 0 px), so the picture's top is where row 7 starts
+    const o = olay(el), g7 = cellEl(el, 6, 6);
+    expect(cellEl(el, 5, 6)).toBeNull();
+    expect(rect(o).left).toBeCloseTo(rect(g7).left, 0);
+    expect(rect(o).top).toBeCloseTo(rect(g7).top, 0);
     expect(rect(o).width).toBeCloseTo(40, 0);
     expect(rect(o).height).toBeCloseTo(20, 0);
     expect(shadow(el).querySelector('.olay')!.parentElement!.className).toBe('plug');

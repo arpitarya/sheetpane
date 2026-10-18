@@ -20,8 +20,11 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 |---|---|
 | `rows` | the stored values — text, numbers, booleans, `null`. Export writes these back. A formula cell holds its **saved** value. |
 | `text` | what a cell shows: numbers through a small number-format subset (dates, times, percent, fixed decimals, thousands); anything outside it shows the raw stored text |
-| `merges`, `columnWidths`, `hidden` | as `@sheetpane/export` takes them |
-| `formulas`, `styleIndex`, `freeze`, `hiddenRows`, `hiddenCols`, `rowHeights` | per sheet, for the grid and the plugins |
+| `merges`, `columnWidths` | as `@sheetpane/export` takes them |
+| `state` | `'visible'`, `'hidden'` or `'veryHidden'` (`<sheet state>`); `hidden` is kept as `state !== 'visible'` but is deprecated |
+| `hiddenRows`, `hiddenCols` | 0-based, sorted; a zero height or width counts as hidden |
+| `rowOutline`, `colOutline`, `outline`, `autoFilter` | outline levels per row and column (sparse `{ level, collapsed? }`), the deepest levels and summary placement, and the filter range |
+| `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
 | `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins |
 | `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |

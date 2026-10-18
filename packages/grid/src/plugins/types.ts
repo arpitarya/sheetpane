@@ -113,6 +113,14 @@ export interface ControlDescriptor {
   choose?(store: WorkbookStore, sel: Selection, value: string): void;
   /** `cell` slot: the choices the mark's menu offers for this cell (W-18's list arrow); picking calls `choose`. */
   cellOptions?(cell: CellContext): string[];
+  /**
+   * `selbar` controls: the menus the control also joins (W-49) — the cell's right-click menu, the
+   * header menu (right-click a column or row header) and the tab menu (right-click a sheet tab, where
+   * `run` gets that tab's sheet). Absent: the cell menu only, as before.
+   */
+  menus?: readonly ('cell' | 'header' | 'tab')[];
+  /** Why the control is disabled, said in its tooltip (W-49: "CSV can't store hidden rows"). */
+  disabledReason?(snap: Snapshot, sel: Selection): string | undefined;
 }
 
 /**

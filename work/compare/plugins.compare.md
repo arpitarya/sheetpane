@@ -128,6 +128,7 @@ plugins never get that hatch.
    `format-row`; the no-plugin grid stays the review tool the design boards
    show. (Guardrail against drifting into a mini-Excel.)
 6. **The change map carries a kind:** `sheet!ref → { kind: 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze', was, now }`.
+   *Note 2026-10-19 (W-49):* the kinds gain `hidden` (`#hiddenRows`, `#hiddenCols`), `sheetState` (`#sheetState`) and `outline` (`#outlineRows`, `#outlineCols`) — core changes, like `freeze`; and `selbar` controls gain an optional `menus` field (`cell` · `header` · `tab`) — a field, not a seventh hook or slot ([SR-GRID](../../records/0105_GRID.md) 19, 21c; [SR-VISIBILITY](../../records/0121_VISIBILITY.md)).
    Revert, the change count and "Changed · was X" read the kind.
 7. **Versioning:** every plugin is versioned in lockstep with `@sheetpane/grid`
    (L8) and lists it as a `peerDependency` at the exact version.

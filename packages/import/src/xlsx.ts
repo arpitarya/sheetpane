@@ -8,7 +8,7 @@ import { all, bool, first, kid, kids, num, parseXml, relAttr, str } from './dom.
 import { ImportError } from './errors.js';
 import { formatCode, general, subsetCode } from './numfmt.js';
 import { color, parseStyles, parseTheme } from './styles.js';
-import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, Person, PivotTable, StyleTables, ThreadedComment } from './types.js';
+import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetState, StyleTables, ThreadedComment } from './types.js';
 
 /** Options for reading an .xlsx: the ZIP size limits that refuse a ZIP bomb. */
 export interface ReadOptions extends ZipLimits {}
@@ -142,7 +142,15 @@ async function parseDrawing(pkg: Pkg, path: string): Promise<DrawingAnchor[]> {
   return out;
 }
 
-interface SheetCtx { pkg: Pkg; sst: string[]; styles: StyleTables; date1904: boolean; name: string; path: string; hidden: boolean }
+interface SheetCtx { pkg: Pkg; sst: string[]; styles: StyleTables; date1904: boolean; name: string; path: string; state: SheetState }
+
+/** An `outlineLevel` / `collapsed` pair, or undefined when the element carries neither. Levels are clamped to Excel's 0–7. */
+function outlineOf(e: Element): OutlineEntry | undefined {
+  const level = Math.min(7, Math.max(0, Math.trunc(num(e, 'outlineLevel') ?? 0)) || 0);
+  const collapsed = bool(e, 'collapsed');
+  if (!level && !collapsed) return undefined;
+  return collapsed ? { level, collapsed } : { level };
+}
 
 async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
   const doc = await c.pkg.doc(c.path);
@@ -150,7 +158,7 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
   const root = doc.documentElement;
   const rows: Cell[][] = [], text: string[][] = [];
   const styleIndex: Record<string, number> = {}, formulas: Record<string, string> = {};
-  const rowHeights: (number | undefined)[] = [], hiddenRows: number[] = [];
+  const rowHeights: (number | undefined)[] = [], hiddenRows: number[] = [], rowOutline: (OutlineEntry | undefined)[] = [];
   const shared = new Map<string, { f: string; row: number; col: number }>();
   const tooBig = (what: string) => new ImportError('too-large', `sheet "${c.name}" has a cell past Excel's limits (${what}) — refused`);
   const sheetData = kid(root, 'sheetData');
@@ -162,7 +170,9 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     const r = rn - 1;
     const ht = num(rowEl, 'ht');
     if (ht !== undefined && bool(rowEl, 'customHeight', true)) rowHeights[r] = ht;
-    if (bool(rowEl, 'hidden')) hiddenRows.push(r);
+    if (bool(rowEl, 'hidden') || ht === 0) hiddenRows.push(r); // a zero height hides the row as well
+    const ro = outlineOf(rowEl);
+    if (ro) rowOutline[r] = ro;
     let prevCol = -1;
     for (const ce of kids(rowEl, 'c')) {
       const ref = ce.getAttribute('r');
@@ -213,14 +223,32 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     text[r] = Array.from({ length: row.length }, (_, i) => tr[i] ?? '');
   }
   const merges = (() => { const m = kid(root, 'mergeCells'); return m ? kids(m, 'mergeCell').map((e) => e.getAttribute('ref') ?? '').filter(Boolean) : []; })();
-  const columnWidths: number[] = [], hiddenCols: number[] = [];
+  const columnWidths: number[] = [], colOutline: (OutlineEntry | undefined)[] = [];
+  const hiddenColSet = new Set<number>();
   const cols = kid(root, 'cols');
   for (const col of cols ? kids(cols, 'col') : []) {
-    const min = num(col, 'min') ?? 1, max = Math.min(num(col, 'max') ?? min, MAX_COLS);
-    const w = num(col, 'width'), hidden = bool(col, 'hidden');
-    for (let i = min - 1; i < max; i++) { if (w !== undefined) columnWidths[i] = w; if (hidden) hiddenCols.push(i); }
+    const min = Math.max(1, num(col, 'min') ?? 1), max = Math.min(num(col, 'max') ?? min, MAX_COLS);
+    const w = num(col, 'width'), hidden = bool(col, 'hidden') || w === 0; // a zero width hides the column as well
+    const co = outlineOf(col);
+    for (let i = min - 1; i < max; i++) {
+      if (w !== undefined) columnWidths[i] = w;
+      if (hidden) hiddenColSet.add(i);
+      if (co) colOutline[i] = { ...co };
+    }
   }
+  const hiddenCols = [...hiddenColSet].sort((a, b) => a - b);
+  hiddenRows.sort((a, b) => a - b);
   const fmt = kid(root, 'sheetFormatPr');
+  const sheetPr = kid(root, 'sheetPr');
+  const outlinePr = sheetPr && kid(sheetPr, 'outlinePr');
+  const deepest = (list: (OutlineEntry | undefined)[]) => list.reduce((m, e) => Math.max(m, e?.level ?? 0), 0);
+  const outline = {
+    levelRow: num(fmt, 'outlineLevelRow') ?? deepest(rowOutline),
+    levelCol: num(fmt, 'outlineLevelCol') ?? deepest(colOutline),
+    summaryBelow: bool(outlinePr, 'summaryBelow', true),
+    summaryRight: bool(outlinePr, 'summaryRight', true),
+  };
+  const autoFilter = kid(root, 'autoFilter')?.getAttribute('ref') ?? undefined;
   const pane = first(root, 'pane');
   const paneState = pane?.getAttribute('state');
   const frozen = paneState === 'frozen' || paneState === 'frozenSplit';
@@ -299,8 +327,8 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
   }
   const dcw = num(fmt, 'defaultColWidth');
   return {
-    name: c.name, rows, text, path: c.path, merges, columnWidths, hidden: c.hidden,
-    styleIndex, formulas, freeze, hiddenRows, hiddenCols, rowHeights,
+    name: c.name, rows, text, path: c.path, merges, columnWidths, state: c.state, hidden: c.state !== 'visible',
+    styleIndex, formulas, freeze, hiddenRows, hiddenCols, rowOutline, colOutline, outline, ...(autoFilter ? { autoFilter } : {}), rowHeights,
     defaultRowHeight: num(fmt, 'defaultRowHeight') ?? 15,
     defaultColWidth: dcw ?? (num(fmt, 'baseColWidth') !== undefined ? num(fmt, 'baseColWidth')! + 0.71 : undefined),
     dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables,
@@ -369,8 +397,9 @@ export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOpt
     const rel = wbRels.find((r) => r.id === relAttr(s, 'id'));
     if (!rel || !rel.type.endsWith('/worksheet')) continue; // chartsheets and dialog sheets hold no cells
     keptIndex.push(i);
-    const state = s.getAttribute('state');
-    sheets.push(await parseSheet({ pkg, sst, styles, date1904, name: s.getAttribute('name') ?? `Sheet${i + 1}`, path: rel.target, hidden: state === 'hidden' || state === 'veryHidden' }));
+    const st = s.getAttribute('state');
+    const state: SheetState = st === 'hidden' || st === 'veryHidden' ? st : 'visible';
+    sheets.push(await parseSheet({ pkg, sst, styles, date1904, name: s.getAttribute('name') ?? `Sheet${i + 1}`, path: rel.target, state }));
   }
   if (!sheets.length) throw new ImportError('not-workbook', 'the workbook has no worksheets');
   activeTab = Math.max(0, keptIndex.indexOf(activeTab));

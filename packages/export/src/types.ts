@@ -19,6 +19,12 @@ export interface Sheet {
   freeze?: { rows: number; cols: number };
 }
 
+/**
+ * A sheet's visibility, as `<sheet state>` stores it. A `veryHidden` sheet is left out of
+ * Excel's own Unhide list; only code can show it again.
+ */
+export type SheetState = 'visible' | 'hidden' | 'veryHidden';
+
 /** The plain object both directions share: `@sheetpane/import` reads into it, the writers write from it. */
 export interface Workbook {
   /** In tab order; at least one. */

@@ -37,7 +37,10 @@ export interface SheetpaneError {
 }
 
 /** Plugins verdict decision 6. */
-export type ChangeKind = 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze';
+export type ChangeKind = 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze' | 'hidden' | 'sheetState' | 'outline';
+
+/** Whether Excel shows a sheet: `veryHidden` is hidden from Excel's own Unhide list (W-49). */
+export type { SheetState } from '@sheetpane/export';
 
 /** One entry of the change map, keyed `sheet!ref` (or `sheet!#freeze`). */
 export interface ChangeEntry {

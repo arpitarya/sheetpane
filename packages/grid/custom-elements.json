@@ -421,6 +421,56 @@
             },
             {
               "kind": "method",
+              "name": "reveal",
+              "privacy": "public",
+              "description": "Shows hidden rows or columns for viewing, in this element only — never a change (W-49).\n@param sheet - The sheet's name.\n@param axis - `rows` or `cols`.\n@param indexes - The 0-based rows or columns.",
+              "parameters": [
+                {
+                  "name": "sheet",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "axis",
+                  "type": {
+                    "text": "'rows' | 'cols'"
+                  }
+                },
+                {
+                  "name": "indexes",
+                  "type": {
+                    "text": "readonly number[]"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "unreveal",
+              "privacy": "public",
+              "description": "Hides again what this element revealed for viewing on a sheet (W-49).\n@param sheet - The sheet's name.",
+              "parameters": [
+                {
+                  "name": "sheet",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
               "name": "renderNow",
               "privacy": "public",
               "description": "Renders now (tests and the first frame).",
@@ -478,6 +528,13 @@
                 "text": "CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>"
               },
               "description": "`{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release."
+            },
+            {
+              "name": "sheetpane-visibility",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; axis: 'row' | 'col' | 'sheet'; indexes: number[]; hidden: boolean; via: 'menu' | 'key' | 'marker' | 'reveal' }>"
+              },
+              "description": "`{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49)."
             },
             {
               "name": "sheetpane-resize",

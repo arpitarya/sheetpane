@@ -6,7 +6,7 @@ item: W-45
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Make the task skills invocable: `/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test` | one command does an integration step | ⏳ |
-| 2 | Hooks: after an edit to `*.rules.json`, run `sheetpane-skills check-rules` — Claude Code `PostToolUse`, Kiro `PostFileSave` | a broken rules file is caught as it is written | ⏳ |
-| 3 | Package skills, subagent, hooks and the MCP server as a Claude Code plugin; add `.claude-plugin/marketplace.json` to the repo | `/plugin marketplace add arpitarya/sheetpane`, then install | ⏳ |
+| 1 | Make the task skills invocable: `/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test` | one command does an integration step | ✅ |
+| 2 | Hooks: after an edit to `*.rules.json`, run `sheetpane-skills check-rules` — Claude Code `PostToolUse`, Kiro `PostFileSave` | a broken rules file is caught as it is written | ✅ |
+| 3 | Package skills, subagent, hooks and the MCP server as a Claude Code plugin; add `.claude-plugin/marketplace.json` to the repo | `/plugin marketplace add arpitarya/sheetpane`, then install | ✅ |
 
 **Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
 
@@ -32,14 +32,14 @@ Beyond reading skills, each agent can run sheetpane tasks as commands and is che
 
 | DoD | what | state |
 |---|---|---|
-| 1 · commands | `sheetpane-embed`, `sheetpane-rules`, `sheetpane-test` are user-invocable skills (Claude Code runs a skill as `/name`; Codex deprecated custom prompts for skills, so skills are its command form too); each takes an argument (framework, workbook path) | ⏳ |
-| 2 · check command | `sheetpane-skills check-rules <file>` validates against the W-33 schema; exits non-zero with [W-40](W-40-error-codes.md) codes | ⏳ |
-| 3 · Claude hook | `hooks.json`: `PostToolUse` on Edit/Write with a path matching `\.rules\.json$` → the check, its output fed back | ⏳ |
-| 4 · Kiro hook | `.kiro/hooks/sheetpane-rules.json`: `version: "v1"`, trigger `PostFileSave`, `matcher` on the path, `action.type: "command"` | ⏳ |
-| 5 · Codex | if Codex's Hooks or Plugins fit, the same check; otherwise the `AGENTS.md` block tells Codex to run it — decide at build and record why | ⏳ |
-| 6 · Claude plugin | `plugins/sheetpane/.claude-plugin/plugin.json` with the skills, subagent, hooks and `.mcp.json` ([W-39](W-39-mcp-server.md)); `.claude-plugin/marketplace.json` at the repo root; tried with `--plugin-dir` and an eval | ⏳ |
-| 7 · installer | `sheetpane-skills install` writes the hooks for the chosen tools; `uninstall` removes them | ⏳ |
-| 8 · record | SR-SKILLS (from W-35) gains commands, hooks and the plugin | ⏳ |
+| 1 · commands | `sheetpane-embed`, `sheetpane-rules`, `sheetpane-test` are user-invocable skills (Claude Code runs a skill as `/name`; Codex deprecated custom prompts for skills, so skills are its command form too); each takes an argument (framework, workbook path) | ✅ every skill is a command in all three tools; `sheetpane-embed [framework]` gains its argument section; thin `sheetpane-rules [path]` and `sheetpane-test [runner]` route to the rules-file and testing skills (nothing renamed); no `argument-hint` (claude.ai refuses it) |
+| 2 · check command | `sheetpane-skills check-rules <file>` validates against the W-33 schema; exits non-zero with [W-40](W-40-error-codes.md) codes | ✅ `sheetpane-skills check-rules <file…>`: `checkDocument`'s document checks re-implemented in the bin (SP-6010…6021), kept equal by a test on 19 documents; exits 0 / 1 / 2 |
+| 3 · Claude hook | `hooks.json`: `PostToolUse` on Edit/Write with a path matching `\.rules\.json$` → the check, its output fed back | ✅ `PostToolUse` `Edit|Write|MultiEdit` → `check-rules --hook claude`; stderr + exit 2 on a problem |
+| 4 · Kiro hook | `.kiro/hooks/sheetpane-rules.json`: `version: "v1"`, trigger `PostFileSave`, `matcher` on the path, `action.type: "command"` | ✅ `.kiro/hooks/sheetpane-rules.json`: `v1`, `PostFileSave`, `\.rules\.json$`, command with `{{filePath}}` |
+| 5 · Codex | if Codex's Hooks or Plugins fit, the same check; otherwise the `AGENTS.md` block tells Codex to run it — decide at build and record why | ✅ a real hook: `.codex/hooks.json` `PostToolUse` on `apply_patch`; Codex runs it once trusted in `/hooks`, so the `AGENTS.md` block also says to run the check |
+| 6 · Claude plugin | `plugins/sheetpane/.claude-plugin/plugin.json` with the skills, subagent, hooks and `.mcp.json` ([W-39](W-39-mcp-server.md)); `.claude-plugin/marketplace.json` at the repo root; tried with `--plugin-dir` and an eval | ✅ `plugins/sheetpane` generated by `just plugin` (host skills, subagent, hooks, `.mcp.json`) + `.claude-plugin/marketplace.json`; a freshness test; `claude plugin validate --strict` passes on both. **Not done:** a `--plugin-dir` trial with an eval (needs model runs) — it joins W-48's in-tool trial |
+| 7 · installer | `sheetpane-skills install` writes the hooks for the chosen tools; `uninstall` removes them | ✅ hooks written per tool and recorded; `uninstall` removes exactly them; `--no-hooks`; tests incl. a real spawned hook run |
+| 8 · record | SR-SKILLS (from W-35) gains commands, hooks and the plugin | ✅ SR-SKILLS 2, 2a, 4b, 4c, 4d and owns |
 
 ## Blockers
 

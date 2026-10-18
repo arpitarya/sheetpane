@@ -9,6 +9,7 @@ import '@sheetpane/condfmt/ui';
 import '@sheetpane/images';
 import '@sheetpane/charts/ui';
 import '@sheetpane/comments';
+import '@sheetpane/visibility/ui';
 import type { SheetpaneExcel } from '@sheetpane/grid';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 import showcase from '@sheetpane/fixtures/files/showcase.xlsx?url';
@@ -27,6 +28,7 @@ export const TABS: readonly GalleryTab[] = [
   { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'charts (needs images) — a column and a line chart drawn at their anchors; Show source cells selects the data.' },
   { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'comments — the note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
   { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
+  { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'visibility — right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
   { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json, passed as the rules prop) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
 ];
 

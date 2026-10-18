@@ -317,7 +317,7 @@ export class SheetpaneErrors extends ElementBase {
       lastSheet = e.sheet;
       const r = parseRange(e.range);
       const on = this.expanded === e.id || (!!r && e.sheet === sel.sheet && parseRef(sel.ref) && r.top === parseRef(sel.ref)!.row && r.left <= parseRef(sel.ref)!.col && r.right >= parseRef(sel.ref)!.col);
-      const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : ''].filter(Boolean);
+      const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : '', ...hiddenTags(s, e)].filter(Boolean);
       const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
@@ -361,3 +361,14 @@ export function headerFor(text: string[][], row: number, col: number): string {
 }
 
 export { sevOrder };
+
+/** Where an error sits out of sight: a hidden sheet, row or column (W-49). Selecting it shows it in the sheet. */
+function hiddenTags(s: { hidden(sheet: string): { rows: number[]; cols: number[]; state: string } }, e: SheetpaneError): string[] {
+  const h = s.hidden(e.sheet), r = parseRange(e.range);
+  if (h.state !== 'visible') return ['hidden sheet'];
+  if (!r) return [];
+  const out: string[] = [];
+  if (h.rows.some((i) => i >= r.top && i <= r.bottom)) out.push('hidden row');
+  if (h.cols.some((i) => i >= r.left && i <= r.right)) out.push('hidden column');
+  return out;
+}

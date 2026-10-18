@@ -1,12 +1,12 @@
 // @sheetpane/export — a plain JavaScript object in, an .xlsx or .csv file out.
 // No runtime dependencies. Spec: records/0103_EXPORT.md (SR-EXPORT).
 
-export type { Cell, Change, Sheet, Workbook } from './types.js';
+export type { Cell, Change, Sheet, SheetState, Workbook } from './types.js';
 export { ExportError, EXPORT_SP_CODES, type ExportErrorCode } from './errors.js';
 // Stable error codes (W-40): the registry every package reads — docs/ERRORS.md.
 export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, type CodeInfo, type SpCode, type SpCoded, type SpError } from './codes.js';
 export { toXlsx, type ToXlsxOptions } from './xlsx.js';
-export { patchXlsx, type PatchOptions, type PatchContext, type ExportPatchHook } from './patch.js';
+export { patchXlsx, type PatchOptions, type PatchContext, type ExportPatchHook, type HiddenPatch } from './patch.js';
 export { toCsv, type ToCsvOptions } from './csv.js';
 
 // Shared with @sheetpane/import and the plugins — one implementation of each

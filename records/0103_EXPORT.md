@@ -67,7 +67,8 @@ else.
 ### Decision
 
 1. **Input:** `Cell = string | number | boolean | null`;
-   `Sheet { name, rows, merges?, columnWidths?, hidden? }`;
+   `Sheet { name, rows, merges?, columnWidths?, hidden? }`; `SheetState =
+   'visible' | 'hidden' | 'veryHidden'` (W-49);
    `Workbook { sheets }`; `Change { sheet, ref, value }`; `Sheet.freeze?:
    { rows, cols }` (W-24). `columnWidths` are
    Excel character units (`<col width>`), index 0 = column A.
@@ -104,6 +105,25 @@ else.
      for `Sheet.freeze` (W-24);
    - `merges: [{ sheet, ranges }]` rewrites that sheet's `<mergeCells>` to
      exactly those ranges (in schema position; removed when empty);
+   - `hidden: [{ sheet, rows?, cols?, state?, outline?: { rows?, cols? } }]`
+     (W-49): each list and outline map is the sheet's whole set after the
+     edit (0-based); fields not given are left alone. Rows: the listed rows
+     get `hidden="1"` (a missing `<row>` is created empty, `sheetData` kept in
+     order), every other row loses `hidden`, and a zero `ht` loses
+     `ht`/`customHeight`. Columns: `<col>` spans are split and merged so
+     exactly the listed columns carry `hidden="1"`, width, style and
+     `customWidth` kept on every piece; a shown zero-width column loses
+     `width`; `<cols>` is created before `<sheetData>` and removed when
+     empty. Outline: `outlineLevel` (0–7) per row and column, `sheetFormatPr
+     outlineLevelRow/Col` the deepest level (`sheetFormatPr` added when
+     missing); `collapsed` is never written. Sheets: `state` sets `<sheet
+     state>` (`visible` removes it); when the active sheet ends up hidden,
+     `activeTab` and `firstSheet` move to the first visible sheet and
+     `tabSelected` moves with it, or Excel opens a blank window. Refusals: an
+     unknown sheet → `no-sheet`, a bad index → `bad-ref`, a bad level or
+     state → `bad-value`, no visible sheet left → `sheet-count`. Sheets not
+     named stay byte for byte. Checked through ExcelJS and the import
+     package; not yet opened in Excel or LibreOffice (W-30's files);
    - runs each `exportPatch` hook after its own writes, with a
      `PatchContext` (`list`, `has`, `readText`, `readBytes`, `write`,
      `remove`, `workbookPath`, `sheetNames`, `sheetPath`, `relsPathOf`,

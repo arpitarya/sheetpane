@@ -185,7 +185,8 @@ pnpm and a justfile; the testing verdict chose the runner.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
-    plugins · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
+    its header menu, the marker unhides it) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a

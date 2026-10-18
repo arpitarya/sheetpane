@@ -165,7 +165,33 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .tabs{display:flex;gap:2px;padding:0 8px;border-top:1px solid var(--sp-line);background:var(--sp-ground);overflow-x:auto}
 .tab{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:0;border-top:2px solid transparent;background:transparent;color:var(--sp-ink-2);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
 .tab[aria-selected=true]{background:var(--sp-surface);color:var(--sp-ink);border-top-color:var(--sp-accent)}
-.tab.hidden-sheet{font-style:italic;color:var(--sp-ink-3)}
+.tab.hid{border:1px dashed var(--sp-line-strong);border-bottom:0;color:var(--sp-ink-2)}
+.tab.hidbtn{color:var(--sp-ink-3)}
+.hidmenuslot{position:relative;height:0}
+.tabmenu{position:absolute;bottom:0;z-index:20;min-width:200px;padding:4px;display:flex;flex-direction:column}
+.hidmenu{position:absolute;bottom:0;right:8px;z-index:20;min-width:220px;padding:4px;display:flex;flex-direction:column}
+.hidbar{display:flex;align-items:center;gap:8px;padding:4px 12px;border-bottom:1px solid var(--sp-line);background:var(--sp-warn-soft);color:var(--sp-ink);font-size:13px}
+.hidbar[hidden]{display:none}
+/* hidden rows and columns (W-49): a marker pair on the boundary, a double line through the cells, hatch when shown */
+.hidlayer{position:absolute;inset:0;display:grid;pointer-events:none}
+.hidlayer>*{grid-area:1/1;align-self:start;justify-self:start;box-sizing:border-box}
+.hline{position:relative;z-index:1;pointer-events:none}
+.hline.hv{width:4px;border-left:1px solid var(--sp-line-strong);border-right:1px solid var(--sp-line-strong)}
+.hline.hh{height:4px;border-top:1px solid var(--sp-line-strong);border-bottom:1px solid var(--sp-line-strong)}
+.hmk{display:inline-flex;align-items:center;gap:2px;height:18px;padding:0 3px;border:1px solid var(--sp-line-strong);border-radius:4px;background:var(--sp-surface);color:var(--sp-ink-3);font-size:10px;line-height:1;cursor:pointer;z-index:3;pointer-events:auto}
+.hmk.hmc{z-index:6}
+.tablist{display:flex;gap:2px}
+/* outline groups (W-49): brackets and +/− in the gutter, level buttons in the corner */
+.obtn{width:14px;height:14px;padding:0;display:inline-grid;place-items:center;border:1px solid var(--sp-line-strong);border-radius:3px;background:var(--sp-surface);color:var(--sp-ink-2);font-size:11px;line-height:1;cursor:pointer;z-index:4;pointer-events:auto}
+.obtn.olvl{width:16px;height:16px}
+.obr{z-index:4;pointer-events:none;box-sizing:border-box}
+.obr-r{width:4px;border-left:2px solid var(--sp-ink-3);border-bottom:2px solid var(--sp-ink-3)}
+.obr-c{height:4px;border-top:2px solid var(--sp-ink-3);border-right:2px solid var(--sp-ink-3)}
+@media (pointer:coarse){.obtn{width:24px;height:24px}}
+.hmk .g{font-size:10px}
+@media (pointer:coarse){.hmk{min-width:24px;min-height:24px;justify-content:center}}
+.ch.rev,.rh.rev{background-image:repeating-linear-gradient(135deg,transparent 0 4px,var(--sp-line) 4px 5px)}
+.c.rev{background-image:repeating-linear-gradient(135deg,transparent 0 6px,var(--sp-grid) 6px 7px)}
 .tab .cnt{font-size:10px;font-weight:700;padding:1px 5px;border-radius:999px;background:var(--sp-fail-soft);color:var(--sp-fail)}
 .status{display:flex;align-items:center;gap:14px;padding:5px 12px;border-top:1px solid var(--sp-line);background:var(--sp-head);font-size:12px;color:var(--sp-ink-3);flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .state{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--sp-ground)}

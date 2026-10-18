@@ -1,7 +1,7 @@
 // The imported workbook: @sheetpane/export's Workbook (raw values, what export
 // writes back) plus display text and the parsed tables plugins read
 // (W-13 DoD 3, 4, 12; plugins verdict Consequences).
-import type { Cell, Sheet } from '@sheetpane/export';
+import type { Cell, Sheet, SheetState } from '@sheetpane/export';
 
 /** A colour as SpreadsheetML stores it. */
 export interface Color { rgb?: string; theme?: number; tint?: number; indexed?: number; auto?: boolean }
@@ -104,6 +104,26 @@ export interface Person { id: string; displayName: string; userId?: string; prov
 /** A pivot table on a worksheet: its name and where it sits. */
 export interface PivotTable { name: string; ref: string }
 
+/** One row's or column's place in an outline: its group level and whether its group is collapsed. */
+export interface OutlineEntry {
+  /** The `outlineLevel`, 1–7; 0 only when the entry exists for `collapsed` alone. */
+  level: number;
+  /** `collapsed="1"`: set on the summary row or column of a collapsed group. */
+  collapsed?: boolean;
+}
+
+/** A sheet's outline settings: `sheetFormatPr outlineLevelRow/Col` and `sheetPr/outlinePr`. */
+export interface OutlineSettings {
+  /** The deepest row level (`outlineLevelRow`; the deepest row read when the file omits it); 0 when none. */
+  levelRow: number;
+  /** The deepest column level (`outlineLevelCol`; the deepest column read when the file omits it); 0 when none. */
+  levelCol: number;
+  /** Summary rows sit below their detail (`summaryBelow`, default `true`). */
+  summaryBelow: boolean;
+  /** Summary columns sit right of their detail (`summaryRight`, default `true`). */
+  summaryRight: boolean;
+}
+
 /** One imported sheet: `@sheetpane/export`'s `Sheet` plus display text and what the plugins read. */
 export interface ImportedSheet extends Sheet {
   /** Display text per cell — what the grid shows (number-format subset applied). Same shape as `rows`. */
@@ -116,8 +136,26 @@ export interface ImportedSheet extends Sheet {
   formulas: Record<string, string>;
   /** Frozen rows and columns from `<sheetView><pane state="frozen">`; `{0,0}` when none. */
   freeze: { rows: number; cols: number };
+  /** Whether the sheet shows in the tab bar: `<sheet state>`; always `visible` for CSV. */
+  state: SheetState;
+  /**
+   * `true` when `state` is `hidden` or `veryHidden`.
+   *
+   * @deprecated Use `state`, which tells `hidden` from `veryHidden`. Kept, in sync with `state`, for one minor release.
+   */
+  hidden: boolean;
+  /** Hidden rows, 0-based and sorted: `<row hidden="1">` and zero-height rows (`ht="0"`), filtered rows included. */
   hiddenRows: number[];
+  /** Hidden columns, 0-based and sorted: every column of a `<col hidden="1">` or `width="0"` span. */
   hiddenCols: number[];
+  /** Each row's outline (group) level, sparse, index 0 = row 1; only rows with a level or `collapsed` are set. */
+  rowOutline: (OutlineEntry | undefined)[];
+  /** Each column's outline (group) level, sparse, index 0 = column A; `<col>` spans are expanded per column. */
+  colOutline: (OutlineEntry | undefined)[];
+  /** The sheet's outline settings: deepest levels and where the summary rows and columns sit. */
+  outline: OutlineSettings;
+  /** The `<autoFilter ref>` range, e.g. `A1:F200`; a hidden row inside it is a filtered row. Absent when the sheet has no filter. */
+  autoFilter?: string;
   /** Row heights in points, sparse, index 0 = row 1. */
   rowHeights: (number | undefined)[];
   defaultRowHeight: number;
@@ -149,4 +187,4 @@ export interface ImportedWorkbook {
   part(path: string): Promise<Uint8Array | undefined>;
 }
 
-export type { Cell };
+export type { Cell, SheetState };

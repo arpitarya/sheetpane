@@ -1,0 +1,63 @@
+{
+  "name": "@sheetpane/visibility",
+  "version": "0.0.0",
+  "description": "Hide and unhide rows, columns and sheets for sheetpane \u2014 menus, Google Sheets' shortcuts, a click on the grid's hidden-span markers \u2014 written into the download. Core already honours and marks what a file hides.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/visibility"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/ui.js",
+    "./src/index.ts",
+    "./src/ui.ts"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./ui": {
+      "source": "./src/ui.ts",
+      "types": "./dist/ui.d.ts",
+      "import": "./dist/ui.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "dependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/skills": "workspace:*"
+  },
+  "devDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./ui": {
+        "types": "./dist/ui.d.ts",
+        "import": "./dist/ui.js"
+      }
+    }
+  }
+}

@@ -115,8 +115,8 @@ export async function fromCsv(input: string | Blob, o: CsvOptions = {}): Promise
   const name = sheetNameFrom(o.name ?? (typeof File !== 'undefined' && input instanceof File ? input.name : undefined));
   return {
     sheets: [{
-      name, rows, text: rows.map((r) => r.map((v) => (v === null ? '' : (v as string)))), path: '', merges: [], columnWidths: [], hidden: false,
-      styleIndex: {}, formulas: {}, freeze: { rows: 0, cols: 0 }, hiddenRows: [], hiddenCols: [], rowHeights: [], defaultRowHeight: 15, defaultColWidth: undefined,
+      name, rows, text: rows.map((r) => r.map((v) => (v === null ? '' : (v as string)))), path: '', merges: [], columnWidths: [], state: 'visible', hidden: false,
+      styleIndex: {}, formulas: {}, freeze: { rows: 0, cols: 0 }, hiddenRows: [], hiddenCols: [], rowOutline: [], colOutline: [], outline: { levelRow: 0, levelCol: 0, summaryBelow: true, summaryRight: true }, rowHeights: [], defaultRowHeight: 15, defaultColWidth: undefined,
       dataValidations: [], conditionalFormats: [], drawings: [], notes: [], threadedComments: [], pivotTables: [],
     }],
     source: 'csv', activeSheet: 0, date1904: false,

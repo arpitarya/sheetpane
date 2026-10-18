@@ -86,6 +86,9 @@ importers:
       '@sheetpane/validation':
         specifier: workspace:*
         version: link:../../packages/validation
+      '@sheetpane/visibility':
+        specifier: workspace:*
+        version: link:../../packages/visibility
       numfmt:
         specifier: 4.0.1
         version: 4.0.1
@@ -122,6 +125,9 @@ importers:
       '@sheetpane/validation':
         specifier: workspace:*
         version: link:../../packages/validation
+      '@sheetpane/visibility':
+        specifier: workspace:*
+        version: link:../../packages/visibility
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -344,6 +350,19 @@ importers:
       '@sheetpane/formulas':
         specifier: workspace:*
         version: link:../formulas
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+
+  packages/visibility:
+    dependencies:
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
+    devDependencies:
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid

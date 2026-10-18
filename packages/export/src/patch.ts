@@ -4,8 +4,8 @@
 import { ExportError } from './errors.js';
 import { shiftFormula } from './formula.js';
 import { CT, NS_PKG_REL, REL, XML_DECL } from './ooxml.js';
-import { cellRef, parseRange, parseRef, rangeRef, rangesIntersect, type RangePos } from './refs.js';
-import type { Cell, Change } from './types.js';
+import { MAX_COLS, MAX_ROWS, cellRef, parseRange, parseRef, rangeRef, rangesIntersect, type RangePos } from './refs.js';
+import type { Cell, Change, SheetState } from './types.js';
 import { checkCell } from './validate.js';
 import { cellXml, paneXml } from './xlsx.js';
 import { escapeAttr, fromUtf8, unescapeXml, utf8 } from './xml.js';
@@ -38,7 +38,7 @@ export interface PatchContext {
 /** A plugin's `exportPatch` hook: it edits the package through the context after the core's own writes. */
 export type ExportPatchHook = (ctx: PatchContext) => void | Promise<void>;
 
-/** Options for `patchXlsx`: compression, size limits, plugin hooks, and freeze and merge rewrites. */
+/** Options for `patchXlsx`: compression, size limits, plugin hooks, and freeze, merge and hidden-state rewrites. */
 export interface PatchOptions extends WriteOptions, ZipLimits {
   /** Plugin hooks, run in order after the core's own writes (plugins verdict, `exportPatch`). */
   exportPatch?: ExportPatchHook[];
@@ -48,6 +48,26 @@ export interface PatchOptions extends WriteOptions, ZipLimits {
   freeze?: { sheet: string; rows: number; cols: number }[];
   /** A sheet's merged ranges, whole: its `<mergeCells>` is rewritten to exactly these. Sheets not named keep theirs. */
   merges?: { sheet: string; ranges: string[] }[];
+  /**
+   * Hidden rows, columns, outline levels and sheet state to write (W-49). Each list is whole:
+   * the named indexes carry the setting and every other index loses it. Sheets, and fields,
+   * not given are left as the file has them. Hiding every sheet is refused (`sheet-count`).
+   */
+  hidden?: HiddenPatch[];
+}
+
+/** One sheet's hidden state for `patchXlsx`'s `hidden` option. Indexes are 0-based; every list is the whole set after the edit. */
+export interface HiddenPatch {
+  /** The sheet's name. */
+  sheet: string;
+  /** Every hidden row (0 = row 1). Rows listed get `hidden="1"`, missing `<row>` elements are created in order; every other row loses `hidden` (and a zero `ht`). */
+  rows?: number[];
+  /** Every hidden column (0 = A). `<col>` spans are split and merged so exactly these carry `hidden="1"`; width and style are kept on each piece. */
+  cols?: number[];
+  /** `<sheet state>` in the workbook part; `visible` removes the attribute. A hidden active sheet hands `activeTab` to the first visible one. */
+  state?: SheetState;
+  /** Outline (group) levels 0–7 by index; indexes not listed go back to level 0. `sheetFormatPr outlineLevelRow` / `outlineLevelCol` follow the deepest level. */
+  outline?: { rows?: Record<number, number>; cols?: Record<number, number> };
 }
 
 const dirOf = (p: string) => p.slice(0, p.lastIndexOf('/') + 1);
@@ -429,6 +449,218 @@ export function setFullCalcOnLoad(wb: string): string {
   return wb.slice(0, end) + el + wb.slice(end);
 }
 
+// ── Hidden rows, columns, outline levels and sheet state (W-49 DoD 10) ──────
+
+const MAX_OUTLINE = 7;
+const STATES: readonly SheetState[] = ['visible', 'hidden', 'veryHidden'];
+/** The namespace prefix of a worksheet or chartsheet root, e.g. `x:` or `''`. */
+const rootPrefix = (xml: string) => /<(\w+:)?(?:worksheet|chartsheet)\b/.exec(xml)?.[1] ?? '';
+const isZero = (tag: string, attr: string) => { const v = getAttr(tag, attr); return v !== undefined && Number(v) === 0; };
+/** `{ 3: 1 }` (0-based) → `Map { 4 → 1 }` (1-based, as `r` and `min`/`max` count). */
+const levelMap = (rec: Record<number, number> | undefined) => rec && new Map(Object.entries(rec).filter(([, l]) => l !== undefined).map(([k, l]) => [Number(k) + 1, l] as [number, number]));
+const deepest = (m: Map<number, number> | undefined) => m && Math.max(0, ...m.values());
+
+function checkHidden(h: HiddenPatch, sheets: SheetRef[]): void {
+  const where = { sheet: h.sheet };
+  if (!sheets.some((s) => s.name === h.sheet)) throw new ExportError('no-sheet', `no sheet named "${h.sheet}" in the workbook`, where);
+  const indexes = (list: Iterable<number>, max: number, axis: string) => {
+    for (const i of list) if (!Number.isInteger(i) || i < 0 || i >= max) throw new ExportError('bad-ref', `sheet "${h.sheet}" ${axis} index ${i} is not one of 0–${max - 1}`, where);
+  };
+  const levels = (rec: Record<number, number> | undefined, max: number, axis: string) => {
+    if (!rec) return;
+    indexes(Object.keys(rec).map(Number), max, axis);
+    for (const l of Object.values(rec)) if (!Number.isInteger(l) || l < 0 || l > MAX_OUTLINE) throw new ExportError('bad-value', `sheet "${h.sheet}" ${axis} outline level ${l} is not one of 0–${MAX_OUTLINE}`, where);
+  };
+  indexes(h.rows ?? [], MAX_ROWS, 'row');
+  indexes(h.cols ?? [], MAX_COLS, 'column');
+  levels(h.outline?.rows, MAX_ROWS, 'row');
+  levels(h.outline?.cols, MAX_COLS, 'column');
+  if (h.state !== undefined && !STATES.includes(h.state)) throw new ExportError('bad-value', `sheet "${h.sheet}" state ${JSON.stringify(h.state)} is not visible, hidden or veryHidden`, where);
+}
+
+/**
+ * Sets `hidden` and `outlineLevel` on a worksheet's rows. `hidden` (0-based) is the whole set:
+ * rows not in it lose `hidden` and a zero `ht`. Missing rows are created empty, in order.
+ */
+function setRowsHidden(xml: string, sheet: string, hidden: number[] | undefined, levels: Map<number, number> | undefined): string {
+  const P = rootPrefix(xml);
+  const open = new RegExp(`<${P}sheetData\\b[^>]*?(/?)>`).exec(xml);
+  if (!open) throw new ExportError('corrupt', `sheet "${sheet}" has no <sheetData>`, { sheet });
+  const closeTag = `</${P}sheetData>`;
+  let inner = '', end = open.index + open[0].length;
+  if (open[1] !== '/') {
+    const c = xml.indexOf(closeTag, open.index);
+    if (c < 0) throw new ExportError('corrupt', `sheet "${sheet}" has an unclosed <sheetData>`, { sheet });
+    inner = xml.slice(end, c);
+    end = c + closeTag.length;
+  }
+  const hide = hidden && new Set(hidden.map((i) => i + 1));
+  const rows = parseRows(inner, P);
+  const have = new Set(rows.map((r) => r.num));
+  const wanted = new Set(hide);
+  for (const [n, l] of levels ?? []) if (l > 0) wanted.add(n);
+  const need = [...wanted].filter((n) => !have.has(n)).sort((a, b) => a - b);
+  const mark = (tag: string, n: number) => {
+    let t = tag;
+    if (hide) {
+      if (hide.has(n)) t = setAttr(t, 'hidden', '1');
+      else {
+        t = removeAttr(t, 'hidden');
+        if (isZero(t, 'ht')) t = removeAttr(removeAttr(t, 'ht'), 'customHeight'); // a zero height hides too
+      }
+    }
+    if (levels) { const l = levels.get(n) ?? 0; t = l > 0 ? setAttr(t, 'outlineLevel', String(l)) : removeAttr(t, 'outlineLevel'); }
+    return t;
+  };
+  const out: string[] = [];
+  let i = 0;
+  for (const r of rows) {
+    while (i < need.length && need[i]! < r.num) { const n = need[i++]!; out.push(mark(`<${P}row r="${n}"/>`, n)); }
+    const o = mark(getAttr(r.open, 'r') ? r.open : setAttr(r.open, 'r', String(r.num)), r.num);
+    out.push(r.body === undefined ? o.replace(/>$/, '/>') : `${o}${r.body}</${P}row>`);
+  }
+  while (i < need.length) { const n = need[i++]!; out.push(mark(`<${P}row r="${n}"/>`, n)); }
+  if (!out.length && open[1] === '/') return xml;
+  const openTag = open[1] === '/' ? `<${P}sheetData>` : open[0];
+  return `${xml.slice(0, open.index)}${openTag}${out.join('')}${closeTag}${xml.slice(end)}`;
+}
+
+/**
+ * Splits and merges a worksheet's `<col>` spans so exactly the `hidden` columns (0-based, the
+ * whole set) carry `hidden="1"` and each column its outline level. Every other attribute of a
+ * span (width, style, customWidth) is kept on each piece; equal neighbours are merged.
+ */
+function setColsHidden(xml: string, sheet: string, hidden: number[] | undefined, levels: Map<number, number> | undefined): string {
+  const P = rootPrefix(xml);
+  const cur = new RegExp(`<${P}cols\\b[^>]*?(?:/>|>([\\s\\S]*?)</${P}cols>)`).exec(xml);
+  const tmpl: (string | undefined)[] = []; // per column (1-based): the <col/> without min and max
+  let top = 0;
+  for (const m of (cur?.[1] ?? '').matchAll(new RegExp(`<${P}col\\b[^>]*?/?>`, 'g'))) {
+    const min = Math.max(1, Number(getAttr(m[0], 'min') ?? 1)), max = Math.min(Number(getAttr(m[0], 'max') ?? min), MAX_COLS);
+    const rest = removeAttr(removeAttr(m[0], 'min'), 'max').replace(/\s*\/?>$/, '/>');
+    for (let c = min; c <= max; c++) tmpl[c] = rest;
+    top = Math.max(top, max);
+  }
+  const hide = hidden && new Set(hidden.map((i) => i + 1));
+  for (const c of hide ?? []) top = Math.max(top, c);
+  for (const [c, l] of levels ?? []) if (l > 0) top = Math.max(top, c);
+  const bare = new RegExp(`^<${P}col\\s*/>$`);
+  const head = new RegExp(`^<${P}col`);
+  const pieces: string[] = [];
+  let run: { from: number; tag: string } | undefined;
+  const flush = (to: number) => {
+    if (run && !bare.test(run.tag)) pieces.push(run.tag.replace(head, `<${P}col min="${run.from}" max="${to}"`));
+    run = undefined;
+  };
+  for (let c = 1; c <= top; c++) {
+    let t = tmpl[c];
+    const h = hide?.has(c) ?? false, l = levels?.get(c) ?? 0;
+    if (t === undefined && (h || l > 0)) t = `<${P}col/>`;
+    if (t !== undefined) {
+      if (hide) {
+        if (h) t = setAttr(t, 'hidden', '1');
+        else {
+          t = removeAttr(t, 'hidden');
+          if (isZero(t, 'width')) t = removeAttr(removeAttr(t, 'width'), 'customWidth'); // a zero width hides too
+        }
+      }
+      if (levels) t = l > 0 ? setAttr(t, 'outlineLevel', String(l)) : removeAttr(t, 'outlineLevel');
+    }
+    if (run && run.tag === t) continue;
+    flush(c - 1);
+    if (t !== undefined) run = { from: c, tag: t };
+  }
+  flush(top);
+  const el = pieces.length ? `<${P}cols>${pieces.join('')}</${P}cols>` : ''; // an empty <cols> is invalid
+  if (cur) return xml.replace(cur[0], () => el);
+  if (!el) return xml;
+  const at = xml.search(new RegExp(`<${P}sheetData\\b`)); // CT_Worksheet: … sheetFormatPr, cols, sheetData
+  if (at < 0) throw new ExportError('corrupt', `sheet "${sheet}" has no <sheetData>`, { sheet });
+  return xml.slice(0, at) + el + xml.slice(at);
+}
+
+/** Sets (or removes, at 0) `sheetFormatPr outlineLevelRow` / `outlineLevelCol`; adds the element in schema order when needed. */
+function setOutlineLevels(xml: string, row: number | undefined, col: number | undefined): string {
+  const P = rootPrefix(xml);
+  const apply = (tag: string) => {
+    let t = tag;
+    if (row !== undefined) t = row > 0 ? setAttr(t, 'outlineLevelRow', String(row)) : removeAttr(t, 'outlineLevelRow');
+    if (col !== undefined) t = col > 0 ? setAttr(t, 'outlineLevelCol', String(col)) : removeAttr(t, 'outlineLevelCol');
+    return t;
+  };
+  const cur = new RegExp(`<${P}sheetFormatPr\\b[^>]*?/?>`).exec(xml);
+  if (cur) return xml.replace(cur[0], () => apply(cur[0]));
+  if (!row && !col) return xml;
+  const at = xml.search(new RegExp(`<${P}(?:cols|sheetData)\\b`));
+  return at < 0 ? xml : xml.slice(0, at) + apply(`<${P}sheetFormatPr defaultRowHeight="15"/>`) + xml.slice(at);
+}
+
+/** Sets `tabSelected` on a sheet's first `<sheetView>` (adding the view when missing), or clears it on every view. */
+function setTabSelected(xml: string, on: boolean): string {
+  const P = rootPrefix(xml);
+  const tag = new RegExp(`<${P}sheetView\\b[^>]*?/?>`, 'g');
+  if (!on) return xml.replace(tag, (v) => removeAttr(v, 'tabSelected'));
+  const view = new RegExp(tag.source).exec(xml);
+  if (view) return xml.replace(view[0], () => setAttr(view[0], 'tabSelected', '1'));
+  const at = xml.search(new RegExp(`<${P}(?:sheetFormatPr|cols|sheetData)\\b`));
+  const el = `<${P}sheetViews><${P}sheetView tabSelected="1" workbookViewId="0"/></${P}sheetViews>`;
+  return at < 0 ? xml : xml.slice(0, at) + el + xml.slice(at);
+}
+
+/**
+ * Writes `<sheet state>` and keeps the workbook openable: refuses a workbook with no visible
+ * sheet, and when the active sheet is hidden moves `activeTab` (and `firstSheet`) to the first
+ * visible sheet and `tabSelected` with it — or Excel opens to a blank window.
+ */
+async function applySheetStates(parts: Parts, wbPath: string, sheets: SheetRef[], states: Map<string, SheetState>): Promise<void> {
+  const wb = (await parts.text(wbPath))!;
+  const tags = [...wb.matchAll(/<(?:\w+:)?sheet\b[^>]*>/g)];
+  const names = tags.map((m) => getAttr(m[0], 'name') ?? '');
+  const stateOf = (tag: string): SheetState => { const s = getAttr(tag, 'state'); return s === 'hidden' || s === 'veryHidden' ? s : 'visible'; };
+  const before = tags.map((m) => stateOf(m[0]));
+  const after = names.map((n, i) => states.get(n) ?? before[i]!);
+  const firstVisible = after.indexOf('visible');
+  if (firstVisible < 0) throw new ExportError('sheet-count', 'every sheet would be hidden; a workbook needs at least one visible sheet');
+  let out = wb;
+  for (let i = tags.length - 1; i >= 0; i--) {
+    if (after[i] === before[i]) continue;
+    const m = tags[i]!;
+    const t = after[i] === 'visible' ? removeAttr(m[0], 'state') : setAttr(m[0], 'state', after[i]!);
+    out = out.slice(0, m.index) + t + out.slice(m.index + m[0].length);
+  }
+  let moved: number | undefined;
+  out = out.replace(/<(?:\w+:)?workbookView\b[^>]*>/g, (v) => {
+    let t = v;
+    const active = Number(getAttr(v, 'activeTab') ?? 0);
+    if (after[active] !== 'visible') {
+      t = setAttr(t, 'activeTab', String(firstVisible));
+      moved = firstVisible;
+      if (getAttr(t, 'firstSheet') !== undefined) t = setAttr(t, 'firstSheet', String(firstVisible));
+    }
+    const first = getAttr(t, 'firstSheet');
+    if (first !== undefined && after[Number(first)] !== 'visible') t = setAttr(t, 'firstSheet', String(firstVisible));
+    return t;
+  });
+  if (!/<(?:\w+:)?workbookView\b/.test(out) && after[0] !== 'visible') {
+    // No view at all: activeTab defaults to 0, which is now hidden — add the view.
+    const P = /<(\w+:)?workbook\b/.exec(out)?.[1] ?? '';
+    const el = `<${P}bookViews><${P}workbookView activeTab="${firstVisible}"/></${P}bookViews>`;
+    const at = out.search(new RegExp(`<${P}sheets\\b`));
+    if (at >= 0) { out = out.slice(0, at) + el + out.slice(at); moved = firstVisible; }
+  }
+  if (out !== wb) parts.write(wbPath, out);
+  const pathOf = (i: number) => sheets.find((s) => s.name === names[i])?.path;
+  for (let i = 0; i < tags.length; i++) {
+    const p = pathOf(i);
+    if (!p || after[i] === 'visible' || before[i] !== 'visible') continue;
+    const x = await parts.text(p);
+    if (x !== undefined) { const y = setTabSelected(x, false); if (y !== x) parts.write(p, y); }
+  }
+  const p = moved !== undefined ? pathOf(moved) : undefined;
+  const x = p && (await parts.text(p));
+  if (p && x) parts.write(p, setTabSelected(x, true));
+}
+
 /**
  * Patches the original .xlsx: only the changed cells are rewritten; shared
  * strings stay in place and new text goes in as inline strings; every other part
@@ -437,7 +669,7 @@ export function setFullCalcOnLoad(wb: string): string {
  *
  * @param original - The uploaded .xlsx file's bytes.
  * @param changes - The cells to rewrite; a missing sheet or a bad reference throws an `ExportError`.
- * @param o - Compression, size limits, plugin hooks, freeze panes and merges.
+ * @param o - Compression, size limits, plugin hooks, freeze panes, merges and hidden rows, columns and sheets.
  * @returns The patched .xlsx file's bytes.
  * @example
  * ```ts
@@ -483,6 +715,7 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
     if (!sheet) throw new ExportError('no-sheet', `no sheet named "${f.sheet}" in the workbook`, { sheet: f.sheet });
     parts.write(sheet.path, setPane((await parts.text(sheet.path))!, f));
   }
+  await applyHidden(parts, wbPath, sheets, o.hidden ?? []);
   if (changes.length) {
     parts.write(wbPath, setFullCalcOnLoad((await parts.text(wbPath))!));
     await refreshPivots(parts, grouped);
@@ -492,6 +725,25 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
   for (const hook of o.exportPatch ?? []) await hook(ctx);
   if (stripped.length) o.onStripped?.(stripped);
   return writeZip(parts.zipInputs(), o);
+}
+
+/** The `hidden` option: every entry checked first, then rows, columns and outline per sheet, then the workbook's sheet states. */
+async function applyHidden(parts: Parts, wbPath: string, sheets: SheetRef[], list: HiddenPatch[]): Promise<void> {
+  for (const h of list) checkHidden(h, sheets);
+  const states = new Map<string, SheetState>();
+  for (const h of list) {
+    if (h.state !== undefined) states.set(h.sheet, h.state);
+    const rowLv = levelMap(h.outline?.rows), colLv = levelMap(h.outline?.cols);
+    if (!h.rows && !h.cols && !rowLv && !colLv) continue;
+    const path = sheets.find((s) => s.name === h.sheet)!.path;
+    let xml = await parts.text(path);
+    if (xml === undefined) throw new ExportError('corrupt', `sheet "${h.sheet}" points at a missing part ${path}`, { sheet: h.sheet });
+    if (h.rows || rowLv) xml = setRowsHidden(xml, h.sheet, h.rows, rowLv);
+    if (h.cols || colLv) xml = setColsHidden(xml, h.sheet, h.cols, colLv);
+    if (rowLv || colLv) xml = setOutlineLevels(xml, deepest(rowLv), deepest(colLv));
+    parts.write(path, xml);
+  }
+  if (states.size) await applySheetStates(parts, wbPath, sheets, states);
 }
 
 async function refreshPivots(parts: Parts, grouped: Map<string, Map<string, Cell>>): Promise<void> {

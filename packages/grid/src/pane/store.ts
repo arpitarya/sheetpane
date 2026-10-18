@@ -8,7 +8,7 @@ import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
 import { machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetpaneError, Snapshot, Source } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
 /** What {@link createWorkbook} takes. */
 export interface StoreOptions {
@@ -82,6 +82,8 @@ export function parseInput(text: string, original: Cell, source: 'xlsx' | 'csv')
   return text;
 }
 
+/** A sheet's state as read: `state` (W-49), else the older `hidden` flag. */
+export const sheetStateOf = (s: ImportedSheet): SheetState => ((s as { state?: SheetState }).state ?? (s.hidden ? 'hidden' : 'visible'));
 const same = (a: unknown, b: unknown) => a === b || (typeof a === 'number' && typeof b === 'number' && Object.is(a, b)) || JSON.stringify(a) === JSON.stringify(b);
 
 /**
@@ -450,6 +452,86 @@ export class WorkbookStore {
     this.setChange(sheet, `#merge:${range}`, 'merge', merged, was, origin);
   }
 
+  // ── hidden rows, columns and sheets (W-49): the file's, then `hidden` / `sheetState` changes ──
+  /**
+   * What a sheet hides: rows and columns (0-based, sorted) and its state — the file's, with the
+   * `hidden` and `sheetState` changes applied.
+   * @param sheet - The sheet's name.
+   * @returns The hidden rows and columns and the sheet's state.
+   */
+  hidden(sheet: string): { rows: number[]; cols: number[]; state: SheetState } {
+    const s = this.sheet(sheet);
+    if (!s) return { rows: [], cols: [], state: 'visible' };
+    const ch = (k: string) => this.snap.changes.get(key(sheet, k))?.now;
+    return { rows: (ch('#hiddenRows') as number[] | undefined) ?? s.hiddenRows ?? [], cols: (ch('#hiddenCols') as number[] | undefined) ?? s.hiddenCols ?? [], state: (ch('#sheetState') as SheetState | undefined) ?? sheetStateOf(s) };
+  }
+  /**
+   * Hides or unhides rows or columns: one undoable change per sheet and axis, written to the download.
+   * @param sheet - The sheet's name.
+   * @param axis - `rows` or `cols`.
+   * @param indexes - The 0-based rows or columns.
+   * @param hide - True hides, false unhides.
+   * @param origin - The element that asked.
+   */
+  setHidden(sheet: string, axis: 'rows' | 'cols', indexes: readonly number[], hide: boolean, origin?: Origin): void {
+    const s = this.sheet(sheet);
+    if (!s) return;
+    const cur = new Set(this.hidden(sheet)[axis]);
+    for (const i of indexes) if (hide) cur.add(i); else cur.delete(i);
+    const file = [...((axis === 'rows' ? s.hiddenRows : s.hiddenCols) ?? [])].sort((a, b) => a - b);
+    this.setChange(sheet, axis === 'rows' ? '#hiddenRows' : '#hiddenCols', 'hidden', [...cur].sort((a, b) => a - b), file, origin);
+  }
+  /**
+   * Sets a sheet's state; the last visible sheet cannot be hidden (Excel's rule).
+   * @param sheet - The sheet's name.
+   * @param state - `visible`, `hidden` or `veryHidden`.
+   * @param origin - The element that asked.
+   * @returns False when refused.
+   */
+  setSheetState(sheet: string, state: SheetState, origin?: Origin): boolean {
+    const s = this.sheet(sheet), book = this.snap.book;
+    if (!s || !book) return false;
+    if (state !== 'visible' && !book.sheets.some((x) => x.name !== sheet && this.hidden(x.name).state === 'visible')) return false;
+    this.setChange(sheet, '#sheetState', 'sheetState', state, sheetStateOf(s), origin);
+    return true;
+  }
+
+  /**
+   * A sheet's outline levels (W-49 DoD 9): rows and columns (0-based) to a level 1–7, the file's with
+   * the `outline` changes applied, and where the summary sits.
+   * @param sheet - The sheet's name.
+   * @returns The levels per axis, the deepest level per axis, and `summaryBelow` / `summaryRight`.
+   */
+  outline(sheet: string): { rows: Record<number, number>; cols: Record<number, number>; levelRow: number; levelCol: number; summaryBelow: boolean; summaryRight: boolean } {
+    const s = this.sheet(sheet) as (ImportedSheet & { rowOutline?: ({ level: number } | undefined)[]; colOutline?: ({ level: number } | undefined)[]; outline?: { summaryBelow: boolean; summaryRight: boolean } }) | undefined;
+    const fromFile = (list: ({ level: number } | undefined)[] | undefined) => { const m: Record<number, number> = {}; (list ?? []).forEach((e, i) => { if (e && e.level > 0) m[i] = e.level; }); return m; };
+    const ch = (k: string) => this.snap.changes.get(key(sheet, k))?.now as Record<number, number> | undefined;
+    const rows = ch('#outlineRows') ?? fromFile(s?.rowOutline), cols = ch('#outlineCols') ?? fromFile(s?.colOutline);
+    const deepest = (m: Record<number, number>) => Object.values(m).reduce((a, b) => Math.max(a, b), 0);
+    return { rows, cols, levelRow: deepest(rows), levelCol: deepest(cols), summaryBelow: s?.outline?.summaryBelow ?? true, summaryRight: s?.outline?.summaryRight ?? true };
+  }
+  /**
+   * Groups (+1 level) or ungroups (−1) rows or columns — one undoable change per sheet and axis; seven levels at most.
+   * @param sheet - The sheet's name.
+   * @param axis - `rows` or `cols`.
+   * @param indexes - The 0-based rows or columns.
+   * @param delta - `1` groups, `-1` ungroups.
+   * @param origin - The element that asked.
+   */
+  setOutline(sheet: string, axis: 'rows' | 'cols', indexes: readonly number[], delta: 1 | -1, origin?: Origin): void {
+    if (!this.sheet(sheet)) return;
+    const o = this.outline(sheet), cur = { ...(axis === 'rows' ? o.rows : o.cols) };
+    for (const i of indexes) { const v = Math.max(0, Math.min(7, (cur[i] ?? 0) + delta)); if (v) cur[i] = v; else delete cur[i]; }
+    const k = axis === 'rows' ? '#outlineRows' : '#outlineCols';
+    const was = this.snap.changes.get(key(sheet, k))?.was ?? (axis === 'rows' ? this.outlineFile(sheet).rows : this.outlineFile(sheet).cols);
+    this.setChange(sheet, k, 'outline', cur, was, origin);
+  }
+  private outlineFile(sheet: string): { rows: Record<number, number>; cols: Record<number, number> } {
+    const s = this.sheet(sheet) as (ImportedSheet & { rowOutline?: ({ level: number } | undefined)[]; colOutline?: ({ level: number } | undefined)[] }) | undefined;
+    const m = (list: ({ level: number } | undefined)[] | undefined) => { const r: Record<number, number> = {}; (list ?? []).forEach((e, i) => { if (e && e.level > 0) r[i] = e.level; }); return r; };
+    return { rows: m(s?.rowOutline), cols: m(s?.colOutline) };
+  }
+
   // ── freeze panes (W-24): view state, a change of kind `freeze` ─────────
   /** A sheet's frozen rows and columns: a `freeze` change, else the file's. */
   freeze(sheet: string): { rows: number; cols: number } {
@@ -777,7 +859,14 @@ export class WorkbookStore {
     const freeze = [...this.snap.changes].filter(([k, c]) => c.kind === 'freeze' && k.endsWith('!#freeze')).map(([k, c]) => ({ sheet: splitKey(k).sheet, ...(c.now as { rows: number; cols: number }) }));
     const mergeSheets = new Set([...this.snap.changes].filter(([, c]) => c.kind === 'merge').map(([k]) => k.slice(0, k.indexOf('!#merge:'))));
     const merges = [...mergeSheets].map((sheet) => ({ sheet, ranges: this.merges(sheet) }));
-    const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(freeze.length ? { freeze } : {}), ...(merges.length ? { merges } : {}) });
+    // hidden rows, columns and sheet states (W-49): each sheet's whole set after the edits
+    const hidSheets = new Set([...this.snap.changes].filter(([, c]) => c.kind === 'hidden' || c.kind === 'sheetState' || c.kind === 'outline').map(([k]) => splitKey(k).sheet));
+    const hidden = [...hidSheets].map((sheet) => {
+      const h = this.hidden(sheet), o = this.outline(sheet), has = (r: string) => this.snap.changes.has(key(sheet, r));
+      const outline = has('#outlineRows') || has('#outlineCols') ? { outline: { ...(has('#outlineRows') ? { rows: o.rows } : {}), ...(has('#outlineCols') ? { cols: o.cols } : {}) } } : {};
+      return { sheet, ...(has('#hiddenRows') ? { rows: h.rows } : {}), ...(has('#hiddenCols') ? { cols: h.cols } : {}), ...(has('#sheetState') ? { state: h.state } : {}), ...outline };
+    });
+    const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(freeze.length ? { freeze } : {}), ...(merges.length ? { merges } : {}), ...(hidden.length ? { hidden } : {}) });
     return { blob: new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), kind: 'xlsx', name: src.name, guarded: [], converted: false };
   }
 

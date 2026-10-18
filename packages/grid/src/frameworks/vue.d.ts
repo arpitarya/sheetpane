@@ -17,6 +17,8 @@ export type SheetpaneExcelVueProps = SheetpaneExcelAttributes & SheetpaneExcelPr
   onSheetpaneErrors?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   onSheetpaneSelect?: ((event: SheetpaneExcelEventMap['sheetpane-select']) => void) | undefined;
+  /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
+  onSheetpaneVisibility?: ((event: SheetpaneExcelEventMap['sheetpane-visibility']) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   onSheetpaneResize?: ((event: SheetpaneExcelEventMap['sheetpane-resize']) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
