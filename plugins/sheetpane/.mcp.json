@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "sheetpane": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sheetpane/mcp"
+      ]
+    }
+  }
+}

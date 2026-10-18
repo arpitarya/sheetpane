@@ -7,7 +7,7 @@ description: "A leaf package of 23 Markdown skills, entry files and a no-depende
 status: accepted
 date: 2026-10-18
 feature: teaching a host's coding agents to use sheetpane
-owns: [packages/skills/, packages/grid/src/skills-bin.ts, test/skills.test.ts]
+owns: [packages/skills/, packages/grid/src/skills-bin.ts, test/skills.test.ts, scripts/build-plugin.mjs, scripts/build-plugin.d.mts, plugins/sheetpane/, .claude-plugin/marketplace.json]
 laws: [L0, L2, L8]
 timestamp: 2026-10-19T05:00:00Z
 content_sha: ""
@@ -54,14 +54,22 @@ flowchart LR
    second exception. `@sheetpane/grid` exposes the same `sheetpane-skills`
    bin (`src/skills-bin.ts` forwards to `@sheetpane/skills/bin`), because
    package managers link only direct dependencies' bins.
-2. **The skills:** 23 folders `skills/<name>/SKILL.md` — 21 for hosts, two
+2. **The skills:** 25 folders `skills/<name>/SKILL.md` — 23 for hosts, two
    for contributors (`sheetpane-file-work-item`, `sheetpane-records`), and the
    router `sheetpane`. Frontmatter is the subset all three tools read: `name`
    (= folder), `description` (≤ 250 characters, saying when to use it **and
-   when not**), optional `license` and `metadata` (`audience`). A `SKILL.md`
+   when not**; unquoted, it never holds `: ` or ` #`, which break YAML and make
+   Claude Code drop every key), optional `license` and `metadata`
+   (`audience`). No `argument-hint`: claude.ai and the Skills API refuse it. A `SKILL.md`
    is ≤ 200 lines. A skill links to its records on GitHub (so the links work
    once installed elsewhere) and never restates a rule as its own
    (SR-LAW-0).
+2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
+    in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
+    (`$ARGUMENTS` where filled). Three are written as commands:
+    `sheetpane-embed [framework]`, and two thin routers — `sheetpane-rules
+    [path]` → `sheetpane-rules-file`, `sheetpane-test [runner]` →
+    `sheetpane-testing`. Nothing was renamed.
 3. **Entry files:** `entry/claude.md` and `entry/agents.md` — a ≤ 30-line
    block between `<!-- sheetpane:start -->` / `<!-- sheetpane:end -->`;
    `entry/kiro-steering.md` (`inclusion: fileMatch`); `entry/claude-agent.md`
@@ -85,6 +93,33 @@ flowchart LR
    `[mcp_servers.sheetpane]` outside the block is refused without `--force`;
    `uninstall` removes the entry, and the file only when install created it
    and nothing else is left.
+4b. **`sheetpane-skills check-rules <file…>` (W-45):** the rules file's
+    document checks of the grid's `checkDocument` (SP-6010…SP-6021, the same
+    codes and messages, re-implemented in the dependency-free bin; a test keeps
+    the two equal on 19 documents), one line per problem; exit 0 clean, 1 a
+    problem, 2 usage or an unreadable file. `--hook claude | codex | kiro`
+    reads the edited path (Claude's `tool_input.file_path`, Codex's
+    `apply_patch` text, Kiro's `{{filePath}}`), ignores all but
+    `*.rules.json`, and on a problem writes stderr and exits 2 so the agent
+    sees it.
+4c. **Hooks (W-45):** `install` writes, unless `--no-hooks` or
+    `--skills-only`: a `PostToolUse` group (`Edit|Write|MultiEdit`) in
+    `.claude/settings.json`; `.codex/hooks.json` (`PostToolUse` on
+    `apply_patch` — Codex runs it once the user trusts it in `/hooks`, so the
+    `AGENTS.md` block also says to run the check); `.kiro/hooks/sheetpane-rules.json`
+    (`PostFileSave`, `\.rules\.json$`). A JSON group is ours by its exact
+    command, recorded like decision 4a's MCP entry (refused if hand-edited
+    without `--force`; every other key kept; the file removed only when install
+    made it and nothing else is left).
+4d. **The Claude Code plugin (W-45):** `scripts/build-plugin.mjs` (`just
+    plugin`) generates `plugins/sheetpane/` — the host skills, the integrator
+    subagent, `.mcp.json` (`@sheetpane/mcp`), `hooks/hooks.json` running a
+    bundled copy of the bin — and `.claude-plugin/marketplace.json`; a
+    freshness test fails on any stale or extra file. `claude plugin validate
+    --strict` passes on both. Install: `/plugin marketplace add
+    arpitarya/sheetpane`, then `/plugin install sheetpane@sheetpane`. Formats
+    as documented on 2026-10-18 (Claude Code skills, hooks, plugins; Kiro
+    hooks 2026-10-10; Codex hooks).
 5. **The drift check** (`test/skills.test.ts`) reads every skill and fails on
    a frontmatter key outside the subset, a `name` ≠ folder, a description over
    250 characters or without its "not for", a `SKILL.md` over 200 lines, a

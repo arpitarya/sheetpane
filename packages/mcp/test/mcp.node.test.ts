@@ -131,7 +131,9 @@ describe('each tool on the showcase and the rules sample — golden outputs (DoD
     expect(await top('React 19 props and refs')).toBe('sheetpane-react');
     expect(await top('place the sheet on a page as a tab')).toBe('sheetpane-embed');
     expect(await top('dark theme and css tokens')).toBe('sheetpane-theming');
-    expect(await top('write tests with playwright')).toBe('sheetpane-testing');
+    // the `sheetpane-test` command (W-45) routes to `sheetpane-testing`: either may come first
+    const testing = JSON.parse((await callTool('find_skill', { task: 'write tests with playwright' })).content[0]!.text).matches.slice(0, 2).map((m: { name: string }) => m.name);
+    expect(testing).toContain('sheetpane-testing');
     await golden('find-skill-rules', 'find_skill', { task: 'validate values from a JSON rules file per column' });
   });
 });

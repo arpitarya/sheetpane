@@ -25,7 +25,16 @@ was no longer there (W-43's close, `7c9eada`, restored it from `9b28465`).
 **The remedy (judgment).** An insertion is `s[:i] + new + s[i:]`, and a
 script that rewrites a file checks it did not shrink unexpectedly — `git diff
 --stat` on the file before staging: a "+12" that reads "+12 −60" is the tell.
-Once, not twice: no gate yet (SR-WORK-SESSION decision 13).
+
+**It happened again the same day.** Closing W-45, a helper wrote
+`open(p, 'w').write(f(open(p).read()))`: Python opens — and empties — the file
+for writing before it evaluates the argument, so the read got nothing, the edit
+failed, and `work/IMPLEMENTATION.md` was left empty in the working tree, with
+the Cowork session's uncommitted L10 row in it. The file was rebuilt from HEAD;
+the L10 row from the 180 characters of it last seen (Cowork to confirm its
+wording). Remedy: compute the new text first, write to `p + '.new'`, then
+`os.replace`. Second strike → a gate: `scripts/shrink-guard.sh`
+(SR-WORK-SESSION decision 13).
 
 ## 2026-10-18 — `git add -A <dir>` staged another agent's new files
 

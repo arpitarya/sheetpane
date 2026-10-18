@@ -17,4 +17,9 @@ Start with the `sheetpane` skill: it routes to the right one (embed, react,
 load-export, errors, events, column-rules, rules-file, plugins, theming,
 testing, troubleshoot, …). Skills were installed by `npx sheetpane-skills install`;
 re-run it after upgrading `@sheetpane/*`.
+
+Commands: `$sheetpane-embed [framework]`, `$sheetpane-rules [workbook or
+rules file]`, `$sheetpane-test [workbook]`. After writing a `*.rules.json`,
+run `npx sheetpane-skills check-rules <file>` and fix every SP-60xx line (the
+hook in `.codex/hooks.json` does it once you trust it in `/hooks`).
 <!-- sheetpane:end -->

@@ -26,6 +26,8 @@ msg_file="${1:?sr-guard.sh must run as a commit-msg hook with the message file a
 
 # SR-WORK-SESSION decision 13: a commit of nothing but renames is refused first.
 "$ROOT/scripts/rename-only-guard.sh" "$msg_file"
+# … and so is one where a file lost more than half of its lines (the second gate, 2026-10-18).
+"$ROOT/scripts/shrink-guard.sh" "$msg_file"
 
 if grep -qiE '^[[:space:]]*(no[ -]sr[ -]affected|\[no-sr\])[[:space:]]*$' "$msg_file"; then
   exit 0

@@ -1,6 +1,6 @@
 ---
 name: sheetpane-theming
-description: Use when matching sheetpane to a host's look - dark mode via theme, the --sp-* colour tokens, style.css, why no font is set. Not for a workbook's own colours (sheetpane-plugins: styles, condfmt).
+description: Use when matching sheetpane to a host's look - dark mode via theme, the --sp-* colour tokens, style.css, why no font is set. Not for a workbook's own colours (sheetpane-plugins - styles, condfmt).
 license: MIT
 metadata:
   audience: host

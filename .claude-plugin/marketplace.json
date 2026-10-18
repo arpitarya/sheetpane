@@ -1,0 +1,15 @@
+{
+  "name": "sheetpane",
+  "description": "sheetpane — .xlsx and .csv files as two in-sync web components — for coding agents.",
+  "owner": {
+    "name": "Arpit Arya",
+    "url": "https://github.com/arpitarya"
+  },
+  "plugins": [
+    {
+      "name": "sheetpane",
+      "source": "./plugins/sheetpane",
+      "description": "sheetpane in Claude Code: skills to embed, load, export, rule, theme and test the sheet; the sheetpane-integrator agent; a hook that checks each *.rules.json; the @sheetpane/mcp server."
+    }
+  ]
+}

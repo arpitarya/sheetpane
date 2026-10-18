@@ -25,6 +25,8 @@ ball: arpit
 
 **Model:** NONE for steps 1–3 (Arpit's machine, his Kiro and Codex sign-ins); Sonnet for any fix item from step 4.
 
+**Also to try (W-45, 2026-10-18):** the Claude Code plugin with `claude --plugin-dir plugins/sheetpane` (or `/plugin marketplace add arpitarya/sheetpane`) — a skill fires, the MCP server answers, editing a `*.rules.json` runs the check — and the Kiro and Codex rules hooks after `npx sheetpane-skills install`.
+
 ## Goal
 
 Confirm on real tools that the shipped skills, entry files and MCP entry are found and used. W-35 shipped without this check, on the decider's ruling.

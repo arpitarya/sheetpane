@@ -74,6 +74,10 @@ site: build
 llms:
     node scripts/build-llms.mjs
 
+# the Claude Code plugin plugins/sheetpane and .claude-plugin/marketplace.json, from @sheetpane/skills (W-45)
+plugin:
+    node scripts/build-plugin.mjs
+
 # the StackBlitz starters: each create-sheetpane template scaffolded into examples/starters (W-44)
 starters:
     node scripts/build-starters.mjs

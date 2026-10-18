@@ -33,6 +33,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-37-custom-elements-manifest.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) (the manifest) · [SR-BUILD](../records/0102_BUILD.md) decisions 5, 7 |
 | `W-39-mcp-server.md` | 2026-10-18 | [SR-MCP](../records/0119_MCP.md) |
 | `W-43-create-sheetpane.md` | 2026-10-18 | [SR-CREATE](../records/0120_CREATE.md) · [SR-BUILD](../records/0102_BUILD.md) decisions 7, 8 |
+| `W-45-agent-commands-hooks-plugin.md` | 2026-10-18 | [SR-SKILLS](../records/0116_SKILLS.md) decisions 2a, 4b–4d |
 | `W-47-resize-columns-rows.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 9a, 11, 12 |
 | `W-46-smooth-range-selection.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 9a, 11a, 11b, 12, 13 |
 | `W-41-testing-package.md` | 2026-10-18 | [SR-TESTING](../records/0118_TESTING.md) |

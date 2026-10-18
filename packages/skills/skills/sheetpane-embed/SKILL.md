@@ -14,6 +14,17 @@ decision 1). Whatever one shows, the other shows — that is a law
 ([SR-LAW-7](https://github.com/arpitarya/sheetpane/blob/main/records/0009_LAW-7-surfaces-always-in-sync.md)),
 not something the host wires up.
 
+## As a command: `/sheetpane-embed [framework]`
+
+The argument: **$ARGUMENTS** (in a tool that does not fill that in, it is the
+text typed after the command) — `html`, `react`, `vue`, `angular`, `svelte`,
+`solid` or `next`; with none, read the app's `package.json`. Then: install as
+[sheetpane-setup](../sheetpane-setup/SKILL.md) says; for React follow
+[sheetpane-react](../sheetpane-react/SKILL.md), for the others
+[sheetpane-frameworks](../sheetpane-frameworks/SKILL.md); place the sheet and
+the errors list as below, on the page the user names (ask if none); run the
+app's build or tests and say what you changed.
+
 ## The decision
 
 | the host wants | write | spec |

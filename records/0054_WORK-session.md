@@ -7,7 +7,7 @@ description: "The worklog entry, the interview kept current, the one-line NOW, t
 status: accepted
 date: 2026-10-18
 feature: session continuity
-owns: [.claude/hooks/require-progress.sh, scripts/rename-only-guard.sh, test/worklog.test.ts]
+owns: [.claude/hooks/require-progress.sh, scripts/rename-only-guard.sh, scripts/shrink-guard.sh, test/worklog.test.ts, test/shrink-guard.test.ts]
 laws: [L0]
 timestamp: 2026-10-18T08:40:00Z
 content_sha: ""
@@ -93,7 +93,12 @@ session re-derives the state, or guesses it.
   run" (`aae714d`, `42a3769`). The second: `test/worklog.test.ts` fails when a
   dated entry sits inside a code fence — two sessions wrote theirs inside the
   "Entry format" template block, where it rendered as code (moved out
-  2026-10-18).
+  2026-10-18). The third: `scripts/shrink-guard.sh`, run by the commit-msg
+  hook after the rename gate, refuses a commit in which a text file loses more
+  than half of its lines unless the message says `shrink ok` — twice a
+  script that rewrote a file kept only part of it (the CHANGELOG in
+  `b0f7291`; a work file emptied in the working tree, 2026-10-18);
+  `test/shrink-guard.test.ts`.
 - **Judgment today:** every other decision — the worklog entry (1), the
   interview (3), two strikes (13).
 

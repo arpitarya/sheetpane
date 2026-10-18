@@ -13,10 +13,10 @@
       "score": 7
     },
     {
-      "name": "sheetpane-file-work-item",
-      "path": "node_modules/@sheetpane/skills/skills/sheetpane-file-work-item/SKILL.md",
-      "description": "Use when contributing to the sheetpane repo and filing a new work item W-nn - the next free id, the item file, its OPEN-WORK row and ball, the worklog and NOW. Not for host apps that use sheetpane.",
-      "score": 3
+      "name": "sheetpane-rules",
+      "path": "node_modules/@sheetpane/skills/skills/sheetpane-rules/SKILL.md",
+      "description": "The /sheetpane-rules [workbook or rules file] command - drafts a rules file for a workbook, or fixes one, then runs sheetpane-skills check-rules until it is clean. Not for learning the format (sheetpane-rules-file) or rules in code.",
+      "score": 4
     }
   ]
 }

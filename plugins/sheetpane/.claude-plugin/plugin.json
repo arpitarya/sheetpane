@@ -1,0 +1,19 @@
+{
+  "name": "sheetpane",
+  "version": "0.0.0",
+  "description": "sheetpane in Claude Code: skills to embed, load, export, rule, theme and test the sheet; the sheetpane-integrator agent; a hook that checks each *.rules.json; the @sheetpane/mcp server.",
+  "author": {
+    "name": "Arpit Arya",
+    "url": "https://github.com/arpitarya"
+  },
+  "homepage": "https://github.com/arpitarya/sheetpane",
+  "repository": "https://github.com/arpitarya/sheetpane",
+  "license": "MIT",
+  "keywords": [
+    "sheetpane",
+    "xlsx",
+    "csv",
+    "web-components",
+    "spreadsheet"
+  ]
+}

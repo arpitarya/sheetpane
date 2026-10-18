@@ -1,0 +1,17 @@
+{
+  "description": "After Claude edits a *.rules.json, checks it as <sheetpane-excel> will and feeds the SP-60xx problems back.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/sheetpane-skills.mjs\" check-rules --hook claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

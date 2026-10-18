@@ -33,8 +33,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — waiting on the decider: Pages enabled and the first release published, then an agent checks both load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
-- 🟢 **W-45** `agent` · Invocable commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), hooks that check a rules file on save (Claude Code, Kiro), and the agent set as a Claude Code plugin + marketplace.. Filed by Arpit (Cowork). [detail](open/W-45-agent-commands-hooks-plugin.md)
-
 ### testing
 
 - 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)

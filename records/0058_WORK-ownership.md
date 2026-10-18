@@ -21,7 +21,7 @@ content_sha: ""
 may *describe* it.
 
 **A commit that changes a component touches its owner and every describer** —
-or says `no SR affected` on its own line. `scripts/sr-guard.sh` (which first runs `scripts/rename-only-guard.sh`, SR-WORK-SESSION decision 13) enforces it as
+or says `no SR affected` on its own line. `scripts/sr-guard.sh` (which first runs `scripts/rename-only-guard.sh` and `scripts/shrink-guard.sh`, SR-WORK-SESSION decision 13) enforces it as
 a `commit-msg` hook.
 
 ```mermaid

@@ -209,6 +209,7 @@ directions.
 | `packages/fixtures/` | SR-FIXTURES | `@sheetpane/fixtures` — test workbooks |
 | `packages/testing/` | SR-TESTING | `@sheetpane/testing` — host test helpers |
 | `packages/mcp/` | SR-MCP | `@sheetpane/mcp` — the MCP server (W-39) |
+| `plugins/sheetpane/`, `.claude-plugin/marketplace.json`, `scripts/build-plugin.mjs` | SR-SKILLS | the Claude Code plugin and marketplace, generated from `@sheetpane/skills` (W-45) |
 | `packages/create-sheetpane/`, `scripts/create-check.mjs` | SR-CREATE | `npm create sheetpane` and its end-to-end check (W-43) |
 | `packages/skills/` | SR-SKILLS | `@sheetpane/skills` — agent skills, the installer |
 | `packages/grid/src/skills-bin.ts` | SR-SKILLS | the grid's forwarding `sheetpane-skills` bin |

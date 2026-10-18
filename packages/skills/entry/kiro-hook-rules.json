@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "sheetpane rules file check",
+      "description": "After a *.rules.json is saved, checks it as <sheetpane-excel> will; problems come back as SP-60xx lines.",
+      "trigger": "PostFileSave",
+      "matcher": "\\.rules\\.json$",
+      "action": {
+        "type": "command",
+        "command": "npx --no sheetpane-skills check-rules --hook kiro \"{{filePath}}\""
+      },
+      "timeout": 60
+    }
+  ]
+}

@@ -36,6 +36,11 @@ Nothing is uploaded; export carries every change.
 | a newer version | [sheetpane-upgrade](../sheetpane-upgrade/SKILL.md) |
 | coming from SheetJS, Handsontable, AG Grid | [sheetpane-migrate](../sheetpane-migrate/SKILL.md) |
 
+Three of them also run as commands with an argument — `/sheetpane-embed
+[framework]`, `/sheetpane-rules [workbook or rules file]` ([sheetpane-rules](../sheetpane-rules/SKILL.md)),
+`/sheetpane-test [workbook]` ([sheetpane-test](../sheetpane-test/SKILL.md));
+in Codex, `$sheetpane-embed …`.
+
 ## Three choices people mix up
 
 - **View vs Edit:** `mode="view"` reads; `mode="edit"` edits and flags.

@@ -1757,6 +1757,7 @@ The spec is the record [SR-TESTING](../../records/0118_TESTING.md).
 npx sheetpane-skills install            # for every tool whose folder already exists here
 npx sheetpane-skills install --all      # .claude/, .kiro/ and .agents/
 npx sheetpane-skills uninstall          # removes exactly what install wrote
+npx sheetpane-skills check-rules q3.rules.json   # a rules file checked as <sheetpane-excel> will
 ```
 
 Every `@sheetpane/*` package depends on this one, and `@sheetpane/grid` exposes
@@ -1764,7 +1765,10 @@ the same `sheetpane-skills` command, so it is there once sheetpane is.
 
 | what | where it lands |
 |---|---|
-| 23 skills — embed, react, load-export, errors, events, column-rules, rules-file, plugins, theming, testing, troubleshoot, … and the `sheetpane` router | `.claude/skills/`, `.kiro/skills/`, `.agents/skills/` |
+| 25 skills — embed, react, load-export, errors, events, column-rules, rules-file, plugins, theming, testing, troubleshoot, … and the `sheetpane` router | `.claude/skills/`, `.kiro/skills/`, `.agents/skills/` |
+| three of them run as commands with an argument: `/sheetpane-embed [framework]`, `/sheetpane-rules [workbook or rules file]`, `/sheetpane-test [workbook]` (in Codex `$sheetpane-embed …`) | the same skill folders |
+| a hook that runs `check-rules` after the agent writes a `*.rules.json` and hands the `SP-60xx` problems back | a `PostToolUse` group in `.claude/settings.json` and `.codex/hooks.json`; `.kiro/hooks/sheetpane-rules.json` (`PostFileSave`) |
+| the `@sheetpane/mcp` server | the `sheetpane` key of `.mcp.json` / `.kiro/settings/mcp.json`; a block in `.codex/config.toml` |
 | a short block saying what sheetpane is and which skill to start with | between `<!-- sheetpane:start -->` and `<!-- sheetpane:end -->` in `CLAUDE.md` / `AGENTS.md` — nothing outside it is touched |
 | a Kiro steering file and a `sheetpane-integrator` agent for Claude and Kiro | `.kiro/steering/`, `.claude/agents/`, `.kiro/agents/` |
 
@@ -1773,8 +1777,38 @@ the same `sheetpane-skills` command, so it is there once sheetpane is.
   `--force`; `--dry-run` lists every path first. What was written is listed in
   `.sheetpane-skills.json`.
 - `--skip contributor` leaves out the two skills for contributing to sheetpane
-  itself; `--only`, `--skills-only` narrow further.
+  itself; `--only`, `--skills-only`, `--no-mcp`, `--no-hooks` narrow further.
+- In JSON configs the hook is found by its exact command, the MCP server by
+  its `sheetpane` key; every other key stays, and `uninstall` puts the file
+  back as it was. Codex runs a project hook only once you trust it in `/hooks`.
 - Re-run it after upgrading `@sheetpane/*` so the skills match the version.
+
+## check-rules
+
+```sh
+npx sheetpane-skills check-rules sheetpane.rules.json other.rules.json
+```
+
+One line per problem, `SP-60xx: message (file)` — the same checks and codes
+`<sheetpane-excel>` applies when it loads the file (SP-6010 to SP-6021; a
+sheet, title or cell the workbook lacks shows only once a workbook is loaded).
+Exit 0 clean, 1 a problem, 2 a usage or read error. As a hook,
+`--hook claude|codex|kiro` reads the edited path from the agent's hook input,
+ignores every other file, and prints problems to stderr with exit 2 so the
+agent reads them. It reads the one file, writes nothing, uses no network.
+
+## Claude Code plugin
+
+The same host skills, the `sheetpane-integrator` agent, the hook and the MCP
+server, as one plugin from this repository's marketplace:
+
+```text
+/plugin marketplace add arpitarya/sheetpane
+/plugin install sheetpane@sheetpane
+```
+
+Its files under `plugins/sheetpane/` are generated from this package by
+`just plugin`; a test fails when they are stale.
 
 Each skill points to the sheetpane record it summarises and never restates a
 rule as its own; a test fails if a skill names an attribute, member or event
@@ -4513,6 +4547,17 @@ pnpm and a justfile; the testing verdict chose the runner.
    every file its import map names copied in, the React gallery at `/react/`
    with a relative base, the version in both headers, no third-party script)
    — checks it with `demo-check`, and deploys it to GitHub Pages.
+8b. **Starters and links (W-44):** `scripts/build-starters.mjs` (`just
+    starters`) scaffolds every `create-sheetpane` template with the CLI itself
+    into `examples/starters/<template>` (not workspace members) with an index
+    of **Open in StackBlitz** links pinned like `llms.txt` (`v<version>`, `main`
+    before the first release); `release.mjs` reruns it; `test/starters.test.ts`
+    fails when they are stale and checks each has `dev` and `build`. StackBlitz
+    installs from npm, so a starter runs once its version is published — the
+    test checks the folders, not StackBlitz. The root README, the grid and
+    `create-sheetpane` READMEs, `llms.txt` and the setup skill link the live
+    playground (`https://arpitarya.github.io/sheetpane/`, decision 8) and the
+    starters.
 9. **Release:** `just release <version>` — clean tree required; every package
    set to the version (`scripts/release.mjs`); `just check pack-check`; a
    commit and tag `v<version>`; `pnpm -r publish --access public`; push with
@@ -6974,14 +7019,22 @@ flowchart LR
    second exception. `@sheetpane/grid` exposes the same `sheetpane-skills`
    bin (`src/skills-bin.ts` forwards to `@sheetpane/skills/bin`), because
    package managers link only direct dependencies' bins.
-2. **The skills:** 23 folders `skills/<name>/SKILL.md` — 21 for hosts, two
+2. **The skills:** 25 folders `skills/<name>/SKILL.md` — 23 for hosts, two
    for contributors (`sheetpane-file-work-item`, `sheetpane-records`), and the
    router `sheetpane`. Frontmatter is the subset all three tools read: `name`
    (= folder), `description` (≤ 250 characters, saying when to use it **and
-   when not**), optional `license` and `metadata` (`audience`). A `SKILL.md`
+   when not**; unquoted, it never holds `: ` or ` #`, which break YAML and make
+   Claude Code drop every key), optional `license` and `metadata`
+   (`audience`). No `argument-hint`: claude.ai and the Skills API refuse it. A `SKILL.md`
    is ≤ 200 lines. A skill links to its records on GitHub (so the links work
    once installed elsewhere) and never restates a rule as its own
    (SR-LAW-0).
+2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
+    in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
+    (`$ARGUMENTS` where filled). Three are written as commands:
+    `sheetpane-embed [framework]`, and two thin routers — `sheetpane-rules
+    [path]` → `sheetpane-rules-file`, `sheetpane-test [runner]` →
+    `sheetpane-testing`. Nothing was renamed.
 3. **Entry files:** `entry/claude.md` and `entry/agents.md` — a ≤ 30-line
    block between `<!-- sheetpane:start -->` / `<!-- sheetpane:end -->`;
    `entry/kiro-steering.md` (`inclusion: fileMatch`); `entry/claude-agent.md`
@@ -7005,6 +7058,33 @@ flowchart LR
    `[mcp_servers.sheetpane]` outside the block is refused without `--force`;
    `uninstall` removes the entry, and the file only when install created it
    and nothing else is left.
+4b. **`sheetpane-skills check-rules <file…>` (W-45):** the rules file's
+    document checks of the grid's `checkDocument` (SP-6010…SP-6021, the same
+    codes and messages, re-implemented in the dependency-free bin; a test keeps
+    the two equal on 19 documents), one line per problem; exit 0 clean, 1 a
+    problem, 2 usage or an unreadable file. `--hook claude | codex | kiro`
+    reads the edited path (Claude's `tool_input.file_path`, Codex's
+    `apply_patch` text, Kiro's `{{filePath}}`), ignores all but
+    `*.rules.json`, and on a problem writes stderr and exits 2 so the agent
+    sees it.
+4c. **Hooks (W-45):** `install` writes, unless `--no-hooks` or
+    `--skills-only`: a `PostToolUse` group (`Edit|Write|MultiEdit`) in
+    `.claude/settings.json`; `.codex/hooks.json` (`PostToolUse` on
+    `apply_patch` — Codex runs it once the user trusts it in `/hooks`, so the
+    `AGENTS.md` block also says to run the check); `.kiro/hooks/sheetpane-rules.json`
+    (`PostFileSave`, `\.rules\.json$`). A JSON group is ours by its exact
+    command, recorded like decision 4a's MCP entry (refused if hand-edited
+    without `--force`; every other key kept; the file removed only when install
+    made it and nothing else is left).
+4d. **The Claude Code plugin (W-45):** `scripts/build-plugin.mjs` (`just
+    plugin`) generates `plugins/sheetpane/` — the host skills, the integrator
+    subagent, `.mcp.json` (`@sheetpane/mcp`), `hooks/hooks.json` running a
+    bundled copy of the bin — and `.claude-plugin/marketplace.json`; a
+    freshness test fails on any stale or extra file. `claude plugin validate
+    --strict` passes on both. Install: `/plugin marketplace add
+    arpitarya/sheetpane`, then `/plugin install sheetpane@sheetpane`. Formats
+    as documented on 2026-10-18 (Claude Code skills, hooks, plugins; Kiro
+    hooks 2026-10-10; Codex hooks).
 5. **The drift check** (`test/skills.test.ts`) reads every skill and fails on
    a frontmatter key outside the subset, a `name` ≠ folder, a description over
    250 characters or without its "not for", a `SKILL.md` over 200 lines, a
