@@ -27,6 +27,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 
 | file | closed | where the live answer lives now |
 |---|---|---|
+| `W-27-host-column-rules.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 22–22c |
 | `W-21-charts.md` | 2026-10-18 | [SR-CHARTS](../records/0113_CHARTS.md) |
 | `W-22-comments.md` | 2026-10-18 | [SR-COMMENTS](../records/0112_COMMENTS.md) |
 | `W-16-formulas.md` | 2026-10-18 | [SR-FORMULAS](../records/0111_FORMULAS.md) |

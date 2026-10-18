@@ -6,6 +6,8 @@ import { cellRef, parseRange, parseRef, patchXlsx, rangesIntersect, toCsv, type 
 import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
+import { HostRules, type ColumnRulesConfig } from './rules.js';
+import { machineAuthored } from './types.js';
 import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetpaneError, Snapshot, Source } from './types.js';
 
 export interface StoreOptions {
@@ -69,6 +71,17 @@ export class WorkbookStore {
   /** Plugin errors by `plugin|sheet|range|type` → error id. */
   private readonly pluginErrors = new Map<string, string>();
   private errorsViews = 0;
+  /** The host's column rules (W-27): a built-in `validate` provider, never part of the frozen plugin set. */
+  private readonly rules: HostRules = new HostRules({
+    bookSheets: () => this.snap.book?.sheets,
+    date1904: () => this.snap.book?.date1904 ?? false,
+    value: (sheet, ref) => this.value(sheet, ref),
+    text: (sheet, ref) => this.text(sheet, ref),
+    original: (sheet, ref) => this.original(sheet, ref),
+    revalidate: (sheets) => this.runValidate(sheets, undefined),
+    prune: (id, produced) => this.prune(id, produced),
+    progress: () => this.set({}),
+  });
 
   constructor(o: StoreOptions = {}) {
     this.plugins = checkPlugins(o.plugins ?? []);
@@ -121,6 +134,7 @@ export class WorkbookStore {
     this.undoStack = []; this.redoStack = []; this.textCache.clear(); this.pluginErrors.clear();
     const first = book.sheets[book.activeSheet] ?? book.sheets[0]!;
     this.set({ load: { status: 'ready' }, source, book, changes: new Map(), derived: new Map(), errors: [], composing: null, selection: { sheet: first.name, ref: 'A1' } }, [{ type: 'load', origin }]);
+    this.rules.reset(); // column rules: the `load` phase (time-sliced; it re-runs validate when done)
     this.runValidate(book.sheets.map((s) => s.name), origin);
     void this.runDerive({ kind: 'load' });
   }
@@ -255,6 +269,7 @@ export class WorkbookStore {
     this.set({ ...o.extra, changes: next.changes, errors }, events);
     const sheets = [...new Set(keys.map((k) => splitKey(k).sheet))];
     if (sheets.length) {
+      this.rules.touch(keys.map(splitKey).filter((c) => !c.ref.startsWith('#')));
       this.runValidate(this.allSheets(), origin);
       const cells = keys.map(splitKey).filter((c) => !c.ref.startsWith('#')).map((c) => ({ ...c, value: this.value(c.sheet, c.ref) }));
       if (cells.length) void this.runDerive({ kind: 'change', cells });
@@ -502,6 +517,7 @@ export class WorkbookStore {
     this.set({ changes: state.changes, errors: this.withMatches(state.errors, state.changes) }, events);
     const sheets = [...new Set(h.keys.map((k) => splitKey(k).sheet))];
     if (sheets.length) {
+      this.rules.touch(h.keys.map(splitKey).filter((c) => !c.ref.startsWith('#')));
       this.runValidate(this.allSheets(), origin);
       const cells = h.keys.map(splitKey).filter((c) => !c.ref.startsWith('#')).map((c) => ({ ...c, value: this.value(c.sheet, c.ref) }));
       if (cells.length) void this.runDerive({ kind: 'change', cells });
@@ -532,9 +548,22 @@ export class WorkbookStore {
 
   private runValidate(sheets: string[], origin: Origin): void {
     const vs = this.plugins.filter((p) => p.provides.includes('validate'));
+    if (this.rules.active) vs.push(this.rules.provider);
     if (!vs.length || !this.snap.book) return;
     let errors = [...this.snap.errors];
     let changed = false;
+    const at = new Map(errors.map((e, i) => [e.id, i]));
+    // restored errors a provider may adopt (setErrors): by what they say, built once
+    let adoptable: Map<string, number[]> | undefined;
+    const contentKey = (e: { sheet: string; range: string; type: string; author: string }) => `${e.sheet}|${e.range}|${e.type}|${e.author}`;
+    const adopt = (d: ErrorDraft): number => {
+      if (!adoptable) {
+        adoptable = new Map();
+        const owned = new Set(this.pluginErrors.values());
+        errors.forEach((e, i) => { if (!owned.has(e.id) && machineAuthored(e.author)) { const k = contentKey(e); const l = adoptable!.get(k); if (l) l.push(i); else adoptable!.set(k, [i]); } });
+      }
+      return adoptable.get(contentKey(d))?.shift() ?? -1;
+    };
     for (const p of vs) {
       for (const sheet of sheets) {
         let drafts: ErrorDraft[];
@@ -544,33 +573,55 @@ export class WorkbookStore {
           const k = `${p.id}|${d.sheet}|${d.range}|${d.type}`;
           seen.add(k);
           const id = this.pluginErrors.get(k);
-          const mine = (e: SheetpaneError) => e.sheet === d.sheet && e.range === d.range && e.type === d.type && e.author === d.author;
-          let at = id ? errors.findIndex((e) => e.id === id && mine(e)) : -1;
-          if (at < 0) { // a restored review may already hold this error: adopt it rather than add a second
-            const owned = new Set(this.pluginErrors.values());
-            at = errors.findIndex((e) => mine(e) && !owned.has(e.id));
-            if (at >= 0) this.pluginErrors.set(k, errors[at]!.id);
+          const mine = (e: SheetpaneError | undefined) => !!e && e.sheet === d.sheet && e.range === d.range && e.type === d.type && e.author === d.author;
+          let i = id !== undefined ? at.get(id) ?? -1 : -1;
+          if (i >= 0 && !mine(errors[i])) i = -1;
+          if (i < 0) { // a restored review may already hold this error: adopt it rather than add a second
+            i = adopt(d);
+            if (i >= 0) this.pluginErrors.set(k, errors[i]!.id);
           }
-          if (at < 0) {
+          if (i < 0) {
             const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString() };
             this.pluginErrors.set(k, e.id);
+            at.set(e.id, errors.length);
             errors.push(e);
             changed = true;
-          } else if (errors[at]!.author !== 'file' && (errors[at]!.status === 'resolved' || errors[at]!.found !== d.found || errors[at]!.message !== d.message)) {
+          } else if (errors[i]!.author !== 'file' && (errors[i]!.status === 'resolved' || errors[i]!.found !== d.found || errors[i]!.message !== d.message || errors[i]!.severity !== d.severity)) {
             // a machine-authored error follows the cell: reopened, and its found / message refreshed
-            errors[at] = { ...errors[at]!, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found };
+            errors[i] = { ...errors[i]!, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found, severity: d.severity };
             changed = true;
           }
         }
         // A workbook-authored error whose cell now passes resolves itself — the one auto-resolve (W-18 DoD 3).
         for (const [k, id] of this.pluginErrors) {
           if (!k.startsWith(`${p.id}|${sheet}|`) || seen.has(k)) continue;
-          const at = errors.findIndex((e) => e.id === id);
-          if (at >= 0 && (errors[at]!.author === 'workbook' || errors[at]!.author === 'host') && errors[at]!.status === 'open') { errors[at] = { ...errors[at]!, status: 'resolved' }; changed = true; }
+          const i = at.get(id) ?? -1;
+          if (i >= 0 && (errors[i]!.author === 'workbook' || errors[i]!.author === 'host') && errors[i]!.status === 'open') { errors[i] = { ...errors[i]!, status: 'resolved' }; changed = true; }
         }
       }
     }
     if (changed) this.set({ errors: this.withMatches(errors, this.snap.changes) }, [{ type: 'errors', origin }]);
+  }
+
+  // ── column rules (W-27) ──────────────────────────────────────────────────
+  /** The host's column rules for this pane. Setting them checks every row again; host errors no longer produced go. */
+  setColumnRules(c: ColumnRulesConfig): void { this.rules.configure(c); }
+  get columnRules(): Readonly<ColumnRulesConfig> { return this.rules.config; }
+  /** The `load` phase's progress while it runs (rows checked of rows to check). */
+  get ruleProgress(): { done: number; total: number } | undefined { return this.rules.progress; }
+  /** The draft as typed, checked without storing anything (`input` phase). */
+  checkInput(sheet: string, ref: string, input: string, signal: AbortSignal) {
+    const now = this.snap.book ? parseInput(input, this.original(sheet, ref).value, this.snap.book.source) : input;
+    return this.rules.checkInput(sheet, ref, now, input, signal);
+  }
+  /** A failing rule set to `block` for this value, if any (the element refuses it). */
+  ruleBlocks(sheet: string, ref: string, now: Cell, text: string) { return this.rules.blocked(sheet, ref, now, text); }
+
+  /** Removes a provider's errors whose key it no longer produces (rules changed, decision 12). */
+  private prune(providerId: string, produced: ReadonlySet<string>): void {
+    const drop = new Set<string>();
+    for (const [k, id] of this.pluginErrors) if (k.startsWith(`${providerId}|`) && !produced.has(k)) { drop.add(id); this.pluginErrors.delete(k); }
+    if (drop.size) this.set({ errors: this.snap.errors.filter((e) => !drop.has(e.id)) }, [{ type: 'errors', origin: undefined }]);
   }
 
   // ── export ───────────────────────────────────────────────────────────────

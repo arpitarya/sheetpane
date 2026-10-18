@@ -56,7 +56,7 @@ const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 type Filter = 'all' | Severity;
-type AuthorFilter = 'all' | 'person' | 'workbook' | 'file';
+type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
 
 export class SheetpaneErrors extends ElementBase {
   static observedAttributes = ['pane', 'readonly', 'author', 'plugins'];
@@ -218,7 +218,7 @@ export class SheetpaneErrors extends ElementBase {
   }
 
   // ── rendering ────────────────────────────────────────────────────────────
-  private authorKind(e: SheetpaneError): AuthorFilter { return e.author === 'workbook' ? 'workbook' : e.author === 'file' ? 'file' : 'person'; }
+  private authorKind(e: SheetpaneError): AuthorFilter { return e.author === 'workbook' ? 'workbook' : e.author === 'host' ? 'host' : e.author === 'file' ? 'file' : 'person'; }
 
   private render(): void {
     const s = this._store;
@@ -240,7 +240,7 @@ export class SheetpaneErrors extends ElementBase {
     const sevBtns = ([['all', `All ${counts.all}`, 'All severities'], ['error', `✕ ${counts.error}`, 'Errors'], ['warning', `! ${counts.warning}`, 'Warnings'], ['note', `i ${counts.note}`, 'Notes']] as const)
       .map(([v, label, name]) => `<button type="button" data-act="filter" data-v="${v}" aria-pressed="${this.filter === v}" aria-label="${name}: ${counts[v]}">${label}</button>`).join('');
     const authorBtns = authors.size > 1 || (authors.size === 1 && !authors.has('person'))
-      ? `<span class="sep" aria-hidden="true"></span>${(['all', 'person', 'workbook', 'file'] as const).filter((a) => a === 'all' || authors.has(a)).map((a) => `<button type="button" data-act="author" data-v="${a}" aria-pressed="${this.authorFilter === a}">${a === 'all' ? 'Anyone' : a === 'person' ? 'People' : a === 'workbook' ? 'Workbook rules' : 'File comments'}</button>`).join('')}`
+      ? `<span class="sep" aria-hidden="true"></span>${(['all', 'person', 'workbook', 'host', 'file'] as const).filter((a) => a === 'all' || authors.has(a)).map((a) => `<button type="button" data-act="author" data-v="${a}" aria-pressed="${this.authorFilter === a}">${a === 'all' ? 'Anyone' : a === 'person' ? 'People' : a === 'workbook' ? 'Workbook rules' : a === 'host' ? 'Column rules' : 'File comments'}</button>`).join('')}`
       : '';
     q('.filters').innerHTML = sevBtns + authorBtns;
     // the form (contract decision 4: this element shows it whenever it is connected to the pane)

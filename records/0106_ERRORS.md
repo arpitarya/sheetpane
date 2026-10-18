@@ -71,7 +71,7 @@ the store and the contract are the contract verdict's and
    sheet; disconnecting releases it.
 3. **The list:** "n open"; severity filter (All · ✕ · ! · i, each with its
    count) and — when errors come from more than people — an author filter
-   (People · Workbook rules · File comments); rows open first then resolved,
+   (People · Workbook rules · Column rules · File comments); rows open first then resolved,
    by number; each row shows the number (✓ when resolved), the type's name,
    Found → Should be, the range and severity, and tags (cell changed ·
    resolved · matches suggestion · stale). Picking a row selects its cell

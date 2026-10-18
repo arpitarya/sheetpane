@@ -70,7 +70,10 @@ return <sheetpane-excel ref={ref} pane="q3" />;
 | attribute | `open` | shows the pop-up |
 | attribute | `author` | written on errors flagged here |
 | attribute | `plugins` | the enabled plugin ids, e.g. `numfmt formulas` |
-| attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it |
+| attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it, and column rules match by it |
+| attribute | `theme` | `light` (default), `dark` or `auto` (follows the page's `prefers-color-scheme`) |
+| attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
+| property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
@@ -92,7 +95,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
-| `sheetpane-editcancel` | Esc | `{sheet, ref}` | — |
+| `sheetpane-editcancel` | Esc, or a column rule set to `block` refused the value | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', message}`) | — |
 | `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
 
 A refused value never reaches the change map, undo or a plugin.
@@ -107,6 +110,56 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
 Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
+
+## Column rules
+
+Check what a user types, by column title. Rules are plain JSON — save and load
+them as a file if you like — and failures go into the one error list as
+`author: "host"` errors that resolve themselves when the cell passes.
+
+```js
+excel.columns = {
+  Name:   { required: true },
+  Email:  { pattern: '^[^@\\s]+@[^@\\s]+\\.[a-z]{2,}$', unique: true },
+  Age:    { type: 'integer', min: 18, max: 99, onInvalid: 'block' },
+  Status: { oneOf: ['Active', 'Inactive'], severity: 'warning' },
+};
+excel.validate = async (ctx, signal) =>
+  ctx.column.header === 'Email' && ctx.phase !== 'input' && (await api.taken(ctx.value, { signal }))
+    ? { severity: 'error', message: 'Email already used' }
+    : null;
+```
+
+| rule | passes when |
+|---|---|
+| `required` | the cell is not blank (every other rule skips a blank cell) |
+| `type` | `text` · `number` · `integer` · `date` · `boolean` |
+| `min`, `max` | a number in range; for `type: 'date'`, an ISO date or a serial |
+| `minLength`, `maxLength` | the text's length |
+| `pattern` | the text matches (values over 10,000 characters are not tested — **avoid patterns that backtrack catastrophically**: they run on the page) |
+| `oneOf` | the value is one of the list (trimmed, case-insensitive) |
+| `unique` | no other row of the column holds it |
+| `message`, `severity`, `onInvalid` | replace the generated message; `error` (default) · `warning` · `note`; `flag` (default) · `block` |
+
+- **Titles** match trimmed and case-insensitive (an exact title wins). A
+  title the file lacks is one `note` error; a duplicated title checks the
+  first column and adds one `note`. The file always loads.
+- **`validate(ctx, signal)`** runs for every cell of a titled column, sync or
+  async. `ctx` is `{phase, sheet, ref, row, column, value, was, original,
+  rowValues}`, `rowValues` keyed by title, so a rule can read the row; editing
+  any cell asks the row again. A newer edit to a cell aborts the older check
+  (`signal`) and its result is dropped. Return `null` or `{severity, message,
+  expected?}`.
+- **Phases:** `input` — 150 ms after typing stops, an outline and a message
+  at the cell bar, nothing stored; `commit` — on save, `flag` stores the value
+  and adds an error, `block` refuses it (only a JSON rule or a synchronous
+  result can block; an async result flags); `load` — every row, in slices,
+  with the progress in the status line.
+- Setting `columns`, `validate` or `onInvalid` again re-checks every row;
+  host errors no longer produced are removed. People's errors are never
+  touched, and a rule never edits a cell.
+- Rules belong to the pane: `workbook.setColumnRules({ columns, validate,
+  onInvalid, headerRow })` does the same without an element.
 
 ## `<sheetpane-errors>`
 
@@ -151,7 +204,7 @@ Or build the store yourself: `el.workbook = createWorkbook({ plugins: [...] })`.
 
 Colours, spacing and radii are `--sp-*` custom properties on the elements
 (`--sp-accent`, `--sp-ink`, `--sp-line`, …); `@sheetpane/grid/style.css`
-lists the defaults. The font is yours: set it on the element or any ancestor.
+lists the defaults, and `theme="dark"` swaps in the dark set. The font is yours: set it on the element or any ancestor.
 
 The specs are the records [SR-GRID](../../records/0105_GRID.md) and
 [SR-ERRORS](../../records/0106_ERRORS.md).

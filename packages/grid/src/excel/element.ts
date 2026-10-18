@@ -1,7 +1,7 @@
 // <sheetpane-excel> — the sheet: the view and edit components as two modes of one
 // element (W-01). Plain DOM in an open shadow root (grid verdict decisions 2, 6);
 // every byte of state lives in the pane's store (L7); the contract is the DOM's (L4).
-import { cellRef, colName, download, parseRange, parseRef, type RangePos } from '@sheetpane/export';
+import { cellRef, colName, download, parseRange, parseRef, type Cell, type RangePos } from '@sheetpane/export';
 import type { ImportedSheet } from '@sheetpane/import';
 import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
@@ -11,11 +11,12 @@ import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, typ
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
+import type { ColumnRules, ColumnRulesConfig, OnInvalid, RuleOutcome, ValidateFn } from '../pane/rules.js';
 import { COL_VIRTUAL_AFTER, HEAD_H, ROWHEAD_W, ROW_H, colAt, mergeAt, sheetGeometry, visibleWindow, type SheetGeometry } from './geometry.js';
 import { EXCEL_CSS } from './styles.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'orig' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'orig' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
 
 /** Turns a `src` attribute value into bytes: a data URL, raw base64, or a URL to fetch (a read; nothing is sent). */
@@ -41,7 +42,7 @@ const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 export class SheetpaneExcel extends ElementBase {
-  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row'];
+  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -81,6 +82,24 @@ export class SheetpaneExcel extends ElementBase {
   /** `light` (the default), `dark`, or `auto` (follows `prefers-color-scheme`) — colour only; the file's own colours never change (W-29). */
   get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
   set theme(t: Theme) { this.setAttribute('theme', t); }
+
+  // ── column rules (W-27): the pane's, set from here ─────────────────────
+  private rulesCfg: { columns?: ColumnRules; validate?: ValidateFn | undefined } | undefined;
+  /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
+  get columns(): ColumnRules | undefined { return this.rulesCfg?.columns; }
+  set columns(c: ColumnRules | undefined) { this.rulesCfg = { ...this.rulesCfg, columns: c ?? {} }; this.applyRules(); }
+  /** `validate(ctx, signal)`, sync or async: `null`, or `{ severity, message, expected? }`. */
+  get validate(): ValidateFn | undefined { return this.rulesCfg?.validate; }
+  set validate(f: ValidateFn | undefined) { this.rulesCfg = { ...this.rulesCfg, validate: f }; this.applyRules(); }
+  /** The default for every rule: `flag` (store and add an error) or `block` (refuse the value). Also the `on-invalid` attribute. */
+  get onInvalid(): OnInvalid { return this.getAttribute('on-invalid') === 'block' ? 'block' : 'flag'; }
+  set onInvalid(v: OnInvalid) { this.setAttribute('on-invalid', v); }
+  /** Rules belong to the pane: only an element that was given rules sets them. */
+  private applyRules(): void {
+    if (!this.rulesCfg || !this._store) return;
+    const c: ColumnRulesConfig = { columns: this.rulesCfg.columns ?? {}, validate: this.rulesCfg.validate, onInvalid: this.onInvalid, headerRow: Math.max(1, Number(this.getAttribute('header-row') ?? 1) || 1) };
+    this._store.setColumnRules(c);
+  }
   get open(): boolean { return this.hasAttribute('open'); }
   set open(v: boolean) { this.toggleAttribute('open', v); }
   get src(): string | null { return this.getAttribute('src'); }
@@ -144,6 +163,7 @@ export class SheetpaneExcel extends ElementBase {
     else if (name === 'src' && val) void this.load(val);
     else if (name === 'mode' && (val === 'view' || val === 'edit')) this._store?.setMode(val, this);
     else if (name === 'display' || name === 'open') this.place();
+    else if (name === 'header-row' || name === 'on-invalid') this.applyRules();
     this.schedule();
   }
 
@@ -162,6 +182,7 @@ export class SheetpaneExcel extends ElementBase {
     const s = this._store;
     attach(s, this);
     this.unsub.push(s.subscribe(() => this.schedule()), s.on((e) => this.onStoreEvent(e)), () => detach(s, this));
+    this.applyRules();
   }
 
   private unbind(): void {
@@ -236,6 +257,7 @@ export class SheetpaneExcel extends ElementBase {
   <span class="chip chip-info changed"></span><button type="button" class="btn btn-g revert">Revert</button>
   <span class="chip issue"></span>
   <span class="chip chip-info hint">Describe it in the Errors panel</span>
+  <span class="chip rulemsg" role="status"></span>
   <span class="plug-cellbar" style="display:contents"></span>
  </div>
  <div class="frow" part="format-row" role="toolbar" aria-label="Format"><span class="plug-frow" style="display:contents"></span><slot name="format-row"></slot></div>
@@ -253,7 +275,7 @@ export class SheetpaneExcel extends ElementBase {
     this.q = {
       root: $('.sp'), dialog: $('dialog'), fname: $('.fname'), meta: $('.meta'), counts: $('.counts'), findin: $('.findin'), findcnt: $('.find .cnt'), zoom: $('.zoom'),
       editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), orig: $('.orig'), close: $('.close'),
-      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'),
+      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
       grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
     } as Refs;
@@ -323,6 +345,7 @@ export class SheetpaneExcel extends ElementBase {
       const ed = this.editing;
       if (!ed) return;
       fire(this, 'sheetpane-input', { sheet: ed.sheet, ref: ed.ref, column: this.column(ed.sheet, ed.ref), draft: cell.value, was: s().value(ed.sheet, ed.ref) });
+      this.checkDraft(ed.sheet, ed.ref, cell.value);
     });
     cell.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'Tab') {
@@ -333,7 +356,7 @@ export class SheetpaneExcel extends ElementBase {
       } else if (e.key === 'Escape') {
         e.preventDefault(); e.stopPropagation();
         const ed = this.editing;
-        if (ed) { cell.value = ed.start; this.editing = undefined; fire(this, 'sheetpane-editcancel', { sheet: ed.sheet, ref: ed.ref }); }
+        if (ed) { cell.value = ed.start; this.editing = undefined; this.clearRuleMsg(); fire(this, 'sheetpane-editcancel', { sheet: ed.sheet, ref: ed.ref }); }
         q.grid.focus({ preventScroll: true });
       }
     });
@@ -381,11 +404,38 @@ export class SheetpaneExcel extends ElementBase {
     return { index: p.col, letter: colName(p.col), header: this._store?.text(sheet, cellRef(hr - 1, p.col)).trim() ?? '' };
   }
 
-  /** `sheetpane-beforechange` (cancellable) for one cell; the value it would store is `now`. */
-  private allowChange(sheet: string, ref: string, now: unknown): boolean {
+  /** `sheetpane-beforechange` (cancellable) for one cell; the value it would store is `now`. Then a column rule set to `block` (W-27). */
+  private allowChange(sheet: string, ref: string, now: unknown, text = now === null || now === undefined ? '' : String(now)): boolean {
     const s = this._store!;
-    return fire(this, 'sheetpane-beforechange', { sheet, ref, column: this.column(sheet, ref), was: s.value(sheet, ref), now }, true);
+    if (!fire(this, 'sheetpane-beforechange', { sheet, ref, column: this.column(sheet, ref), was: s.value(sheet, ref), now }, true)) return false;
+    const b = s.ruleBlocks(sheet, ref, now as Cell, text);
+    if (!b) return true;
+    // refused: the value is never stored (L6); the message stays at the cell until the selection moves
+    this.ruleMsg = { sheet, ref, outcome: b, blocked: true };
+    fire(this, 'sheetpane-editcancel', { sheet, ref, reason: 'blocked', message: b.message });
+    this.schedule();
+    return false;
   }
+
+  // ── column rules: the input phase (an outline and a tooltip, nothing stored) ──
+  private ruleMsg: { sheet: string; ref: string; outcome: RuleOutcome; blocked?: boolean } | undefined;
+  private ruleTimer: ReturnType<typeof setTimeout> | undefined;
+  private ruleAbort: AbortController | undefined;
+  private checkDraft(sheet: string, ref: string, draft: string): void {
+    clearTimeout(this.ruleTimer);
+    this.ruleAbort?.abort();
+    const s = this._store;
+    if (!s?.columnRules.columns || (!Object.keys(s.columnRules.columns).length && !s.columnRules.validate)) return;
+    this.ruleTimer = setTimeout(() => {
+      const ac = (this.ruleAbort = new AbortController());
+      void s.checkInput(sheet, ref, draft, ac.signal).then((o) => {
+        if (ac.signal.aborted) return;
+        this.ruleMsg = o ? { sheet, ref, outcome: o } : undefined;
+        this.schedule();
+      });
+    }, 150);
+  }
+  private clearRuleMsg(): void { clearTimeout(this.ruleTimer); this.ruleAbort?.abort(); if (this.ruleMsg) { this.ruleMsg = undefined; this.schedule(); } }
 
   /** Commits the cell bar's draft: beforechange, then the store (change map → undo → derive → validate → sheetpane-change). */
   private commitDraft(): void {
@@ -397,7 +447,9 @@ export class SheetpaneExcel extends ElementBase {
     if (draft === ed.start) return;
     const book = s.book;
     const now = book ? parseInput(draft, s.original(ed.sheet, ed.ref).value, book.source) : draft;
-    if (!this.allowChange(ed.sheet, ed.ref, now)) { cell.value = ed.start; return; }
+    clearTimeout(this.ruleTimer); this.ruleAbort?.abort();
+    if (!this.allowChange(ed.sheet, ed.ref, now, draft)) { cell.value = ed.start; return; }
+    if (this.ruleMsg && !this.ruleMsg.blocked) this.ruleMsg = undefined;
     s.setCell(ed.sheet, ed.ref, draft, { origin: this });
   }
 
@@ -414,7 +466,7 @@ export class SheetpaneExcel extends ElementBase {
     const cells: { sheet: string; ref: string; input: string }[] = [];
     rows.forEach((row, dr) => row.forEach((v, dc) => {
       const ref = cellRef(p.row + dr, p.col + dc);
-      if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source))) cells.push({ sheet: snap.selection.sheet, ref, input: v });
+      if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source), v)) cells.push({ sheet: snap.selection.sheet, ref, input: v });
     }));
     s.setCells(cells, { origin: this });
   }
@@ -779,6 +831,17 @@ export class SheetpaneExcel extends ElementBase {
     q.issue.hidden = !err;
     if (err) { q.issue.className = `chip ${err.status === 'resolved' ? 'chip-pass' : err.severity === 'error' ? 'chip-fail' : err.severity === 'warning' ? 'chip-warn' : 'chip-info'}`; q.issue.textContent = `${err.status === 'resolved' ? '✓' : SEVERITY[err.severity].glyph} Error ${errNum(err)}`; }
     q.hint.hidden = !(composing && s.hasErrorsView);
+    // column rules: the draft's failure as typed, or a refused value (W-27)
+    const rm = this.ruleMsg && this.ruleMsg.sheet === sel.sheet && this.ruleMsg.ref === sel.ref ? this.ruleMsg : undefined;
+    if (this.ruleMsg && !rm) this.ruleMsg = undefined; // the selection moved on
+    q.rulemsg.hidden = !rm || !edit;
+    cell.toggleAttribute('aria-invalid', !!rm);
+    if (rm) {
+      const sv = SEVERITY[rm.outcome.severity];
+      q.rulemsg.className = `chip rulemsg ${rm.outcome.severity === 'error' ? 'chip-fail' : rm.outcome.severity === 'warning' ? 'chip-warn' : 'chip-info'}`;
+      q.rulemsg.textContent = `${sv.glyph} ${rm.blocked ? 'Not saved — ' : ''}${rm.outcome.message}`;
+      cell.title = rm.outcome.message;
+    } else cell.removeAttribute('title');
     q.plugCellbar.innerHTML = this.controlsHtml(controlsFor(s.plugins, 'cellbar', snap.mode), 'btn btn-g');
     // format row: Edit only, and only when a plugin or the host put something in it
     const frow = controlsFor(s.plugins, 'format-row', 'edit');
@@ -802,6 +865,7 @@ export class SheetpaneExcel extends ElementBase {
       `<span>${esc(sheet.name)} · ${dataRows} row${dataRows === 1 ? '' : 's'} × ${dataCols} column${dataCols === 1 ? '' : 's'}${g.g.merges.length ? ` · ${g.g.merges.length} merged range${g.g.merges.length === 1 ? '' : 's'}` : ''}</span>`,
       n ? `<span>· ${n} cell change${n === 1 ? '' : 's'} kept in memory until you export</span>` : '',
       ...statusPlug.map((t) => `<span>${esc(t)}</span>`),
+      s.ruleProgress ? `<span role="status">· Checking column rules · ${Math.floor((100 * s.ruleProgress.done) / Math.max(1, s.ruleProgress.total))} %</span>` : '',
       `<span class="spacer"></span><span>Read in this tab — nothing uploaded</span>`,
       this.getAttribute('display') === 'popup' ? '<span>Esc to close</span>' : '',
     ].join('');
