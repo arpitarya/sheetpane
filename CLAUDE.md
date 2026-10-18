@@ -67,6 +67,7 @@ Each law is stated in exactly one record and is **not restated here**:
 - **L7** — the view, edit and error components are always in sync — [SR-LAW-7](records/0009_LAW-7-surfaces-always-in-sync.md)
 - **L8** — sheetpane is consumed as an npm package — [SR-LAW-8](records/0010_LAW-8-npm-package.md)
 - **L9** — memory means a JavaScript object, for now — [SR-LAW-9](records/0011_LAW-9-memory-is-a-javascript-object.md)
+- **L10** — the examples are maintained with every package change — [SR-LAW-10](records/0012_LAW-10-examples-maintained.md)
 
 [SR-LAWS](records/0001_LAWS.md) assigns the handles and routes each to its
 record; that is all it does. Add a law by adding a record in the law range and

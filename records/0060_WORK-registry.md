@@ -85,20 +85,20 @@ Documents rot silently; a trigger and a date make staleness visible.
 
 | Document | Update trigger | Last verified | Notes |
 |---|---|---|---|
-| `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — layout line: a pnpm workspace run by just (W-10) |
+| `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — §The laws: the L10 line |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-46 (🟢) and W-47 (🟡) filed |
-| `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-032 (plugins cannot add event detail) |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-49 filed (🟢) |
+| `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-035 (examples current, ungated) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
-| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — the consumer-tooling run: W-33, W-36, W-38, W-40–W-42 closed; W-35, W-39 built and open on W-37 |
-| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — W-18, W-15 landed |
+| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — law L10 in §1 and §3 |
+| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — law L10 filed |
 | `work/LESSONS.md` | a failure teaches something durable | 2026-10-18 | 2026-10-18 — the rename-only commit, twice; the gate |
 | `work/MACHINE.md` | a surface breaks in a way the code did not cause | 2026-10-18 | 2026-10-18 — Firefox does not launch on macOS 27 |
 | `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — the contract verdict's decision 9 rewritten (undo built) |
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |
-| `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — SP code (W-40); rules file, flagging (W-33) |
-| `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — one Download button and the docked selection actions (W-31) |
-| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109), SR-STYLES (0110), SR-FORMULAS (0111), SR-COMMENTS (0112), SR-CHARTS (0113), SR-CONDFMT (0114), SR-FIXTURES (0115), SR-SKILLS (0116), SR-CODES (0117), SR-TESTING (0118) |
+| `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — example (SR-LAW-10) |
+| `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — L10 in the laws table; the L8 row fixed |
+| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-LAW-10 (0012) registered |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
 | `work/reference/design/README.md` | the design canvas changes — synced the same session (§Keeping this folder in sync) | 2026-10-18 | 2026-10-18 — synced to canvas v50 (Download split button) |

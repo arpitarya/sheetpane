@@ -24,7 +24,7 @@ entry.**
 
 ## 1 · State of play
 
-*Updated 2026-10-18.* Laws L2–L9 are filed (see §3). sheetpane is an
+*Updated 2026-10-18.* Laws L2–L10 are filed (see §3). sheetpane is an
 **pnpm-workspace monorepo** (W-10; `just` runs it) with these packages:
 
 - **`@sheetpane/export`** (`packages/export`) — a JavaScript object in, `.xlsx`
@@ -112,7 +112,8 @@ W-44 is built and waits on the decider (enable Pages, first release).
   CSV only), L4 (always a web component), L5 (browser-default
   font unless the host sets one), L6 (changes held in memory; export carries
   them), L7 (view, edit and error components always in sync), L8 (an npm
-  package), L9 (memory = a JavaScript object, for now). See `records/0001_LAWS.md`.
+  package), L9 (memory = a JavaScript object, for now), L10 (examples
+  maintained with every package change). See `records/0001_LAWS.md`.
 - The queue is the list; a blocker is a file; nothing closed is deleted.
 - Tests are not yet in place (`BACKLOG.md` B-001–B-005); the hooks and the
   commit guard are the only mechanical enforcement.

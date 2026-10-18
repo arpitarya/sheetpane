@@ -37,6 +37,7 @@ it, and do not read it top-down as a priority order.
 | B-004 | A `W-nn` that resolves to neither `work/open/` nor `archive/open/` is caught by nobody | [SR-WORK-OPEN-QUEUE](../records/0051_WORK-open-queue.md) Consequences | a test, as a `W-nn` |
 | B-005 | A second `archive/` directory anywhere is caught by nobody | [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md) decision 1 | a test, as a `W-nn` |
 | B-008 | No check refuses a non-FOSS licence in the dependency tree | [SR-LAW-2](../records/0004_LAW-2-foss-dependencies.md) Consequences | a licence check over the lockfile, run by the guard or CI, in the change that adds `package.json` |
+| B-035 | Nothing proves a package change was weighed against the examples: the checks catch a broken example, not a stale one (an old attribute that still silently works) | [SR-LAW-10](../records/0012_LAW-10-examples-maintained.md) Consequences | a commit-msg check, like the SR guard, that refuses a commit touching `packages/` without staging `examples/` or a line `examples unaffected`, as a `W-nn` on the decider's ruling |
 
 ---
 

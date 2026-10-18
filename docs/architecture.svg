@@ -152,5 +152,5 @@
 <text x="40" y="1010" class="band">THE RULES THE SHAPE COMES FROM</text>
 <text x="40" y="1034" class="s">.xlsx and .csv only  ·  every dependency open source (the core has none)  ·  always a web component  ·  your font, not ours</text>
 <text x="40" y="1056" class="s">every change held in memory and export carries it  ·  the view, edit and error components are always in sync</text>
-<text x="40" y="1082" class="m">Working names; the laws L0–L9 in records/ are the source of truth. Detail: docs/ARCHITECTURE.md</text>
+<text x="40" y="1082" class="m">Working names; the laws L0–L10 in records/ are the source of truth. Detail: docs/ARCHITECTURE.md</text>
 </svg>

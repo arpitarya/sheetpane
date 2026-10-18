@@ -8,7 +8,7 @@ status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
 owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
-laws: [L2, L4, L5, L8]
+laws: [L2, L4, L5, L8, L10]
 timestamp: 2026-10-18T11:40:00Z
 content_sha: ""
 ratifies: W-04
@@ -243,7 +243,7 @@ pnpm and a justfile; the testing verdict chose the runner.
 *Every source this record cites, gathered in one place. An archived document
 is never listed here.*
 
-**Records** — [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-8](0010_LAW-8-npm-package.md)
+**Records** — [SR-LAW-10](0012_LAW-10-examples-maintained.md) · [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-8](0010_LAW-8-npm-package.md)
 
 **Code**
 

@@ -164,8 +164,9 @@ React 19 renders the same tags; React 18 sets properties through a `ref`
 | [L5](../records/0007_LAW-5-host-font.md) the host's font | no font ships; every part inherits | shadow root with inherited `font`; `font: inherit` on controls; `--sp-*` tokens carry no font |
 | [L6](../records/0008_LAW-6-edits-in-memory-export-with-changes.md) edits in memory, export carries them | memory is the only store; export applies every change; original untouched | the `changes` map; `patchXlsx`; `beforeunload` warning |
 | [L7](../records/0009_LAW-7-surfaces-always-in-sync.md) always in sync | one workbook, no private copies | the store registry by `pane`; both elements subscribe; selection syncs |
-| [L8](../records/0010_LAW-8-npm-package.md) an npm package | one distribution; safe to import in Node every package under `packages/`, lockstep versions; elements register only when `customElements` exists; `download()` throws cleanly without a `document` |
+| [L8](../records/0010_LAW-8-npm-package.md) an npm package | one distribution; safe to import in Node | every package under `packages/`, lockstep versions; elements register only when `customElements` exists; `download()` throws cleanly without a `document` |
 | [L9](../records/0011_LAW-9-memory-is-a-javascript-object.md) memory is a JavaScript object | no IndexedDB or storage, for now | the store is objects in the page; IndexedDB waits on B-025 |
+| [L10](../records/0012_LAW-10-examples-maintained.md) examples maintained | every package change keeps every example working and current, in the same change | `examples/html`, `examples/react`, `examples/starters`; `just demo-check` on every push; being current is B-035 |
 
 ## Package layout
 

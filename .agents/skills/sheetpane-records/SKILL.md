@@ -15,7 +15,7 @@ record; everything else points to it.
 | you want | read |
 |---|---|
 | which record owns a file | [`records/README.md`](https://github.com/arpitarya/sheetpane/blob/main/records/README.md) §Ownership |
-| the laws L0–L9 | [SR-LAWS](https://github.com/arpitarya/sheetpane/blob/main/records/0001_LAWS.md) and the records it routes to |
+| the laws L0–L10 | [SR-LAWS](https://github.com/arpitarya/sheetpane/blob/main/records/0001_LAWS.md) and the records it routes to |
 | how work is done | the WORK records `0051`–`0060` |
 | a closed fork and its reopen-trigger | [`work/compare/`](https://github.com/arpitarya/sheetpane/blob/main/work/compare/README.md) |
 

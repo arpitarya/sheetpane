@@ -2133,8 +2133,9 @@ React 19 renders the same tags; React 18 sets properties through a `ref`
 | [L5](../records/0007_LAW-5-host-font.md) the host's font | no font ships; every part inherits | shadow root with inherited `font`; `font: inherit` on controls; `--sp-*` tokens carry no font |
 | [L6](../records/0008_LAW-6-edits-in-memory-export-with-changes.md) edits in memory, export carries them | memory is the only store; export applies every change; original untouched | the `changes` map; `patchXlsx`; `beforeunload` warning |
 | [L7](../records/0009_LAW-7-surfaces-always-in-sync.md) always in sync | one workbook, no private copies | the store registry by `pane`; both elements subscribe; selection syncs |
-| [L8](../records/0010_LAW-8-npm-package.md) an npm package | one distribution; safe to import in Node every package under `packages/`, lockstep versions; elements register only when `customElements` exists; `download()` throws cleanly without a `document` |
+| [L8](../records/0010_LAW-8-npm-package.md) an npm package | one distribution; safe to import in Node | every package under `packages/`, lockstep versions; elements register only when `customElements` exists; `download()` throws cleanly without a `document` |
 | [L9](../records/0011_LAW-9-memory-is-a-javascript-object.md) memory is a JavaScript object | no IndexedDB or storage, for now | the store is objects in the page; IndexedDB waits on B-025 |
+| [L10](../records/0012_LAW-10-examples-maintained.md) examples maintained | every package change keeps every example working and current, in the same change | `examples/html`, `examples/react`, `examples/starters`; `just demo-check` on every push; being current is B-035 |
 
 ## Package layout
 
@@ -2210,6 +2211,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 |---|---|
 | Standing Record (SR) | a maintained specification in `records/`, cited by name; see the register |
 | Law | a rule that outranks every other record; `SR-LAW-n` |
+| example | anything under `examples/` — the HTML and React demos and the StackBlitz starters; maintained with every package change, see SR-LAW-10 |
 | memory | JavaScript objects held in the page; not IndexedDB, browser storage or a server — see SR-LAW-9 |
 | error component | the review surface that marks incorrect data and states the correction; one of the three components SR-LAW-7 keeps in sync |
 | web component | a custom element registered through the Custom Elements standard, usable from any framework or plain HTML; see SR-LAW-4 |
@@ -3097,6 +3099,7 @@ A law restated in two places is two laws the moment one is edited.
    | **L7** | [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) | the view, edit and error components are always in sync |
    | **L8** | [SR-LAW-8](0010_LAW-8-npm-package.md) | sheetpane is consumed as an npm package |
    | **L9** | [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) | memory means a JavaScript object, for now |
+   | **L10** | [SR-LAW-10](0012_LAW-10-examples-maintained.md) | the examples are maintained with every package change |
 
 2. **A new law** takes the next handle and the next free number in the law
    range, on the decider's ruling named in its record; this table gains its row and
@@ -3123,13 +3126,13 @@ Precedence is judgment, never a gate: no parser reads *does this contradict L0*.
 **Reopen this decision if:** any live document other than a law's own record
 carries a law's normative text.
 
-**How to check it:** `grep -rn "L0 ·\|L1 ·\|L2 ·\|L3 ·\|L4 ·\|L5 ·\|L6 ·\|L7 ·\|L8 ·\|L9 ·" --include=*.md . | grep -v records/000`
+**How to check it:** `grep -rn "L0 ·\|L1 ·\|L2 ·\|L3 ·\|L4 ·\|L5 ·\|L6 ·\|L7 ·\|L8 ·\|L9 ·\|L10 ·" --include=*.md . | grep -v "records/00[0-4]"`
 
 ---
 
 ## References
 
-**Records** — [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-1](0003_LAW-1-retired-records-archived.md) · [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-6](0008_LAW-6-edits-in-memory-export-with-changes.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-8](0010_LAW-8-npm-package.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md)
+**Records** — [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-1](0003_LAW-1-retired-records-archived.md) · [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-6](0008_LAW-6-edits-in-memory-export-with-changes.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-8](0010_LAW-8-npm-package.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) · [SR-LAW-10](0012_LAW-10-examples-maintained.md)
 
 
 ---
@@ -4708,7 +4711,7 @@ pnpm and a justfile; the testing verdict chose the runner.
 *Every source this record cites, gathered in one place. An archived document
 is never listed here.*
 
-**Records** — [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-8](0010_LAW-8-npm-package.md)
+**Records** — [SR-LAW-10](0012_LAW-10-examples-maintained.md) · [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-8](0010_LAW-8-npm-package.md)
 
 **Code**
 

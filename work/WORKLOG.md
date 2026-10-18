@@ -34,6 +34,24 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — law L10 filed (the examples are maintained with every package change)  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Create a law that examples are always supposed to be maintained whenever there is a change in any of the packages."*
+- **Done:** SR-LAW-10 (`records/0012`); SR-LAWS routing (its veto grep now covers L10 and the whole law range); register row and range line; `CLAUDE.md` §The laws gained the L10 pointer line (SR-WORK-DOCS decision 7a — named here); SR-BUILD names L10; backlog B-035 (`ungated`); glossary "example"; ARCHITECTURE laws table (and its broken L8 row fixed); the L0–L10 count in `docs/architecture.svg` and the four `sheetpane-records` skill copies; `llms.txt` / `llms-full.txt` rebuilt; INTERVIEW, IMPLEMENTATION, NOW, registry. Not committed — another session's W-45 work (`packages/skills/bin/sheetpane-skills.mjs`, `work/OPEN-WORK.md`) and the W-49 item file are uncommitted in the same tree; commit with explicit pathspecs.
+- **Decided / left open:** the decider ruled L10. Read in, open to override: "examples" = all of `examples/` (HTML demo, React demo and recipes, starters); "maintained" = working **and** current, in the same change; an example is never deleted or skipped to let a package change pass (removal takes a ruling); the law does not require a new example per feature (SR-BUILD 11/11a decide that). Left open: B-035, a commit-msg gate for "current".
+- **Mistakes:** none.
+- **Next:** the decider reviews and commits; rules on B-035.
+
+## 2026-10-18 — hide and show researched; W-49 filed (core honours the file's hiding, `@sheetpane/visibility` edits it)  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"research and create a plugin for hidden sheets, hidden rows, and anything else … related to hide and show of sheets and columns. How it is going to work, how it is going to look, how to hide, how to unhide … Create one work item … Research and then file."*
+- **Done:** read the import (hiddenRows/hiddenCols read, veryHidden folded into hidden, outline and autoFilter not read), the grid (hidden sheets as italic tabs, nothing else honoured), `patchXlsx` (no hidden option) and the plugins verdict; researched Excel, Google Sheets and ECMA-376. Filed W-49 🟢 with the look, the hide/unhide gestures, shortcuts, outline groups, export and 15 DoD rows.
+- **Decided / left open:** read in, in the item: seeing the file's hiding is core (like merges/freeze — no seventh hook), editing it is the plugin with one optional `menus` field on `selbar` controls; hide/unhide is a change (one per sheet per axis), revealing never is; copy, Delete and totals skip hidden cells, find and validation do not; collapse/expand is a view setting; Ctrl+Alt+9/0 (Sheets) because Ctrl+9/0 belong to the browser.
+- **Mistakes:** none.
+- **Next:** W-49 in Claude Code.
+
+---
+
 ## 2026-10-18 — W-35 closed without the tool trial; W-48 filed; W-45 unblocked  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"The testing of skills create a separate work item for it. I'll do it later on. Do not block work item 35 for it."*

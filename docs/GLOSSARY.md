@@ -9,6 +9,7 @@ description: "Recurring terms, defined once."
 |---|---|
 | Standing Record (SR) | a maintained specification in `records/`, cited by name; see the register |
 | Law | a rule that outranks every other record; `SR-LAW-n` |
+| example | anything under `examples/` — the HTML and React demos and the StackBlitz starters; maintained with every package change, see SR-LAW-10 |
 | memory | JavaScript objects held in the page; not IndexedDB, browser storage or a server — see SR-LAW-9 |
 | error component | the review surface that marks incorrect data and states the correction; one of the three components SR-LAW-7 keeps in sync |
 | web component | a custom element registered through the Custom Elements standard, usable from any framework or plain HTML; see SR-LAW-4 |
