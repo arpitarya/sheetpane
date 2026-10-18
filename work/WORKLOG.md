@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — honest README, LICENSE, Pages on, About set; npm goes token-free  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Create an honest, humble README … create environments … go to npm … make sure everything is ready to be published … update the about section"*; then *"honest, humble, and strong"*; on the npm token: *"I don't believe you need an NPM token … authorize it … publish it once and then it can go through"*.
+- **Done:** README rewritten (status first, tested vs not-yet-proven, what it does not do); MIT `LICENSE` at the root and in every package (there was none); `llms*.txt` rebuilt — all three committed by the concurrent Claude Code session in `ad6a305`. GitHub (browser): Pages source → *GitHub Actions*, which created the `github-pages` environment; About description set.
+- **Decided / left open:** **the decider's ruling — no `NPM_TOKEN`**: publish once by hand, then npm trusted publishing (OIDC) from `release.yml`. Trusted publishing is configured per package on npmjs.com and needs the package to exist (npm docs). Left open: topics + website and the `npm` environment (GitHub's settings form refused the browser's saves, 422).
+- **Mistakes:** none landed; first saw CI red on every push since run #21 (clean-clone typecheck before build) — the concurrent session fixed it in `4049642` while this one diagnosed it; CI still red on `4049642`.
+- **Next:** the decider publishes 0.1.0 once from a terminal; then an agent adds a trusted publisher to each of the 17 packages and switches `release.yml` to OIDC.
+
+---
+
 ## 2026-10-19 — the consumer-tooling and grid run: W-36–W-43, W-45–W-47, W-49 closed; two more gates  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *"implement all work items as fast as possible make sure everything is implemented correctly and close all the work items one by one implement everything keep committing keep pushing"*; then *"continue"* (twice).
