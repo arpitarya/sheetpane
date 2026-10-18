@@ -179,6 +179,7 @@ directions.
 | `scripts/build-grid-css.mjs` | SR-BUILD | writes `@sheetpane/grid`'s `dist/style.css` from its tokens and copies `rules.schema.json` into `dist/` |
 | `scripts/pack-check.mjs` | SR-BUILD | the tarballs as npm sees them |
 | `scripts/release.mjs` | SR-BUILD | one version on every package |
+| `scripts/npm-trust.sh` | SR-BUILD | each package trusts `release.yml` (npm trusted publishing) |
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly; the release publish on a tag |
 | `scripts/serve.mjs` | SR-BUILD | the demos' static server |
 | `scripts/build-site.mjs` | SR-BUILD | the live playground's static site (W-44) |

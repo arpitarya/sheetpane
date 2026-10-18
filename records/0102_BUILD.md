@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
 timestamp: 2026-10-19T09:00:00Z
 content_sha: ""
@@ -168,11 +168,16 @@ pnpm and a justfile; the testing verdict chose the runner.
    commit and an annotated tag `v<version>`, both pushed. Nothing is published
    from a laptop: the tag runs `.github/workflows/release.yml`, which fails
    unless every package carries the tag's version, runs `just check`,
-   `pack-check` and `demo-check`, then `pnpm -r publish --access public` with
-   npm provenance (the `NPM_TOKEN` repository secret) and opens a GitHub
-   release with every package's tarball attached. `pnpm -r publish` skips a
-   version already on npm, so a failed run is re-run, not re-tagged. Never
-   `npm publish`: npm ships `workspace:*` literally.
+   `pack-check` and `demo-check`, then publishes every public package with
+   no token — npm trusted publishing (OIDC; the decider's ruling, 2026-10-19:
+   no `NPM_TOKEN`): `pnpm pack` (which rewrites `workspace:*`) and `npm
+   publish` of the tarball with npm 11, provenance added by npm — and opens a
+   GitHub release with every tarball attached. A version already on npm is
+   skipped, so a failed run is re-run, not re-tagged. Never `npm publish` from
+   a package folder: npm ships `workspace:*` literally. Trusted publishing
+   needs the package to exist: the first version is published once by hand,
+   then `scripts/npm-trust.sh` (npm 12's `npm trust github`, an interactive
+   login) makes each package trust `release.yml`.
 9a. **llms.txt (W-38):** `scripts/build-llms.mjs` (`just llms`, no
     dependencies, deterministic) writes `llms.txt` (llmstxt.org: an H1, a
     summary, sections Start · Elements · Plugins · Rules and errors · Testing
@@ -222,9 +227,9 @@ pnpm and a justfile; the testing verdict chose the runner.
 - **Codes (W-40):** `test/error-codes.test.ts` and its append-only `test/error-codes.lock.json` are SR-CODES' (carved out of `test/`); `test/ssr.test.ts` asserts the SSR refusal's code.
 - **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
   pack-check`, locally and in CI.
-- **Owed by the decider:** the `NPM_TOKEN` repository secret (an npm granular
-  token with publish rights on `@sheetpane/*` and `create-sheetpane`), before
-  `release.yml` can publish; the `@sheetpane` organisation exists.
+- **Owed by the decider:** the first publish by hand (any package not yet on
+  npm) and `scripts/npm-trust.sh`, both needing the decider's npm login and
+  2FA, before `release.yml` can publish; the `@sheetpane` organisation exists.
 - **Still open:** the licence check over the whole lockfile (backlog B-008);
   decision 7 checks only the runtime allow-list.
 - **Plugins must keep `@sheetpane/grid` as a dev dependency too** (a peer is

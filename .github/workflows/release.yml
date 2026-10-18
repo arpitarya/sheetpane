@@ -1,8 +1,9 @@
 # The release (SR-BUILD decision 9): `just release <version>` pushes a `v<version>`
 # tag; this job checks every package carries that version, runs the same checks as
-# CI, publishes every package to npm with provenance and opens a GitHub release with
-# the packed tarballs attached. `pnpm -r publish` skips a version already on npm, so
-# a failed run can simply be re-run. Needs the `NPM_TOKEN` repository secret.
+# CI, publishes every public package to npm and opens a GitHub release with the
+# packed tarballs attached. No token: npm trusted publishing (OIDC) — each package
+# on npmjs.com trusts this repository's `release.yml`, and npm adds provenance.
+# A version already on npm is skipped, so a failed run can simply be re-run.
 name: release
 on:
   push:
@@ -23,15 +24,14 @@ jobs:
       - name: run from a release tag
         run: |
           [ "$GITHUB_REF_TYPE" = tag ] || { echo "::error::run the release from a v<version> tag"; exit 1; }
-          [ -n "$NPM_TOKEN" ] || { echo "::error::add the NPM_TOKEN repository secret, then re-run this job"; exit 1; }
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           registry-url: https://registry.npmjs.org
+      # trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10
+      - run: npm install -g npm@11
       - uses: taiki-e/install-action@v2
         with:
           tool: just
@@ -48,14 +48,19 @@ jobs:
       - run: just check
       - run: just pack-check
       - run: just demo-check
+      # pnpm packs (it rewrites workspace:*); npm publishes the tarball over OIDC
       - name: publish to npm
-        run: pnpm -r publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
+        run: |
+          out="$RUNNER_TEMP/tarballs"; mkdir -p "$out"
+          for d in packages/*/; do
+            [ -f "$d/package.json" ] || continue
+            id=$(node -p "const p = require('./${d}package.json'); p.private ? '' : p.name + '@' + p.version")
+            [ -n "$id" ] || { echo "${d} is private: not published"; continue; }
+            tgz=$(cd "$d" && pnpm pack --pack-destination "$out" | tail -1)
+            if npm view "$id" version >/dev/null 2>&1; then echo "$id is already on npm"; else npm publish "$tgz" --access public; fi
+          done
       - name: GitHub release with the tarballs
         run: |
-          pnpm -r --filter './packages/*' exec pnpm pack --pack-destination "$RUNNER_TEMP/tarballs"
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 ||
             gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME" "$RUNNER_TEMP"/tarballs/*.tgz
         env:

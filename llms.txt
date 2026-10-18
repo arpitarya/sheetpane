@@ -12,8 +12,7 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 
 ## Try it
 - [Live playground](https://arpitarya.github.io/sheetpane/): the plugin gallery in plain HTML; `/react/` in React (deployed from each release)
-- [Starters](https://github.com/arpitarya/sheetpane/blob/v0.1.0/examples/starters/README.md): each create-sheetpane template, with an Open in StackBlitz link
-- [create-sheetpane](https://github.com/arpitarya/sheetpane/blob/v0.1.0/packages/create-sheetpane/README.md): `npm create sheetpane@latest`: a working app in one command
+- [Starters](https://github.com/arpitarya/sheetpane/blob/v0.1.0/examples/starters/README.md): one starter app per framework, with an Open in StackBlitz link
 
 ## Elements
 - [SR-GRID](https://github.com/arpitarya/sheetpane/blob/v0.1.0/records/0105_GRID.md): the sheet, the store, the plugin host, events, rules, test hooks
@@ -43,7 +42,6 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 ## Testing and tooling
 - [@sheetpane/testing](https://github.com/arpitarya/sheetpane/blob/v0.1.0/packages/testing/README.md): Playwright and Vitest helpers for host apps
 - [@sheetpane/fixtures](https://github.com/arpitarya/sheetpane/blob/v0.1.0/packages/fixtures/README.md): known workbooks with a manifest
-- [create-sheetpane](https://github.com/arpitarya/sheetpane/blob/v0.1.0/packages/create-sheetpane/README.md): npm create sheetpane — a working app in vanilla, React, Next.js, Vue, Angular or Svelte
 
 ## Skills
 - [@sheetpane/skills](https://github.com/arpitarya/sheetpane/blob/v0.1.0/packages/skills/README.md): npx sheetpane-skills install — skills for Claude Code, Kiro and Codex
@@ -106,6 +104,5 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 - [SR-CODES](https://github.com/arpitarya/sheetpane/blob/v0.1.0/records/0117_CODES.md): Every throw, console warning, rules-engine note, refused load and blocked edit carries a permanent SP-xxxx code from one registry in @sheetpane/export, with an entry in docs/ERRORS.md; a test fails on any message without one.
 - [SR-TESTING](https://github.com/arpitarya/sheetpane/blob/v0.1.0/records/0118_TESTING.md): One driver API for Playwright and Vitest browser mode — locators, actions, Download read back as values, matchers — built only on the grid's committed test hooks.
 - [SR-MCP](https://github.com/arpitarya/sheetpane/blob/v0.1.0/records/0119_MCP.md): A stdio MCP server, hand-written, tools only: describe the API, inspect a workbook, draft and check a rules file, explain an SP code, find a skill — deterministic and read-only.
-- [SR-CREATE](https://github.com/arpitarya/sheetpane/blob/v0.1.0/records/0120_CREATE.md): npm create sheetpane — six framework templates with the grid, the errors panel, the showcase and its rules file, one test, the skills and the MCP server; checked end to end in CI.
 - [SR-VISIBILITY](https://github.com/arpitarya/sheetpane/blob/v0.1.0/records/0121_VISIBILITY.md): The plugin that lets an editor hide and unhide rows, columns and sheets and group outlines — menus, Google Sheets' keys, a marker click — written into the download. Seeing the file's hiding is core (SR-GRID 21c).
 
