@@ -8,7 +8,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const $ = (el: Element, sel: string) => shadow(el).querySelector(sel) as HTMLElement;
 const shout: Plugin = { id: 'shout', provides: [], controls: [{ id: 'shout-sel', slot: 'selbar', group: 'x', label: 'Shout', mode: 'edit', run: (s, sel) => s.setCell(sel.sheet, sel.ref, 'SHOUT') }] };
 const click = async (el: Element, r: number, c: number) => { cellEl(el, r, c)!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true, button: 0 })); await frame(); };
-const labels = (root: Element | null) => [...(root?.querySelectorAll<HTMLElement>('button') ?? [])].map((b) => b.getAttribute('aria-label') ?? b.textContent);
+const labels = (root: Element | null) => [...(root?.querySelectorAll<HTMLElement>('button') ?? [])].map((b) => b.getAttribute('aria-label') ?? (b.title || b.textContent));
 
 async function withPlugin(mode: 'view' | 'edit' = 'edit'): Promise<SheetpaneExcel> {
   const el = await mountExcel({ mode });

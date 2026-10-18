@@ -70,7 +70,7 @@ This is what the code does, read on 2026-10-18:
 
 ## Blockers
 
-**Waiting on W-46** for whole-column and whole-row selection (DoD 3 and 4). DoD 1, 2 and 5 do not need it.
+None. W-46 landed on 2026-10-18: whole-column and whole-row selection (`data-hc` / `data-hr` headers, SR-GRID 11b) are there for DoD 3 and 4.
 
 ## Out of scope
 

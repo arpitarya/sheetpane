@@ -244,6 +244,15 @@ plugin actions) under the cell — the same actions sit at the right end of the 
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
 
+**Selecting a range:** drag (the grid scrolls when the pointer reaches an edge), Shift+click, or click a
+column header, row header or the corner — drag or Shift+click headers for several. Ctrl/⌘+arrow jumps to
+the edge of the data (with Shift: selects to it); Ctrl+Space selects the column, Shift+Space the row,
+Ctrl/⌘+A the data and then the sheet; Shift+Backspace goes back to the active cell; Enter and Tab move
+inside a range. On a range, Ctrl/⌘+C copies it so Excel and Google Sheets paste a grid, Delete clears it
+(Edit, one undo step), one pasted value fills it, and the status line shows **Count · Sum · Average**.
+`sheetpane-select` carries `range` (`B3:D8`) and fires once a drag is released. On a touch screen a finger
+scrolls, a tap selects, and a range shows two handles to extend it.
+
 ## Column rules
 
 Check what a user types, by column title. Rules are plain JSON — save and load

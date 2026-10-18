@@ -67,7 +67,7 @@ describe('the theme attribute (W-29 DoD 3, 4, 7)', () => {
     expect(getComputedStyle(plain).backgroundColor).toBe(rgb(DARK_TOKENS.cell!));
     expect(getComputedStyle(plain).color).toBe(rgb(DARK_TOKENS.ink!));
     expect(cs('.scroller').backgroundColor).toBe(rgb(DARK_TOKENS.cell!));
-    expect(cs('.ch').backgroundColor).toBe(rgb(DARK_TOKENS.head!));
+    expect(cs('.corner').backgroundColor).toBe(rgb(DARK_TOKENS.head!));
     expect(getComputedStyle(el).colorScheme).toBe('dark');
     // data is not chrome: the decorate fill and colour are untouched
     expect(getComputedStyle(filled).backgroundColor).toBe('rgb(255, 255, 0)');

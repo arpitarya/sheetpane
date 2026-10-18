@@ -61,7 +61,7 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change']) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change. */
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;
-  /** `{ sheet, ref, column, value }` when the selection moves. */
+  /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select']) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'on:sheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet']) => void) | undefined;

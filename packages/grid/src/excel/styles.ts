@@ -80,10 +80,21 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .c.fz{background:var(--sp-cell)}
 .c.n{text-align:right;font-variant-numeric:tabular-nums}
 .c.merge{text-align:center;font-weight:600;background:var(--sp-head);z-index:1}
-.c.sel{outline:2px solid var(--sp-accent);outline-offset:-2px;z-index:3}
 /* state tints sit above a file's own fill (a decorate background), never instead of it */
-.c.inrange::before,.c.hit::before,.c.m-error::before,.c.m-warning::before,.c.m-note::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.6}
-.c.inrange::before{background:var(--sp-accent-soft)}
+.c.hit::before,.c.m-error::before,.c.m-warning::before,.c.m-note::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.6}
+/* the selection layer (W-46): one fill, one border, the active cell's ring — never per cell */
+.sellayer{position:absolute;inset:0;display:grid;pointer-events:none}
+.sellayer>*{grid-area:1/1;align-self:start;justify-self:start;box-sizing:border-box;pointer-events:none}
+.sf{background:var(--sp-accent-soft);opacity:.6}
+.sb,.sa,.sc{border:0 solid var(--sp-accent)}
+.sc{border-style:dashed}
+.sband{box-sizing:border-box;pointer-events:none}
+.sh{width:24px;height:24px;display:grid;place-items:center;pointer-events:auto!important;touch-action:none;cursor:grab}
+.sh::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--sp-cell);border:2px solid var(--sp-accent);box-sizing:border-box}
+.ch.on,.rh.on{background:var(--sp-accent-soft);color:var(--sp-accent-ink)}
+.ch.on{box-shadow:inset 0 -2px 0 var(--sp-accent)}
+.rh.on{box-shadow:inset -2px 0 0 var(--sp-accent)}
+.ch,.rh,.corner{cursor:default;user-select:none}
 .c.hit::before{background:var(--sp-hit);opacity:.85}
 .c.hit.cur::before{background:var(--sp-hit-current)}
 .c.chg::after{content:"";position:absolute;top:0;right:0;z-index:2;border-style:solid;border-width:0 7px 7px 0;border-color:transparent var(--sp-changed) transparent transparent;filter:drop-shadow(0 0 1px var(--sp-cell))}

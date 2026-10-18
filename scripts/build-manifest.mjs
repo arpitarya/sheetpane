@@ -39,7 +39,7 @@ const TOKEN_DOC = {
 const EXTRA_DOC = { 'cell-font-size': 'The cell text size (SR-GRID decision 15).' };
 /** Field → type, for the payload literals in `@fires` lines; per-event entries win. */
 const FIELD = {
-  sheet: 'string', ref: 'string', was: 'unknown', now: 'unknown', value: 'unknown', draft: 'string',
+  sheet: 'string', ref: 'string', range: 'string | undefined', was: 'unknown', now: 'unknown', value: 'unknown', draft: 'string',
   column: '{ index: number; letter: string; header: string }', errors: 'SheetpaneError[]', plugins: 'string[]', error: 'SheetpaneError',
   mode: 'Mode', reason: "'undo' | 'redo' | 'cleared'", canUndo: 'boolean', canRedo: 'boolean',
   blob: 'Blob', name: 'string', guarded: 'string[] | false', format: "'xlsx' | 'csv'", converted: 'boolean', original: 'boolean',

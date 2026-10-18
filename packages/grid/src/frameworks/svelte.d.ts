@@ -14,7 +14,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change. */
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` when the selection moves. */
+  /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'on:sheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -40,7 +40,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'onsheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change. */
   'onsheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` when the selection moves. */
+  /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'onsheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'onsheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;

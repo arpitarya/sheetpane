@@ -466,9 +466,9 @@
             {
               "name": "sheetpane-select",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>"
+                "text": "CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>"
               },
-              "description": "`{ sheet, ref, column, value }` when the selection moves."
+              "description": "`{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release."
             },
             {
               "name": "sheetpane-sheet",

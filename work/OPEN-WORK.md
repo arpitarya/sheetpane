@@ -40,9 +40,7 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-45** `agent` · Invocable commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), hooks that check a rules file on save (Claude Code, Kiro), and the agent set as a Claude Code plugin + marketplace. — waiting on W-35. Filed by Arpit (Cowork). [detail](open/W-45-agent-commands-hooks-plugin.md)
 
-- 🟢 **W-46** `agent` · Smooth range selection: one bordered selection layer (no redraw per pointer move), autoscroll, whole rows/columns, Ctrl+Shift+arrows, range copy and Delete, Count·Sum·Average. Filed by Arpit (Cowork). [detail](open/W-46-smooth-range-selection.md)
-
-- 🟡 **W-47** `agent` · Resize columns and rows: drag a header edge, double-click to fit, several at once, a header menu for keys; per-row heights and wrapped text from the file. — waiting on W-46. Filed by Arpit (Cowork). [detail](open/W-47-resize-columns-rows.md)
+- 🟢 **W-47** `agent` · Resize columns and rows: drag a header edge, double-click to fit, several at once, a header menu for keys; per-row heights and wrapped text from the file. (W-46 landed: whole-column and whole-row selection.) Filed by Arpit (Cowork). [detail](open/W-47-resize-columns-rows.md)
 
 ### testing
 

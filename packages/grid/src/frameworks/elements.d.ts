@@ -9,8 +9,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>;
   /** `{ errors, plugins }` when the pane's errors change. */
   'sheetpane-errors': CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>;
-  /** `{ sheet, ref, column, value }` when the selection moves. */
-  'sheetpane-select': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>;
+  /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
+  'sheetpane-select': CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>;
   /** `{ sheet }` when the selection moves to another sheet. */
   'sheetpane-sheet': CustomEvent<{ sheet: string }>;
   /** `{ mode }` when the pane switches between View and Edit. */

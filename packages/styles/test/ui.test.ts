@@ -193,9 +193,12 @@ describe('rendering, L5 and contrast (W-17 DoD 2, 7)', () => {
     expect(getComputedStyle(v).whiteSpace).toBe('pre-wrap');
     await select(s, 'B4', 'A3:B4');
     const r = cellEl(el, 2, 0)!;
-    expect(r.classList.contains('inrange')).toBe(true);
+    expect(r.getAttribute('aria-selected')).toBe('true');
     expect(getComputedStyle(r).backgroundColor).toBe('rgb(255, 242, 204)'); // the file's fill, kept
-    expect(getComputedStyle(r, '::before').content).not.toBe('none'); // the range tint, above it
+    // the range tint is the selection layer's one fill, drawn above the cells (W-46)
+    const fill = el.shadowRoot!.querySelector<HTMLElement>('.sellayer .sf')!;
+    expect(fill).not.toBeNull();
+    expect(Number(getComputedStyle(fill).zIndex)).toBeGreaterThan(0);
   });
   it('the plugins attribute route: importing the ui entry registers styles with its controls', async () => {
     const list = pluginsFromIds(['styles']);

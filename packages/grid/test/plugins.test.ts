@@ -225,7 +225,7 @@ describe('the six slots (W-14 DoD 3, 8)', () => {
     await frame();
     expect($(el, '.frow').hidden).toBe(true);
     expect(shadow(el).querySelectorAll('[data-control], .mk, .olay, .c.derived').length).toBe(0);
-    expect([...shadow(el).querySelectorAll('.dock button')].map((b) => b.getAttribute('aria-label'))).toEqual(['Flag issue (F)', 'More actions (Shift+F10)']);
+    expect([...shadow(el).querySelectorAll<HTMLElement>('.dock button')].map((b) => b.getAttribute('aria-label') ?? b.title)).toEqual(['Flag issue (F)', 'More actions (Shift+F10)']);
   });
 });
 

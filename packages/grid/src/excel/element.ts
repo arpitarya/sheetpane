@@ -13,11 +13,14 @@ import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import type { ColumnRules, ColumnRulesConfig, OnInvalid, RuleOutcome, ValidateFn } from '../pane/rules.js';
 import { COL_VIRTUAL_AFTER, HEAD_H, ROWHEAD_W, ROW_H, colAt, mergeAt, sheetGeometry, visibleWindow, type SheetGeometry } from './geometry.js';
+import { cellCount, clipOf, dataEdge, growForMerges, rangeText, refLabel, spanOf, splitByPanes, totalsOf, usedRange, type Pos } from './selection.js';
 import { EXCEL_CSS } from './styles.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
+/** A drag in progress: where it started, where the pointer is, what it selects, and the selection to restore on Esc. */
+type Drag = { id: number; anchor: Pos; focus: Pos; kind: 'cell' | 'col' | 'row'; before: { sheet: string; ref: string; range?: string }; x: number; y: number };
 
 /** Turns a `src` attribute value into bytes: a data URL, raw base64, or a URL to fetch (a read; nothing is sent). */
 export async function bytesFromSrc(src: string): Promise<{ bytes: Uint8Array; name: string }> {
@@ -73,7 +76,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` for each change, undo and redo included.
  * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change.
- * @fires sheetpane-select `{ sheet, ref, column, value }` when the selection moves.
+ * @fires sheetpane-select `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release.
  * @fires sheetpane-sheet `{ sheet }` when the selection moves to another sheet.
  * @fires sheetpane-mode `{ mode }` when the pane switches between View and Edit.
  * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
@@ -126,7 +129,18 @@ export class SheetpaneExcel extends ElementBase {
   private findVersion = -1;
   private scrollToSel = false;
   private anchor: { row: number; col: number } | undefined;
-  private dragging = false;
+  /** A drag in progress (W-46): drawn by the selection layer each frame; the store hears of it on release. */
+  private drag: Drag | undefined;
+  private dragRaf = 0;
+  /** The last pointer was a finger: a range shows its two handles. */
+  private touchUi = false;
+  /** The range Ctrl/⌘+C copied, outlined until Esc, an edit or the next copy. */
+  private copied: { sheet: string; range: RangePos } | undefined;
+  private selKey = '';
+  private ariaOn = new Set<Element>();
+  private sayTimer: ReturnType<typeof setTimeout> | undefined;
+  private totalsKey: unknown[] = [];
+  private totalsText = '';
   private composerKey = '';
   private draft = { type: 'wrong-value', message: '', expected: '', severity: 'error' as Severity, change: false };
   private geom: { sheet: ImportedSheet; g: SheetGeometry } | undefined;
@@ -309,6 +323,7 @@ export class SheetpaneExcel extends ElementBase {
   /** One DOM event per action, on the element where it happened (or the pane's first sheet when nobody owns it). */
   private onStoreEvent(e: StoreEvent): void {
     if (e.type === 'select' && e.origin !== this) this.scrollToSel = true;
+    if ((e.type === 'change' || e.type === 'load') && this.copied) { this.copied = undefined; this.selKey = ''; } // an edit ends the copied outline
     if (e.type === 'select' || e.type === 'load') { this.ctxOpen = false; this.moreOpen = false; if (e.type === 'load') this.dlOpen = false; } // a menu belongs to the cell it opened on
     const sheetBefore = this.lastSheet;
     if (e.type === 'load') this.lastSheet = this._store!.getSnapshot().selection.sheet;
@@ -329,7 +344,7 @@ export class SheetpaneExcel extends ElementBase {
       case 'errors': fire(this, 'sheetpane-errors', { errors: s.getErrors(), plugins: s.pluginIds }); break;
       case 'select':
         if (e.sheet !== sheetBefore) fire(this, 'sheetpane-sheet', { sheet: e.sheet });
-        fire(this, 'sheetpane-select', { sheet: e.sheet, ref: e.ref, column: this.column(e.sheet, e.ref), value: s.value(e.sheet, e.ref) });
+        fire(this, 'sheetpane-select', { sheet: e.sheet, ref: e.ref, range: s.getSnapshot().selection.range, column: this.column(e.sheet, e.ref), value: s.value(e.sheet, e.ref) });
         break;
       case 'mode': fire(this, 'sheetpane-mode', { mode: e.mode }); break;
       case 'history': fire(this, 'sheetpane-history', { reason: e.reason, canUndo: s.getSnapshot().canUndo, canRedo: s.getSnapshot().canRedo }); break;
@@ -376,12 +391,13 @@ export class SheetpaneExcel extends ElementBase {
  <div class="frow" part="format-row" role="toolbar" aria-label="Format"><span class="plug-frow" style="display:contents"></span><slot name="format-row"></slot></div>
  <div class="body">
   <div class="scroller">
-   <div class="sheet"><div class="grid" role="grid" tabindex="0" aria-label="Sheet" aria-multiselectable="true"><div class="hrow" role="row" aria-rowindex="1"></div><div class="frozenrows" style="display:contents"></div><div class="rows"></div></div><div class="overlay"></div></div>
+   <div class="sheet"><div class="grid" role="grid" tabindex="0" aria-label="Sheet" aria-multiselectable="true"><div class="hrow" role="row" aria-rowindex="1"></div><div class="frozenrows" style="display:contents"></div><div class="rows"></div><div class="sellayer" aria-hidden="true"></div></div><div class="overlay"></div></div>
   </div>
   <div class="state" hidden></div>
  </div>
  <div class="tabs" role="tablist" aria-label="Sheets"></div>
  <div class="status" part="status" role="status"></div>
+ <span class="vh selsay" aria-live="polite"></span>
  <input type="file" class="picker" accept=".xlsx,.csv" hidden>
 </div>`;
     const $ = <T extends HTMLElement>(sel: string) => this.shadow.querySelector(sel) as T;
@@ -390,7 +406,7 @@ export class SheetpaneExcel extends ElementBase {
       editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), dlmore: $('.dlmore'), dlslot: $('.dlslot'), close: $('.close'), dock: $('.dock'),
       help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
-      grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
+      grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), sellayer: $('.sellayer'), selsay: $('.selsay'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
     } as Refs;
     this.wire();
   }
@@ -487,9 +503,14 @@ export class SheetpaneExcel extends ElementBase {
     q.grid.addEventListener('paste', (e) => this.onPaste(e as ClipboardEvent));
     q.tabs.addEventListener('click', (e) => { const b = (e.target as Element).closest<HTMLElement>('[data-sheet]'); if (b) { s().select({ sheet: b.dataset.sheet!, ref: 'A1' }, this); this.q.scroller.scrollTo(0, 0); } });
     q.scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
-    q.scroller.addEventListener('mousedown', (e) => this.onPointer(e, 'down'));
-    q.scroller.addEventListener('mousemove', (e) => { if (this.dragging) this.onPointer(e, 'move'); });
-    addEventListener('mouseup', () => { this.dragging = false; });
+    // W-46: mouse and pen drag with Pointer Events (captured, so the drag outlives the grid); a finger
+    // pans, and its tap arrives as the compatibility mousedown — as do synthetic clicks
+    q.scroller.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    q.scroller.addEventListener('pointermove', (e) => { if (this.drag && e.pointerId === this.drag.id) { this.drag.x = e.clientX; this.drag.y = e.clientY; this.queueDrag(); } });
+    q.scroller.addEventListener('pointerup', (e) => { if (this.drag && e.pointerId === this.drag.id) this.endDrag(true); });
+    q.scroller.addEventListener('pointercancel', (e) => { if (this.drag && e.pointerId === this.drag.id) this.endDrag(false); });
+    q.scroller.addEventListener('lostpointercapture', (e) => { if (this.drag && e.pointerId === this.drag.id) this.endDrag(true); });
+    q.scroller.addEventListener('mousedown', (e) => this.onPointer(e));
     // right-click on a cell: select it and open the selection actions under it (the browser's menu stays everywhere else)
     q.scroller.addEventListener('contextmenu', (e) => {
       const c = (e.target as Element).closest<HTMLElement>('.c');
@@ -596,6 +617,18 @@ export class SheetpaneExcel extends ElementBase {
     const p = parseRef(snap.selection.ref)!;
     const book = s.book!;
     const cells: { sheet: string; ref: string; input: string }[] = [];
+    const over = snap.selection.range ? parseRange(snap.selection.range) : undefined;
+    if (over && rows.length === 1 && rows[0]!.length === 1) {
+      // one value pasted over a range fills every cell of it (W-46 DoD 7)
+      if (cellCount(over) > 1_000_000) { this.say0('Nothing pasted — the range is over 1,000,000 cells'); return; }
+      const v = rows[0]![0]!;
+      for (let row = over.top; row <= over.bottom; row++) for (let col = over.left; col <= over.right; col++) {
+        const ref = cellRef(row, col);
+        if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source), v)) cells.push({ sheet: snap.selection.sheet, ref, input: v });
+      }
+      s.setCells(cells, { origin: this });
+      return;
+    }
     rows.forEach((row, dr) => row.forEach((v, dc) => {
       const ref = cellRef(p.row + dr, p.col + dc);
       if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source), v)) cells.push({ sheet: snap.selection.sheet, ref, input: v });
@@ -616,6 +649,12 @@ export class SheetpaneExcel extends ElementBase {
     navigator.clipboard.writeText(text).catch(fail);
   }
 
+  /** Copy ref: `B3`, `B3:D8`, `B:D`, `4:12`, or the sheet's name (W-46 DoD 4). */
+  private refOf(sel: { sheet: string; ref: string; range?: string }): string {
+    const r = sel.range ? parseRange(sel.range) : undefined, g = this.geometry();
+    return r && g ? refLabel(r, { rows: g.g.rows, cols: g.g.cols }, sel.sheet) : sel.ref;
+  }
+
   private openContextMenu(): void {
     const s = this._store;
     if (!s || s.getSnapshot().load.status !== 'ready' || s.getSnapshot().composing) return;
@@ -628,7 +667,7 @@ export class SheetpaneExcel extends ElementBase {
   private actionItems(edit: boolean, err: SheetpaneError | undefined, o: { flag: boolean; plugins: boolean }): string {
     const s = this._store!, snap = s.getSnapshot();
     const item = (act: string, label: string, kbd = '') => `<button type="button" role="menuitem" class="mi" data-act="${act}">${esc(label)}${kbd ? `<span class="kbd">${esc(kbd)}</span>` : ''}</button>`;
-    const out = [o.flag && edit && !err && s.flagging ? item('flag', 'Flag issue', 'F') : '', item('copy-ref', 'Copy ref'), item('copy-value', 'Copy value', 'Ctrl/⌘+C')];
+    const out = [o.flag && edit && !err && s.flagging ? item('flag', 'Flag issue', 'F') : '', item('copy-ref', 'Copy ref'), item('copy-value', snap.selection.range ? 'Copy values' : 'Copy value', 'Ctrl/⌘+C')];
     if (o.plugins && edit) for (const c of controlsFor(s.plugins, 'selbar', 'edit')) {
       const label = c.labelFor?.(snap, snap.selection) ?? c.label;
       const off = c.disabled?.(snap, snap.selection) ?? false;
@@ -670,8 +709,8 @@ export class SheetpaneExcel extends ElementBase {
     }
     if (t.closest('.moremenu')) this.moreOpen = false;
     if (act === 'flag') this.flag();
-    else if (act === 'copy-ref') this.copy(sel.range ?? sel.ref);
-    else if (act === 'copy-value') this.copy(s.text(sel.sheet, sel.ref));
+    else if (act === 'copy-ref') this.copy(this.refOf(sel));
+    else if (act === 'copy-value') this.copySelection();
     else if (t.closest('[data-control]')) this.runControl(e);
     this.schedule();
   }
@@ -719,9 +758,12 @@ export class SheetpaneExcel extends ElementBase {
   /** The grid's keys, then every plugin control's shortcut (W-14 DoD 8). */
   shortcuts(): { keys: string; what: string }[] {
     const own = [
-      ['Arrows', 'Move'], ['Shift + arrows', 'Select a range'], ['Home / End', 'Row start / end'], ['Ctrl + Home / End', 'First / last cell'],
-      ['Page Up / Down', 'Move a screen'], ['Enter or F2', 'Edit the cell (Edit)'], ['Type', 'Replace the cell (Edit)'], ['Delete', 'Clear the cell (Edit)'],
-      ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value'], ['Shift + F10 or Menu', 'Selection actions'],
+      ['Arrows', 'Move'], ['Shift + arrows', 'Select a range'], ['Ctrl/⌘ + arrows', 'Jump to the edge of the data'], ['Ctrl/⌘ + Shift + arrows', 'Select to the edge of the data'],
+      ['Ctrl + Space', 'Select the column'], ['Shift + Space', 'Select the row'], ['Ctrl/⌘ + A', 'Select the data, then the sheet'], ['Shift + Backspace', 'Back to the active cell'],
+      ['Enter / Tab in a range', 'Next cell of the range (Shift: back)'], ['Drag, Shift + click', 'Select a range'], ['Click a header', 'Select a column, a row or the sheet'],
+      ['Home / End', 'Row start / end'], ['Ctrl + Home / End', 'First / last cell'],
+      ['Page Up / Down', 'Move a screen'], ['Enter or F2', 'Edit the cell (Edit)'], ['Type', 'Replace the cell (Edit)'], ['Delete', 'Clear the cell or range (Edit)'],
+      ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel a drag or copy · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value or the range'], ['Shift + F10 or Menu', 'Selection actions'],
     ].map(([keys, what]) => ({ keys: keys!, what: what! }));
     const plug = (this._store?.plugins ?? []).flatMap((p) => p.controls ?? []).filter((c) => c.shortcut).map((c) => ({ keys: c.shortcut!, what: c.label }));
     return [...(this._store && !this._store.flagging ? own.filter((x) => x.keys !== 'F') : own), ...plug];
@@ -736,24 +778,168 @@ export class SheetpaneExcel extends ElementBase {
     return mod && e.shiftKey === want.shift && e.altKey === want.alt && e.key.toLowerCase() === key;
   }
 
-  private onPointer(e: MouseEvent, phase: 'down' | 'move'): void {
+  /** A click without a pointer sequence before it: a finger's tap, or a synthetic event. Selects; never drags. */
+  private onPointer(e: MouseEvent): void {
     const t = e.target as HTMLElement;
+    if (e.button !== 0) return;
     const mk = t.closest<HTMLElement>('.mk');
-    if (mk && phase === 'down') { e.preventDefault(); this.runCellControl(mk); return; }
+    if (mk) { e.preventDefault(); this.runCellControl(mk); return; }
+    const head = this.headerHit(t);
+    if (head) { e.preventDefault(); this.q.grid.focus({ preventScroll: true }); this.selectHeader(head, e.shiftKey); return; }
     const c = t.closest<HTMLElement>('.c');
     if (!c || c.dataset.r === undefined) return;
-    if (phase === 'down') { if (e.button !== 0) return; e.preventDefault(); this.q.grid.focus({ preventScroll: true }); this.dragging = true; }
-    const row = Number(c.dataset.r), col = Number(c.dataset.c);
-    this.selectCell(row, col, phase === 'move' || e.shiftKey);
+    e.preventDefault(); this.q.grid.focus({ preventScroll: true });
+    this.selectCell(Number(c.dataset.r), Number(c.dataset.c), e.shiftKey);
+  }
+
+  /** A column header, a row header or the corner under the pointer. */
+  private headerHit(t: HTMLElement): { kind: 'col' | 'row' | 'all'; index: number } | undefined {
+    const h = t.closest<HTMLElement>('[data-hc], [data-hr], [data-hall]');
+    if (!h) return undefined;
+    if (h.dataset.hall !== undefined) return { kind: 'all', index: 0 };
+    return h.dataset.hc !== undefined ? { kind: 'col', index: Number(h.dataset.hc) } : { kind: 'row', index: Number(h.dataset.hr) };
+  }
+
+  /** Mouse or pen: select, then follow the pointer until release (W-46 DoD 3). */
+  private onPointerDown(e: PointerEvent): void {
+    const s = this._store;
+    if (!s || s.getSnapshot().load.status !== 'ready') return;
+    const t = e.target as HTMLElement;
+    const handle = t.closest<HTMLElement>('.sh');
+    if (handle && e.button === 0) { this.startHandleDrag(e, handle.dataset.end === 'start'); return; }
+    if (e.pointerType === 'touch') { this.touchUi = true; return; } // a pan scrolls; the tap selects through mousedown
+    this.touchUi = false;
+    if (e.button !== 0 || t.closest('.overlay')) return;
+    const mk = t.closest<HTMLElement>('.mk');
+    if (mk) { e.preventDefault(); this.runCellControl(mk); return; }
+    const head = this.headerHit(t);
+    const c = head ? undefined : t.closest<HTMLElement>('.c');
+    if (!head && (!c || c.dataset.r === undefined)) return;
+    e.preventDefault(); // no text selection, and no compatibility mousedown after this
+    this.q.grid.focus({ preventScroll: true });
+    if (head?.kind === 'all') { this.selectHeader(head, false); return; }
+    if (e.shiftKey) { if (head) this.selectHeader(head, true); else this.selectCell(Number(c!.dataset.r), Number(c!.dataset.c), true); return; }
+    const snap = s.getSnapshot(), before = { ...snap.selection };
+    if (head) this.selectHeader(head, false);
+    else this.selectCell(Number(c!.dataset.r), Number(c!.dataset.c), false);
+    const at: Pos = head ? (head.kind === 'col' ? { row: 0, col: head.index } : { row: head.index, col: 0 }) : { row: Number(c!.dataset.r), col: Number(c!.dataset.c) };
+    this.drag = { id: e.pointerId, anchor: at, focus: at, kind: head ? head.kind : 'cell', before, x: e.clientX, y: e.clientY };
+    try { this.q.scroller.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer has nothing to capture */ }
+  }
+
+  /** A touch handle: extend the range from its other corner. */
+  private startHandleDrag(e: PointerEvent, start: boolean): void {
+    const snap = this._store!.getSnapshot(), sel = snap.selection;
+    const r = sel.range ? parseRange(sel.range) : undefined;
+    if (!r) return;
+    e.preventDefault(); e.stopPropagation();
+    const fixed: Pos = start ? { row: r.bottom, col: r.right } : { row: r.top, col: r.left };
+    const moving: Pos = start ? { row: r.top, col: r.left } : { row: r.bottom, col: r.right };
+    this.anchor = fixed;
+    this.drag = { id: e.pointerId, anchor: fixed, focus: moving, kind: 'cell', before: { ...sel }, x: e.clientX, y: e.clientY };
+    try { this.q.scroller.setPointerCapture(e.pointerId); } catch { /* synthetic */ }
+  }
+
+  private queueDrag(): void {
+    if (!this.dragRaf) this.dragRaf = requestAnimationFrame(() => { this.dragRaf = 0; this.dragStep(); });
+  }
+
+  /** One frame of a drag: autoscroll at an edge, the cell under the pointer, the layer redrawn. */
+  private dragStep(): void {
+    const d = this.drag, g = this.geometry();
+    if (!d || !g) return;
+    const sc = this.q.scroller, z = this.zoom, RH = ROW_H * z, HH = HEAD_H * z, RW = ROWHEAD_W * z;
+    const fz = this._store!.freeze(g.sheet.name), fr = Math.min(fz.rows, g.g.rows), fc = Math.min(fz.cols, g.g.cols);
+    const rect = sc.getBoundingClientRect();
+    const vx = d.x - rect.left - sc.clientLeft, vy = d.y - rect.top - sc.clientTop;
+    const paneTop = HH + fr * RH, paneLeft = RW + g.g.colX[fc]! * z;
+    // autoscroll: within 24 px of the scrolling pane's edge, or past it — faster the further out
+    const speed = (into: number) => Math.min(80, 4 + into * 0.8);
+    let dy = 0, dx = 0;
+    if (d.kind !== 'col') { if (vy > sc.clientHeight - 24) dy = speed(vy - (sc.clientHeight - 24)); else if (vy < paneTop + 24 && sc.scrollTop > 0) dy = -speed(paneTop + 24 - vy); }
+    if (d.kind !== 'row') { if (vx > sc.clientWidth - 24) dx = speed(vx - (sc.clientWidth - 24)); else if (vx < paneLeft + 24 && sc.scrollLeft > 0) dx = -speed(paneLeft + 24 - vx); }
+    if (dy) sc.scrollTop += dy;
+    if (dx) sc.scrollLeft += dx;
+    // the cell under the pointer: frozen panes do not scroll
+    const sy = vy < paneTop && fr > 0 ? vy : vy + sc.scrollTop, sx = vx < paneLeft && fc > 0 ? vx : vx + sc.scrollLeft;
+    const row = Math.max(0, Math.min(g.g.rows - 1, Math.floor((sy - HH) / RH)));
+    const col = Math.max(0, Math.min(g.g.cols - 1, colAt(g.g, Math.max(0, (sx - RW) / z))));
+    d.focus = d.kind === 'col' ? { row: d.focus.row, col } : d.kind === 'row' ? { row, col: d.focus.col } : { row, col };
+    this.drawSelection();
+    if (dy || dx) this.queueDrag();
+  }
+
+  /** Release commits the range to the store once; a cancel (Esc, pointercancel) restores the selection from before. */
+  private endDrag(commit: boolean): void {
+    const d = this.drag;
+    if (!d) return;
+    if (this.dragRaf) { cancelAnimationFrame(this.dragRaf); this.dragRaf = 0; }
+    if (commit) this.dragStep();
+    this.drag = undefined;
+    try { if (this.q.scroller.hasPointerCapture(d.id)) this.q.scroller.releasePointerCapture(d.id); } catch { /* synthetic */ }
+    const s = this._store!;
+    if (!commit) { s.select(d.before, this); this.drawSelection(); return; }
+    const sheet = s.getSnapshot().selection.sheet;
+    const r = this.dragRange(d);
+    const active = d.kind === 'cell' ? d.anchor : s.getSnapshot().selection.ref ? parseRef(s.getSnapshot().selection.ref)! : d.anchor;
+    this.anchor = d.anchor;
+    const one = r.top === r.bottom && r.left === r.right;
+    s.select(one ? { sheet, ref: cellRef(active.row, active.col) } : { sheet, ref: cellRef(active.row, active.col), range: rangeText(r) }, this);
+    if (!one) this.say(r);
+    this.drawSelection();
+  }
+
+  /** The range a drag spans: corners for cells (grown over merges), whole columns or rows for headers. */
+  private dragRange(d: Drag): RangePos {
+    const g = this.geometry()!.g;
+    if (d.kind === 'col') return { top: 0, bottom: g.rows - 1, left: Math.min(d.anchor.col, d.focus.col), right: Math.max(d.anchor.col, d.focus.col) };
+    if (d.kind === 'row') return { left: 0, right: g.cols - 1, top: Math.min(d.anchor.row, d.focus.row), bottom: Math.max(d.anchor.row, d.focus.row) };
+    return growForMerges(spanOf(d.anchor, d.focus), g.merges);
+  }
+
+  /** A header click: the whole column, row or sheet; with Shift, out to it from the anchor. */
+  private selectHeader(h: { kind: 'col' | 'row' | 'all'; index: number }, extend: boolean): void {
+    const s = this._store!, g = this.geometry();
+    if (!g) return;
+    const sheet = s.getSnapshot().selection.sheet;
+    const fz = s.freeze(sheet), sc = this.q.scroller;
+    // the active cell stays at the first visible cell of the range
+    const firstRow = fz.rows > 0 ? 0 : Math.min(g.g.rows - 1, Math.max(0, Math.floor(sc.scrollTop / (ROW_H * this.zoom))));
+    const firstCol = fz.cols > 0 ? 0 : Math.min(g.g.cols - 1, colAt(g.g, sc.scrollLeft / this.zoom));
+    let r: RangePos, active: Pos;
+    if (h.kind === 'all') { r = { top: 0, left: 0, bottom: g.g.rows - 1, right: g.g.cols - 1 }; active = { row: firstRow, col: firstCol }; this.anchor = { row: 0, col: 0 }; }
+    else if (h.kind === 'col') {
+      const from = extend && this.anchor ? this.anchor.col : h.index;
+      r = { top: 0, bottom: g.g.rows - 1, left: Math.min(from, h.index), right: Math.max(from, h.index) };
+      active = { row: firstRow, col: extend && this.anchor ? this.anchor.col : h.index };
+      if (!extend) this.anchor = { row: 0, col: h.index };
+    } else {
+      const from = extend && this.anchor ? this.anchor.row : h.index;
+      r = { left: 0, right: g.g.cols - 1, top: Math.min(from, h.index), bottom: Math.max(from, h.index) };
+      active = { row: extend && this.anchor ? this.anchor.row : h.index, col: firstCol };
+      if (!extend) this.anchor = { row: h.index, col: 0 };
+    }
+    s.select({ sheet, ref: cellRef(active.row, active.col), range: rangeText(r) }, this);
+    this.say(r);
+  }
+
+  /** Says the settled range once, politely (W-46 DoD 9). */
+  private say(r: RangePos): void {
+    clearTimeout(this.sayTimer);
+    this.sayTimer = setTimeout(() => { if (this.built) this.q.selsay.textContent = `${cellRef(r.top, r.left)} to ${cellRef(r.bottom, r.right)}, ${cellCount(r)} cells`; }, 250);
   }
 
   private selectCell(row: number, col: number, extend: boolean): void {
     const s = this._store!, snap = s.getSnapshot();
     const ref = cellRef(row, col);
     if (extend && this.anchor) {
-      const r: RangePos = { top: Math.min(this.anchor.row, row), left: Math.min(this.anchor.col, col), bottom: Math.max(this.anchor.row, row), right: Math.max(this.anchor.col, col) };
-      const range = r.top === r.bottom && r.left === r.right ? undefined : `${cellRef(r.top, r.left)}:${cellRef(r.bottom, r.right)}`;
-      s.select(range ? { sheet: snap.selection.sheet, ref: cellRef(this.anchor.row, this.anchor.col), range } : { sheet: snap.selection.sheet, ref }, this);
+      const g = this.geometry();
+      const r = growForMerges(spanOf(this.anchor, { row, col }), g?.g.merges ?? []);
+      const one = r.top === r.bottom && r.left === r.right;
+      const am = g && mergeAt(g.g, this.anchor.row, this.anchor.col);
+      const range = one || (am && am.top === r.top && am.left === r.left && am.bottom === r.bottom && am.right === r.right) ? undefined : rangeText(r);
+      s.select(range ? { sheet: snap.selection.sheet, ref: cellRef(this.anchor.row, this.anchor.col), range } : { sheet: snap.selection.sheet, ref: cellRef(this.anchor.row, this.anchor.col) }, this);
+      if (range) this.say(r);
     } else {
       this.anchor = { row, col };
       s.select({ sheet: snap.selection.sheet, ref }, this);
@@ -779,9 +965,37 @@ export class SheetpaneExcel extends ElementBase {
       const mc = ctx && controlsFor(s.plugins, 'cell', 'edit').find((c) => c.cellOptions && c.choose && c.appliesTo?.(ctx));
       if (mc && ctx) { this.menu = { control: mc.id, sheet: snap.selection.sheet, ref: snap.selection.ref, options: mc.cellOptions!(ctx) }; this.focusMenu = true; this.schedule(); e.preventDefault(); return; }
     }
-    if (mod && (k === 'z' || k === 'Z')) { if (e.shiftKey) s.redo(this); else s.undo(this); }
+    if (this.drag && k === 'Escape') { this.endDrag(false); e.preventDefault(); e.stopPropagation(); return; }
+    const range = snap.selection.range ? parseRange(snap.selection.range) : undefined;
+    const arrow = k === 'ArrowDown' ? [1, 0] : k === 'ArrowUp' ? [-1, 0] : k === 'ArrowRight' ? [0, 1] : k === 'ArrowLeft' ? [0, -1] : undefined;
+    if (mod && arrow && !e.altKey) {
+      // Ctrl/⌘+arrow: the edge of the data; with Shift, extend there (W-46 DoD 5)
+      const from = e.shiftKey && this.anchor && range ? this.rangeEnd(snap.selection) : parseRef(snap.selection.ref)!;
+      const to = dataEdge(from, arrow[0]!, arrow[1]!, (r, c) => s.value(snap.selection.sheet, cellRef(r, c)), { rows: g.g.rows, cols: g.g.cols });
+      if (e.shiftKey && !this.anchor) this.anchor = parseRef(snap.selection.ref)!;
+      this.selectCell(to.row, to.col, e.shiftKey);
+    }
+    else if (k === ' ' && (e.ctrlKey || e.shiftKey) && !e.metaKey && !e.altKey && !(e.ctrlKey && e.shiftKey)) {
+      // Ctrl+Space: the columns; Shift+Space: the rows — of the active cell or the range
+      const r = range ?? { top: parseRef(snap.selection.ref)!.row, bottom: parseRef(snap.selection.ref)!.row, left: parseRef(snap.selection.ref)!.col, right: parseRef(snap.selection.ref)!.col };
+      const whole = e.ctrlKey ? { top: 0, bottom: g.g.rows - 1, left: r.left, right: r.right } : { left: 0, right: g.g.cols - 1, top: r.top, bottom: r.bottom };
+      s.select({ sheet: snap.selection.sheet, ref: snap.selection.ref, range: rangeText(whole) }, this);
+      this.say(whole);
+    }
+    else if (mod && (k === 'a' || k === 'A') && !e.shiftKey && !e.altKey) {
+      // Ctrl/⌘+A: the data region; again: the whole sheet
+      const used = usedRange(g.sheet.rows), all = { top: 0, left: 0, bottom: g.g.rows - 1, right: g.g.cols - 1 };
+      const next = range && rangeText(range) === rangeText(used) ? all : used;
+      const one = next.top === next.bottom && next.left === next.right;
+      s.select(one ? { sheet: snap.selection.sheet, ref: cellRef(next.top, next.left) } : { sheet: snap.selection.sheet, ref: snap.selection.ref, range: rangeText(next) }, this);
+      this.anchor = { row: next.top, col: next.left };
+      if (!one) this.say(next);
+    }
+    else if (k === 'Backspace' && e.shiftKey && !mod) { this.anchor = parseRef(snap.selection.ref)!; s.select({ sheet: snap.selection.sheet, ref: snap.selection.ref }, this); }
+    else if (range && (k === 'Enter' || k === 'Tab') && !mod && !e.altKey) this.stepInRange(range, k === 'Tab', e.shiftKey);
+    else if (mod && (k === 'z' || k === 'Z')) { if (e.shiftKey) s.redo(this); else s.undo(this); }
     else if (mod && (k === 'y' || k === 'Y')) s.redo(this);
-    else if (mod && (k === 'c' || k === 'C')) this.copy(s.text(snap.selection.sheet, snap.selection.ref));
+    else if (mod && (k === 'c' || k === 'C')) this.copySelection();
     else if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') this.openContextMenu();
     else if (k === 'ArrowDown') this.move(1, 0, e.shiftKey);
     else if (k === 'ArrowUp') this.move(-1, 0, e.shiftKey);
@@ -794,7 +1008,10 @@ export class SheetpaneExcel extends ElementBase {
     else if ((k === 'Enter' || k === 'F2') && edit) this.editCell();
     else if ((k === 'f' || k === 'F') && edit && !mod && !e.altKey) this.flag();
     else if (k === 'Escape') { if (!this.escape()) handled = false; }
-    else if ((k === 'Delete' || k === 'Backspace') && edit) { if (this.allowChange(snap.selection.sheet, snap.selection.ref, null)) s.setCell(snap.selection.sheet, snap.selection.ref, null, { origin: this }); }
+    else if ((k === 'Delete' || k === 'Backspace') && edit) {
+      if (range) this.clearRange(range);
+      else if (this.allowChange(snap.selection.sheet, snap.selection.ref, null)) s.setCell(snap.selection.sheet, snap.selection.ref, null, { origin: this });
+    }
     else if (edit && !mod && !e.altKey && k.length === 1) { this.editCell(k); }
     else handled = false;
     if (handled) { e.preventDefault(); e.stopPropagation(); }
@@ -807,6 +1024,7 @@ export class SheetpaneExcel extends ElementBase {
     if (this.ctxOpen || this.moreOpen || this.dlOpen) { this.ctxOpen = false; this.moreOpen = false; this.dlOpen = false; this.schedule(); return true; }
     if (s?.getSnapshot().composing) { s.compose(null); return true; }
     if (this.findText) { (this.q.findin as HTMLInputElement).value = ''; this.findText = ''; this.findHits = []; this.schedule(); return true; }
+    if (this.copied) { this.copied = undefined; this.selKey = ''; this.schedule(); return true; }
     return false;
   }
 
@@ -824,6 +1042,54 @@ export class SheetpaneExcel extends ElementBase {
     if (extend && !this.anchor) this.anchor = parseRef(snap.selection.ref)!;
     this.selectCell(row, col, extend);
   }
+  /** Enter / Tab inside a range: the active cell moves within it and wraps, as in Excel (W-46 DoD 5). */
+  private stepInRange(r: RangePos, across: boolean, back: boolean): void {
+    const s = this._store!, sel = s.getSnapshot().selection, p = parseRef(sel.ref)!;
+    const h = r.bottom - r.top + 1, w = r.right - r.left + 1, n = h * w;
+    // the cells in order: down the columns for Enter, along the rows for Tab
+    const idx = across ? (p.row - r.top) * w + (p.col - r.left) : (p.col - r.left) * h + (p.row - r.top);
+    const next = (idx + (back ? -1 : 1) + n) % n;
+    const pos = across ? { row: r.top + Math.floor(next / w), col: r.left + (next % w) } : { row: r.top + (next % h), col: r.left + Math.floor(next / h) };
+    s.select({ sheet: sel.sheet, ref: cellRef(pos.row, pos.col), range: sel.range! }, this);
+    this.scrollToSel = true;
+  }
+
+  /** Ctrl/⌘+C: one cell's value, or a range as TSV and an HTML table; the copied range is outlined (W-46 DoD 6). */
+  private copySelection(): void {
+    const s = this._store!, sel = s.getSnapshot().selection;
+    const r = sel.range ? parseRange(sel.range) : undefined;
+    if (!r) { this.copied = undefined; this.copy(s.text(sel.sheet, sel.ref)); this.schedule(); return; }
+    if (cellCount(r) > 1_000_000) { this.say0(`Nothing copied — ${cellCount(r).toLocaleString()} cells is over the 1,000,000 a copy holds`); return; }
+    const { tsv, html } = clipOf(r, (row, col) => s.text(sel.sheet, cellRef(row, col)));
+    const fallback = () => this.copy(tsv);
+    const Item = (globalThis as { ClipboardItem?: typeof ClipboardItem }).ClipboardItem;
+    if (navigator.clipboard?.write && Item) navigator.clipboard.write([new Item({ 'text/plain': new Blob([tsv], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) })]).catch(fallback);
+    else fallback();
+    this.copied = { sheet: sel.sheet, range: r };
+    this.selKey = '';
+    this.schedule();
+  }
+
+  /** A status-line notice for a few seconds. */
+  private say0(text: string): void {
+    this.notice = text; clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => { this.notice = ''; this.schedule(); }, 4000);
+    this.schedule();
+  }
+
+  /** Delete / Backspace over a range (Edit): every filled cell through `sheetpane-beforechange`, refused ones skipped, one undo step. */
+  private clearRange(r: RangePos): void {
+    const s = this._store!, sheet = s.getSnapshot().selection.sheet, g = this.geometry();
+    if (!g) return;
+    const cells: { sheet: string; ref: string; input: Cell }[] = [];
+    for (let row = r.top; row <= Math.min(r.bottom, g.g.rows - 1); row++) for (let col = r.left; col <= Math.min(r.right, g.g.cols - 1); col++) {
+      const ref = cellRef(row, col), v = s.value(sheet, ref);
+      if (v === null || v === undefined || v === '') continue;
+      if (this.allowChange(sheet, ref, null)) cells.push({ sheet, ref, input: null });
+    }
+    if (cells.length) s.setCells(cells, { origin: this });
+  }
+
   private rangeEnd(sel: { ref: string; range?: string }): { row: number; col: number } {
     const r = parseRange(sel.range!)!, a = this.anchor!;
     return { row: a.row === r.top ? r.bottom : r.top, col: a.col === r.left ? r.right : r.left };
@@ -902,8 +1168,8 @@ export class SheetpaneExcel extends ElementBase {
     const err = this.errorAt(sel.sheet, sel.ref);
     switch (act) {
       case 'flag': this.flag(); break;
-      case 'copy-ref': this.copy(sel.range ?? sel.ref); break;
-      case 'copy-value': this.copy(s.text(sel.sheet, sel.ref)); break;
+      case 'copy-ref': this.copy(this.refOf(sel)); break;
+      case 'copy-value': this.copySelection(); break;
       case 'resolve': if (err) s.updateError(err.id, { status: err.status === 'open' ? 'resolved' : 'open' }, this); break;
       case 'delete': if (err) s.deleteError(err.id, this); break;
       case 'prev': case 'next': this.stepError(act === 'next' ? 1 : -1); break;
@@ -1106,7 +1372,7 @@ export class SheetpaneExcel extends ElementBase {
     const typing = !!this.editing && this.shadow.activeElement === cell;
     q.dock.hidden = typing || composing;
     if (!q.dock.hidden) {
-      const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" data-sp="flag" title="Flag issue (F)" aria-label="Flag issue (F)">${ICON.flag}Flag issue<span class="kbd">F</span></button>` : '';
+      const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" data-sp="flag" title="Flag issue (F)" aria-keyshortcuts="F">${ICON.flag}Flag issue<span class="kbd" aria-hidden="true">F</span></button>` : '';
       const plug = edit ? this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit'), 'btn btn-g') : '';
       const more = `<button type="button" class="btn btn-g btn-i" data-act="more" aria-haspopup="menu" aria-expanded="${this.moreOpen}" title="More actions (Shift+F10)" aria-label="More actions (Shift+F10)">⋯</button>`;
       // the ⋯ menu: Copy ref, Copy value, and the plugin buttons, which show here only once they fold out of the bar
@@ -1135,12 +1401,29 @@ export class SheetpaneExcel extends ElementBase {
     q.status.innerHTML = [
       `<span>${esc(sheet.name)} · ${dataRows} row${dataRows === 1 ? '' : 's'} × ${dataCols} column${dataCols === 1 ? '' : 's'}${g.g.merges.length ? ` · ${g.g.merges.length} merged range${g.g.merges.length === 1 ? '' : 's'}` : ''}</span>`,
       n ? `<span>· ${n} cell change${n === 1 ? '' : 's'} kept in memory until you export</span>` : '',
+      (() => { const t = this.totalsFor(g.g); return t ? `<span class="totals" data-sp="totals">· ${esc(t)}</span>` : ''; })(),
       ...statusPlug.map((t) => `<span>${esc(t)}</span>`),
       this.notice ? `<span role="status" class="warn-t">· ${esc(this.notice)}</span>` : '',
       s.ruleProgress ? `<span role="status">· Checking column rules · ${Math.floor((100 * s.ruleProgress.done) / Math.max(1, s.ruleProgress.total))} %</span>` : '',
       `<span class="spacer"></span><span>Read in this tab — nothing uploaded</span>`,
       this.getAttribute('display') === 'popup' ? '<span>Esc to close</span>' : '',
     ].join('');
+  }
+
+  /** Count · Sum · Average of a range of two or more cells (W-46 DoD 8), cached until the range or the cells change. */
+  private totalsFor(g: SheetGeometry): string {
+    const s = this._store!, snap = s.getSnapshot(), sel = snap.selection;
+    const r = sel.range ? parseRange(sel.range) : undefined;
+    if (!r || cellCount(r) < 2) return '';
+    const key = [sel.sheet, sel.range, sel.ref, snap.book, snap.changes, snap.derived];
+    if (key.length === this.totalsKey.length && key.every((k, i) => Object.is(k, this.totalsKey[i]))) return this.totalsText;
+    this.totalsKey = key;
+    const t = totalsOf(r, (row, col) => s.value(sel.sheet, cellRef(row, col)), g.rows - 1);
+    // the active cell's number format when a format plugin (numfmt) is installed, else locale grouping
+    const formatted = s.plugins.some((p) => p.provides.includes('format'));
+    const fmt = (v: number) => (formatted ? s.format(sel.sheet, sel.ref, v) : new Intl.NumberFormat(undefined, { maximumFractionDigits: 10 }).format(v));
+    this.totalsText = t.numbers ? `Count ${t.count.toLocaleString()} · Sum ${fmt(t.sum)} · Average ${fmt(t.sum / t.numbers)}` : `Count ${t.count.toLocaleString()}`;
+    return this.totalsText;
   }
 
   private controlsHtml(list: ControlDescriptor[], cls: string, separators = false): string {
@@ -1203,7 +1486,6 @@ export class SheetpaneExcel extends ElementBase {
     grid.setAttribute('aria-readonly', String(!edit));
     // selection, find, errors
     const sel = snap.selection;
-    const selR = sel.range ? parseRange(sel.range) : undefined;
     const selP = parseRef(sel.ref)!;
     const hitSet = new Set(this.findText ? this.findHits.filter((h) => h.sheet === sheet.name).map((h) => h.ref) : []);
     const curHit = this.findIdx >= 0 ? this.findHits[this.findIdx] : undefined;
@@ -1230,8 +1512,6 @@ export class SheetpaneExcel extends ElementBase {
       if (frozenCol) cls.push('fz');
       if (typeof v === 'number') cls.push('n');
       if (m) cls.push('merge');
-      if (r === selP.row && c === selP.col) cls.push('sel');
-      else if (selR && r >= selR.top && r <= selR.bottom && c >= selR.left && c <= selR.right) cls.push('inrange');
       if (hitSet.has(ref)) cls.push('hit');
       if (curHit && curHit.sheet === sheet.name && curHit.ref === ref) cls.push('cur');
       if (s.changesAt(sheet.name, ref).length) cls.push('chg');
@@ -1257,11 +1537,11 @@ export class SheetpaneExcel extends ElementBase {
         for (const cc of cellControls) if (ctx && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
       }
       const title = stale ? ' title="May be stale — Excel recalculates on open"' : text.length > 24 ? ` title="${esc(text)}"` : '';
-      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-sp-ref="${cellRef(r, c)}" aria-colindex="${c + 2}" aria-selected="${r === selP.row && c === selP.col}" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
+      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-sp-ref="${cellRef(r, c)}" aria-colindex="${c + 2}" aria-selected="false" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
     };
     const rowHead = (r: number) => {
       const w = rowWorst.get(r);
-      return `<div class="rh" role="rowheader" style="width:${RW}px;height:${RH}px">${w ? `<span class="g g-${w}" aria-label="${SEVERITY[w].name}">${SEVERITY[w].glyph}</span>` : ''}${r + 1}</div>`;
+      return `<div class="rh" role="rowheader" data-hr="${r}" style="width:${RW}px;height:${RH}px">${w ? `<span class="g g-${w}" aria-label="${SEVERITY[w].name}">${SEVERITY[w].glyph}</span>` : ''}${r + 1}</div>`;
     };
     const cellsOf = (r: number) => {
       let out = '';
@@ -1272,9 +1552,9 @@ export class SheetpaneExcel extends ElementBase {
       return out;
     };
     // header row
-    let hdr = `<div class="corner" role="columnheader" style="width:${RW}px;height:${HH}px"><span class="vh">Row</span></div>`;
-    for (let c = 0; c < fc; c++) hdr += `<div class="ch fz" role="columnheader" style="left:${RW + X(c)}px;width:${W(c)}px;height:${HH}px;flex:none" aria-colindex="${c + 2}">${colName(c)}</div>`;
-    for (let c = win.c0; c <= win.c1; c++) hdr += `<div class="ch" role="columnheader" style="left:${RW + X(c)}px;width:${W(c)}px;height:${HH}px" aria-colindex="${c + 2}">${colName(c)}</div>`;
+    let hdr = `<div class="corner" role="columnheader" data-hall title="Select all" style="width:${RW}px;height:${HH}px"><span class="vh">Row</span></div>`;
+    for (let c = 0; c < fc; c++) hdr += `<div class="ch fz" role="columnheader" data-hc="${c}" style="left:${RW + X(c)}px;width:${W(c)}px;height:${HH}px;flex:none" aria-colindex="${c + 2}">${colName(c)}</div>`;
+    for (let c = win.c0; c <= win.c1; c++) hdr += `<div class="ch" role="columnheader" data-hc="${c}" style="left:${RW + X(c)}px;width:${W(c)}px;height:${HH}px" aria-colindex="${c + 2}">${colName(c)}</div>`;
     // frozen rows (sticky), then the window
     let frozen = '';
     for (let r = 0; r < fr; r++) frozen += `<div class="frozen" role="row" aria-rowindex="${r + 2}" style="top:${HH + r * RH}px;height:${RH}px;width:${totalW}px;position:sticky">${rowHead(r)}${cellsOf(r)}</div>`;
@@ -1290,9 +1570,91 @@ export class SheetpaneExcel extends ElementBase {
       q.hrow.style.cssText = `width:${totalW}px;height:${HH}px`;
       q.frozen.innerHTML = frozen;
       q.rows.innerHTML = body;
+      this.selKey = ''; this.ariaOn.clear(); // new nodes: the layer's bands and aria-selected go on again
     }
     grid.setAttribute('aria-activedescendant', `c${selP.row}_${selP.col}`);
+    this.drawSelection();
     this.renderOverlay(g, sheet, z, RW, HH, RH, X, W, win);
+  }
+
+  /**
+   * The selection layer (W-46 DoD 1, 2): per pane part a fill (a hole at the active cell), one border on
+   * the range's own edges, the active cell's ring, the copied outline and — after a touch — two handles.
+   * The scrolling part sits in `.sellayer`; the frozen-column part sticks left there; the frozen-row
+   * parts are bands inside the frozen rows. No cell is re-created: only `aria-selected` changes on them.
+   */
+  private drawSelection(): void {
+    const s = this._store, g = this.geometry();
+    if (!s || !g || !this.built || s.getSnapshot().load.status !== 'ready') return;
+    const snap = s.getSnapshot(), q = this.q, z = this.zoom, gg = g.g;
+    const RH = ROW_H * z, HH = HEAD_H * z, RW = ROWHEAD_W * z;
+    const X = (c: number) => gg.colX[Math.min(c, gg.cols)]! * z;
+    const fz = s.freeze(g.sheet.name), fr = Math.min(fz.rows, gg.rows), fc = Math.min(fz.cols, gg.cols);
+    const d = this.drag, sel = snap.selection;
+    const active: Pos = d && d.kind === 'cell' ? d.anchor : parseRef(sel.ref)!;
+    const am = mergeAt(gg, active.row, active.col) ?? { top: active.row, left: active.col, bottom: active.row, right: active.col };
+    const range: RangePos = d ? this.dragRange(d) : sel.range ? parseRange(sel.range) ?? am : am;
+    const multi = !(range.top === am.top && range.left === am.left && range.bottom === am.bottom && range.right === am.right);
+    const copied = this.copied && this.copied.sheet === g.sheet.name ? this.copied.range : undefined;
+    if (d) q.ref.textContent = `${range.bottom - range.top + 1}R × ${range.right - range.left + 1}C`;
+    const key = [g.sheet.name, z, fr, fc, gg.rows, gg.cols, rangeText(range), rangeText(am), copied ? rangeText(copied) : '', this.touchUi && !d && multi ? 1 : 0].join('|');
+    if (key === this.selKey) return;
+    this.selKey = key;
+    let layer = '';
+    const bands = new Map<number, string>();
+    const borders = (e: { top: boolean; right: boolean; bottom: boolean; left: boolean }) => `border-width:${e.top ? 2 : 0}px ${e.right ? 2 : 0}px ${e.bottom ? 2 : 0}px ${e.left ? 2 : 0}px`;
+    /** One part's element: in the layer for the scrolling rows, a band per frozen row otherwise. */
+    const put = (pane: string, r0: number, r1: number, c0: number, c1: number, cls: string, style: (row: number | undefined) => string) => {
+      const x = RW + X(c0), w = X(c1 + 1) - X(c0);
+      if (pane === 'main' || pane === 'left') {
+        const pos = pane === 'left' ? `position:sticky;left:${x}px;z-index:2` : 'position:relative;z-index:1';
+        layer += `<div class="${cls}" style="${pos};margin:${HH + r0 * RH}px 0 0 ${x}px;width:${w}px;height:${(r1 - r0 + 1) * RH}px;${style(undefined)}"></div>`;
+        return;
+      }
+      const flow = RW + X(fc); // a corner band follows the frozen cells in the row's flex flow
+      for (let r = r0; r <= r1; r++) {
+        const pos = pane === 'top' ? `position:absolute;top:0;left:${x}px;z-index:1` : `position:sticky;left:${x}px;flex:none;margin:0 ${-(x - flow + w)}px 0 ${x - flow}px;z-index:3`;
+        bands.set(r, (bands.get(r) ?? '') + `<div class="sband ${cls}" style="${pos};width:${w}px;height:${RH}px;${style(r)}"></div>`);
+      }
+    };
+    if (multi) {
+      for (const p of splitByPanes(range, fr, fc)) {
+        // the fill leaves the active cell clear: an even-odd hole where it meets this part
+        const hole = (row: number | undefined) => {
+          const t = Math.max(p.top, am.top, row ?? -1), b = Math.min(p.bottom, am.bottom, row ?? Infinity), l = Math.max(p.left, am.left), rr = Math.min(p.right, am.right);
+          if (t > b || l > rr) return '';
+          const y0 = row === undefined ? (t - p.top) * RH : 0, y1 = row === undefined ? (b - p.top + 1) * RH : RH;
+          const x0 = X(l) - X(p.left), x1 = X(rr + 1) - X(p.left);
+          return `;clip-path:polygon(evenodd,0 0,100% 0,100% 100%,0 100%,0 0,${x0}px ${y0}px,${x1}px ${y0}px,${x1}px ${y1}px,${x0}px ${y1}px,${x0}px ${y0}px)`;
+        };
+        put(p.pane, p.top, p.bottom, p.left, p.right, 'sf', hole);
+        put(p.pane, p.top, p.bottom, p.left, p.right, 'sb', (row) => borders(row === undefined ? p.edges : { ...p.edges, top: p.edges.top && row === p.top, bottom: p.edges.bottom && row === p.bottom }));
+      }
+    }
+    for (const p of splitByPanes(am, fr, fc)) put(p.pane, p.top, p.bottom, p.left, p.right, 'sa', (row) => borders(row === undefined ? p.edges : { ...p.edges, top: p.edges.top && row === p.top, bottom: p.edges.bottom && row === p.bottom }));
+    if (copied) for (const p of splitByPanes(copied, fr, fc)) put(p.pane, p.top, p.bottom, p.left, p.right, 'sc', (row) => borders(row === undefined ? p.edges : { ...p.edges, top: p.edges.top && row === p.top, bottom: p.edges.bottom && row === p.bottom }));
+    // touch: two round handles, top-left and bottom-right, to extend the range
+    if (this.touchUi && !d && multi) {
+      for (const [end, row, col] of [['start', range.top, range.left], ['end', range.bottom + 1, range.right + 1]] as const) {
+        layer += `<div class="sh" data-end="${end}" style="position:relative;z-index:3;margin:${HH + row * RH - 12}px 0 0 ${RW + X(col) - 12}px"></div>`;
+      }
+    }
+    q.sellayer.innerHTML = layer;
+    for (const b of Array.from(q.frozen.querySelectorAll('.sband'))) b.remove();
+    const frozenRows = q.frozen.children;
+    for (const [r, html] of bands) frozenRows[r]?.insertAdjacentHTML('beforeend', html);
+    // headers: tinted with an accent edge where the selection spans them
+    for (const h of Array.from(q.hrow.querySelectorAll<HTMLElement>('[data-hc]'))) { const c = Number(h.dataset.hc); h.classList.toggle('on', c >= range.left && c <= range.right); }
+    for (const h of Array.from(q.grid.querySelectorAll<HTMLElement>('.rh[data-hr]'))) { const r = Number(h.dataset.hr); h.classList.toggle('on', r >= range.top && r <= range.bottom); }
+    // aria-selected on the rendered cells of the range
+    const next = new Set<Element>();
+    for (const c of Array.from(q.grid.querySelectorAll<HTMLElement>('.c[data-r]'))) {
+      const r = Number(c.dataset.r), cc = Number(c.dataset.c);
+      if (r >= range.top && r <= range.bottom && cc >= range.left && cc <= range.right) next.add(c);
+    }
+    for (const el of this.ariaOn) if (!next.has(el)) el.setAttribute('aria-selected', 'false');
+    for (const el of next) if (!this.ariaOn.has(el)) el.setAttribute('aria-selected', 'true');
+    this.ariaOn = next;
   }
 
   private scrollSelIntoView(g: SheetGeometry, z: number, fr: number, fc: number): void {
