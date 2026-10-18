@@ -24,6 +24,26 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — twenty items filed from pdfsuite's spec needs: W-50 – W-69, classified plugin vs existing package  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"*; then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
+- **Done:** read pdfsuite's SR-SPEC-INTAKE, W-46, W-47 and its Spec/Sheet-Editor boards against sheetpane's code and plugin contract; filed W-50 – W-69 (files in `work/open/`, rows under *build*). Group 1 — the host's review flow: W-50 pass/not-checked, W-51 layers, W-52 insert/delete rows and columns, W-53 rich-text runs, W-54 checks in Node, W-55 sheet/workbook errors, W-56 hover + highlight. Group 2 — writing the files: W-57 export writes validation + conditional formats, W-58 rules file as Excel dropdowns, W-59 `@sheetpane/review` (new plugin), W-60 dependent dropdowns, W-61 Excel Tables + `@sheetpane/tables` (new plugin), W-62 locked cells and protection. Group 3 — over time: W-63 `@sheetpane/compare` (new plugin), W-64 edits view, W-65 SHA-256, W-66 link to a cell, W-67 static HTML, W-68 error detail slot, W-69 accepted deviations. Hidden rows/columns (the earlier list's item 4) dropped: W-49 built it.
+- **Decided / left open:** classification — three new plugins (review, tables, compare); everything else extends existing packages (grid core, import, export, validation, styles). W-52 adds no seventh hook (the core shifts the imported tables; `derive` gains `restructure`); W-64 is a view inside `<sheetpane-errors>` so L7 is untouched. Not committed: a concurrent session has uncommitted release edits in `work/NOW.md`, `work/WORKLOG.md` and twenty other files.
+- **Mistakes:** a scratch file `work/open/_rows.tmp.md` was written into the repo and cannot be deleted without the decider's permission — delete it (untracked).
+- **Next:** the decider reviews W-50 – W-69 and commits them with explicit pathspecs; W-50, W-51, W-54 and W-57 first (others wait on them).
+
+---
+
+## 2026-10-19 — README as the landing page: real screenshot, GIF, logo  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Research the best README documents and then create sheet pane's README document. Right now, whatever we have doesn't look good for marketing."*
+- **Done:** studied Zod, Excalidraw, Glide Data Grid, awesome-readme, Art of README. `README.md` rewritten: centred logo (light/dark), one-line pitch, badges, links row, a **real** screenshot (light/dark) and demo GIF, the three-line integration, why-table, rules-file snippet, frameworks, plugins, "deliberately does not do", the honest gaps kept (collapsed), packages, contributing. New `docs/readme/`: `logo-{light,dark}.svg`, `screenshot-{light,dark}.png`, `demo.gif`, `holdings.rules.json` (the exact file the screenshot shows), `capture.mjs` (regenerates them from `examples/html`). Registry rows for `README.md` and `docs/readme/`; `llms*.txt` rebuilt. **Not committed.**
+- **Decided / left open:** no npm badge until `0.1.0` is on npm (it would read "not found") — add it then. The error numbers in the capture start at 5, not 1 (the rules phase numbers them so) — left as captured.
+- **Mistakes:** none landed; a scratch tarball (`.readme-tmp/`) used for the captures was removed before the session ended.
+- **Next:** the decider reviews the README on GitHub (light and dark), then commits.
+
+---
+
 ## 2026-10-19 — honest README, LICENSE, Pages on, About set; npm goes token-free  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Create an honest, humble README … create environments … go to npm … make sure everything is ready to be published … update the about section"*; then *"honest, humble, and strong"*; on the npm token: *"I don't believe you need an NPM token … authorize it … publish it once and then it can go through"*.

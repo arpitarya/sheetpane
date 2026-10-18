@@ -105,7 +105,8 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
 | `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — Rules file section, rules-src/rules/flagging (W-33); Plugins points at the gallery (W-32) |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |
-| `README.md` | the packages, the commands or the demos change | 2026-10-18 | 2026-10-18 — created: packages, demos, commands |
+| `README.md` | the packages, the commands or the demos change | 2026-10-19 | 2026-10-19 — rewritten as the landing page: logo, real screenshot and GIF, three-line integration, plugins, honest gaps kept |
+| `docs/readme/` | the grid's look or `examples/html/sample.xlsx` changes — rerun `node docs/readme/capture.mjs` | 2026-10-19 | 2026-10-19 — created: logo, screenshots, demo GIF, the rules file they show, the capture script |
 | `packages/images/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the images plugin |
 | `packages/validation/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the validation plugin |
 | `packages/numfmt/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the numfmt plugin |
