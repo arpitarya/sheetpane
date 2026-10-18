@@ -1,0 +1,25 @@
+{
+  "name": "__SHEETPANE_NAME__",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/sample.mjs && vite --port 5173 --strictPort --host 127.0.0.1",
+    "build": "node scripts/sample.mjs && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && vite build",
+    "preview": "vite preview --port 5173 --strictPort --host 127.0.0.1",
+    "test": "__SHEETPANE_RUN__ build && playwright test"
+  },
+  "dependencies": {
+    "@sheetpane/grid": "__SHEETPANE_VERSION__"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@sheetpane/fixtures": "__SHEETPANE_VERSION__",
+    "@sheetpane/testing": "__SHEETPANE_VERSION__",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "svelte": "5.57.2",
+    "svelte-check": "4.7.7",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  }
+}

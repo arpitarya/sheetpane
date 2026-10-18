@@ -112,6 +112,10 @@ pnpm and a justfile; the testing verdict chose the runner.
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
    dependency of every other package (W-35, SR-SKILLS) — and
    `@sheetpane/grid`, which ships `custom-elements.json` beside `dist` (W-37).
+   **`create-sheetpane`** (W-43, SR-CREATE) is the one unscoped package — `npm
+   create sheetpane` resolves that name — with `files: ['bin', 'templates']`,
+   a bin, no dependencies and no build; the font scan walks its `bin/` and
+   `templates/`.
    Grid's build is `tsc` → `build-grid-css.mjs` → `build-manifest.mjs` (the
    manifest, the editor data, the framework typings; no dependency); grid has
    `@types/react` as a dev dependency so the React augmentation type-checks in
@@ -129,7 +133,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     `@sheetpane/<pkg>` re-exports itself — and fails naming each symbol; it
     also type-checks every `@example` code block against the built packages.
 8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
-   `just pack-check` on every push to `main` and every PR (Chromium);
+   `just pack-check` on every push to `main` and every PR (Chromium), and a
+   `create` job — a matrix over the six `create-sheetpane` templates running
+   `just create-check <template>` (SR-CREATE decision 5);
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;
    `pages.yml` (W-44) on a release tag builds the live playground — `just
    site` → `site/` (`scripts/build-site.mjs`: the HTML gallery at `/` with

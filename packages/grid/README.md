@@ -16,6 +16,10 @@ or outside; no font of its own — yours is used.
 pnpm add @sheetpane/grid      # or npm / yarn
 ```
 
+Starting from nothing? `npm create sheetpane@latest` makes a working app —
+vanilla, React, Next.js, Vue, Angular or Svelte — with both elements, a sample
+file, a rules file and one test.
+
 ## Plain HTML
 
 ```html

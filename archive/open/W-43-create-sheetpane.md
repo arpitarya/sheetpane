@@ -6,7 +6,7 @@ item: W-43
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,10 +16,10 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Write `create-sheetpane` (no dependencies; `node:readline` prompts) | one command to a running app | ⏳ |
-| 2 | Six templates, each with grid + errors in a tab, the showcase file, a rules file, one `@sheetpane/testing` test, the W-37 typing | start right instead of copying a README | ⏳ |
-| 3 | Offer `--skills claude,kiro,codex` and `--mcp` | the agent knows sheetpane from the first prompt | ⏳ |
-| 4 | CI scaffolds each template, installs from the packed tarballs, builds and runs its test | a template can't rot | ⏳ |
+| 1 | Write `create-sheetpane` (no dependencies; `node:readline` prompts) | one command to a running app | ✅ |
+| 2 | Six templates, each with grid + errors in a tab, the showcase file, a rules file, one `@sheetpane/testing` test, the W-37 typing | start right instead of copying a README | ✅ |
+| 3 | Offer `--skills claude,kiro,codex` and `--mcp` | the agent knows sheetpane from the first prompt | ✅ |
+| 4 | CI scaffolds each template, installs from the packed tarballs, builds and runs its test | a template can't rot | ✅ |
 
 **Arpit, 2026-10-18:** *"Other than codemods. File work item for everything else. Research and then file work items."* — answering the chat list (same session as [W-35](W-35-agent-skills-package.md)) of what helps a consumer beyond skills.
 
@@ -33,13 +33,13 @@ A new consumer types one command, picks a framework, and has a running, tested, 
 
 | DoD | what | state |
 |---|---|---|
-| 1 · CLI | `packages/create-sheetpane` (unscoped, so `npm create sheetpane` works); prompts for name, template, skills, MCP; a flag for each (`--template react --skills all --yes`) | ⏳ |
-| 2 · templates | vanilla (Vite), react (Vite), next (App Router, client-only import), vue (Vite, `isCustomElement`), angular (`CUSTOM_ELEMENTS_SCHEMA`), svelte | ⏳ |
-| 3 · contents | grid + errors in a tab and a pop-up button; showcase and rules files from [W-42](W-42-fixtures-package.md); one test on [W-41](W-41-testing-package.md); typings from [W-37](W-37-custom-elements-manifest.md); a README pointing at the skills | ⏳ |
-| 4 · agent-ready | runs `sheetpane-skills install` ([W-35](W-35-agent-skills-package.md)) and registers [W-39](W-39-mcp-server.md) when asked | ⏳ |
-| 5 · CI | each template scaffolded into a temp dir, installed from `demo-packed` tarballs, built, its test run | ⏳ |
-| 6 · versions | templates pin the framework versions CI proved; the release script bumps sheetpane's version in them | ⏳ |
-| 7 · record | new record SR-CREATE; SR-BUILD (CI job) | ⏳ |
+| 1 · CLI | `packages/create-sheetpane` (unscoped, so `npm create sheetpane` works); prompts for name, template, skills, MCP; a flag for each (`--template react --skills all --yes`) | ✅ `packages/create-sheetpane` (unscoped), prompts at a terminal, every flag, refuses a non-empty folder, `main(argv, io)` |
+| 2 · templates | vanilla (Vite), react (Vite), next (App Router, client-only import), vue (Vite, `isCustomElement`), angular (`CUSTOM_ELEMENTS_SCHEMA`), svelte | ✅ all six: vanilla, react, next (client-only), vue (`isCustomElement`), angular (`CUSTOM_ELEMENTS_SCHEMA`, zoneless), svelte |
+| 3 · contents | grid + errors in a tab and a pop-up button; showcase and rules files from [W-42](W-42-fixtures-package.md); one test on [W-41](W-41-testing-package.md); typings from [W-37](W-37-custom-elements-manifest.md); a README pointing at the skills | ✅ grid + errors on one pane, a pop-up button, the showcase and rules file from `@sheetpane/fixtures`, one Playwright test on `@sheetpane/testing`, W-37 typings, a README |
+| 4 · agent-ready | runs `sheetpane-skills install` ([W-35](W-35-agent-skills-package.md)) and registers [W-39](W-39-mcp-server.md) when asked | ✅ runs `sheetpane-skills install --all` (`--skip contributor` for host; `--no-mcp`) |
+| 5 · CI | each template scaffolded into a temp dir, installed from `demo-packed` tarballs, built, its test run | ✅ `scripts/create-check.mjs`, `just create-check`, a CI matrix job; all six pass end to end (Node 24.15.0; Angular needs ≥ 22.22.3 / 24.15.0) |
+| 6 · versions | templates pin the framework versions CI proved; the release script bumps sheetpane's version in them | ✅ pinned exactly (vite 8.3.4, react 19.3.1, next 16.4.2, vue 3.5.44, svelte 5.57.2, angular 22.2.3, playwright 1.64.1, typescript 6.0.3); `release.mjs` bumps the package; templates take the version at scaffold time |
+| 7 · record | new record SR-CREATE; SR-BUILD (CI job) | ✅ SR-CREATE (0120); SR-BUILD 7, 8 |
 
 ## Blockers
 

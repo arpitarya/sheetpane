@@ -20,6 +20,10 @@ uploaded file. Nothing is uploaded: files are read in the browser tab.
 <sheetpane-errors pane="q3"></sheetpane-errors>
 ```
 
+**Start a new app:** `npm create sheetpane@latest` — vanilla, React, Next.js,
+Vue, Angular or Svelte, with the sheet and its errors panel, a sample file and
+rules file, one test and the agent skills ([`create-sheetpane`](packages/create-sheetpane/README.md)).
+
 ## Packages
 
 | package | what it is |
@@ -28,6 +32,7 @@ uploaded file. Nothing is uploaded: files are read in the browser tab.
 | [`@sheetpane/import`](packages/import/README.md) | `.xlsx` or `.csv` in, a plain JavaScript workbook out |
 | [`@sheetpane/export`](packages/export/README.md) | a workbook in, `.xlsx` or `.csv` out — build, patch the original, CSV, `download()` |
 | `@sheetpane/numfmt` · `formulas` · `styles` · `validation` · `condfmt` · `images` · `charts` · `comments` | optional plugins, each its own package |
+| [`create-sheetpane`](packages/create-sheetpane/README.md) | `npm create sheetpane` — a working app to start from |
 
 All are published at one version, ESM with types, with no runtime dependency
 outside the project except the two engines two plugins use.
@@ -54,6 +59,7 @@ network (e.g. a phone).
 | `just test-pkg <name>` | one package's tests, e.g. `just test-pkg grid` |
 | `just test-browsers` | the browser suites in Chromium, Firefox and WebKit |
 | `just pack-check` | every package packed as npm would publish it, checked |
+| `just create-check [template…]` | each `create-sheetpane` template scaffolded, installed from the tarballs, built and tested |
 | `just release <version>` | bump every package together, check, tag, publish |
 
 Requires Node 20+, pnpm 10 and [just](https://just.systems). How work is done
@@ -86,6 +92,10 @@ or outside; no font of its own — yours is used.
 ```sh
 pnpm add @sheetpane/grid      # or npm / yarn
 ```
+
+Starting from nothing? `npm create sheetpane@latest` makes a working app —
+vanilla, React, Next.js, Vue, Angular or Svelte — with both elements, a sample
+file, a rules file and one test.
 
 ## Plain HTML
 
@@ -314,6 +324,15 @@ Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separat
 plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
+
+**Selecting a range:** drag (the grid scrolls when the pointer reaches an edge), Shift+click, or click a
+column header, row header or the corner — drag or Shift+click headers for several. Ctrl/⌘+arrow jumps to
+the edge of the data (with Shift: selects to it); Ctrl+Space selects the column, Shift+Space the row,
+Ctrl/⌘+A the data and then the sheet; Shift+Backspace goes back to the active cell; Enter and Tab move
+inside a range. On a range, Ctrl/⌘+C copies it so Excel and Google Sheets paste a grid, Delete clears it
+(Edit, one undo step), one pasted value fills it, and the status line shows **Count · Sum · Average**.
+`sheetpane-select` carries `range` (`B3:D8`) and fires once a drag is released. On a touch screen a finger
+scrolls, a tap selects, and a range shows two handles to extend it.
 
 ## Column rules
 
@@ -1741,6 +1760,55 @@ Each skill points to the sheetpane record it summarises and never restates a
 rule as its own; a test fails if a skill names an attribute, member or event
 the elements do not have. The spec is the record
 [SR-SKILLS](../../records/0116_SKILLS.md).
+
+
+---
+
+<!-- source: packages/create-sheetpane/README.md (https://github.com/arpitarya/sheetpane/blob/main/packages/create-sheetpane/README.md) -->
+
+# create-sheetpane
+
+**A working sheetpane app in one command.**
+
+```sh
+npm create sheetpane@latest               # asks: folder, template, skills, MCP server
+npm create sheetpane@latest my-app -- --template react --skills host --yes
+pnpm create sheetpane my-app --template vue
+```
+
+| template | what you get |
+|---|---|
+| `vanilla` | Vite + TypeScript, no framework |
+| `react` | React 19 on Vite; `onsheetpane-…` props typed by `@sheetpane/grid/jsx` |
+| `next` | Next.js App Router; the sheet loads on the client only (`next/dynamic`, `ssr: false`) |
+| `vue` | Vue 3 on Vite; `isCustomElement` set, typed by `@sheetpane/grid/vue` |
+| `angular` | Angular, a standalone component with `CUSTOM_ELEMENTS_SCHEMA` (needs Node ^22.22.3 or ^24.15.0) |
+| `svelte` | Svelte 5 on Vite; typed by `@sheetpane/grid/svelte` |
+
+Every template has the same app: `<sheetpane-excel>` and `<sheetpane-errors>`
+on one `pane`, side by side, and the sheet again behind an **Open in a pop-up**
+button (`display="popup"`); the showcase workbook and its rules file from
+`@sheetpane/fixtures`; one Playwright test on `@sheetpane/testing` (the file
+loads, the rules flag a cell, an edit reaches the download); and a README.
+Framework versions are pinned exactly — the ones CI built and tested — and
+every `@sheetpane/*` package at this package's version (they are released
+together).
+
+| option | does |
+|---|---|
+| `--template <t>` | one of the six above |
+| `--skills all \| host \| none` | runs `sheetpane-skills install --all` after installing — `host` leaves out the two skills for contributing to sheetpane itself; `none` skips it |
+| `--mcp`, `--no-mcp` | register the sheetpane MCP server (`@sheetpane/mcp`) with Claude Code, Kiro and Codex, or not |
+| `--pm npm \| pnpm \| yarn` | the package manager (default: the one that ran `create`) |
+| `--no-install` | copy the files only |
+| `-y`, `--yes` | no questions; defaults: `sheetpane-app`, `vanilla`, `host`, MCP on |
+
+The folder must be new or empty; nothing outside it is written. No
+dependencies, no `postinstall`.
+
+The spec is the record SR-CREATE; the repo checks every template on each push
+with `just create-check` (scaffold, install from the packed tarballs, build,
+test).
 
 
 ---
@@ -4351,6 +4419,10 @@ pnpm and a justfile; the testing verdict chose the runner.
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
    dependency of every other package (W-35, SR-SKILLS) — and
    `@sheetpane/grid`, which ships `custom-elements.json` beside `dist` (W-37).
+   **`create-sheetpane`** (W-43, SR-CREATE) is the one unscoped package — `npm
+   create sheetpane` resolves that name — with `files: ['bin', 'templates']`,
+   a bin, no dependencies and no build; the font scan walks its `bin/` and
+   `templates/`.
    Grid's build is `tsc` → `build-grid-css.mjs` → `build-manifest.mjs` (the
    manifest, the editor data, the framework typings; no dependency); grid has
    `@types/react` as a dev dependency so the React augmentation type-checks in
@@ -4368,7 +4440,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     `@sheetpane/<pkg>` re-exports itself — and fails naming each symbol; it
     also type-checks every `@example` code block against the built packages.
 8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
-   `just pack-check` on every push to `main` and every PR (Chromium);
+   `just pack-check` on every push to `main` and every PR (Chromium), and a
+   `create` job — a matrix over the six `create-sheetpane` templates running
+   `just create-check <template>` (SR-CREATE decision 5);
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;
    `pages.yml` (W-44) on a release tag builds the live playground — `just
    site` → `site/` (`scripts/build-site.mjs`: the HTML gallery at `/` with
@@ -4954,7 +5028,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
    `shortcuts()`, `column()`; attribute `header-row` (default 1); events
    `sheetpane-load`, `-change {sheet, ref, kind, was, now}`, `-errors
-   {errors, plugins}`, `-select {sheet, ref, column, value}`, `-editstart
+   {errors, plugins}`, `-select {sheet, ref, range, column, value}` (`range`
+   when more than one cell is selected; it fires when the selection settles —
+   a drag fires once, on release), `-editstart
    {…, value}` (cancellable: the cell stays read-only), `-input {…, draft,
    was}`, `-beforechange {…, was, now}` (cancellable: the value is refused
    before the change map, undo, derive or validate see it), `-editcancel`,
@@ -4984,7 +5060,10 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `data-sp="add-error"`; in `<sheetpane-errors>` each row
     `data-sp-error="<id>"` and `data-sp-ref="<sheet>!<range>"`, its
     `data-sp="resolve"`, the form's `data-sp="add-error"`, and the form fields
-    `data-field="type" | "message" | "expected"`. `@sheetpane/testing`
+    `data-field="type" | "message" | "expected"`; the column headers
+    `data-hc="<index>"`, row headers `data-hr="<index>"`, the corner
+    `data-hall` and the status line's totals `data-sp="totals"` (W-46).
+    `@sheetpane/testing`
     (SR-TESTING) uses only these, roles and labels.
 10. **Layout:** toolbar (file, kind and size, View/Edit, open counts, find,
     zoom, undo, redo, freeze, change count, **Download** — a neutral split
@@ -5010,18 +5089,61 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `sheetpane-beforechange`; Esc restores it (`sheetpane-editcancel`).
     Paste (Ctrl/⌘+V, Edit) writes tab- and line-separated text from the
     active cell: `beforechange` once per cell, refused cells skipped, the
-    rest one undo step (`store.setCells`). There is no fill gesture yet.
+    rest one undo step (`store.setCells`); one value pasted over a range fills
+    every cell of it the same way (W-46). Delete or Backspace over a range
+    clears every filled cell through `beforechange`, refused cells skipped,
+    one undo step. Over 1,000,000 cells nothing is pasted, and the status line
+    says why. There is no fill gesture yet.
+11b. **Range selection (W-46):** the selection is drawn by **one layer**, never
+    per cell — over the range a fill (`--sp-accent-soft`) with the active cell
+    left unfilled (an even-odd hole), one 2 px `--sp-accent` border on the
+    range's own edges, and the active cell's 2 px ring; the copied range a
+    dashed border. The scrolling part sits in `.sellayer` (above cell and
+    conditional fills, below pins, marks and pictures, and below plugin
+    `cell` controls); across frozen panes it splits — the frozen-column part
+    sticks left in the layer, the frozen-row parts are bands inside the frozen
+    rows. A selection change re-creates no cell: only the layer, the header
+    tints (`--sp-accent-soft` with an accent edge on the spanned columns and
+    rows), `aria-selected` on rendered cells, the cell bar and the status
+    line change. **The pointer:** mouse and pen use Pointer Events with
+    pointer capture — the drag survives leaving the grid; within 24 px of the
+    scrolling pane's edge, or past it, the grid autoscrolls, faster the
+    further out; the layer redraws once per frame and the store hears of the
+    drag once, on release (Esc restores the selection from before it). A
+    range that partly covers a merge grows to cover it. A press on a plugin
+    mark or a right-click is not a drag. A finger pans; its tap selects; a
+    range then shows two round handles (24 px) to extend it from the other
+    corner. **Headers:** a column header selects the column, a row header the
+    row, the corner the sheet; dragging across headers or Shift+click
+    extends; the active cell is the first visible cell. While dragging, the
+    cell bar shows `6R × 3C`; when a drag or a key extension settles, a polite
+    live region says "B3 to D8, 18 cells". **Totals:** with two or more cells
+    selected the status line shows `Count n · Sum x · Average y` over the
+    numeric cells (Count alone with no number), in the active cell's number
+    format when a `format` plugin is installed, else locale grouping —
+    computed when the selection settles, never per frame. One range at a
+    time: Ctrl/⌘+click ranges and a fill handle are not built.
 12. **Keyboard (APG grid):** focus stays on the `role="grid"` element and
     `aria-activedescendant` names the active cell; arrows, Shift+arrows,
-    Home/End, Ctrl+Home/End, PageUp/PageDown; Enter or F2 edits; a printable
-    key replaces the cell; Delete clears; F flags; Esc cancels the innermost
-    thing or closes the pop-up; Ctrl/⌘+Z, Ctrl+Y, ⌘+Shift+Z; Ctrl/⌘+C copies;
+    Home/End, Ctrl+Home/End, PageUp/PageDown; Ctrl/⌘+arrow jumps to the edge
+    of the data (Excel's rule), with Shift extends there; Ctrl+Space selects
+    the column, Shift+Space the row; Ctrl/⌘+A the data region, again the
+    sheet; Shift+Backspace collapses to the active cell; inside a range Enter,
+    Shift+Enter, Tab and Shift+Tab move the active cell within it and wrap;
+    otherwise Enter or F2 edits; a printable
+    key replaces the cell; Delete clears (a range: decision 11a); F flags; Esc
+    cancels the innermost thing — a drag, a menu, the form, find, the copied
+    outline — or closes the pop-up; Ctrl/⌘+Z, Ctrl+Y, ⌘+Shift+Z; Ctrl/⌘+C copies;
     Shift+F10 and the Menu key open the selection actions (decision 13).
     `aria-rowcount` / `aria-colcount` give the sheet's true size.
 13. **Review — nothing floats over the cells (W-31):** the selection actions
     are **docked at the right end of the cell bar** — Flag issue with its F
     hint (Edit, a cell with no error), the `selbar` plugin controls (Edit),
-    then **⋯** (View and Edit) opening Copy ref and Copy value; the group
+    then **⋯** (View and Edit) opening Copy ref and Copy value — **Copy
+    values** for a range, written as `text/plain` TSV and a `text/html`
+    table so Excel and Sheets paste a grid (over 1,000,000 cells nothing is
+    copied); Copy ref gives `B3`, `B3:D8`, `B:D`, `4:12` or the sheet's name
+    (W-46); the group
     hides while the cell-bar draft is edited and while composing, and at a
     narrow cell bar (≤ 720 px) the plugin buttons fold into ⋯ before Flag
     issue moves. **Right-click, Shift+F10 and the Menu key** on a cell select
@@ -5222,7 +5344,16 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   rendering; the L7 sync test; `actions.test.ts` (W-31: nothing floats
   after a click, the docked order in View and Edit, folding at a narrow
   width, the context menu by mouse and keyboard, the copy notice, one
-  Download button, an untouched workbook downloaded byte for byte); `theme.test.ts` (every token has a hex dark
+  Download button, an untouched workbook downloaded byte for byte);
+  `selection.test.ts` (W-46: the layer's geometry for a cell, a range, a
+  frozen split and a merge; no cell re-created on a selection change (a
+  MutationObserver); a drag told to the store once; autoscroll past the
+  edge; header and corner clicks; every key; the copied TSV and HTML; a
+  range Delete as one undo step; one value pasted over a range; the totals;
+  `aria-selected`; the announcement; axe with a range in View and Edit; a
+  5 s drag with autoscroll on 250,000 rows — 301 frames, worst 16.8 ms at a
+  16.7 ms vsync, none dropped, Chromium 156 headless, 10 cores, load average
+  ~4, reported); `theme.test.ts` (every token has a hex dark
   value, the contrast table in both themes, the attribute restyling chrome
   while a `decorate` fill stays as saved, a host override winning);
   `rules.test.ts` (the four-column example: every rule kind, commit, undo,
@@ -6790,8 +6921,9 @@ flowchart LR
   outside kept, uninstall restoring the repo, `--dry-run`, `--skip
   contributor`, Windows paths); `test/packages.test.ts` (the package shape
   and its font scan of `skills/`, `entry/`, `bin/`); `pack-check`.
-- **Owed:** `sheetpane-frameworks` (skill 18) in full with W-37's typings;
-  one real prompt per tool from the packed tarballs — the decider's (W-35 DoD 8).
+- **Owed:** one real prompt per tool from the packed tarballs — the
+  decider's (W-35 DoD 8). Skill 18 (`sheetpane-frameworks`) was written with
+  W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
 
 ### Alternatives considered
 
@@ -7119,8 +7251,10 @@ server to ask.
    false`:
    - `describe_api(name)` — an element, attribute, member, event (with or
      without `on`), `--sp-*` property, slot, part or plugin → its manifest
-     entry (which carries the TSDoc) and its record link; near names when
-     nothing matches.
+     entry (which carries the TSDoc) and its record link — an element before
+     a same-named event (`sheetpane-errors` is both), a member's own `kind`
+     kept as `memberKind`; near names when nothing matches (a name holding
+     the ask, or a name of four letters or more the ask holds).
    - `inspect_workbook(path)` — sheets, rows × columns, dimension, the
      header-row guess (the first of the top ten rows whose two or more filled
      cells are all text), titles, each column's type (text, number, integer,
@@ -7200,3 +7334,117 @@ is never listed here.*
 **External**
 
 - [MCP specification 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) · [Kiro MCP configuration](https://kiro.dev/docs/mcp/configuration/) · [Codex MCP](https://developers.openai.com/codex/mcp)
+
+
+---
+
+<!-- source: records/0120_CREATE.md (https://github.com/arpitarya/sheetpane/blob/main/records/0120_CREATE.md) -->
+
+# SR-CREATE — create-sheetpane
+
+## §1 — For humans
+
+**One command, a running app that is tested and agent-ready:** `npm create
+sheetpane@latest` asks for a folder, a framework, the skills and the MCP
+server, and writes an app that shows a sheet and its errors panel, loads a
+sample workbook with a rules file, and has one test that passes.
+
+```mermaid
+flowchart LR
+    C["npm create sheetpane"] --> T["templates/_shared + templates/&lt;t&gt;"]
+    T --> I["install (npm · pnpm · yarn)"]
+    I --> S["sheetpane-skills install (+ MCP server)"]
+    S --> A["dev · build · preview · test"]
+```
+
+<details>
+<summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
+
+```text
+   npm create sheetpane -> copy _shared + <template>, fill placeholders
+       -> install -> sheetpane-skills install [--skip contributor] [--no-mcp]
+       -> dev / build / preview / test (Playwright on @sheetpane/testing)
+```
+
+</details>
+
+---
+
+## §2 — For agents
+
+### Decision
+
+1. **The package** is unscoped `create-sheetpane` — `npm create <name>` runs
+   `create-<name>` — the one package outside `@sheetpane/` (SR-BUILD decision
+   7's exception). It ships `bin/` and `templates/`, has no dependencies, no
+   build and no `postinstall`, and moves in lockstep with the rest.
+2. **The CLI** (`bin/create-sheetpane.mjs`, Node ≥ 20): a folder, `--template`
+   (`vanilla` · `react` · `next` · `vue` · `angular` · `svelte`), `--skills
+   all | host | none`, `--mcp` / `--no-mcp`, `--pm npm | pnpm | yarn` (default:
+   the one that ran it), `--no-install`, `--yes`. It asks only at a terminal.
+   It refuses a non-empty folder, writes nothing outside it, renames
+   `_gitignore`, fills `__SHEETPANE_<KEY>__` placeholders — the version from
+   its own `package.json` — then installs and runs `sheetpane-skills install
+   --all` (`--skip contributor` for `host`, `--no-mcp` when asked).
+3. **Every template is the same app:** `<sheetpane-excel>` (Edit) and
+   `<sheetpane-errors>` on one `pane`, side by side; the sheet again behind a
+   pop-up button (`display="popup"`); `showcase.xlsx` and its rules file
+   copied from `@sheetpane/fixtures` into `public/` by `scripts/sample.mjs`
+   before dev and build; one Playwright test on `@sheetpane/testing` (load, a
+   rules finding, an edit read back from the download); the W-37 typings
+   (`/jsx` for React and Next, `/vue`, `/svelte`); Angular through
+   `CUSTOM_ELEMENTS_SCHEMA`; Next.js client-only (`next/dynamic`, `ssr:
+   false`); a README pointing at the skills and the MCP server. No font
+   (SR-LAW-5).
+4. **Versions:** frameworks pinned exactly to what `create-check` built and
+   tested; TypeScript 6.0.3 in the templates (Angular 22 and svelte-check
+   need < 6.1). Every dependency is free and open source (SR-LAW-2).
+5. **The check** (`scripts/create-check.mjs`, `just create-check [templates]`,
+   and a CI job over the six): packs every package, runs the CLI from its own
+   tarball, points `@sheetpane/*` at the tarballs, installs, runs the skills
+   installer (and checks it wrote the skills, `.mcp.json` and `AGENTS.md`),
+   builds and runs the template's test. A template that cannot pass is
+   dropped, never shipped broken.
+
+### Consequences
+
+- **Enforced today:** `test/create.test.ts` (27: every template scaffolded
+  with `--yes --no-install`, placeholders filled, the refusals, the install
+  and skills commands per package manager with a stubbed runner);
+  `create-check` per template in CI; `pack-check`.
+- **Known:** Angular 22 needs Node ^22.22.3 or ^24.15.0 — the template's
+  `engines`, a CLI note and its README say so.
+- **Owed:** StackBlitz links per template (W-44 DoD 2).
+
+### Alternatives considered
+
+- `@sheetpane/create` (`npm create @sheetpane`) — kept as the fallback name;
+  the unscoped one is the shorter command.
+- Downloading templates from the repository at run time — rejected: the
+  templates ship in the tarball, so the version matches and nothing is
+  fetched but the install.
+
+### Reference (required)
+
+- [`packages/create-sheetpane/`](../packages/create-sheetpane/) · [`scripts/create-check.mjs`](../scripts/create-check.mjs)
+
+### Veto condition
+
+**Reopen this decision if:** a template fails `create-check` on a framework
+release and cannot be fixed by a version bump, or a host needs a template the
+six do not cover.
+
+**How to check it:** `just create-check`
+
+---
+
+## References
+
+*Every source this record cites, gathered in one place. An archived document
+is never listed here.*
+
+**Records** — [SR-BUILD](0102_BUILD.md) · [SR-SKILLS](0116_SKILLS.md) · [SR-MCP](0119_MCP.md) · [SR-TESTING](0118_TESTING.md) · [SR-FIXTURES](0115_FIXTURES.md)
+
+**Code**
+
+- [`packages/create-sheetpane/bin/create-sheetpane.mjs`](../packages/create-sheetpane/bin/create-sheetpane.mjs) · [`scripts/create-check.mjs`](../scripts/create-check.mjs)

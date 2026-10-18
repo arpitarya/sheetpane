@@ -27,6 +27,18 @@ describe('SR-LAW-8 — every package is publishable, in lockstep (B-023)', () =>
   });
   it.each(manifests)('$dir is a public @sheetpane package with types and ESM exports', ({ dir, p }) => {
     expect(p.private, dir).toBeFalsy();
+    // The one exception to the scope (W-43): `npm create sheetpane` runs the package named
+    // `create-sheetpane`, so the scaffolder cannot be `@sheetpane/create-sheetpane`. It ships its
+    // CLI and the app templates, no build and no dependency (SR-BUILD decision 7).
+    if (dir === 'create-sheetpane') {
+      expect(p.name).toBe('create-sheetpane');
+      expect(p.license).toBe('MIT');
+      expect(p.type).toBe('module');
+      expect(p.files).toEqual(['bin', 'templates']);
+      expect(p.bin).toEqual({ 'create-sheetpane': './bin/create-sheetpane.mjs' });
+      expect(p.dependencies ?? {}).toEqual({});
+      return;
+    }
     expect(p.name).toBe(`@sheetpane/${dir}`);
     expect(p.license).toBe('MIT');
     expect(p.type).toBe('module');
@@ -72,8 +84,9 @@ describe('SR-LAW-2 — runtime dependencies are only the allowed engines', () =>
 });
 
 describe('SR-LAW-5 — no font ships (B-015)', () => {
-  // what each package ships as source: src/, or for @sheetpane/skills its Markdown and installer
-  const shipped = (d: string) => (d === 'skills' ? ['skills', 'entry', 'bin'] : ['src']).map((x) => join(root, 'packages', d, x)).filter((x) => existsSync(x));
+  // what each package ships as source: src/, for @sheetpane/skills its Markdown and installer,
+  // for create-sheetpane its CLI and the app templates (W-43: a scaffolded app sets no font either)
+  const shipped = (d: string) => (d === 'skills' ? ['skills', 'entry', 'bin'] : d === 'create-sheetpane' ? ['bin', 'templates'] : ['src']).map((x) => join(root, 'packages', d, x)).filter((x) => existsSync(x));
   const files = dirs.flatMap((d) => shipped(d).flatMap((x) => walk(x)));
   it('no font file, @font-face, web-font URL or named font-family in any package source', () => {
     const bad: string[] = [];

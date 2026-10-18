@@ -1,0 +1,27 @@
+{
+  "name": "__SHEETPANE_NAME__",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/sample.mjs && next dev --port 3000 --hostname 127.0.0.1",
+    "build": "node scripts/sample.mjs && next build",
+    "preview": "next start --port 3000 --hostname 127.0.0.1",
+    "test": "__SHEETPANE_RUN__ build && playwright test"
+  },
+  "dependencies": {
+    "@sheetpane/grid": "__SHEETPANE_VERSION__",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@sheetpane/fixtures": "__SHEETPANE_VERSION__",
+    "@sheetpane/testing": "__SHEETPANE_VERSION__",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "6.0.3"
+  }
+}

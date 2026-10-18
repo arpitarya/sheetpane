@@ -44,6 +44,10 @@ check: typecheck test build
 pack-check: build
     node scripts/pack-check.mjs
 
+# each `npm create sheetpane` template scaffolded, installed from `pnpm pack` tarballs, built and its test run (W-43), e.g. `just create-check react vue`
+create-check *templates: build
+    node scripts/create-check.mjs {{templates}}
+
 # bump every package to one version, check, tag and publish them together (lockstep)
 release version:
     git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)

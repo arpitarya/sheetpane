@@ -11,6 +11,10 @@ uploaded file. Nothing is uploaded: files are read in the browser tab.
 <sheetpane-errors pane="q3"></sheetpane-errors>
 ```
 
+**Start a new app:** `npm create sheetpane@latest` — vanilla, React, Next.js,
+Vue, Angular or Svelte, with the sheet and its errors panel, a sample file and
+rules file, one test and the agent skills ([`create-sheetpane`](packages/create-sheetpane/README.md)).
+
 ## Packages
 
 | package | what it is |
@@ -19,6 +23,7 @@ uploaded file. Nothing is uploaded: files are read in the browser tab.
 | [`@sheetpane/import`](packages/import/README.md) | `.xlsx` or `.csv` in, a plain JavaScript workbook out |
 | [`@sheetpane/export`](packages/export/README.md) | a workbook in, `.xlsx` or `.csv` out — build, patch the original, CSV, `download()` |
 | `@sheetpane/numfmt` · `formulas` · `styles` · `validation` · `condfmt` · `images` · `charts` · `comments` | optional plugins, each its own package |
+| [`create-sheetpane`](packages/create-sheetpane/README.md) | `npm create sheetpane` — a working app to start from |
 
 All are published at one version, ESM with types, with no runtime dependency
 outside the project except the two engines two plugins use.
@@ -45,6 +50,7 @@ network (e.g. a phone).
 | `just test-pkg <name>` | one package's tests, e.g. `just test-pkg grid` |
 | `just test-browsers` | the browser suites in Chromium, Firefox and WebKit |
 | `just pack-check` | every package packed as npm would publish it, checked |
+| `just create-check [template…]` | each `create-sheetpane` template scaffolded, installed from the tarballs, built and tested |
 | `just release <version>` | bump every package together, check, tag, publish |
 
 Requires Node 20+, pnpm 10 and [just](https://just.systems). How work is done

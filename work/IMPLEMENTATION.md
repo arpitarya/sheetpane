@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-43 | `create-sheetpane`: `npm create sheetpane` with six templates (vanilla, React, Next, Vue, Angular, Svelte) — grid + errors, pop-up, showcase and rules file, one Playwright test, typings, skills and MCP; `create-check` end to end in CI | closed | `test/create.test.ts` (27); `just create-check` (6 ✓) |
 | 2026-10-18 | W-46 | Range selection as one layer (no cell re-created; frozen panes split), Pointer Events drag with autoscroll and touch handles, header/corner selection, Excel's range keys, range copy (TSV + HTML) / Delete / paste-fill, Count · Sum · Average, `aria-selected`, `sheetpane-select` `range` | closed | `packages/grid/test/selection.test.ts` (15); demo-check 49 ✓ |
 | 2026-10-18 | W-39 | `@sheetpane/mcp`: a hand-written stdio MCP server (2026-07-28 stateless + 2025 `initialize`), six deterministic read-only tools, SP-7001…7007; registered by `sheetpane-skills install`; `@sheetpane/import` reads `.xlsx` in Node | closed | `packages/mcp/test/mcp.node.test.ts` (18, 16 goldens), `test/skills.test.ts`, `packages/import/test/minixml.test.ts` |
 | 2026-10-18 | W-37 | `custom-elements.json`, VS Code / JetBrains editor data and React / Vue / Svelte / Solid typings generated from the source; Angular documented; `examples/react` uses `@sheetpane/grid/jsx` | closed | `test/manifest.test.ts` (17) |

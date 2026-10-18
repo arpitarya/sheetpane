@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+# the sample, copied from @sheetpane/fixtures by scripts/sample.mjs
+public/showcase.xlsx
+public/showcase.rules.json
+# Playwright
+test-results/
+playwright-report/

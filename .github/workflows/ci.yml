@@ -23,3 +23,24 @@ jobs:
       - run: just check
       - run: just pack-check
       - run: just demo-check
+  # W-43: each `npm create sheetpane` template, installed from the packed tarballs, built and tested
+  create:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        template: [vanilla, react, next, vue, angular, svelte]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: just create-check ${{ matrix.template }}

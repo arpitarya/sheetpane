@@ -181,6 +181,8 @@ importers:
         specifier: workspace:*
         version: link:../styles
 
+  packages/create-sheetpane: {}
+
   packages/export:
     dependencies:
       '@sheetpane/skills':

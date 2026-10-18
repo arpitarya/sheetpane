@@ -16,7 +16,7 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 const url = (p) => `${BASE}/${p}`;
 const titleOf = (p) => (/^#\s+(.+)$/m.exec(read(p))?.[1] ?? p).replace(/[`*]/g, '');
 const descOf = (p) => (/^description:\s*"?([^"\n]+)"?$/m.exec(read(p))?.[1] ?? '').trim();
-const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'fixtures', 'testing', 'skills'];
+const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'fixtures', 'testing', 'skills', 'create-sheetpane'];
 const PLUGINS = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments'];
 const records = readdirSync(join(root, 'records')).filter((f) => /^\d{4}_.*\.md$/.test(f)).sort();
 const LAWS = records.filter((f) => /^000\d_|^0010_|^0011_/.test(f));
@@ -60,6 +60,7 @@ const index = [
   '## Testing and tooling',
   line(pkgReadme('testing'), '@sheetpane/testing', 'Playwright and Vitest helpers for host apps'),
   line(pkgReadme('fixtures'), '@sheetpane/fixtures', 'known workbooks with a manifest'),
+  line(pkgReadme('create-sheetpane'), 'create-sheetpane', 'npm create sheetpane — a working app in vanilla, React, Next.js, Vue, Angular or Svelte'),
   '',
   '## Skills',
   line(pkgReadme('skills'), '@sheetpane/skills', 'npx sheetpane-skills install — skills for Claude Code, Kiro and Codex'),

@@ -34,8 +34,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-35** `agent` · New package `@sheetpane/skills` — 23 agent skills plus Claude, Kiro and Codex entry files, an installer, a drift check; every package depends on it. Built: all 23 skills, entry files, installer (with the MCP entry), drift check (SR-SKILLS); DoD 8 (a prompt in each tool) is the decider's. Filed by Arpit (Cowork). [detail](open/W-35-agent-skills-package.md)
 
-- 🟢 **W-43** `agent` · `npm create sheetpane` scaffolds a working host (vanilla, React, Next.js, Vue, Angular, Svelte): grid + errors in a tab, sample and rules files, one test, skills installed; CI builds every template. Filed by Arpit (Cowork). [detail](open/W-43-create-sheetpane.md)
-
 - 🟢 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
 - 🟡 **W-45** `agent` · Invocable commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), hooks that check a rules file on save (Claude Code, Kiro), and the agent set as a Claude Code plugin + marketplace. — waiting on W-35. Filed by Arpit (Cowork). [detail](open/W-45-agent-commands-hooks-plugin.md)
