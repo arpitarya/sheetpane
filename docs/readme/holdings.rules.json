@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "sheets": { "Holdings": { "headerRow": 2, "columns": {
+    "Advisor":  { "required": true },
+    "Units":    { "type": "integer", "min": 0 },
+    "Fee rate": { "oneOf": ["0.40%", "0.75%", "0.85%"] },
+    "As of":    { "type": "date", "min": "2026-09-01", "max": "2026-09-30", "severity": "warning" }
+  } } }
+}
