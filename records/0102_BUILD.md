@@ -103,7 +103,12 @@ pnpm and a justfile; the testing verdict chose the runner.
    for read-back tests (ExcelJS, PapaParse, fflate) are dev dependencies of
    the package that uses them; so is any `@sheetpane/*` package a test
    imports (`workspace:*`). Coverage (v8) is reported on every run; 90 % lines on
-   `packages/export/src/**` fails the run.
+   `packages/export/src/**` fails the run. A wall-clock budget (a frame gap,
+   pixels scrolled in 5 s) is asserted on a developer machine and only
+   reported on a shared CI runner: `vitest.config.ts` provides
+   `timingBudgets` (off when `CI` is set), the grid's test helpers export it
+   as `budgets`, and the test logs its numbers either way. Every structural
+   assertion in the same test still holds everywhere.
 7. **Package checks** (`test/packages.test.ts`): each package is public,
    `@sheetpane/<dir>`, MIT, ESM with types; one version across all (lockstep);
    `workspace:*` for `@sheetpane/*`; no UI framework as a dependency or peer;

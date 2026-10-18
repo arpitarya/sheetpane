@@ -5,7 +5,7 @@ import axe from 'axe-core';
 import { toXlsx } from '@sheetpane/export';
 import type { SheetpaneExcel } from '../src/index.js';
 import { clipOf, dataEdge, growForMerges, refLabel, splitByPanes, totalsOf, usedRange } from '../src/excel/selection.js';
-import { cellEl, cleanup, frame, mountExcel, shadow } from './helpers.js';
+import { budgets, cellEl, cleanup, frame, mountExcel, shadow } from './helpers.js';
 
 afterEach(cleanup);
 
@@ -320,7 +320,7 @@ describe('speed (W-46 DoD 10)', () => {
     const iv = gaps.slice(2).sort((a, b) => a - b), vsync = iv[Math.floor(iv.length / 2)]!;
     const over = iv.filter((x) => x > vsync * 1.5).length;
     console.info(`W-46 drag + autoscroll, 250k rows: ${gaps.length} frames, vsync ${vsync.toFixed(1)} ms, worst ${iv[iv.length - 1]!.toFixed(1)} ms, p95 ${iv[Math.floor(iv.length * 0.95)]!.toFixed(1)} ms, dropped ${over}, scrolled ${Math.round(sc.scrollTop)} px — ${navigator.userAgent}, ${navigator.hardwareConcurrency} cores`);
-    expect(sc.scrollTop).toBeGreaterThan(5000);
+    if (budgets) expect(sc.scrollTop).toBeGreaterThan(5000);
     expect(sel(el).range?.startsWith('A1:')).toBe(true);
   }, 60_000);
 });

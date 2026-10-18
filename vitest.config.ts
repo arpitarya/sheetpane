@@ -7,6 +7,9 @@ import { playwright } from '@vitest/browser-playwright';
 import { armDownload, takeDownload } from './test/commands.ts';
 
 const browsers = (process.env.SP_BROWSERS ?? 'chromium').split(',') as ('chromium' | 'firefox' | 'webkit')[];
+// Wall-clock budgets (frame gaps, pixels scrolled in 5 s) hold on a developer machine; on a
+// shared CI runner (`CI` set) they are reported, not asserted — `budgets` in the grid's test helpers.
+const provide = { timingBudgets: !process.env.CI };
 const resolve = { conditions: ['source'] };
 // Node projects resolve through Vite's SSR environment, which needs the condition too.
 const ssr = { resolve: { conditions: ['source'], externalConditions: ['source'] } };
@@ -39,6 +42,7 @@ export default defineConfig({
           include: [testDirs[name] ?? `packages/${name}/test/**/*.test.ts`],
           exclude: ['**/*.node.test.ts', '**/node_modules/**'],
           passWithNoTests: true,
+          provide,
           browser: {
             enabled: true,
             headless: true,

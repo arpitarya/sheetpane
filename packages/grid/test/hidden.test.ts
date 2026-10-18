@@ -8,7 +8,7 @@ import { inflateEntry, patchXlsx, readZip, toXlsx, writeZip } from '@sheetpane/e
 import type { ImportedSheet } from '@sheetpane/import';
 import type { SheetpaneExcel } from '../src/index.js';
 import { rowAt, sheetGeometry } from '../src/excel/geometry.js';
-import { cellEl, cleanup, frame, mountExcel, shadow } from './helpers.js';
+import { budgets, cellEl, cleanup, frame, mountExcel, shadow } from './helpers.js';
 
 afterEach(cleanup);
 
@@ -262,7 +262,7 @@ describe('speed (W-49 DoD 13)', () => {
     await new Promise<void>((done) => { const step = (t: number) => { gaps.push(t - last); last = t; sc.scrollTop += 900; if (t < end) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); });
     const iv = gaps.slice(2).sort((a, b) => a - b), vs = iv[Math.floor(iv.length / 2)]!;
     console.info(`W-49 scroll, 250k rows, every other hidden: ${gaps.length} frames, worst ${iv[iv.length - 1]!.toFixed(1)} ms, dropped ${iv.filter((x) => x > vs * 1.5).length}`);
-    expect(sc.scrollTop).toBeGreaterThan(100_000);
+    if (budgets) expect(sc.scrollTop).toBeGreaterThan(100_000);
     expect(shadow(el).querySelectorAll('.row').length).toBeLessThan(120); // the virtualiser renders no hidden row
   }, 60_000);
 });

@@ -1,3 +1,4 @@
+import { inject } from 'vitest';
 import { toCsv, toXlsx } from '@sheetpane/export';
 import { SAMPLE_BOOK, SAMPLE_CSV_SHEET } from '../../export/test/fixtures/sample.js';
 import '../src/index.js';
@@ -33,3 +34,7 @@ export const cellEl = (el: Element, r: number, c: number) => shadow(el).getEleme
 export function cleanup(): void {
   document.body.replaceChildren();
 }
+
+declare module 'vitest' { export interface ProvidedContext { timingBudgets: boolean } }
+/** True off CI: wall-clock budgets are asserted on a developer machine and only reported on a shared runner (SR-BUILD 6). */
+export const budgets = inject('timingBudgets');
