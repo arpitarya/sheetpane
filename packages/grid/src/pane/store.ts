@@ -553,7 +553,7 @@ export class WorkbookStore {
   }
 
   /** Every change applied; the upload never modified (SR-LAW-6). */
-  async exportFile(o: { extraPatch?: ExportPatchHook[] } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] }> {
+  async exportFile(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>> } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] }> {
     const src = this.snap.source, book = this.snap.book;
     if (!src || !book) throw new Error('sheetpane: nothing is loaded to export');
     if (src.kind === 'csv') {
@@ -561,7 +561,7 @@ export class WorkbookStore {
       const { text, guarded } = toCsv({ name: sheet.name, rows: this.currentRows(sheet.name) }, { delimiter: book.delimiter ?? ',' });
       return { blob: new Blob([text], { type: 'text/csv;charset=utf-8' }), kind: 'csv', name: src.name, guarded };
     }
-    const ctx = this.pluginContext();
+    const ctx = { ...this.pluginContext(), exportOptions: o.options ?? {} };
     const hooks: ExportPatchHook[] = [...(o.extraPatch ?? []), ...this.plugins.filter((p) => p.provides.includes('exportPatch')).map((p) => (patch: Parameters<ExportPatchHook>[0]) => p.exportPatch!(patch, ctx))];
     const freeze = [...this.snap.changes].filter(([k, c]) => c.kind === 'freeze' && k.endsWith('!#freeze')).map(([k, c]) => ({ sheet: splitKey(k).sheet, ...(c.now as { rows: number; cols: number }) }));
     const mergeSheets = new Set([...this.snap.changes].filter(([, c]) => c.kind === 'merge').map(([k]) => k.slice(0, k.indexOf('!#merge:'))));

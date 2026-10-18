@@ -36,6 +36,8 @@ export interface PluginContext {
   readonly store: WorkbookStore;
   readonly book: ImportedWorkbook;
   snapshot(): Snapshot;
+  /** During `exportPatch`: the options the host passed to `export(options)` (e.g. `{ comments: false }`). */
+  readonly exportOptions?: Readonly<Record<string, unknown>>;
 }
 
 /** What `derive` is told: the workbook loaded, or cells changed (by the user, or by undo). */

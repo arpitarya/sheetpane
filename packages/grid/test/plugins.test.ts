@@ -370,3 +370,16 @@ describe('core fixes the plugin builds asked for', () => {
     expect(s.text('Holdings', 'B3')).toBe('two');
   });
 });
+
+describe('export options reach exportPatch', () => {
+  it('export({ comments: false }) arrives as ctx.exportOptions', async () => {
+    let seen: unknown;
+    const p: Plugin = { id: 'opt', provides: ['exportPatch'], exportPatch: (_patch, ctx) => { seen = ctx.exportOptions; } };
+    const el = await mountExcel();
+    el.workbook = createWorkbook({ plugins: [p] });
+    await el.workbook.load(await sampleXlsx(), 's.xlsx');
+    el.addEventListener('sheetpane-export', (e) => e.preventDefault());
+    await el.export({ comments: false });
+    expect(seen).toEqual({ comments: false });
+  });
+});

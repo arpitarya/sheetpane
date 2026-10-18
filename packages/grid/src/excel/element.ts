@@ -101,8 +101,8 @@ export class SheetpaneExcel extends ElementBase {
   }
 
   /** Every change applied; the upload untouched. Also dispatches `sheetpane-export`. */
-  async export(): Promise<Blob> {
-    const r = await this.ensureStore().exportFile();
+  async export(options: Readonly<Record<string, unknown>> = {}): Promise<Blob> {
+    const r = await this.ensureStore().exportFile({ options });
     this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded }, true), name: r.name };
     return r.blob;
   }
