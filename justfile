@@ -54,6 +54,22 @@ release version:
     pnpm -r publish --access public --no-git-checks
     git push --follow-tags
 
+# the plain-HTML demo at http://127.0.0.1:5173 (builds the packages first)
+demo-html: build
+    node scripts/serve.mjs examples/html 5173
+
+# the React 19 demo at http://127.0.0.1:5174 (Vite dev server)
+demo-react: build
+    pnpm --filter sheetpane-example-react dev
+
+# open both demos in Chromium and use them: flag, resolve, edit, export, font, pop-up, CSV, refusal (W-09)
+demo-check: build
+    node scripts/demo-check.mjs examples/html examples/react/dist
+
+# the same, with both demos installed from `pnpm pack` tarballs instead of the workspace (W-09 DoD 6)
+demo-packed: build
+    node scripts/demo-packed.mjs
+
 # remove build output and installed modules
 clean:
-    rm -rf node_modules packages/*/node_modules packages/*/dist
+    rm -rf node_modules packages/*/node_modules packages/*/dist examples/*/node_modules examples/react/dist

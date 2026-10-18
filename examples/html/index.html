@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sheetpane — plain HTML demo</title>
+<!-- The package is loaded as published: its dist/ files, resolved by an import map. No framework, no build step. -->
+<script type="importmap">
+{ "imports": {
+  "@sheetpane/grid": "./node_modules/@sheetpane/grid/dist/index.js",
+  "@sheetpane/export": "./node_modules/@sheetpane/export/dist/index.js",
+  "@sheetpane/import": "./node_modules/@sheetpane/import/dist/index.js"
+} }
+</script>
+<style>
+  body { margin: 0; background: #F6F6F4; color: #16171A; }
+  .app { font-family: system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 16px; padding: 0 24px; min-height: 56px; background: #fff; border-bottom: 1px solid #E5E7EB; flex-wrap: wrap; }
+  header .logo { font-weight: 600; border: 1.5px dashed #9CA3AF; padding: 6px 10px; border-radius: 6px; color: #374151; }
+  nav { display: flex; gap: 4px; }
+  nav button { font: inherit; padding: 10px 12px; border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer; color: #4B5563; }
+  nav button[aria-selected="true"] { color: #111827; border-bottom-color: #111827; }
+  .tools { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .tools button, .tools select, .tools label { font: inherit; font-size: 13px; }
+  main { flex: 1; display: flex; gap: 16px; padding: 16px 24px; }
+  main > .sheet { flex: 1; min-width: 0; }
+  main > .side { width: 360px; flex: none; }
+  sheetpane-excel, sheetpane-errors { height: calc(100vh - 120px); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <span class="logo">Your app</span>
+    <nav role="tablist" aria-label="Views">
+      <button role="tab" data-view="both" aria-selected="true">Sheet + errors</button>
+      <button role="tab" data-view="sheet" aria-selected="false">Sheet</button>
+      <button role="tab" data-view="errors" aria-selected="false">Errors</button>
+    </nav>
+    <div class="tools">
+      <label>Font
+        <select id="font" aria-label="Page font">
+          <option value="system-ui, sans-serif">System</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Courier New', monospace">Courier</option>
+        </select>
+      </label>
+      <label>Open <input id="pick" type="file" accept=".xlsx,.csv"></label>
+      <button id="csv">Load the CSV sample</button>
+      <button id="popup">Open in a pop-up</button>
+    </div>
+  </header>
+  <main>
+    <section class="sheet" id="sheetCol">
+      <sheetpane-excel id="excel" pane="demo" mode="edit" author="Demo reviewer" src="./sample.xlsx"></sheetpane-excel>
+    </section>
+    <aside class="side" id="sideCol">
+      <sheetpane-errors id="errors" pane="demo" author="Demo reviewer"></sheetpane-errors>
+    </aside>
+  </main>
+</div>
+<!-- The same pane in a pop-up: a second sheet element, display="popup". -->
+<sheetpane-excel id="pop" pane="demo" display="popup" mode="edit"></sheetpane-excel>
+
+<script type="module">
+  import '@sheetpane/grid';
+
+  const $ = (id) => document.getElementById(id);
+  const excel = $('excel'), errors = $('errors'), pop = $('pop');
+  const show = (view) => {
+    for (const b of document.querySelectorAll('nav button')) b.setAttribute('aria-selected', String(b.dataset.view === view));
+    $('sheetCol').hidden = view === 'errors';
+    $('sideCol').hidden = view === 'sheet';
+  };
+  document.querySelector('nav').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) show(b.dataset.view); });
+  // "Show in sheet": the host switches to the tab that holds the sheet (board Host-Linked-Tabs).
+  errors.addEventListener('sheetpane-reveal', () => show('both'));
+  $('font').addEventListener('change', (e) => { $('app').style.fontFamily = e.target.value; pop.style.fontFamily = e.target.value; });
+  $('pick').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) excel.file = f; });
+  $('csv').addEventListener('click', () => excel.load('./sample.csv'));
+  $('popup').addEventListener('click', () => { pop.open = true; });
+  pop.addEventListener('sheetpane-close', () => excel.focus());
+  // A host keeps the review: listen, store, give back with setErrors() after a load.
+  errors.addEventListener('sheetpane-errors', (e) => { window.lastReview = e.detail; });
+</script>
+</body>
+</html>

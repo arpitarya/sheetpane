@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-09 | demo apps: `examples/html` (index.html + import map), `examples/react` (Vite + React 19); `scripts/demo-check.mjs`, `demo-packed.mjs`, `serve.mjs`; root README; CI runs the demo check | landed — open on DoD 10 (iPhone, the decider's) | 20/20 checks in Chromium from the workspace and from `pnpm pack` tarballs; found and fixed two grid bugs (bundlers dropped the registration; `src = undefined`) |
 | 2026-10-18 | W-24 | freeze panes: read (`frozen`, `frozenSplit`; `split` unfrozen), sticky quadrants, Freeze/Unfreeze as an undoable `freeze` change, `<pane>` on export | closed | freeze render/toggle test; `exceljs-freeze.xlsx`; export freeze tests; two frozen rows on 250,000 rows: 0 dropped frames |
 | 2026-10-18 | W-01 | `@sheetpane/grid`: the pane's `WorkbookStore` (changes, errors, undo, plugin hooks, export) and `<sheetpane-excel>` (states, toolbar, cell bar, virtual grid, find, zoom, pop-up, flag, pins, callout, keyboard, stale marks, pivot badge); SR-GRID (0105) | closed | 63 grid tests, Chromium, incl. axe, font, L7 sync; 250,000-row CSV: 5 s scroll, 301 frames, 0 dropped (headless Chromium 156, Arpit's MacBook) |
 | 2026-10-18 | W-23 | undo / redo: one stack per pane over every change and error, coalesced typing, cap 500, both elements | closed | fast-check property (40 runs), cross-element test, cap test |

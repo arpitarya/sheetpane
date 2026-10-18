@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8]
 timestamp: 2026-10-18T11:40:00Z
 content_sha: ""
@@ -111,6 +111,14 @@ pnpm and a justfile; the testing verdict chose the runner.
 10. **Pack check:** `scripts/pack-check.mjs` packs each package as publish
     would and fails on a surviving `workspace:` or `source` entry or a missing
     exported file.
+11. **Demos:** `examples/html` (one `index.html`, an import map onto the
+    packages' `dist/`, served by `scripts/serve.mjs`) and `examples/react`
+    (Vite + React 19) are workspace members that depend on the packages by
+    name and import only their public exports. `scripts/demo-check.mjs` uses
+    both in Chromium (flag, resolve, edit + Export read back, font, pop-up,
+    CSV, refusal) — `just demo-check`, on every push; `scripts/demo-packed.mjs`
+    installs both from `pnpm pack` tarballs outside the workspace and runs the
+    same check — `just demo-packed`, nightly.
 
 ### Consequences
 

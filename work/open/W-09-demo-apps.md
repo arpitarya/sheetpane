@@ -6,7 +6,7 @@ item: W-09
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,10 +16,10 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Wait for the two components and the export package | something real to embed | ⏳ W-01 · W-02 |
-| 2 | A plain page — one `index.html`, no framework, no build step of its own | proof the web component works anywhere (L4) | ⏳ |
-| 3 | A React app — the same elements used from React components | proof it drops into a React codebase like Arpit's | ⏳ |
-| 4 | Both installed the way a consumer would: from the npm package, as a dependency | proof the published package is complete (L8) | ⏳ |
+| 1 | Wait for the two components and the export package | something real to embed | ✅ |
+| 2 | A plain page — one `index.html`, no framework, no build step of its own | proof the web component works anywhere (L4) | ✅ |
+| 3 | A React app — the same elements used from React components | proof it drops into a React codebase like Arpit's | ✅ |
+| 4 | Both installed the way a consumer would: from the npm package, as a dependency | proof the published package is complete (L8) | ✅ |
 
 **Arpit, 2026-10-18:** *"Create a work item to view this component integrated
 into React application and just a regular application with index.html. And
@@ -45,27 +45,24 @@ from the design:
 
 | DoD | what | state |
 |---|---|---|
-| 1 · dependency | each app's `package.json` lists `@sheetpane/grid` under `dependencies`; nothing imports from `packages/*/src` directly — only the package's public `exports` | ⏳ |
-| 2 · html | `examples/html/index.html` loads the package as a module (from the build or an import map), with no framework and no app build step; tab, side column and pop-up all work | ⏳ |
-| 3 · react | `examples/react` renders `<sheetpane-excel>` and `<sheetpane-errors>` from React components; properties are set and DOM events handled the React 19 way (native custom-element support) | ⏳ |
-| 4 · in sync | in both apps: flag an error in the sheet → it appears in the error list; resolve it in the list → the pin turns ✓; edit a cell → Export downloads a file with the change (L6, L7) | ⏳ |
-| 5 · font | each app sets its own font on a parent element and the components render in it; a toggle switches the font live (L5) | ⏳ |
-| 6 · as published | a script installs both apps from `npm pack` tarballs of the two packages, not from the workspace link, and the apps still work (L8) | ⏳ |
-| 7 · files | both apps open the design's sample workbook and a `.csv`; dropping any other format shows the refusal state (L3) | ⏳ |
-| 8 · run | `just demo-react` and `just demo-html` (W-10's justfile) are in the root README; a browser test opens each app and runs DoD 4 | ⏳ |
-| 9 · record | **no SR affected** unless the apps become a maintained surface; the Ownership rows for `examples/` are added to the register in the change that creates the directory, owned by W-09 | ⏳ |
+| 1 · dependency | each app's `package.json` lists `@sheetpane/grid` under `dependencies`; nothing imports from `packages/*/src` directly — only the package's public `exports` | ✅ `examples/html` depends on `@sheetpane/grid` (and `export`, `import` for its import map), `examples/react` on `@sheetpane/grid`; both import only the public `exports` (`dist/`), never `packages/*/src` |
+| 2 · html | `examples/html/index.html` loads the package as a module (from the build or an import map), with no framework and no app build step; tab, side column and pop-up all work | ✅ `examples/html/index.html`: an import map onto the packages' `dist/`, no framework, no build step; tabs (Sheet + errors · Sheet · Errors), side column, pop-up on the same pane |
+| 3 · react | `examples/react` renders `<sheetpane-excel>` and `<sheetpane-errors>` from React components; properties are set and DOM events handled the React 19 way (native custom-element support) | ✅ `examples/react` (Vite 8, React 19.3): `<sheetpane-excel>` / `<sheetpane-errors>` with properties (`file`, `open`, `src`) and `onsheetpane-…` events, natively — no ref, no wrapper |
+| 4 · in sync | in both apps: flag an error in the sheet → it appears in the error list; resolve it in the list → the pin turns ✓; edit a cell → Export downloads a file with the change (L6, L7) | ✅ `scripts/demo-check.mjs`, both apps in Chromium: flag in the sheet → in the list; resolve in the list → pin ✓; edit → Export downloads a file read back with the edit — 20/20 checks |
+| 5 · font | each app sets its own font on a parent element and the components render in it; a toggle switches the font live (L5) | ✅ each app sets its font on a parent; a select switches it live; the check reads the cell's computed font (Georgia) |
+| 6 · as published | a script installs both apps from `npm pack` tarballs of the two packages, not from the workspace link, and the apps still work (L8) | ✅ `scripts/demo-packed.mjs`: both apps installed from `pnpm pack` tarballs in a temp dir outside the workspace (`--ignore-workspace`, overrides to the tarballs), React built with Vite, the same 20 checks pass |
+| 7 · files | both apps open the design's sample workbook and a `.csv`; dropping any other format shows the refusal state (L3) | ✅ the design sample `.xlsx` and the `.csv` open; a `.xls` shows "Can’t open this file" — in both apps |
+| 8 · run | `just demo-react` and `just demo-html` (W-10's justfile) are in the root README; a browser test opens each app and runs DoD 4 | ✅ `just demo-html`, `just demo-react`, `just demo-check`, `just demo-packed` in the root `README.md`; `demo-check` runs in CI on every push, `demo-packed` nightly |
+| 9 · record | **no SR affected** unless the apps become a maintained surface; the Ownership rows for `examples/` are added to the register in the change that creates the directory, owned by W-09 | ✅ the demos became a checked surface: [SR-BUILD](../../records/0102_BUILD.md) decision 11 owns `examples/` and the demo scripts (Ownership rows added) |
 | 10 · iOS | open either demo on an iPhone and press Export (`.xlsx` and `.csv`); what iOS Safari does is recorded in SR-DOWNLOAD Consequences — moved from W-12 DoD 7 (Arpit, 2026-10-18) | ⏳ 🔴 Arpit, once the demo runs |
 
 ## Blockers
 
-Waiting on **W-01** and **W-02** (the elements to embed); W-03 comes with W-01.
-The apps can be scaffolded once **W-04** (toolchain) lands.
+Only DoD 10 (the decider on an iPhone): `HOST=0.0.0.0 just demo-html`, then open `http://<this Mac's address>:5173` on the phone and press Export (`.xlsx`, then the CSV sample's `.csv`).
 
 ## Record affected
 
-**No SR affected** — demos consume the components' contract and decide
-nothing. A React 18 wrapper is ruled out for v1 (SR-LAW-4 Consequences);
-the React demo targets React 19.
+**[SR-BUILD](../../records/0102_BUILD.md)** decision 11; the demos found two grid bugs, fixed in [SR-GRID](../../records/0105_GRID.md) decision 9.
 
 ## Hazards
 

@@ -286,3 +286,14 @@ describe('scale (W-01 DoD 11)', () => {
     expect(shadow(el).querySelectorAll('.frozen').length).toBe(2);
   }, 90000);
 });
+
+describe('properties as frameworks set them', () => {
+  it('src = undefined or "" removes the attribute and loads nothing', async () => {
+    const el = await mountExcel();
+    (el as unknown as { src: string | undefined }).src = undefined;
+    expect(el.hasAttribute('src')).toBe(false);
+    el.src = '';
+    expect(el.hasAttribute('src')).toBe(false);
+    expect(el.workbook!.getSnapshot().load.status).toBe('ready');
+  });
+});

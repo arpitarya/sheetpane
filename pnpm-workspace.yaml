@@ -1,3 +1,4 @@
-# The pnpm workspace — every package under packages/ (W-10; owned by W-04 until the build record exists).
+# The pnpm workspace — every package under packages/, and the demo apps under examples/ (SR-BUILD).
 packages:
   - packages/*
+  - examples/*

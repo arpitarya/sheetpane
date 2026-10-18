@@ -162,6 +162,11 @@ directions.
 | `scripts/pack-check.mjs` | SR-BUILD | the tarballs as npm sees them |
 | `scripts/release.mjs` | SR-BUILD | one version on every package |
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |
+| `scripts/serve.mjs` | SR-BUILD | the demos' static server |
+| `scripts/demo-check.mjs` | SR-BUILD | both demos used in Chromium (W-09 DoD 4, 8) |
+| `scripts/demo-packed.mjs` | SR-BUILD | both demos installed from tarballs (W-09 DoD 6) |
+| `examples/` | SR-BUILD | the plain-HTML and React 19 demos (SR-BUILD decision 11) |
+| `README.md` | SR-BUILD | the root README: packages, demos, commands |
 | `packages/export/src/download/` | SR-DOWNLOAD | `download()` — a different decision from the writers |
 | `packages/export/` | SR-EXPORT | `@sheetpane/export` — the writers and the shared ZIP / XML code |
 | `packages/import/` | SR-IMPORT | `@sheetpane/import` — the reader |

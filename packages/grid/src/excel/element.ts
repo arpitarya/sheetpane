@@ -80,7 +80,7 @@ export class SheetpaneExcel extends ElementBase {
   get open(): boolean { return this.hasAttribute('open'); }
   set open(v: boolean) { this.toggleAttribute('open', v); }
   get src(): string | null { return this.getAttribute('src'); }
-  set src(v: string | null) { if (v === null) this.removeAttribute('src'); else this.setAttribute('src', v); }
+  set src(v: string | null | undefined) { if (v === null || v === undefined || v === '') this.removeAttribute('src'); else this.setAttribute('src', v); }
 
   // ── methods ──────────────────────────────────────────────────────────────
   /** Reads a file into the pane: a File, Blob, bytes, a URL, or base64. */

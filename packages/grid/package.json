@@ -10,7 +10,9 @@
   },
   "type": "module",
   "sideEffects": [
-    "*.css"
+    "*.css",
+    "./dist/index.js",
+    "./src/index.ts"
   ],
   "engines": {
     "node": ">=20"

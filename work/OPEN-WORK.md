@@ -22,10 +22,12 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| Accept or change the dark `--sp-*` values (`work/reference/design/boards/sp-plugins.css`, `.spx-dark`) and say whether dark follows the computer's setting by default (W-29 DoD 1) | 2026-10-18 | 0 days |
+| Dark theme: should it follow the computer's light/dark setting by default (`theme="auto"`), or stay light until the host sets it? The dark values themselves were accepted 2026-10-18 (W-29 DoD 1) | 2026-10-18 | 0 days |
 | ↳ **blocks:** W-29 | | |
 | Comments: keep an on/off "Write review as Excel comments" line in Export ▾ — an extension point beyond the six slots, the plugins verdict's reopen-trigger — or always write them, as W-22 is filed? (board Plugin-Comments) | 2026-10-18 | 0 days |
 | ↳ **blocks:** W-22 (the Export line only) | | |
+| On an iPhone, open the plain demo (`HOST=0.0.0.0 just demo-html`, then `http://<this Mac's address>:5173`) and press Export for the `.xlsx` and the CSV sample — what does iOS Safari do? (W-09 DoD 10, from W-12) | 2026-10-18 | 0 days |
+| ↳ **blocks:** W-09 (closing only — the demos are built and checked) | | |
 
 ---
 
@@ -35,7 +37,7 @@ here. Read that record before changing anything below it.
 
 - 🔴 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — blocked on the decider's Export-line ruling. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
 - 🔴 **W-29** `agent` · Dark theme for the grid and the `--sp-*` tokens the plugin slots draw with — blocked on the decider's dark-values ruling. Filed by Arpit (Cowork). [detail](open/W-29-dark-theme-and-slot-tokens.md)
-- 🟢 **W-09** `agent` · Demo apps — React and plain `index.html` — that take `@sheetpane/grid` as a dependency. Filed by Arpit (Cowork). [detail](open/W-09-demo-apps.md)
+- 🔴 **W-09** `agent` · Demo apps built and checked (plain HTML, React 19, from tarballs) — blocked on the decider pressing Export on an iPhone (DoD 10). Filed by Arpit (Cowork). [detail](open/W-09-demo-apps.md)
 - 🟢 **W-15** `agent` · Build `@sheetpane/numfmt`: every Excel number format through the `numfmt` library, format dropdown. Filed by Arpit (Cowork). [detail](open/W-15-numfmt.md)
 - 🟢 **W-16** `agent` · Build `@sheetpane/formulas`: live recalculation through IronCalc (WASM, lazy), `fx` cell bar, status sums. Filed by Arpit (Cowork). [detail](open/W-16-formulas.md)
 - 🟢 **W-17** `agent` · Build `@sheetpane/styles`: fill, weight, colour, borders, alignment rendered and edited; the format row. Filed by Arpit (Cowork). [detail](open/W-17-styles.md)

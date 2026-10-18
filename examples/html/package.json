@@ -1,0 +1,11 @@
+{
+  "name": "sheetpane-example-html",
+  "private": true,
+  "description": "sheetpane in a plain index.html \u2014 no framework, no build step of its own (W-09).",
+  "type": "module",
+  "dependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/grid": "workspace:*",
+    "@sheetpane/import": "workspace:*"
+  }
+}
