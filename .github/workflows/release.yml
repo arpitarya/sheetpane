@@ -1,0 +1,59 @@
+# The release (SR-BUILD decision 9): `just release <version>` pushes a `v<version>`
+# tag; this job checks every package carries that version, runs the same checks as
+# CI, publishes every package to npm with provenance and opens a GitHub release with
+# the packed tarballs attached. `pnpm -r publish` skips a version already on npm, so
+# a failed run can simply be re-run. Needs the `NPM_TOKEN` repository secret.
+name: release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+  id-token: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: run from a release tag
+        run: |
+          [ "$GITHUB_REF_TYPE" = tag ] || { echo "::error::run the release from a v<version> tag"; exit 1; }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - run: pnpm install --frozen-lockfile
+      - name: every package carries the tag's version
+        run: |
+          node -e '
+            const fs = require("node:fs"), v = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+            const off = fs.readdirSync("packages").map(d => `packages/${d}/package.json`).filter(fs.existsSync)
+              .map(f => JSON.parse(fs.readFileSync(f, "utf8"))).filter(p => p.version !== v);
+            for (const p of off) console.error(`::error::${p.name} is ${p.version}, the tag is ${v}`);
+            process.exit(off.length ? 1 : 0);'
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: just check
+      - run: just pack-check
+      - run: just demo-check
+      - name: publish to npm
+        run: pnpm -r publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+      - name: GitHub release with the tarballs
+        run: |
+          pnpm -r --filter './packages/*' exec pnpm pack --pack-destination "$RUNNER_TEMP/tarballs"
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME" "$RUNNER_TEMP"/tarballs/*.tgz
+        env:
+          GH_TOKEN: ${{ github.token }}

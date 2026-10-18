@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-19 | W-44 | The release pipeline: `release.yml` on a `v*` tag checks every package carries the tag's version, runs check, pack-check and demo-check, publishes every package with npm provenance and opens a GitHub release with the tarballs; `just release` now commits, tags (annotated) and pushes — no laptop publish | built | SR-BUILD decision 9; `.github/workflows/release.yml` |
 | 2026-10-19 | W-49 | Hide and show: core honours, marks and reveals the file's hidden rows, columns and sheets (0 px geometry, ◂▸/▴▾ markers, ⊘ hidden-sheets list, Show hidden, outline gutter), keys and range acts skip hidden cells; `@sheetpane/visibility` hides, unhides and groups as changes; import reads state and outline; `patchXlsx` writes them | closed | `hidden.test.ts` (12), `visibility.test.ts` (4), import (9) and export (13) hidden tests; demo-check 51 |
 | 2026-10-18 | W-45 | Commands (`/sheetpane-embed`, `/sheetpane-rules`, `/sheetpane-test`), `sheetpane-skills check-rules` and its hooks for Claude Code, Codex and Kiro (installed and removed by the installer), and the agent set as a Claude Code plugin + marketplace | closed | `test/skills.test.ts`; `claude plugin validate --strict` |
 | 2026-10-18 | — | law L10 (the examples are maintained with every package change): record 0012; SR-BUILD names L10; backlog B-035 | filed | `records/0012_LAW-10-examples-maintained.md` |

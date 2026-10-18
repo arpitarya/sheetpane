@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: the monorepo toolchain
 owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
-timestamp: 2026-10-18T11:40:00Z
+timestamp: 2026-10-19T09:00:00Z
 content_sha: ""
 ratifies: W-04
 ---
@@ -23,8 +23,8 @@ ratifies: W-04
 the pnpm scripts, so nothing *needs* just.
 
 **Every package is published at the same version.** `just release 1.2.3`
-bumps every package under `packages/`, runs the checks, tags, and publishes
-them together. A plugin always pins the exact grid it was tested with.
+bumps every package under `packages/`, runs the checks and pushes a tag; CI
+publishes them together from that tag. A plugin always pins the exact grid it was tested with.
 
 **Tests run where the code runs.** `@sheetpane/export` in Node; every package
 that touches the DOM in a real browser (Chromium on every push, Firefox and
@@ -141,7 +141,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    site` → `site/` (`scripts/build-site.mjs`: the HTML gallery at `/` with
    every file its import map names copied in, the React gallery at `/react/`
    with a relative base, the version in both headers, no third-party script)
-   — checks it with `demo-check`, and deploys it to GitHub Pages.
+   — checks it with `demo-check`, and deploys it to GitHub Pages;
+   `release.yml` on the same tag publishes the packages (decision 9).
 8b. **Starters and links (W-44):** `scripts/build-starters.mjs` (`just
     starters`) scaffolds every `create-sheetpane` template with the CLI itself
     into `examples/starters/<template>` (not workspace members) with an index
@@ -155,8 +156,14 @@ pnpm and a justfile; the testing verdict chose the runner.
     starters.
 9. **Release:** `just release <version>` — clean tree required; every package
    set to the version (`scripts/release.mjs`); `just check pack-check`; a
-   commit and tag `v<version>`; `pnpm -r publish --access public`; push with
-   tags. Never `npm publish`: npm ships `workspace:*` literally.
+   commit and an annotated tag `v<version>`, both pushed. Nothing is published
+   from a laptop: the tag runs `.github/workflows/release.yml`, which fails
+   unless every package carries the tag's version, runs `just check`,
+   `pack-check` and `demo-check`, then `pnpm -r publish --access public` with
+   npm provenance (the `NPM_TOKEN` repository secret) and opens a GitHub
+   release with every package's tarball attached. `pnpm -r publish` skips a
+   version already on npm, so a failed run is re-run, not re-tagged. Never
+   `npm publish`: npm ships `workspace:*` literally.
 9a. **llms.txt (W-38):** `scripts/build-llms.mjs` (`just llms`, no
     dependencies, deterministic) writes `llms.txt` (llmstxt.org: an H1, a
     summary, sections Start · Elements · Plugins · Rules and errors · Testing
@@ -206,8 +213,9 @@ pnpm and a justfile; the testing verdict chose the runner.
 - **Codes (W-40):** `test/error-codes.test.ts` and its append-only `test/error-codes.lock.json` are SR-CODES' (carved out of `test/`); `test/ssr.test.ts` asserts the SSR refusal's code.
 - **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
   pack-check`, locally and in CI.
-- **Owed by the decider:** the `@sheetpane` npm organisation, before the first
-  `just release` can publish.
+- **Owed by the decider:** the `NPM_TOKEN` repository secret (an npm granular
+  token with publish rights on `@sheetpane/*` and `create-sheetpane`), before
+  `release.yml` can publish; the `@sheetpane` organisation exists.
 - **Still open:** the licence check over the whole lockfile (backlog B-008);
   decision 7 checks only the runtime allow-list.
 - **Plugins must keep `@sheetpane/grid` as a dev dependency too** (a peer is
@@ -250,7 +258,7 @@ is never listed here.*
 - [`package.json`](../package.json) · [`pnpm-workspace.yaml`](../pnpm-workspace.yaml) · [`justfile`](../justfile) · [`tsconfig.base.json`](../tsconfig.base.json)
 - [`vitest.config.ts`](../vitest.config.ts) · [`test/packages.test.ts`](../test/packages.test.ts)
 - [`scripts/pack-check.mjs`](../scripts/pack-check.mjs) · [`scripts/release.mjs`](../scripts/release.mjs) · [`scripts/build-grid-css.mjs`](../scripts/build-grid-css.mjs)
-- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) · [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml)
+- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) · [`.github/workflows/nightly.yml`](../.github/workflows/nightly.yml) · [`.github/workflows/release.yml`](../.github/workflows/release.yml)
 
 **Project docs**
 

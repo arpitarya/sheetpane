@@ -48,15 +48,15 @@ pack-check: build
 create-check *templates: build
     node scripts/create-check.mjs {{templates}}
 
-# bump every package to one version, check, tag and publish them together (lockstep)
+# bump every package to one version, check, commit and tag; the pushed tag publishes them all (lockstep, release.yml)
 release version:
     git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)
     node scripts/release.mjs {{version}}
     just check pack-check
-    git commit -am "release v{{version}}"
-    git tag v{{version}}
-    pnpm -r publish --access public --no-git-checks
-    git push --follow-tags
+    git add -A packages llms.txt llms-full.txt examples/starters
+    git commit -m "release v{{version}}" -m "no SR affected"
+    git tag -a v{{version}} -m "v{{version}}"
+    git push origin HEAD v{{version}}
 
 # the plain-HTML demo at http://127.0.0.1:5173 (builds the packages first)
 demo-html: build
