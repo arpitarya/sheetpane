@@ -62,6 +62,10 @@ demo-html: build
 demo-react: build
     pnpm --filter sheetpane-example-react dev
 
+# the live playground as a static site in site/ (W-44): `/` the HTML gallery, `/react/` the React one
+site: build
+    node scripts/build-site.mjs site
+
 # rewrite @sheetpane/fixtures' files and manifest (W-42; hand-built, not Excel-saved)
 fixtures: build
     node packages/fixtures/scripts/make.mjs

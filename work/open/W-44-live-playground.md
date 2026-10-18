@@ -6,7 +6,7 @@ item: W-44
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -32,7 +32,7 @@ One URL shows the latest release's gallery; one click per template opens an edit
 
 | DoD | what | state |
 |---|---|---|
-| 1 · deploy | a GitHub Actions job on release tags builds both demos and publishes them to GitHub Pages (`/` the HTML gallery, `/react/` the React one), version in the header | ⏳ |
+| 1 · deploy | a GitHub Actions job on release tags builds both demos and publishes them to GitHub Pages (`/` the HTML gallery, `/react/` the React one), version in the header | ✅ `.github/workflows/pages.yml`: on a `v*` tag (or by hand) `just site` builds `site/` — the HTML gallery at `/` with every file its import map names copied in, the React gallery at `/react/` (relative base) — runs `demo-check` on the site itself (49 ✓ locally), then `actions/deploy-pages`; the version in both headers. **Enabling Pages (Settings → Pages → GitHub Actions) is the decider's**, once |
 | 2 · StackBlitz | a `stackblitz.com/github/arpitarya/sheetpane/tree/<tag>/…` link per template, checked to load in CI | ⏳ |
 | 3 · links | package READMEs, `llms.txt` ([W-38](W-38-llms-txt.md)), the setup skill | ⏳ |
 | 4 · record | SR-BUILD (the deploy job) | ⏳ |

@@ -12,3 +12,5 @@ dist/
 # test output
 coverage/
 .vitest/
+# the playground build (W-44)
+site/

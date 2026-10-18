@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8]
 timestamp: 2026-10-18T11:40:00Z
 content_sha: ""
@@ -108,7 +108,12 @@ pnpm and a justfile; the testing verdict chose the runner.
    reaches them from `src/` and `dist/` alike (W-42).
 8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
    `just pack-check` on every push to `main` and every PR (Chromium);
-   `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit.
+   `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;
+   `pages.yml` (W-44) on a release tag builds the live playground — `just
+   site` → `site/` (`scripts/build-site.mjs`: the HTML gallery at `/` with
+   every file its import map names copied in, the React gallery at `/react/`
+   with a relative base, the version in both headers, no third-party script)
+   — checks it with `demo-check`, and deploys it to GitHub Pages.
 9. **Release:** `just release <version>` — clean tree required; every package
    set to the version (`scripts/release.mjs`); `just check pack-check`; a
    commit and tag `v<version>`; `pnpm -r publish --access public`; push with

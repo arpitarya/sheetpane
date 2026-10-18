@@ -3,3 +3,7 @@ declare module '*?url' {
   const url: string;
   export default url;
 }
+
+// The playground build sets the version shown in the header (W-44).
+interface ImportMetaEnv { readonly VITE_SHEETPANE_VERSION?: string }
+interface ImportMeta { readonly env: ImportMetaEnv }

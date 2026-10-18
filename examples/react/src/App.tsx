@@ -59,6 +59,7 @@ export function App() {
     <div style={{ fontFamily: FONTS[font], minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#16171A' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 24px', minHeight: 56, background: '#fff', borderBottom: '1px solid #E5E7EB', flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 600, border: '1.5px dashed #9CA3AF', padding: '6px 10px', borderRadius: 6 }}>Your React app</span>
+        {import.meta.env.VITE_SHEETPANE_VERSION && <span style={{ fontSize: 12, color: '#63666E' }} title="sheetpane version">sheetpane {import.meta.env.VITE_SHEETPANE_VERSION}</span>}
         <nav role="tablist" aria-label="Views" style={{ display: 'flex', gap: 4 }}>
           {(['both', 'sheet', 'errors'] as const).map((v) => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)} style={{ font: 'inherit', padding: '10px 12px', border: 0, borderBottom: `2px solid ${view === v ? '#111827' : 'transparent'}`, background: 'none', cursor: 'pointer' }}>
