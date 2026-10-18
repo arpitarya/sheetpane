@@ -6,7 +6,7 @@ item: W-15
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -58,10 +58,11 @@ A new component record on completion. Until then this item owns `packages/numfmt
 
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Numfmt.dc.html`](../reference/design/boards/Plugin-Numfmt.dc.html) — the format menu, ± decimals, the raw value in the cell bar, "Changed · was General", and View
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `format` hook
 - [`../compare/xlsx-csv-reading.compare.md`](../compare/xlsx-csv-reading.compare.md) decision 2 — the subset this replaces
 - [numfmt](https://github.com/borgar/numfmt)
-- [W-14](W-14-plugin-host.md) · [W-13](W-13-import-package.md)
+- [W-14](W-14-plugin-host.md) · W-13 (closed — [SR-IMPORT](../../records/0104_IMPORT.md))
 
 ## Prompt — paste into Claude Code once the blockers close
 

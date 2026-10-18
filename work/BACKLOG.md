@@ -37,10 +37,6 @@ it, and do not read it top-down as a priority order.
 | B-004 | A `W-nn` that resolves to neither `work/open/` nor `archive/open/` is caught by nobody | [SR-WORK-OPEN-QUEUE](../records/0051_WORK-open-queue.md) Consequences | a test, as a `W-nn` |
 | B-005 | A second `archive/` directory anywhere is caught by nobody | [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md) decision 1 | a test, as a `W-nn` |
 | B-008 | No check refuses a non-FOSS licence in the dependency tree | [SR-LAW-2](../records/0004_LAW-2-foss-dependencies.md) Consequences | a licence check over the lockfile, run by the guard or CI, in the change that adds `package.json` |
-| B-009 | No check refuses code that parses or writes a format other than XLSX or CSV | [SR-LAW-3](../records/0005_LAW-3-xlsx-and-csv-only.md) Consequences | a test that an unsupported file is refused, as a `W-nn` once file loading exists |
-| B-012 | No check that `@sheetpane/grid` registers its custom elements on import (the no-framework-peer half is tested by SR-BUILD decision 7) | [SR-LAW-4](../records/0006_LAW-4-web-component.md) Consequences | a test over `package.json` and the entry point, in the change that adds them |
-| B-017 | No test that an edited workbook, exported and loaded again, carries every change | [SR-LAW-6](../records/0008_LAW-6-edits-in-memory-export-with-changes.md) Consequences | a round-trip test, as a `W-nn` once edit and export exist |
-| B-020 | No test that a change through one component appears in the other two | [SR-LAW-7](../records/0009_LAW-7-surfaces-always-in-sync.md) Consequences | a cross-component sync test, as a `W-nn` once two components exist |
 
 ---
 
@@ -56,6 +52,8 @@ it, and do not read it top-down as a priority order.
 
 | id | what is outstanding | named in | what closes it |
 |---|---|---|---|
+| B-029 | Dismiss for a workbook-authored error (accept a validation warning for this review) — drawn on the Plugin-Validation board; W-18 keeps such rows read-only | [`work/proposals/dismiss-workbook-errors.md`](proposals/dismiss-workbook-errors.md) | the proposal's graduation trigger, then the decider's ruling and a `W-nn` amending W-18 |
+| B-030 | SR-LAW-6's veto command greps for any `fetch(`; the grid's `src` loader fetches the file it is asked to show (a GET, nothing sent, `packages/grid/src/excel/element.ts`) — the command flags it | [SR-LAW-6](../records/0008_LAW-6-edits-in-memory-export-with-changes.md) veto · [SR-GRID](../records/0105_GRID.md) Consequences | the decider rules: narrow the command (e.g. exclude that file), or drop URL loading from W-01 DoD 2 |
 | B-028 | Live pivot tables — re-aggregating a pivot in the grid when its source cells change; v1 shows the cached cells and asks Excel to refresh on open | [`work/proposals/pivots.md`](proposals/pivots.md) | the proposal's graduation trigger: a host asks for it after W-16 lands, then the decider's ruling and a `W-nn` |
 | B-025 | Connect the in-memory workbook to IndexedDB as well — the decider's request, deferred; e.g. behind a button | [SR-LAW-9](../records/0011_LAW-9-memory-is-a-javascript-object.md) Consequences | the decider's ruling rewriting SR-LAW-9 decisions 1–2 (and SR-LAW-6 decision 2) |
 

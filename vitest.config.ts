@@ -39,7 +39,7 @@ export default defineConfig({
             headless: true,
             provider: playwright(),
             commands: { armDownload, takeDownload },
-            instances: browsers.map((browser) => ({ browser })),
+            instances: browsers.map((browser) => ({ browser, viewport: { width: 1280, height: 800 } })),
           },
         },
       })),

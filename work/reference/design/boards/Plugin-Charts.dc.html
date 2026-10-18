@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — charts</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1520px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 8 · @sheetpane/charts · Edit mode · two stages</span>
+<h1 class="h1">Charts — first show where a chart sits and what it reads; draw it later</h1>
+<p class="muted" style="max-width: 1000px">Stage 1 ships a frame at the chart's anchor with its title and type. “Show source cells” selects what the chart reads. After the reviewer changed H12, the frame says Excel will redraw it — sheetpane never edits a chart.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">Stage 1 · after “Show source cells” and an edit to H12 · plugins: charts</span>
+<dc-import name="PluginKit" mode="edit" plugins="charts" scene="charts" extra="4" marks="srcsel,frame,chartchip,stchart" height="602" hint-size="100%,602px"></dc-import>
+</div>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 420px">
+<span class="bd-cap">Stage 2 · same frame, drawn (SVG, Proof palette)</span>
+<dc-import name="PluginKit" mode="edit" plugins="charts" scene="charts-plot" extra="4" rows="14" scroll="1,10" height="546" hint-size="100%,546px"></dc-import>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">New controls and marks</span>
+<div class="stack" style="gap: 8px">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="4">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+<p class="xs muted">View differs only in the chip: nothing is edited in View, so “data changed” never shows. “Show source cells” works in both modes.</p>
+</div>
+<div class="bd-card">
+<span class="h4">Stage 2 rules</span>
+<ul class="ul">
+<li>Bar, column (clustered and stacked), line, pie and scatter (W-21); every other type stays a stage-1 frame.</li>
+<li>Accent bars; a negative value is red and sits left of the zero line — the label says −9,180 too.</li>
+<li>No authoring: no type switcher, no series editor, no resize. The frame is the chart's anchor.</li>
+<li>Draws from the cached series values; with formulas installed, from the live cells — so H12 already reads 52,338.</li>
+</ul>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { charts } from '@sheetpane/charts';
+sheet.plugins = [charts({ draw: false })];   // stage 1; draw: true for stage 2</pre>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: 'Source cells selected: E3:E15 categories, H3:H15 values', slot: 'overlay', plug: 'charts' },
+        { k: 'b', t: 'Frame at the anchor K3:N14 — “Market value by holding” · bar · Show source cells', slot: 'overlay', plug: 'charts' },
+        { k: 'c', t: '“data changed — Excel will redraw” after an edit inside the source', slot: 'overlay', plug: 'charts' },
+        { k: 'd', t: '“Chart source: Holdings!E3:E15, H3:H15”', slot: 'status', plug: 'charts' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

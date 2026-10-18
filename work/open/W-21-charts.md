@@ -6,7 +6,7 @@ item: W-21
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -55,6 +55,7 @@ A new component record on completion. Until then this item owns `packages/charts
 
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Charts.dc.html`](../reference/design/boards/Plugin-Charts.dc.html) — stage 1 frame, Show source cells, "data changed — Excel will redraw"; stage 2 drawn
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `overlay`
 - [W-20](W-20-images.md) · [W-16](W-16-formulas.md)
 

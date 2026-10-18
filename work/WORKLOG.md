@@ -24,6 +24,26 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — blockers ruled: W-03, W-12, W-13 closed; W-25 decided and closed; W-30 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *present the blockers one by one with a recommendation.* Then: *W-03: all files opened, accents good. W-12: go with the recommendation. W-13: hold; a separate testing item. W-25 a–e: go with the recommendation.*
+- **Done:** W-03 DoD 8 ✅, closed → SR-EXPORT Consequences updated. SR-DOWNLOAD `accepted` (register row); W-12's iOS check → W-09 DoD 10; W-12 closed. W-13 DoD 9 → W-30 (`testing`, `arpit`, 🟢), W-13 closed; SR-IMPORT and `FIXTURES.md` point at W-30. `work/compare/grid-events-and-host-rules.compare.md` written with Arpit's five rulings; W-25 closed; W-26–W-28 re-pointed and re-balled (W-26 waits on W-01; W-27 on W-26; W-28 on W-26, W-01). Contract verdict notes the extension; compare index row; archive map rows for W-03, W-12, W-13, W-25; open-item links to the closed items now name their records. Inbox down to the two rulings another session filed (W-29, W-22). Not committed.
+- **Decided / left open:** Arpit's rulings as above. Read in (in the verdict, open to override): paste and fill check once per cell; event order beforechange → change map → undo → derive → validate → change; `input` checks after a 150 ms pause; `load` in idle-time chunks; `pattern` skipped on values over 10,000 characters; SR-GRID decision 17's auto-resolve widens to `host` when W-27 lands.
+- **Mistakes:** filed the new testing item as W-29, but a parallel session had taken that id minutes earlier. Caught before the queue row was written; renumbered W-30 in all three places. Parallel sessions also closed W-02, W-14 and W-23 mid-turn, which halted one edit script; it was re-run against the live tree.
+- **Next:** the two inbox rulings (W-29 dark values, W-22 Export line); W-01 continues in Claude Code.
+
+---
+
+## 2026-10-18 — plugin design boards downloaded, reconciled with W-14–W-24; W-29 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *a design brief for the plugin surfaces (12 boards, a slot map, a list of open decisions) on the Design canvas; then: "download and update the designs and create/update work items".*
+- **Done:** the canvas's 25 boards + `canvas.json` + `sp-plugins.css` saved to `work/reference/design/boards/` (the ten older boards unchanged); design README and reference index list the fifteen plugin boards. Boards fixed where they contradicted the item files: Undo/Redo core (W-23), Freeze Edit-only and exported (W-24), "may be stale" on dependents only (W-01 DoD 15), five chart types (W-21), changed mark on `--sp-changed` (tokens.ts). Items updated with design links and deltas: W-01, W-02, W-14 (selbar order, More ▾, mark positions), W-15–W-18, W-19 (gains a `./ui`: hover legend + rule count), W-20 (click-through pictures), W-21–W-24. Filed W-29 (dark theme + slot tokens). Proposal `dismiss-workbook-errors.md` + B-029. Registry, INTERVIEW, NOW. **Not committed.**
+- **Decided / left open:** put to Arpit (inbox): the dark values and default (W-29); an on/off Export line for comments, which needs an extension point beyond the six slots (W-22, red for that line only). Read in: plugin selbar buttons follow the core ones; data colours are never re-themed.
+- **Mistakes:** the first boards were drawn from the brief before reading the repo, so five of them disagreed with filed items; fixed on the canvas before the download.
+- **Next:** W-01 (grid); Arpit's two rulings when convenient.
+
+---
+
 ## 2026-10-18 — W-25 (research) and W-26–W-28 filed: editing events, column rules, React hooks  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *list the grid APIs; propose React hooks, events and callbacks for editing and the current cell, and a way to check per column title whether what is typed is correct; then: create work items for everything proposed.*

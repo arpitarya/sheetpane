@@ -68,7 +68,8 @@ else.
 
 1. **Input:** `Cell = string | number | boolean | null`;
    `Sheet { name, rows, merges?, columnWidths?, hidden? }`;
-   `Workbook { sheets }`; `Change { sheet, ref, value }`. `columnWidths` are
+   `Workbook { sheets }`; `Change { sheet, ref, value }`; `Sheet.freeze?:
+   { rows, cols }` (W-24). `columnWidths` are
    Excel character units (`<col width>`), index 0 = column A.
 2. **`toXlsx(book, { compression?, onStripped? }): Promise<Uint8Array>`**
    writes exactly `[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`,
@@ -97,6 +98,10 @@ else.
    - reads rows and cells without `r`, self-closing rows and prefixed
      namespaces; widens `<dimension>` to new values; drops `spans` on touched
      rows;
+   - `freeze: [{ sheet, rows, cols }]` rewrites that sheet's first view's
+     `<pane>` (with `topLeftCell` and `state="frozen"`; `0, 0` removes it);
+     sheets not named keep theirs byte for byte; `toXlsx` writes `<pane>`
+     for `Sheet.freeze` (W-24);
    - runs each `exportPatch` hook after its own writes, with a
      `PatchContext` (`list`, `has`, `readText`, `readBytes`, `write`,
      `remove`, `workbookPath`, `sheetNames`, `sheetPath`, `relsPathOf`,
@@ -142,10 +147,11 @@ else.
   identity, `patchXlsx` changes exactly the named cells, string escape);
   the committed golden `sheetpane-sample.store.xlsx` reproduced in Node and
   Chromium; coverage gate 90 % lines.
-- **Owed by the decider:** opening `packages/export/test/fixtures/sheetpane-sample.xlsx`
-  in Excel and LibreOffice with no repair prompt, and the `.csv` with its
-  accents (W-03 DoD 8). Until then "Excel opens it" is a claim backed by
-  three independent readers, not by Excel.
+- **Opened by the decider, 2026-10-18:** `sheetpane-sample.xlsx` and
+  `sheetpane-sample.store.xlsx` open in Excel and LibreOffice with no repair
+  prompt, and `sheetpane-sample.csv` shows its accents correctly in Excel. "Excel
+  opens it" is backed by Excel and LibreOffice as well as three independent
+  readers.
 - Shared strings orphaned by a patch stay in the table (harmless; keeps the
   patch small); the table's `count` is not recomputed.
 

@@ -23,13 +23,14 @@ sites and are not repaired** — like `archive/`, those copies are frozen.
 | **W-03** `@sheetpane/export` | [ZIP notes](specs/zip/zip-subset-notes.md) · [SpreadsheetML](#spreadsheetml--whats-inside-an-xlsx) · [CSV](#csv) · [compression streams](#web-platform--mdn) |
 | **W-04** the monorepo | nothing here — the item file |
 | **W-09** the demo apps | [design](design/README.md) (the `Host-*` boards) · [custom elements](specs/web/mdn-using-custom-elements.md) |
+| **W-14–W-24, W-29** plugins, undo, freeze, tokens | [design](design/README.md) §The plugin boards — `Slot-Map` first, then the board named in each item file |
 
 ## Design
 
 | file | what it is |
 |---|---|
 | [`design/README.md`](design/README.md) | the canvas snapshot — what each board shows and how to read a `.dc.html` |
-| [`design/boards/`](design/boards/) | the ten boards as source, the Proof tokens (`proof.css`) and sheetpane's classes (`sheetpane.css`) |
+| [`design/boards/`](design/boards/) | the ten component boards and fifteen plugin boards (incl. the shared `PluginKit` grid) as source, the Proof tokens (`proof.css`), sheetpane's classes (`sheetpane.css`) and the plugin classes and `--sp-*` layer (`sp-plugins.css`) |
 
 ## SpreadsheetML — what's inside an `.xlsx`
 

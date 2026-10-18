@@ -52,9 +52,17 @@ function sheetXml(sheet: Sheet, merges: RangePos[], selected: boolean, stripped:
   const cols = (sheet.columnWidths ?? [])
     .map((w, i) => (Number.isFinite(w) && w > 0 ? `<col min="${i + 1}" max="${i + 1}" width="${Math.min(w, 255)}" customWidth="1"/>` : ''))
     .join('');
-  const view = `<sheetViews><sheetView workbookViewId="0"${selected ? ' tabSelected="1"' : ''}/></sheetViews>`;
+  const pane = paneXml(sheet.freeze);
+  const view = `<sheetViews><sheetView workbookViewId="0"${selected ? ' tabSelected="1"' : ''}${pane ? `>${pane}</sheetView>` : '/>'}</sheetViews>`;
   const mc = merges.length ? `<mergeCells count="${merges.length}">${merges.map((m) => `<mergeCell ref="${rangeRef(m)}"/>`).join('')}</mergeCells>` : '';
   return `${XML_DECL}<worksheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}"><dimension ref="${dim}"/>${view}<sheetFormatPr defaultRowHeight="15"/>${cols ? `<cols>${cols}</cols>` : ''}<sheetData>${rows.join('')}</sheetData>${mc}</worksheet>`;
+}
+
+/** `<pane>` for frozen rows/columns; `topLeftCell` is required or Excel ignores the pane (W-24). */
+export function paneXml(f: { rows: number; cols: number } | undefined, prefix = ''): string {
+  if (!f || (f.rows <= 0 && f.cols <= 0)) return '';
+  const active = f.rows > 0 && f.cols > 0 ? 'bottomRight' : f.rows > 0 ? 'bottomLeft' : 'topRight';
+  return `<${prefix}pane${f.cols > 0 ? ` xSplit="${f.cols}"` : ''}${f.rows > 0 ? ` ySplit="${f.rows}"` : ''} topLeftCell="${cellRef(Math.max(0, f.rows), Math.max(0, f.cols))}" activePane="${active}" state="frozen"/>`;
 }
 
 function colOf(cellTag: string): number {

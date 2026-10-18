@@ -1,0 +1,102 @@
+// The plugin contract (plugins verdict decisions 2–7; W-14): six hooks, six slots.
+// A plugin is a plain object; everything it may touch goes through the store.
+import type { Cell, PatchContext } from '@sheetpane/export';
+import type { ImportedSheet, ImportedWorkbook } from '@sheetpane/import';
+import type { Mode, Selection, SheetpaneError, Snapshot } from '../pane/types.js';
+import type { WorkbookStore } from '../pane/store.js';
+
+export type HookName = 'format' | 'decorate' | 'derive' | 'validate' | 'overlay' | 'exportPatch';
+export const HOOKS: readonly HookName[] = ['format', 'decorate', 'derive', 'validate', 'overlay', 'exportPatch'];
+/** Hooks with exactly one provider per pane; a second provider throws at registration. */
+export const SINGLE_PROVIDER: readonly HookName[] = ['format', 'derive'];
+
+/** The CSS a `decorate` hook may return — and never `font-family` (SR-LAW-5). */
+export const STYLE_PROPS = [
+  'background-color', 'background-image', 'color', 'font-weight', 'font-style', 'font-size', 'text-decoration', 'text-align', 'vertical-align', 'white-space',
+  'border-top', 'border-right', 'border-bottom', 'border-left', 'padding-left',
+] as const;
+export type StyleProp = (typeof STYLE_PROPS)[number];
+export type StyleSubset = Partial<Record<StyleProp, string>>;
+
+/** One cell, as a hook sees it. */
+export interface CellContext {
+  readonly store: WorkbookStore;
+  readonly book: ImportedWorkbook;
+  readonly sheet: ImportedSheet;
+  readonly ref: string;
+  readonly row: number;
+  readonly col: number;
+  /** The current value (a user change applied). */
+  readonly value: Cell;
+  /** The cell's style index (`s`), the change map's `style` entry applied by plugins themselves. */
+  readonly styleIndex: number | undefined;
+}
+
+export interface PluginContext {
+  readonly store: WorkbookStore;
+  readonly book: ImportedWorkbook;
+  snapshot(): Snapshot;
+}
+
+/** What `derive` is told: the workbook loaded, or cells changed (by the user, or by undo). */
+export type DeriveInput =
+  | { kind: 'load' }
+  | { kind: 'change'; cells: { sheet: string; ref: string; value: Cell }[] };
+
+export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string }
+
+/** What `validate` returns: an error without the fields the store owns. */
+export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean };
+
+/** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
+export interface OverlayItem {
+  id: string;
+  sheet: string;
+  rect: { x: number; y: number; width: number; height: number };
+  render(): HTMLElement;
+  alt?: string;
+}
+
+/** Sheet geometry a plugin needs to place things (W-20). Pixels at 100 % zoom. */
+export interface Geometry {
+  colX(col: number): number;
+  colWidth(col: number): number;
+  rowY(row: number): number;
+  rowHeight(row: number): number;
+}
+
+export type SlotName = 'format-row' | 'selbar' | 'cellbar' | 'status' | 'cell' | 'overlay';
+export const SLOTS: readonly SlotName[] = ['format-row', 'selbar', 'cellbar', 'status', 'cell', 'overlay'];
+
+/** A control a plugin describes and the grid renders (plugins verdict, slots). */
+export interface ControlDescriptor {
+  id: string;
+  slot: SlotName;
+  /** Controls render in group order, then in the order given. */
+  group: string;
+  label: string;
+  /** Inline SVG markup (no external URL). */
+  icon?: string;
+  shortcut?: string;
+  mode: Mode | 'both';
+  isActive?(snap: Snapshot, sel: Selection): boolean;
+  run?(store: WorkbookStore, sel: Selection): void;
+  /** `status` slot: the text to show; `cell` slot: whether the cell carries the mark. */
+  text?(snap: Snapshot, sel: Selection): string;
+  appliesTo?(cell: CellContext): boolean;
+}
+
+export interface Plugin {
+  id: string;
+  /** The hooks this plugin provides. */
+  provides: HookName[];
+  /** For `decorate`: the plugins whose result this one overrides, per property. */
+  after?: string[];
+  format?(cell: CellContext): string | undefined;
+  decorate?(cell: CellContext): StyleSubset | undefined;
+  derive?(input: DeriveInput, ctx: PluginContext): DerivedChange[] | Promise<DerivedChange[]>;
+  validate?(sheet: string, ctx: PluginContext): ErrorDraft[];
+  overlay?(sheet: string, ctx: PluginContext & { geometry: Geometry }): OverlayItem[];
+  exportPatch?(patch: PatchContext, ctx: PluginContext): void | Promise<void>;
+  controls?: ControlDescriptor[];
+}

@@ -16,7 +16,7 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Read the title row and match each host rule to its column | rules written as "Email", not "D" | ⏳ W-25 |
+| 1 | Read the title row and match each host rule to its column | rules written as "Email", not "D" | ✅ settled 2026-10-18 — the verdict |
 | 2 | Check values as they are typed, when saved, and once when the file opens | bad data found early, including data already in the file | ⏳ |
 | 3 | Send every failure into the one error list | the host's rules show up in `<sheetpane-errors>` like any other error | ⏳ |
 | 4 | Refuse or flag, as the host chooses | strict forms or review-and-fix, same component | ⏳ |
@@ -29,9 +29,9 @@ a near-miss hides.
 
 ## Goal
 
-The column-rules design in W-25's verdict. Starting point: the
+The column-rules design in the verdict's verdict. Starting point: the
 `headerRow` / `columns` / `onInvalid` / `validate` proposal in
-[W-25](W-25-research-events-rules-hooks.md).
+the [events-and-rules verdict](../compare/grid-events-and-host-rules.compare.md).
 
 ```ts
 excel.columns = { 'Age': { type: 'number', min: 18, max: 99 }, 'Status': { oneOf: ['Active', 'Inactive'] } };
@@ -44,12 +44,12 @@ excel.validate = async (ctx, signal) =>
 
 | DoD | what | state |
 |---|---|---|
-| 1 · rules | every rule in W-25's vocabulary, as plain JSON; each failure's message names the rule | ⏳ |
+| 1 · rules | every rule in the verdict's vocabulary, as plain JSON; each failure's message names the rule | ⏳ |
 | 2 · function | `validate(ctx, signal)` sync or async; `ctx.rowValues` keyed by title for cross-column checks; stale async results dropped through `AbortSignal` | ⏳ |
-| 3 · phases | `input` shows an outline and a tooltip and stores nothing; `commit` flags or blocks per `onInvalid`; `load` checks every row, timed as W-25 rules | ⏳ |
-| 4 · errors | failures become errors through the plugin host's `validate` hook, `author: "host"`, with the auto-resolve behaviour W-25 rules; they show in `<sheetpane-errors>` and survive `setErrors()` like any other error | ⏳ |
+| 3 · phases | `input` shows an outline and a tooltip and stores nothing; `commit` flags or blocks per `onInvalid`; `load` checks every row, timed as the verdict rules | ⏳ |
+| 4 · errors | failures become errors through the plugin host's `validate` hook, `author: "host"`, resolving themselves when the cell passes (verdict decision 10); they show in `<sheetpane-errors>` and survive `setErrors()` like any other error | ⏳ |
 | 5 · block | `block` cancels through W-26's `sheetpane-beforechange`; a refused value is never stored (L6) | ⏳ |
-| 6 · headers | a missing or duplicate title is handled as W-25 rules; the policy is shown, never silent | ⏳ |
+| 6 · headers | a missing or duplicate title is handled as the verdict rules; the policy is shown, never silent | ⏳ |
 | 7 · scale | a 250,000-row file with four rules loads without freezing the page; the measurement and the machine are written here | ⏳ |
 | 8 · filter | `<sheetpane-errors>`' author filter (W-18 DoD 5) includes "host" | ⏳ |
 | 9 · tests | the four-column example (Name, Email, Age, Status): typing, saving, loading, async, block vs flag, missing header — in a real browser | ⏳ |
@@ -57,17 +57,17 @@ excel.validate = async (ctx, signal) =>
 
 ## Blockers
 
-Waiting on **W-25** (rulings), **W-14** (the `validate` hook), **W-26**
-(`beforechange` for `block`) and **W-02** (the error list).
+Waiting on **W-26** (`beforechange` for `block`). The `validate` hook
+(W-14, closed → SR-GRID decision 17) and the error list (W-02, closed →
+SR-ERRORS) have landed.
 
 ## Record affected
 
-W-01's component record (properties) and W-14's (the host provider on
-`validate`), in the same change.
+[SR-GRID](../../records/0105_GRID.md): the properties, the host provider on `validate`, and decision 17's auto-resolve widened to `host`; all in the same change.
 
 ## Hazards
 
-- **Rules changing at runtime** vs the frozen plugin set: follow W-25's ruling
+- **Rules changing at runtime** vs the frozen plugin set: follow the verdict's ruling
   exactly.
 - **A host rule must never edit a cell.** It only reports, so the review stays
   auditable.
@@ -76,4 +76,4 @@ W-01's component record (properties) and W-14's (the host provider on
 
 ## Reference
 
-- [W-25](W-25-research-events-rules-hooks.md) · [W-14](W-14-plugin-host.md) · [W-18](W-18-validation.md) · [W-26](W-26-edit-events.md) · [W-02](W-02-sheetpane-errors.md)
+- the [events-and-rules verdict](../compare/grid-events-and-host-rules.compare.md) · W-14 (closed — [SR-GRID](../../records/0105_GRID.md)) · [W-18](W-18-validation.md) · [W-26](W-26-edit-events.md) · W-02 (closed — [SR-ERRORS](../../records/0106_ERRORS.md))

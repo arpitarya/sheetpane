@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — number formats</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1320px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 2 · @sheetpane/numfmt · Edit mode</span>
+<h1 class="h1">Number format — the cell shows ₹3,22,080.00, the cell bar keeps 322080</h1>
+<p class="muted" style="max-width: 980px">The reviewer selected Market value (H3:H15) and chose Currency. Every re-formatted cell gets the core corner mark; the cell bar always shows the raw number, so what you check is the value, not its dress.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">&lt;sheetpane-excel mode="edit"&gt; · plugins: numfmt · format menu open</span>
+<dc-import name="PluginKit" mode="edit" plugins="numfmt" scene="numfmt" open="numfmt" marks="fmtsel,dec,rawval,fmtchip,corner" height="634" hint-size="100%,634px"></dc-import>
+</div>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 540px">
+<span class="bd-cap">View — differs: no format row · cell bar read-only</span>
+<dc-import name="PluginKit" mode="view" plugins="numfmt" scene="numfmt-view" rows="6" scroll="2,5" marks="rawview" mstart="5" height="322" hint-size="100%,322px"></dc-import>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">New controls</span>
+<div class="bd-legend" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { numfmt } from '@sheetpane/numfmt';
+sheet.plugins = [numfmt({ locale: 'en-IN', currency: 'INR' })];</pre>
+<p class="xs muted">Locale and currency are the host's call (₹ with 3,22,080 grouping here). The plugin reads the file's formats and writes the reviewer's format changes on export.</p>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: 'Number format menu — General · Number · Currency · Accounting · Date · Time · Percentage · Fraction · Scientific · Text · Custom…, each previewed on the active cell', slot: 'format-row', plug: 'numfmt' },
+        { k: 'b', t: '.0← and .00→ — fewer / more decimals', slot: 'format-row', plug: 'numfmt' },
+        { k: 'c', t: 'Raw value in the cell bar: 322080, never ₹3,22,080.00', slot: 'cellbar', plug: 'numfmt' },
+        { k: 'd', t: '“Changed · was General” — the format change, in words', slot: 'cellbar', plug: 'numfmt' },
+        { k: 'e', t: 'Corner mark on each re-formatted cell (core mark, reused)', slot: 'cell', plug: 'core' },
+        { k: 'f', t: 'View: same raw value, read-only; cells keep the file\'s formats', slot: 'cellbar', plug: 'numfmt' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

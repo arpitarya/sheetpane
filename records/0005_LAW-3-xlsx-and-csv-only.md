@@ -74,8 +74,9 @@ and only those, for now.
 
 - How an unsupported file is refused (error shape, message) is a component
   decision, owed by the first record that owns the file-loading code.
-- **Judgment today:** no code exists, so nothing checks this law. The check is
-  backlog B-009 (`ungated`).
+- **Checked today:** `@sheetpane/import` refuses every other extension and an
+  OLE or mismatched file before parsing, with a typed error (SR-IMPORT
+  decision 6, `edge.test.ts`); the grid shows the refusal (SR-GRID tests).
 - **Delimiter variants (ruled 2026-10-18, "resolve all the blockers"):** a
   `.csv` file may use `,` `;` or tab and is read with the delimiter detected;
   export defaults to `,` with `;` and tab as options. The `.tsv` extension stays
@@ -112,7 +113,7 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/BACKLOG.md`](../work/BACKLOG.md) — B-009
+- [SR-GRID](0105_GRID.md) · [SR-IMPORT](0104_IMPORT.md) · [SR-ERRORS](0106_ERRORS.md) — the checks
 - [`work/WORKLOG.md`](../work/WORKLOG.md)
 
 **External**

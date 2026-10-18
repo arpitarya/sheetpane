@@ -16,11 +16,11 @@ ball: cowork
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Name the events for "which cell am I on" and "what am I typing", and say which ones can stop an edit | a host can follow and steer every edit | ⏳ |
-| 2 | Design column rules a host writes as data ("Age: a number from 18 to 99"), plus a function for anything else | wrong values are caught as they are typed, not after export | ⏳ |
-| 3 | Fit the rules onto the plugin host's `validate` hook, so their errors appear in the error list like any other | one error list, always in sync (L7) | ⏳ |
-| 4 | Lay out the React hooks, as a package or as copy-paste recipes | React apps follow the sheet in a few lines | ⏳ |
-| 5 | Arpit rules on the open questions below | W-26, W-27 and W-28 can start | 🔴 Arpit decides |
+| 1 | Name the events for "which cell am I on" and "what am I typing", and say which ones can stop an edit | a host can follow and steer every edit | ✅ |
+| 2 | Design column rules a host writes as data ("Age: a number from 18 to 99"), plus a function for anything else | wrong values are caught as they are typed, not after export | ✅ |
+| 3 | Fit the rules onto the plugin host's `validate` hook, so their errors appear in the error list like any other | one error list, always in sync (L7) | ✅ |
+| 4 | Lay out the React hooks, as a package or as copy-paste recipes | React apps follow the sheet in a few lines | ✅ |
+| 5 | Arpit rules on the open questions below | W-26, W-27 and W-28 can start | ✅ 2026-10-18 — every recommendation taken |
 
 **Arpit, 2026-10-18:** *"Can you create some React hooks and some events,
 callbacks, which could be helpful whenever somebody is editing something or
@@ -122,13 +122,13 @@ Phases:
 
 | DoD | what | state |
 |---|---|---|
-| 1 · doc | the compare doc exists with verdict, options, matrix, consequences, references, reopen-trigger | ⏳ |
-| 2 · fit | every proposal checked against the contract and plugin verdicts; any conflict is named, never worked around | ⏳ |
-| 3 · ruling | Arpit rules on questions 4, 5, 6, 7 and 9; the rulings are written into the compare doc and into W-26, W-27 and W-28; question 9 (a) also rewrites SR-LAW-4's Consequences | ⏳ |
+| 1 · doc | the compare doc exists with verdict, options, matrix, consequences, references, reopen-trigger | ✅ [`grid-events-and-host-rules.compare.md`](../compare/grid-events-and-host-rules.compare.md) |
+| 2 · fit | every proposal checked against the contract and plugin verdicts; any conflict is named, never worked around | ✅ one consequence: `validate` takes several providers (W-14) |
+| 3 · ruling | Arpit rules on questions 4, 5, 6, 7 and 9; the rulings are written into the compare doc and into W-26, W-27 and W-28; question 9 (a) also rewrites SR-LAW-4's Consequences | ✅ Arpit, 2026-10-18: "go with the recommendation" on all five — auto-resolve host errors; flag by default, block per rule; trimmed case-insensitive headers, missing/duplicate warn; rules may change after load; recipes, no package (SR-LAW-4 unchanged) |
 
 ## Blockers
 
-None.
+None. **Closed 2026-10-18**: the verdict is [`grid-events-and-host-rules.compare.md`](../compare/grid-events-and-host-rules.compare.md).
 
 ## Record affected
 

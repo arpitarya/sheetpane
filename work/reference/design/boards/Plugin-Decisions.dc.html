@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin decisions</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.dc{display:grid;grid-template-columns:28px 1fr;gap:4px 10px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.dc .nm{grid-row:span 3}
+.dc .t{font:600 13px/1.35 'IBM Plex Sans',sans-serif}
+.dc .w{font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1360px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Decisions the brief did not settle · reconciled with the repo's work items</span>
+<h1 class="h1">19 calls — what matches the spec, what changed, what needs your ruling</h1>
+<p class="muted" style="max-width: 1040px">Checked against <span class="mono small">work/open/W-14…W-24</span> and the plugins verdict. Where the boards contradicted an item file, the boards were fixed — the item file is the spec. Three calls need Arpit; they are in the repo's inbox.</p>
+<div class="row" style="gap: 8px; flex-wrap: wrap"><span class="chip chip-fail">✕ needs a ruling</span><span class="chip chip-warn">! work item updated</span><span class="chip chip-pass">✓ board fixed to spec</span><span class="chip">· matches spec</span></div>
+</header>
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{items}}" as="d" hint-placeholder-count="19">
+<article class="dc">
+<span class="num">{{d.n}}</span>
+<span class="t">{{d.t}}</span>
+<span class="w">{{d.w}}</span>
+<span class="row" style="gap: 6px"><span class="{{d.chip}}">{{d.s}}</span><span class="mono xs faint">{{d.item}}</span></span>
+</article>
+</sc-for>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var ST = { rule: ['chip chip-fail', '✕ needs a ruling'], item: ['chip chip-warn', '! work item updated'], fixed: ['chip chip-pass', '✓ board fixed to spec'], ok: ['chip', '· matches spec'] };
+    var D = [
+      ['rule', 'W-22', 'Export menu line “Write review as Excel comments ✓”', 'Not one of the six slots — keeping it means an export extension point, which is the plugins verdict\'s reopen-trigger. Without it, W-22 writes comments on every export.'],
+      ['rule', 'W-29', 'Dark theme for the --sp-* tokens', 'packages/grid/src/tokens.ts is light only. The boards add a dark ramp mixed from Proof ink #16171A and ground #F6F6F4 — no new hues — and five tokens (cell, head, grid, ref-1…3, on-solid). Filed as W-29.'],
+      ['rule', 'W-18', 'Dismiss on workbook-authored rows', 'W-18 auto-resolves a row when its cell passes; rows are read-only (Show in sheet only). The board proposed Dismiss for a rule the reviewer accepts — left out of the DoD until ruled.'],
+      ['fixed', 'W-23', 'Undo / Redo are core', 'The first boards put them in styles. W-23 makes them core, one stack per pane, before any formatting control. Styles board and the slot map now say so.'],
+      ['fixed', 'W-24', 'Freeze ▾ is Edit-only and a real change', 'Kind freeze, counted, undoable, written to <pane> on export. View keeps the file\'s freeze with no menu. Earlier boards said both modes and never exported.'],
+      ['fixed', 'W-01', '“May be stale” marks dependents only', 'Without formulas, only formula cells that depend on a changed cell get ≈ (W-01 DoD 15) — not every formula cell.'],
+      ['fixed', 'W-21', 'Charts stage 2 draws five types', 'Bar, column (clustered, stacked), line, pie, scatter. Earlier boards said three.'],
+      ['fixed', 'tokens.ts', 'Corner mark uses --sp-changed', 'The code\'s token for a changed cell is --sp-changed (#C46A00), not accent. The kit now uses it, with a cell-colour halo.'],
+      ['item', 'W-19', 'Condfmt gains a ./ui', 'W-19 said no UI. The boards add a hover legend (“Conditional: greater than 1000”) and a status count so colour never carries meaning alone (brief + W-17 DoD 7). Added to W-19\'s DoD.'],
+      ['item', 'W-14', 'Selection bar: plugin buttons after the core ones', 'Flag issue | Copy ref · Copy value | plugin buttons. Placing them right beside Flag issue would shift Copy ref. Added to W-14 DoD 3.'],
+      ['item', 'W-14', 'Where marks sit inside a cell', 'Person pin top-left · workbook ⚠ pin 18 px in from the right · corner mark top-right with halo · note mark bottom-right · ⟳ / ≈ left. Added to W-14.'],
+      ['item', 'W-14', 'Narrow widths: More ▾ is core', 'Toolbar sheds first; then format-row groups move into More ▾ from the right. Number format and Text never move. Added to W-14.'],
+      ['item', 'W-19', 'Review marks over rule fills', 'In Edit a severity ring is drawn over a conditional fill; the fill stays.'],
+      ['item', 'W-20', 'Pictures are click-through in Edit', 'A click on a picture selects the cell under it; pins always draw above pictures.'],
+      ['ok', 'L5', 'No font family, tabular figures', 'Matches SR-LAW-5 and the grid verdict. Numbers lose Plex Mono; the boards use tabular figures in the host font.'],
+      ['ok', 'W-17', 'No size control in the styles row', 'The verdict allows size; W-17\'s groups don\'t list it. Left out.'],
+      ['ok', 'W-18', 'Author filter Person · Workbook · File', 'W-18 DoD 5, a W-02 addition. File stays disabled until comments is installed.'],
+      ['ok', 'sample', 'Sample data instead of the brief\'s literal examples', '=F12*G12, the fee-rate rule 0.00%–2.00%, “Market value by holding” from E3:E15 + H3:H15, ₹3,22,080.00 — real cells of the holdings workbook.'],
+      ['ok', 'names', 'Element names and annotation colour', '<sheetpane-excel> / <sheetpane-errors> as in the laws. The a, b, c… markers use #6B55CC and never ship.']
+    ];
+    return { items: D.map(function (d, i) { return { n: String(i + 1), item: d[1], t: d[2], w: d[3], chip: ST[d[0]][0], s: ST[d[0]][1] }; }) };
+  }
+}
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@ import { isZip } from '@sheetpane/export';
 import { fromCsv } from './csv.js';
 import { ImportError } from './errors.js';
 import type { ImportedWorkbook } from './types.js';
-import { fromXlsx, isCfb, toBytes, type ReadOptions } from './xlsx.js';
+import { cfbRefusal, fromXlsx, isCfb, toBytes, type ReadOptions } from './xlsx.js';
 
 export interface ReadAnyOptions extends ReadOptions {
   /** The file name, when the source is not a File (decides the extension check and the CSV sheet name). */
@@ -17,7 +17,7 @@ export async function read(source: File | Blob | ArrayBuffer | Uint8Array, o: Re
     throw new ImportError('unsupported-format', `"${name}" is a .${ext} file — sheetpane opens .xlsx and .csv only`);
   }
   const bytes = await toBytes(source);
-  if (isCfb(bytes)) throw new ImportError('password-or-legacy', `${name ? `"${name}" ` : 'this file '}is password-protected or a legacy .xls — sheetpane opens .xlsx and .csv only`);
+  if (isCfb(bytes)) throw cfbRefusal(bytes, name);
   const zip = isZip(bytes);
   if (ext === 'csv' && zip) throw new ImportError('unsupported-format', `"${name}" is named .csv but holds a ZIP archive`);
   if (ext === 'xlsx' || (!ext && zip)) {

@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>sheetpane plugin kit — the grid with its six slots</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;font-family:'IBM Plex Sans',ui-sans-serif,sans-serif}
+</style>
+</helmet>
+<section class="{{rootCls}}" style="{{rootSt}}" aria-label="Client holdings — Q3 2026.xlsx">
+
+<div class="spx-tb" role="toolbar" aria-label="Sheet toolbar">
+<svg class="spx-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg>
+<span class="spx-fname">Client holdings — Q3 2026.xlsx</span>
+<sc-if value="{{wide}}" hint-placeholder-val="{{true}}"><span class="spx-meta">xlsx · 48 KB · 2 sheets</span></sc-if>
+<div class="spx-seg" role="group" aria-label="Mode">
+<button class="{{viewCls}}" type="button" aria-pressed="{{isView}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
+<button class="{{editCls}}" type="button" aria-pressed="{{isEdit}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>Edit</button>
+</div>
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{true}}">
+<span class="spx-chip spx-chip-fail">✕ {{cnt.error}}</span>
+<span class="spx-chip spx-chip-warn">! {{cnt.warning}}</span>
+<span class="spx-chip spx-chip-info">i {{cnt.note}}</span>
+</sc-if>
+<sc-if value="{{showUndo}}" hint-placeholder-val="{{false}}">
+<span class="spx-sep" aria-hidden="true"></span>
+<button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="Undo" title="Undo · Mod+Z"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+<button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="Redo" title="Redo · Mod+Shift+Z" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+<sc-if value="{{mk.undo}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.undo}}</span></sc-if>
+</sc-if>
+<sc-if value="{{showFreeze}}" hint-placeholder-val="{{false}}">
+<span class="spx-anchor">
+<button class="spx-btn spx-btn-g" type="button" aria-haspopup="menu" aria-expanded="{{openFreeze}}" title="Freeze panes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18" stroke-width="2.5"/></svg>Freeze<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 11px; height: 11px"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{mk.freeze}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.freeze}}</span></sc-if>
+<sc-if value="{{openFreeze}}" hint-placeholder-val="{{false}}">
+<div class="spx-menu" role="menu" aria-label="Freeze panes" style="left: 0; top: 32px; width: 280px">
+<button class="spx-mi hov" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18" stroke-width="2.5"/></svg><span class="tx"><span>Freeze at selection</span><span class="ds">Rows above 3 · columns left of B</span></span></button>
+<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/></svg><span class="tx"><span>Unfreeze</span><span class="ds">Scroll the whole sheet</span></span></button>
+<div class="spx-msep"></div>
+<div class="spx-mhd">From the file</div>
+<p class="spx-xs spx-faint" style="padding: 0 8px 6px">Rows 1–2 and column A were frozen in Excel. A new freeze is a change: undoable, and written on export.</p>
+</div>
+</sc-if>
+</span>
+</sc-if>
+<span class="spx-sp"></span>
+<sc-if value="{{wide}}" hint-placeholder-val="{{true}}">
+<label class="spx-find"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find in file</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input class="spx-input" placeholder="Find"></label>
+</sc-if>
+<sc-if value="{{narrow}}" hint-placeholder-val="{{false}}"><button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="Find" title="Find · Mod+F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></button></sc-if>
+<select class="spx-input" aria-label="Zoom"><option>100 %</option><option>75 %</option><option>125 %</option></select>
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{true}}">
+<sc-if value="{{wide}}" hint-placeholder-val="{{true}}"><span class="spx-xs spx-faint">{{changesLabel}}</span></sc-if>
+<span class="spx-anchor">
+<button class="spx-btn spx-btn-p" type="button" aria-haspopup="{{exportMenu}}" aria-expanded="{{openExport}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Export .xlsx<sc-if value="{{exportMenu}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 11px; height: 11px"><path d="M6 9l6 6 6-6"/></svg></sc-if></button>
+<sc-if value="{{openExport}}" hint-placeholder-val="{{false}}">
+<div class="spx-menu" role="menu" aria-label="Export" style="right: 0; top: 32px; width: 320px">
+<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Export .xlsx</span><span class="ds">Latest values · the upload is never changed</span></span></button>
+<button class="spx-mi" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg><span class="tx"><span>Export .csv</span><span class="ds">This sheet only · no review notes</span></span></button>
+<div class="spx-msep"></div>
+<div class="spx-mhd">Added by comments</div>
+<button class="spx-mi hov" type="button" role="menuitemcheckbox" aria-checked="true"><span class="ck" aria-hidden="true">✓</span><span class="tx"><span>Write review as Excel comments ✓</span><span class="ds">Each error becomes a threaded comment on its cell. File notes stay as they were.</span></span><sc-if value="{{mk.expline}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.expline}}</span></sc-if></button>
+</div>
+</sc-if>
+</span>
+</sc-if>
+<button class="spx-btn spx-btn-g spx-btn-i" type="button" aria-label="Download the original"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button>
+</div>
+
+<sc-if value="{{showFr}}" hint-placeholder-val="{{false}}">
+<div class="{{frCls}}" role="toolbar" aria-label="Format">
+<sc-if value="{{has.numfmt}}" hint-placeholder-val="{{false}}">
+<div class="spx-grp" role="group" aria-label="Number format">
+<span class="spx-anchor">
+<button class="spx-fsel" type="button" aria-haspopup="listbox" aria-expanded="{{openNumfmt}}" aria-label="Number format: {{fmtVal}}" title="Number format"><span>{{fmtVal}}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{openNumfmt}}" hint-placeholder-val="{{false}}">
+<div class="spx-menu" role="listbox" aria-label="Number format" style="left: 0; top: 30px; width: 268px">
+<sc-for list="{{fmts}}" as="f" hint-placeholder-count="11">
+<button class="{{f.cls}}" type="button" role="option" aria-selected="{{f.on}}"><span class="ck" aria-hidden="true">{{f.ck}}</span><span>{{f.name}}</span><span class="k">{{f.prev}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+</span>
+<sc-if value="{{mk.fmtsel}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.fmtsel}}</span></sc-if>
+<button class="spx-fb" type="button" aria-label="Decrease decimals" title="Decrease decimals"><span>.0←</span></button>
+<button class="spx-fb" type="button" aria-label="Increase decimals" title="Increase decimals"><span>.00→</span></button>
+<sc-if value="{{mk.dec}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.dec}}</span></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{has.styles}}" hint-placeholder-val="{{false}}">
+<div class="spx-grp" role="group" aria-label="Text">
+<button class="spx-fb" type="button" aria-label="Bold" aria-pressed="{{fo.b}}" title="Bold · Mod+B"><span class="lt spx-tB">B</span></button>
+<button class="spx-fb" type="button" aria-label="Italic" aria-pressed="{{fo.i}}" title="Italic · Mod+I"><span class="lt spx-tI">I</span></button>
+<button class="spx-fb" type="button" aria-label="Underline" aria-pressed="{{fo.u}}" title="Underline · Mod+U"><span class="lt spx-tU">U</span></button>
+<button class="spx-fb" type="button" aria-label="Strikethrough" aria-pressed="{{fo.s}}" title="Strikethrough · Mod+Shift+X"><span class="lt spx-tS">S</span></button>
+<sc-if value="{{mk.text}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.text}}</span></sc-if>
+</div>
+<sc-if value="{{wide}}" hint-placeholder-val="{{true}}">
+<div class="spx-grp" role="group" aria-label="Colour">
+<button class="spx-fb sw" type="button" aria-label="Text colour" title="Text colour"><span class="lt" style="font-weight: 600">A</span><span class="bar" style="{{colorBarSt}}"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{mk.color}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.color}}</span></sc-if>
+</div>
+<div class="spx-grp" role="group" aria-label="Fill">
+<button class="spx-fb sw" type="button" aria-label="Fill colour" title="Fill colour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l6-6 7 7-6 6z"/><path d="M8 4l3 2"/><path d="M20 15s1.5 2 1.5 3a1.5 1.5 0 0 1-3 0c0-1 1.5-3 1.5-3z"/></svg><span class="bar" style="{{fillBarSt}}"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{mk.fill}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.fill}}</span></sc-if>
+</div>
+<div class="spx-grp" role="group" aria-label="Borders">
+<span class="spx-anchor">
+<button class="{{bordersCls}}" type="button" aria-label="Borders" aria-haspopup="menu" aria-expanded="{{openBorders}}" title="Borders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16"/><path d="M4 12h16M12 4v16" stroke-dasharray="2 2"/></svg><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{openBorders}}" hint-placeholder-val="{{false}}">
+<div class="spx-menu" role="menu" aria-label="Borders" style="left: 0; top: 30px; width: 200px">
+<sc-for list="{{borders}}" as="b" hint-placeholder-count="8">
+<button class="{{b.cls}}" type="button" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="square" aria-hidden="true"><path d="M4 4h16v16H4z" stroke-width="1" stroke-dasharray="2 2" opacity=".55"/><path d="{{b.d}}" stroke-width="{{b.sw}}"/></svg><span>{{b.name}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+</span>
+<sc-if value="{{mk.borders}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.borders}}</span></sc-if>
+</div>
+<div class="spx-grp" role="group" aria-label="Align">
+<button class="spx-fb" type="button" aria-label="Align left" aria-pressed="{{fo.left}}" title="Align left · Mod+Shift+L"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+<button class="spx-fb" type="button" aria-label="Align centre" aria-pressed="{{fo.center}}" title="Align centre · Mod+Shift+E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+<button class="spx-fb" type="button" aria-label="Align right" aria-pressed="{{fo.right}}" title="Align right · Mod+Shift+R"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+<span class="spx-sep" aria-hidden="true" style="height: 14px; margin: 0 2px"></span>
+<button class="spx-fb" type="button" aria-label="Align top" aria-pressed="{{fo.top}}" title="Align top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16M12 8v12M8 12l4-4 4 4"/></svg></button>
+<button class="spx-fb" type="button" aria-label="Align middle" aria-pressed="{{fo.middle}}" title="Align middle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M12 3v6M12 15v6M9 6l3 3 3-3M9 18l3-3 3 3"/></svg></button>
+<button class="spx-fb" type="button" aria-label="Align bottom" aria-pressed="{{fo.bottom}}" title="Align bottom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M12 4v12M8 12l4 4 4-4"/></svg></button>
+<sc-if value="{{mk.align}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.align}}</span></sc-if>
+</div>
+<div class="spx-grp" role="group" aria-label="Wrap">
+<button class="spx-fb" type="button" aria-label="Wrap text" aria-pressed="{{fo.wrap}}" title="Wrap text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h13a3 3 0 0 1 0 6h-4M4 18h5M15 16l-2 2 2 2"/></svg><span>Wrap</span></button>
+<sc-if value="{{mk.wrap}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.wrap}}</span></sc-if>
+</div>
+<div class="spx-grp" role="group" aria-label="Clear">
+<button class="spx-fb" type="button" aria-label="Clear formatting" title="Clear formatting · Mod+\"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20h12M5 15l9-9 5 5-9 9H8z"/></svg><span>Clear</span></button>
+<sc-if value="{{mk.clear}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.clear}}</span></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{narrow}}" hint-placeholder-val="{{false}}">
+<div class="spx-grp" role="group" aria-label="More formatting">
+<span class="spx-anchor">
+<button class="{{moreCls}}" type="button" aria-haspopup="menu" aria-expanded="{{openMore}}" title="More formatting"><span>More</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<sc-if value="{{openMore}}" hint-placeholder-val="{{false}}">
+<div class="spx-menu" role="menu" aria-label="More formatting" style="left: 0; top: 30px; width: 220px">
+<div class="spx-mhd">Moved here at this width</div>
+<button class="spx-mi" type="button" role="menuitem"><span class="ck" aria-hidden="true">A</span><span>Text colour</span><span class="k">▸</span></button>
+<button class="spx-mi" type="button" role="menuitem"><span class="ck" aria-hidden="true">▧</span><span>Fill colour</span><span class="k">▸</span></button>
+<button class="spx-mi hov" type="button" role="menuitem"><span class="ck" aria-hidden="true">▦</span><span>Borders</span><span class="k">▸</span></button>
+<button class="spx-mi" type="button" role="menuitem"><span class="ck" aria-hidden="true">≡</span><span>Align</span><span class="k">▸</span></button>
+<button class="spx-mi" type="button" role="menuitem"><span class="ck" aria-hidden="true">↵</span><span>Wrap text</span></button>
+<button class="spx-mi" type="button" role="menuitem"><span class="ck" aria-hidden="true">⌫</span><span>Clear formatting</span><span class="k">Mod+\</span></button>
+</div>
+</sc-if>
+</span>
+<sc-if value="{{mk.more}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{mk.more}}</span></sc-if>
+</div>
+</sc-if>
+</sc-if>
+</div>
+</sc-if>
+
+<div class="{{cbCls}}">
+<span class="spx-ref">{{selRef}}</span>
+<sc-if value="{{cb.fx}}" hint-placeholder-val="{{false}}"><span class="{{cb.fxCls}}" title="{{cb.fxTitle}}">fx</span><sc-if value="{{cb.fxMk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{cb.fxMk}}</span></sc-if></sc-if>
+<span class="{{cb.valCls}}" aria-label="Value of {{selRef}}"><sc-for list="{{cb.tokens}}" as="t" hint-placeholder-count="1"><span class="{{t.cls}}">{{t.t}}</span></sc-for><sc-if value="{{cb.empty}}" hint-placeholder-val="{{false}}"><span class="spx-faint">(empty)</span></sc-if><sc-if value="{{cb.editing}}" hint-placeholder-val="{{false}}"><span class="spx-caret" aria-hidden="true"></span></sc-if></span>
+<sc-if value="{{cb.valMk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{cb.valMk}}</span></sc-if>
+<sc-for list="{{cb.chips}}" as="c" hint-placeholder-count="1"><span class="{{c.cls}}">{{c.t}}</span><sc-if value="{{c.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{c.mk}}</span></sc-if></sc-for>
+<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="right: 10px; top: 9px">cellbar</span></sc-if>
+</div>
+
+<div class="{{gwCls}}">
+<div class="spx-gi" style="{{giSt}}">
+<div class="spx-r spx-chr"><span class="spx-rh"></span><sc-for list="{{cols}}" as="c" hint-placeholder-count="10"><span class="{{c.cls}}" style="{{c.st}}">{{c.l}}</span></sc-for></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="16">
+<div class="{{r.cls}}"><span class="spx-rh"><span class="g {{r.gc}}">{{r.g}}</span>{{r.n}}</span><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="10"><button type="button" class="{{c.cls}}" style="{{c.st}}" aria-label="{{c.al}}"><sc-if value="{{c.bar}}" hint-placeholder-val="{{false}}"><span class="spx-dbar" style="{{c.barSt}}" aria-hidden="true"></span></sc-if><sc-if value="{{c.rc}}" hint-placeholder-val="{{false}}"><span class="spx-rc" title="Recalculated">⟳</span></sc-if><sc-if value="{{c.stale}}" hint-placeholder-val="{{false}}"><span class="spx-stl" title="May be stale">≈</span></sc-if><span class="spx-cv">{{c.v}}</span><sc-if value="{{c.dd}}" hint-placeholder-val="{{false}}"><span class="spx-dd" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></sc-if><sc-if value="{{c.bub}}" hint-placeholder-val="{{false}}"><span class="spx-bub" title="Note from the file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span></sc-if><sc-if value="{{c.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk spx-mk-c">{{c.mk}}</span></sc-if></button></sc-for></div>
+</sc-for>
+
+<div class="spx-pane" style="{{paneSt}}">
+<sc-for list="{{ovs}}" as="o" hint-placeholder-count="0">
+<sc-if value="{{o.isBox}}" hint-placeholder-val="{{false}}"><div class="{{o.cls}}" style="{{o.st}}"><sc-if value="{{o.tag}}" hint-placeholder-val="{{false}}"><span class="spx-reftag" style="{{o.tagSt}}">{{o.tag}}</span></sc-if><sc-if value="{{o.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk spx-mk-tr">{{o.mk}}</span></sc-if></div></sc-if>
+<sc-if value="{{o.isImg}}" hint-placeholder-val="{{false}}"><figure class="spx-img" style="{{o.st}}" aria-label="Picture branch-office.jpg anchored C4:F9" role="img" data-z="2"><svg viewBox="0 0 398 168" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="398" height="168" fill="#EBEEFB"/><circle cx="318" cy="40" r="18" fill="#FBF0D9"/><path d="M0 128 L70 92 L140 118 L220 80 L300 112 L398 90 L398 168 L0 168 Z" fill="#E6F2EA"/><rect x="118" y="62" width="120" height="96" fill="#CBCBC5"/><rect x="118" y="54" width="120" height="10" fill="#45484F"/><rect x="132" y="76" width="18" height="18" fill="#F6F6F4"/><rect x="160" y="76" width="18" height="18" fill="#F6F6F4"/><rect x="188" y="76" width="18" height="18" fill="#F6F6F4"/><rect x="216" y="76" width="12" height="18" fill="#F6F6F4"/><rect x="132" y="106" width="18" height="18" fill="#F6F6F4"/><rect x="160" y="106" width="18" height="18" fill="#F6F6F4"/><rect x="188" y="106" width="18" height="18" fill="#F6F6F4"/><rect x="166" y="132" width="24" height="26" fill="#63666E"/><path d="M0 158 L398 150 L398 168 L0 168 Z" fill="#16703E" opacity=".35"/></svg><figcaption class="spx-img-cap">branch-office.jpg · anchored C4:F9</figcaption><sc-if value="{{o.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="position: absolute; right: 6px; top: 6px; margin: 0">{{o.mk}}</span></sc-if></figure></sc-if>
+<sc-if value="{{o.isEmf}}" hint-placeholder-val="{{false}}"><div class="spx-emf" style="{{o.st}}" role="img" aria-label="logo.emf, preview unavailable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/><path d="M3 3l18 18"/></svg><span class="spx-b">logo.emf — preview unavailable</span><span class="spx-xs spx-faint">EMF can't be drawn in a browser · anchored H17:J21</span><sc-if value="{{o.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="position: absolute; right: 6px; top: 6px; margin: 0">{{o.mk}}</span></sc-if></div></sc-if>
+<sc-if value="{{o.isChart}}" hint-placeholder-val="{{false}}"><div class="spx-chart" style="{{o.st}}" role="group" aria-label="Chart: Market value by holding">
+<div class="spx-chart-hd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M2 20h20"/></svg><span class="spx-b">Market value by holding</span><span class="spx-chip">bar</span><span class="spx-sp"></span><sc-if value="{{o.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{o.mk}}</span></sc-if></div>
+<sc-if value="{{o.stub}}" hint-placeholder-val="{{true}}"><div class="spx-chart-bd"><span>Chart from the file. sheetpane shows where it sits and what it reads; Excel draws it.</span><button class="spx-btn" type="button" aria-pressed="{{o.srcOn}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" stroke-dasharray="3 2"/></svg>Show source cells</button></div></sc-if>
+<sc-if value="{{o.plot}}" hint-placeholder-val="{{false}}"><svg class="plot" viewBox="0 0 318 292" role="img" aria-label="Bar chart of market value for 13 holdings; TMKT row 3 is largest at 322,080; SCVE is negative at -9,180" style="font-size: 10px"><g style="fill: var(--sp-ink-3)" text-anchor="end"><text x="44" y="18">TMKT</text><text x="44" y="39">STBF</text><text x="44" y="60">DIVG</text><text x="44" y="81">GLEQ</text><text x="44" y="102">TMKT</text><text x="44" y="123">MUNI</text><text x="44" y="144">REIF</text><text x="44" y="165">SCVE</text><text x="44" y="186">TIPF</text><text x="44" y="207">TMKT</text><text x="44" y="228">STBF</text><text x="44" y="249">DIVG</text><text x="44" y="270">GLEQ</text></g><g style="fill: var(--sp-accent)"><rect x="57" y="8" width="251" height="13" rx="1"/><rect x="57" y="29" width="67" height="13" rx="1"/><rect x="57" y="50" width="25" height="13" rx="1"/><rect x="57" y="71" width="70" height="13" rx="1"/><rect x="57" y="92" width="67" height="13" rx="1"/><rect x="57" y="113" width="26" height="13" rx="1"/><rect x="57" y="134" width="6" height="13" rx="1"/><rect x="57" y="176" width="11" height="13" rx="1"/><rect x="57" y="197" width="41" height="13" rx="1"/><rect x="57" y="218" width="79" height="13" rx="1"/><rect x="57" y="239" width="25" height="13" rx="1"/><rect x="57" y="260" width="29" height="13" rx="1"/></g><rect x="50" y="155" width="7" height="13" rx="1" style="fill: var(--sp-fail)"/><line x1="57" y1="2" x2="57" y2="280" style="stroke: var(--sp-ink-3)" stroke-width="1"/><g style="fill: var(--sp-ink-2)"><text x="304" y="18" text-anchor="end" style="fill: var(--sp-on-solid)">322,080</text><text x="72" y="165" text-anchor="start">−9,180</text><text x="102" y="207" text-anchor="start">52,338</text></g><text x="57" y="290" style="fill: var(--sp-ink-3)" text-anchor="middle">0</text></svg></sc-if>
+<sc-if value="{{o.chip}}" hint-placeholder-val="{{false}}"><div class="spx-chart-ft"><span class="spx-chip spx-chip-warn">⟳ data changed — Excel will redraw</span><sc-if value="{{o.chipMk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{o.chipMk}}</span></sc-if></div></sc-if>
+</div></sc-if>
+<sc-if value="{{o.isTip}}" hint-placeholder-val="{{false}}"><div class="spx-tip" role="tooltip" style="{{o.st}}"><div>Conditional: greater than 1000</div><div class="sub">From the workbook · F3:F15 · fill #16171A, text #FFFFFF</div><sc-if value="{{o.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk spx-mk-tr">{{o.mk}}</span></sc-if></div></sc-if>
+<sc-if value="{{o.isList}}" hint-placeholder-val="{{false}}"><div class="spx-menu" role="listbox" aria-label="Choices for C11" style="{{o.st}}"><div class="spx-mhd">List · from the workbook</div><button class="spx-mi hov" type="button" role="option" aria-selected="false"><span class="ck" aria-hidden="true"></span><span>S. Kapoor</span><span class="k">used 6×</span></button><button class="spx-mi" type="button" role="option" aria-selected="false"><span class="ck" aria-hidden="true"></span><span>A. Rao</span><span class="k">used 6×</span></button><div class="spx-msep"></div><p class="spx-xs spx-faint" style="padding: 2px 8px 6px">Picking a choice changes the cell (corner mark). Rule source: Data validation on C3:C15.</p><sc-if value="{{o.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk spx-mk-tr">{{o.mk}}</span></sc-if></div></sc-if>
+<sc-if value="{{o.isSlot}}" hint-placeholder-val="{{false}}"><div class="spx-slotbox" style="{{o.st}}"><span class="spx-slotlbl" style="left: -2px; top: -18px">{{o.tag}}</span></div></sc-if>
+</sc-for>
+</div>
+
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="0"><button class="{{p.cls}}" type="button" aria-label="{{p.al}}" style="{{p.st}}">{{p.label}}<sc-if value="{{p.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk spx-mk-tr">{{p.mk}}</span></sc-if></button></sc-for>
+
+<sc-if value="{{showSelbar}}" hint-placeholder-val="{{false}}">
+<div class="{{sbCls}}" role="toolbar" aria-label="Selection" style="{{sbSt}}">
+<button class="on" type="button" title="Flag issue · F"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue <span class="kb">F</span></button>
+<span class="sbsep" aria-hidden="true"></span>
+<button type="button">Copy ref</button>
+<button type="button">Copy value</button>
+<sc-if value="{{sbStyles}}" hint-placeholder-val="{{false}}">
+<span class="sbsep" aria-hidden="true"></span>
+<button type="button" aria-pressed="{{fo.b}}" aria-label="Bold" title="Bold · Mod+B"><span style="font-weight: 700">B</span></button>
+<button type="button" aria-label="Fill colour" title="Fill colour"><span class="swb" style="{{fillSwSt}}"></span>Fill</button>
+<sc-if value="{{mk.sbbold}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="align-self: center">{{mk.sbbold}}</span></sc-if>
+<sc-if value="{{sbMerge}}" hint-placeholder-val="{{false}}"><button type="button" title="Merge cells"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8M11 9l-3 3 3 3M13 9l3 3-3 3"/></svg>Merge</button><sc-if value="{{mk.sbmerge}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="align-self: center">{{mk.sbmerge}}</span></sc-if></sc-if>
+</sc-if>
+<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="left: 0; top: -20px">selbar</span></sc-if>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="right: 10px; top: 32px">overlay · sheet space (pins, find highlights)</span></sc-if>
+</div>
+
+<sc-if value="{{hasTabs}}" hint-placeholder-val="{{true}}">
+<nav class="spx-tabs" aria-label="Sheets"><button class="spx-tab on" type="button">Holdings<sc-if value="{{tabCnt}}" hint-placeholder-val="{{false}}"><span class="spx-cnt">{{tabCnt}}</span></sc-if></button><button class="spx-tab" type="button">Fee tiers</button></nav>
+</sc-if>
+
+<div class="{{stCls}}">
+<span>Holdings · 13 rows × 10 columns · 1 merged range</span>
+<sc-if value="{{memNote}}" hint-placeholder-val="{{false}}"><span>{{memNote}}</span></sc-if>
+<sc-for list="{{status}}" as="s" hint-placeholder-count="0"><span class="{{s.cls}}">{{s.t}}<sc-if value="{{s.mk}}" hint-placeholder-val="{{false}}"><span class="spx-mk">{{s.mk}}</span></sc-if></span></sc-for>
+<span class="spx-sp"></span>
+<sc-if value="{{wide}}" hint-placeholder-val="{{true}}"><span>Read in this tab — nothing uploaded</span></sc-if>
+<sc-if value="{{slots}}" hint-placeholder-val="{{false}}"><span class="spx-slotlbl" style="right: 220px; top: 5px">status</span></sc-if>
+</div>
+
+<sc-if value="{{frGhost}}" hint-placeholder-val="{{false}}"><div class="spx-frghost" aria-hidden="true"><span class="spx-slotlbl" style="left: 10px; top: -9px">format-row · Edit only · not drawn until a plugin adds to it</span></div></sc-if>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["view","edit"],"default":"edit"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"plugins":{"editor":"text","default":""},"scene":{"editor":"enum","options":["baseline","numfmt","numfmt-view","formulas","formulas-view","formulas-none","styles","validation","validation-view","condfmt","images","images-edit","charts","charts-plot","comments","freeze","freeze-scrolled","all","sync"],"default":"baseline"},"slots":{"editor":"boolean","default":false},"height":{"editor":"int","default":602,"min":240,"max":1200,"unit":"px"},"rows":{"editor":null},"extra":{"editor":null},"frozen":{"editor":null},"scroll":{"editor":null},"marks":{"editor":null},"mstart":{"editor":null},"narrow":{"editor":null},"open":{"editor":null},"issues":{"editor":null},"core":{"editor":null},"$preview":{"width":1344,"height":602}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var p = this.props || {};
+    function tr(s) { return String(s).trim(); }
+    function on(v) { return v === true || v === 'true'; }
+    var isEdit = p.mode !== 'view';
+    var dark = p.theme === 'dark';
+    var has = {};
+    String(p.plugins || '').split(',').map(tr).filter(Boolean).forEach(function (k) { has[k] = true; });
+    var scene = p.scene || 'baseline';
+    var narrow = on(p.narrow), slots = on(p.slots);
+    var open = p.open || '';
+    var nRows = parseInt(p.rows, 10) || 16;
+    var extra = parseInt(p.extra, 10) || 0;
+    var fzA = String(p.frozen || '0,0').split(','), fr = parseInt(fzA[0], 10) || 0, fc = parseInt(fzA[1], 10) || 0;
+    var scA = String(p.scroll || '0,0').split(','), sr = parseInt(scA[0], 10) || 0, sc = parseInt(scA[1], 10) || 0;
+    var letters = 'abcdefghijklmnopqrstuvwxyz', m0 = parseInt(p.mstart, 10) || 0, MKS = {};
+    String(p.marks || '').split(',').map(tr).filter(Boolean).forEach(function (k, i) { MKS[k] = letters.charAt(m0 + i); });
+    function mk(k) { return k && MKS[k] ? MKS[k] : ''; }
+
+    var TITLE = 'Client holdings — as of 30 Sep 2026';
+    var HDR = ['Account ID', 'Client', 'Advisor', 'Security', 'Ticker', 'Units', 'Price', 'Market value', 'Fee rate', 'As of'];
+    var D = [
+      ['AC-10021', 'R. Mehta', 'S. Kapoor', 'Total Market Index Fund', 'TMKT', '1,200', '268.40', '322,080.00', '0.75%', '30-Sep-2026'],
+      ['AC-10021', 'R. Mehta', 'S. Kapoor', 'Short-Term Bond Fund', 'STBF', '850', '101.12', '85,952.00', '0.40%', '30-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Dividend Growth ETF', 'DIVG', '430', '74.85', '32,185.50', '0.75%', '30-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Global Equity Fund', 'GLEQ', '2,000', '45.10', '90,200.00', '7.5%', '30-Sep-2026'],
+      ['AC-10042', 'P. Iyer', 'S. Kapoor', 'Total Market Index Fund', 'TMKT', '300', '286.40', '85,920.00', '0.75%', '30-Sep-2026'],
+      ['AC-1O044', 'K. Sharma', 'A. Rao', 'Municipal Bond Fund', 'MUNI', '640', '52.30', '33,472.00', '0.40%', '30-Sep-2026'],
+      ['AC-10044', 'K. Sharma', 'A. Rao', 'Real Estate Income Fund', 'REIF', '210', '38.95', '8,179.50', '0.85%', '30-Sep-2026'],
+      ['AC-10051', 'M. D’Souza', 'S. Kapoor', 'Small-Cap Value ETF', 'SCVE', '-150', '61.20', '-9,180.00', '0.75%', '30-Sep-2026'],
+      ['AC-10051', 'M. D’Souza', '', 'Treasury Inflation Fund', 'TIPF', '500', '27.64', '13,820.00', '0.40%', '30-Sep-2026'],
+      ['AC-10063', 'N. Gupta', 'A. Rao', 'Total Market Index Fund', 'TMKT', '195', '268.40', '48,210.00', '0.75%', '30-Sep-2026'],
+      ['AC-10063', 'N. Gupta', 'A. Rao', 'Short-Term Bond Fund', 'STBF', '1,000', '101.12', '101,120.00', '0.40%', '31-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Dividend Growth ETF', 'DIVG', '430', '74.85', '32,185.50', '0.75%', '30-Sep-2026'],
+      ['AC-10070', 'V. Nair', 'S. Kapoor', 'Global Equity Fund', 'GLEQ', '820', '45.10', '36,982.00', '0.75%', '30-Sep-2026']
+    ];
+    var L = 'ABCDEFGHIJKLMNOP'.split('');
+    var W = [84, 110, 96, 168, 64, 70, 76, 108, 70, 100];
+    for (var e = 0; e < extra; e++) W.push(80);
+    var nc = W.length;
+    var NUM = { F: 1, G: 1, H: 1, I: 1 };
+    function rowOf(ref) { return parseInt(String(ref).replace(/[A-Z]/g, ''), 10); }
+    function colOf(ref) { return String(ref).replace(/[0-9]/g, ''); }
+    function ci(c) { return L.indexOf(c); }
+    function raw(ref) { var r = rowOf(ref), c = ci(colOf(ref)); if (r === 1) return c === 0 ? TITLE : ''; if (r === 2) return HDR[c] || ''; var row = D[r - 3]; return row ? (row[c] || '') : ''; }
+    function num(s) { return parseFloat(String(s).replace(/,/g, '').replace('%', '')); }
+    function inr(n) { var neg = n < 0; var s = Math.abs(n).toFixed(2), ip = s.split('.')[0], dp = s.split('.')[1]; var last3 = ip.slice(-3), rest = ip.slice(0, -3); if (rest) rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ','; return (neg ? '-' : '') + '₹' + rest + last3 + '.' + dp; }
+
+    // ---- geometry (sheet space) ----
+    function sumW(a, b) { var t = 0; for (var k = a; k < b; k++) t += W[k]; return t; }
+    var visCols = []; for (var j0 = 0; j0 < nc; j0++) if (j0 < fc || j0 >= fc + sc) visCols.push(j0);
+    var visRows = []; for (var r0 = 1; visRows.length < nRows; r0++) if (r0 <= fr || r0 > fr + sr) visRows.push(r0);
+    function vX(j) { var b = 52 + sumW(0, fc); if (j < fc) return 52 + sumW(0, j); if (j >= fc + sc) return b + sumW(fc + sc, j); return b - sumW(j, fc + sc); }
+    function vY(r) { if (r <= fr) return 24 + (r - 1) * 28; return 24 + fr * 28 + (r - fr - sr - 1) * 28; }
+    function visR(r) { return visRows.indexOf(r) >= 0; }
+    function visC(j) { return visCols.indexOf(j) >= 0; }
+    var GW = 52; visCols.forEach(function (j) { GW += W[j]; });
+    var GH = 24 + visRows.length * 28;
+    var paneL = 52 + sumW(0, fc), paneT = 24 + fr * 28;
+    function box(a, b) { b = b || a; var c1 = ci(colOf(a)), c2 = ci(colOf(b)), r1 = rowOf(a), r2 = rowOf(b); return { l: vX(c1) - paneL, t: vY(r1) - paneT, w: vX(c2) + W[c2] - vX(c1), h: vY(r2) + 28 - vY(r1) }; }
+    function bst(bx, more) { return 'left:' + bx.l + 'px;top:' + bx.t + 'px;width:' + bx.w + 'px;height:' + bx.h + 'px' + (more ? ';' + more : ''); }
+
+    // ---- scene ----
+    var S = { sel: 'E5', range: null, editing: false, fx: false, fxRo: false, fxDim: false, tokens: null, chips: [], valMk: '', fxMk: '', cells: {}, ovs: [], wb: [], extraPins: [], status: [], selbar: true, issues: isEdit ? 'all' : 'none', fmtVal: 'General', fo: {}, colorBar: '#16171A', fillBar: 'transparent', changes: 0, memNote: '' };
+    function cell(ref) { if (!S.cells[ref]) S.cells[ref] = { cls: [], st: [] }; return S.cells[ref]; }
+    function ov(kind, a, b, o) { o = o || {}; o.kind = kind; o.a = a; o.b = b; S.ovs.push(o); return o; }
+
+    // plugin renders that do not depend on the scene
+    if (has.styles) {
+      cell('F10').st.push('color:#B42318');
+    }
+    if (has.condfmt) {
+      var gv = [], gmin = 1e9, gmax = -1e9;
+      for (var gr = 3; gr <= 15; gr++) { var g = num(raw('G' + gr)); gv.push(g); gmin = Math.min(gmin, g); gmax = Math.max(gmax, g); }
+      if (scene !== 'all') gv.forEach(function (g, k) { var pc = Math.round(6 + 36 * (g - gmin) / (gmax - gmin)); cell('G' + (k + 3)).st.push('background:color-mix(in srgb,#2346C8 ' + pc + '%,#FFFFFF);color:#16171A'); });
+      var hmax = 322080;
+      for (var hr = 3; hr <= 15; hr++) { var hv = num(raw('H' + hr)); if (scene === 'charts' && hr === 12) hv = 52338; var pct = Math.max(2, Math.round(Math.abs(hv) / hmax * 100)); var hc = cell('H' + hr); hc.bar = true; hc.barSt = 'width:calc(' + pct + '% - 6px);' + (hv < 0 ? 'background:#FBE9E7;box-shadow:inset -2px 0 0 #B42318' : 'background:#EBEEFB;box-shadow:inset -2px 0 0 #2346C8'); }
+      ['F3', 'F6'].forEach(function (rf) { var fcl = cell(rf); fcl.st.push('background:#16171A;color:#FFFFFF'); });
+    }
+    if (has.comments) { cell('H3').bub = true; cell('D9').bub = true; }
+
+    switch (scene) {
+      case 'numfmt':
+        S.sel = 'H3'; S.range = ['H3', 'H15']; S.fmtVal = 'Currency'; S.issues = 'none'; S.selbar = false;
+        for (var r1 = 3; r1 <= 15; r1++) { var c1 = cell('H' + r1); c1.v = inr(num(raw('H' + r1))); c1.chg = true; }
+        cell('H4').mk = mk('corner');
+        S.tokens = [{ t: '322080' }]; S.valMk = mk('rawval');
+        S.chips = [{ t: 'Changed · was General', cls: 'spx-chip spx-chip-info', mk: mk('fmtchip') }];
+        S.changes = 13; break;
+      case 'numfmt-view':
+        S.sel = 'H3'; S.issues = 'none';
+        for (var r2 = 3; r2 <= 15; r2++) cell('H' + r2).v = inr(num(raw('H' + r2)));
+        S.tokens = [{ t: '322080' }]; S.valMk = mk('rawview');
+        S.chips = [{ t: 'Shown as ₹3,22,080.00', cls: 'spx-chip' }]; break;
+      case 'formulas':
+        S.sel = 'H12'; S.editing = true; S.fx = true; S.fxMk = mk('fx'); S.issues = 'none'; S.selbar = false;
+        S.tokens = [{ t: '=' }, { t: 'F12', cls: 'spx-tk1' }, { t: '*' }, { t: 'G12', cls: 'spx-tk2' }];
+        var h12 = cell('H12'); h12.v = '=F12*G12'; h12.cls.push('ed');
+        ov('box', 'F12', null, { cls: 'spx-refbox spx-ref1', tag: 'F12', mk: mk('refs') });
+        ov('box', 'G12', null, { cls: 'spx-refbox spx-ref2', tag: 'G12' });
+        var g7 = cell('G7'); g7.v = '268.40'; g7.chg = true;
+        var h7 = cell('H7'); h7.v = '80,520.00'; h7.rc = true; h7.mk = mk('recalc');
+        var i9 = cell('I9'); i9.v = '#REF!'; i9.cls.push('referr'); i9.mk = mk('referr');
+        S.chips = [{ t: 'Enter applies · Esc cancels', cls: 'spx-chip' }];
+        S.status = [{ t: 'Editing H12', cls: 'pl' }, { t: '⟳ 1 cell recalculated', cls: 'pl', mk: mk('strecalc') }];
+        S.changes = 2; break;
+      case 'formulas-view':
+        S.sel = 'H3'; S.range = ['H3', 'H15']; S.fx = true; S.fxRo = true; S.fxMk = mk('fxro'); S.issues = 'none';
+        S.tokens = [{ t: '=F3*G3' }];
+        S.chips = [{ t: 'Formula · read-only in View', cls: 'spx-chip' }];
+        S.status = [{ t: 'Sum 881,126.50 · Avg 67,778.96 · Count 13', cls: 'pl', mk: mk('ststats') }]; break;
+      case 'formulas-none':
+        S.sel = 'H12'; S.issues = 'none'; S.selbar = false;
+        var s12 = cell('H12'); s12.stale = true; s12.cls.push('stale'); s12.mk = mk('stalecell');
+        var f12 = cell('F12'); f12.v = '196'; f12.chg = true; S.changes = 1;
+        S.tokens = [{ t: '48,210.00' }];
+        S.chips = [{ t: '≈ may be stale', cls: 'spx-chip spx-chip-warn', mk: mk('stalechip') }, { t: 'Formula in the file · cached value shown', cls: 'spx-chip' }]; break;
+      case 'styles':
+        S.sel = 'G7'; S.range = ['G7', 'H7']; S.issues = 'none';
+        var sg = cell('G7'); sg.st.push('font-weight:600;background:#FBF0D9;color:#16171A'); sg.chg = true; sg.mk = mk('stylecorner');
+        cell('B2').mk = mk('filestyle');
+        S.tokens = [{ t: '286.40' }];
+        S.chips = [{ t: 'Changed · style was plain → Bold, Fill', cls: 'spx-chip spx-chip-info', mk: mk('stylechip') }];
+        S.fo = { b: true, right: true, middle: true }; S.fillBar = '#FBF0D9'; S.changes = 1; break;
+      case 'validation':
+      case 'validation-view':
+        S.sel = 'C11'; S.selbar = false;
+        if (scene === 'validation') { ov('list', 'C11', null, { mk: mk('listopen') }); cell('C4').mk = mk('ddarrow'); }
+        S.wb = ['I6', 'C11', 'F10', 'J13'];
+        S.tokens = []; S.chips = [{ t: '⚠ List rule · S. Kapoor, A. Rao', cls: 'spx-chip spx-chip-warn' }];
+        S.status = [{ t: '! 4 validation warnings', cls: 'pl warn', mk: mk('stvalid') }]; break;
+      case 'condfmt':
+        S.sel = ''; S.issues = 'none';
+        cell('G4').mk = mk('scale'); cell('H4').mk = mk('bar'); cell('F3').mk = mk('cellis');
+        ov('tip', 'F6', null, { mk: mk('legend') });
+        S.status = [{ t: '3 conditional rules from the file', cls: 'pl', mk: mk('stcf') }]; break;
+      case 'images':
+      case 'images-edit':
+        S.sel = ''; S.issues = 'none';
+        ov('img', 'C4', 'F9', { mk: mk('img') });
+        if (visR(17)) ov('emf', 'H17', 'J21', { mk: mk('emf') });
+        if (scene === 'images-edit') S.extraPins = [{ n: 9, ref: 'E7', sev: 'warning', mk: mk('pinover') }];
+        S.status = [{ t: '2 pictures · 1 preview unavailable', cls: 'pl', mk: mk('stimg') }]; break;
+      case 'charts':
+      case 'charts-plot':
+        S.sel = 'E3'; S.issues = 'none'; S.selbar = false;
+        ov('box', 'E3', 'E15', { cls: 'spx-selbox', tag: 'E3:E15 · categories', mk: mk('srcsel') });
+        ov('box', 'H3', 'H15', { cls: 'spx-selbox', tag: 'H3:H15 · values' });
+        ov('chart', 'K3', 'N14', { mk: mk('frame'), stub: scene === 'charts', plot: scene === 'charts-plot', chip: true, chipMk: mk('chartchip'), srcOn: true });
+        var c12 = cell('H12'); c12.v = '52,338.00'; c12.chg = true;
+        S.chips = [{ t: 'Chart source · categories', cls: 'spx-chip spx-chip-info' }];
+        S.status = [{ t: 'Chart source: Holdings!E3:E15, H3:H15', cls: 'pl', mk: mk('stchart') }];
+        S.changes = 1; break;
+      case 'comments':
+        S.sel = 'E5'; S.selbar = false;
+        cell('H3').mk = mk('filenote'); break;
+      case 'freeze':
+        S.sel = 'B3'; S.selbar = false;
+        cell('A6').mk = mk('divider');
+        S.status = [{ t: 'Frozen · rows 1–2 · column A', cls: 'pl', mk: mk('stfreeze') }]; break;
+      case 'freeze-scrolled':
+        S.sel = ''; S.issues = 'none';
+        S.status = [{ t: 'Frozen · rows 1–2 · column A', cls: 'pl' }, { t: 'Scrolled to row 9 · column E', cls: 'pl' }]; break;
+      case 'all':
+        S.sel = 'G7'; S.range = ['G7', 'H7']; S.fx = true; S.fxDim = true; S.fmtVal = 'Number';
+        var ag = cell('G7'); ag.v = '268.40'; ag.st.push('font-weight:600;background:#FBF0D9;color:#16171A'); ag.chg = true;
+        var ah = cell('H7'); ah.v = '80,520.00'; ah.rc = true;
+        S.wb = ['I6', 'C11', 'F10', 'J13'];
+        if (extra >= 4) ov('chart', 'K3', 'N12', { stub: true, chip: false });
+        S.tokens = [{ t: '268.40' }];
+        S.chips = [{ t: 'Changed · was 286.40 · Bold, Fill', cls: 'spx-chip spx-chip-info' }];
+        S.fo = { b: true, right: true, middle: true }; S.fillBar = '#FBF0D9';
+        S.status = [{ t: 'Sum 80,788.40 · Avg 40,394.20 · Count 2', cls: 'pl' }, { t: '! 4 validation warnings', cls: 'pl warn' }, { t: '⟳ 1 recalculated', cls: 'pl' }, { t: 'Frozen rows 1–2 · col A', cls: 'pl' }];
+        S.changes = 2; break;
+      case 'sync':
+        S.sel = 'I7';
+        var i7 = cell('I7'); i7.v = '4.0%'; i7.chg = true;
+        S.wb = ['I6', 'C11', 'F10', 'J13', 'I7*'];
+        S.tokens = [{ t: '4.0%' }];
+        S.chips = [{ t: 'Changed · was 0.40%', cls: 'spx-chip spx-chip-info' }, { t: '⚠ New · decimal 0.00%–2.00%', cls: 'spx-chip spx-chip-warn', mk: mk('newchip') }];
+        S.status = [{ t: '! 5 validation warnings', cls: 'pl warn', mk: mk('stvalid') }];
+        S.changes = 1; break;
+      default:
+        S.sel = 'E5';
+        if (slots) ov('slot', 'D9', null, { tag: 'cell' });
+    }
+
+    // ---- issues (core, Edit only) ----
+    var DEF = [
+      { n: 1, ref: 'G7', sev: 'error' }, { n: 2, ref: 'A8', sev: 'warning' }, { n: 3, ref: 'I6', sev: 'error' }, { n: 4, ref: 'H12', sev: 'error' },
+      { n: 5, ref: 'J13', sev: 'error' }, { n: 6, ref: 'F10', sev: 'warning' }, { n: 7, ref: 'C11', sev: 'warning' }, { n: 8, ref: 'A14', sev: 'note', row: true }
+    ];
+    var issueSet = (!isEdit || S.issues === 'none') ? [] : DEF;
+    var MC = { error: 'm-e', warning: 'm-w', note: 'm-i' };
+    var SG = { error: ['✕', 'g-err'], warning: ['!', 'g-warn'], note: ['i', 'g-info'] };
+    var rank = { error: 3, warning: 2, note: 1 };
+    var cellMark = {}, rowWorst = {};
+    issueSet.forEach(function (i) { var r = rowOf(i.ref); if (i.row) { for (var k = 0; k < 10; k++) cellMark[L[k] + r] = MC[i.sev]; } else cellMark[i.ref] = MC[i.sev]; if (!rowWorst[r] || rank[i.sev] > rank[rowWorst[r]]) rowWorst[r] = i.sev; });
+    var cnt = { error: 0, warning: 0, note: 0 }; issueSet.forEach(function (i) { cnt[i.sev]++; });
+
+    function inRange(ref) { if (!S.range) return false; var c = ci(colOf(ref)), r = rowOf(ref), a = S.range[0], b = S.range[1]; return c >= ci(colOf(a)) && c <= ci(colOf(b)) && r >= rowOf(a) && r <= rowOf(b); }
+
+    // ---- rows ----
+    var cols = visCols.map(function (j) { return { l: L[j], st: 'width:' + W[j] + 'px', cls: j === fc - 1 ? 'fz-c' : '' }; });
+    var rows = visRows.map(function (r) {
+      var cells = [];
+      function mkc(ref, j, wpx, base) {
+        var dc = S.cells[ref] || { cls: [], st: [] };
+        var v = dc.v !== undefined ? dc.v : raw(ref);
+        var cls = ['spx-c'].concat(base);
+        if (r === 2) cls.push('hd');
+        if (r >= 3 && r <= 15 && NUM[L[j]]) cls.push('n');
+        if (has.styles && r === 2) cls.push('f-hd');
+        if (has.styles && r === 1) cls.push('f-title');
+        if (cellMark[ref]) cls.push(cellMark[ref]);
+        if (dc.chg) cls.push('chg');
+        if (j === fc - 1) cls.push('fz-c');
+        var dd = has.validation && isEdit && L[j] === 'C' && r >= 3 && r <= 15;
+        if (dd) cls.push('has-dd');
+        if (ref === S.sel) cls.push('sel'); else if (inRange(ref)) cls.push('rng');
+        cls = cls.concat(dc.cls);
+        return { v: v, cls: cls.join(' '), st: ['width:' + wpx + 'px'].concat(dc.st).join(';'), al: ref + (v ? ', ' + v : ', empty'), rc: !!dc.rc, stale: !!dc.stale, bar: !!dc.bar, barSt: dc.barSt || '', dd: dd, bub: !!dc.bub, mk: dc.mk || '' };
+      }
+      if (r === 1) {
+        var mw = 0; visCols.forEach(function (j) { if (j < 10) mw += W[j]; });
+        cells.push(mkc('A1', -1, mw, ['mg']));
+        visCols.forEach(function (j) { if (j >= 10) cells.push(mkc(L[j] + '1', j, W[j], [])); });
+      } else {
+        visCols.forEach(function (j) { cells.push(mkc(L[j] + r, j, W[j], [])); });
+      }
+      var w = rowWorst[r];
+      return { n: r, cells: cells, g: w ? SG[w][0] : '', gc: w ? SG[w][1] : '', cls: 'spx-r' + (r === fr ? ' fz-r' : '') };
+    });
+
+    // ---- overlays (pane coordinates) ----
+    var ovs = S.ovs.map(function (o) {
+      var bx = box(o.a, o.b), out = { isBox: false, isImg: false, isEmf: false, isChart: false, isTip: false, isList: false, isSlot: false, cls: o.cls || '', tag: o.tag || '', tagSt: '', mk: o.mk || '', stub: !!o.stub, plot: !!o.plot, chip: !!o.chip, chipMk: o.chipMk || '', srcOn: !!o.srcOn, st: '' };
+      if (o.kind === 'box') { out.isBox = true; out.st = bst(bx); }
+      if (o.kind === 'img') { out.isImg = true; out.st = bst(bx, 'margin:0;z-index:1'); }
+      if (o.kind === 'emf') { out.isEmf = true; out.st = bst(bx); }
+      if (o.kind === 'chart') { out.isChart = true; out.st = bst(bx); }
+      if (o.kind === 'slot') { out.isSlot = true; out.st = bst(bx); }
+      if (o.kind === 'tip') { out.isTip = true; out.st = 'left:' + (bx.l - 20) + 'px;top:' + (bx.t - 50) + 'px'; }
+      if (o.kind === 'list') { out.isList = true; out.st = 'left:' + bx.l + 'px;top:' + Math.max(4, bx.t - 168) + 'px;width:230px'; }
+      return out;
+    });
+
+    // ---- pins ----
+    var pins = [];
+    function pinAt(ref, cb) { var r = rowOf(ref), j = ci(colOf(ref)); if (!visR(r) || !visC(j)) return; cb(vX(j), vY(r), W[j]); }
+    issueSet.concat(isEdit ? S.extraPins : []).forEach(function (i) {
+      pinAt(i.ref, function (x, y) {
+        pins.push({ label: String(i.n), cls: 'spx-pin ' + i.sev, st: 'top:' + (y - 8) + 'px;left:' + (x - 6 + (colOf(i.ref) === 'A' ? 8 : 0)) + 'px', al: 'Error ' + i.n + ' at ' + i.ref, mk: i.mk ? mk(i.mk) : '' });
+      });
+    });
+    if (isEdit) S.wb.forEach(function (raw0, k) {
+      var isNew = raw0.charAt(raw0.length - 1) === '*', ref = raw0.replace('*', '');
+      pinAt(ref, function (x, y, w) {
+        pins.push({ label: '⚠', cls: 'spx-pin wb' + (isNew ? ' new' : ''), st: 'top:' + (y - 8) + 'px;left:' + (x + w - 30) + 'px', al: 'Validation warning from the workbook at ' + ref, mk: k === 0 ? mk('wbpin') : (isNew ? mk('newpin') : '') });
+      });
+    });
+
+    // ---- selection bar ----
+    var active = S.sel;
+    var showSelbar = isEdit && S.selbar && !!active && !open && visR(rowOf(active));
+    var sbSt = '';
+    if (showSelbar) {
+      var ar = S.range ? rowOf(S.range[1]) : rowOf(active), aj = ci(colOf(S.range ? S.range[0] : active));
+      var top = S.range ? vY(ar) + 34 : (rowOf(active) <= 4 ? vY(ar) + 34 : vY(ar) - 40);
+      var left = Math.max(56, Math.min(vX(aj) - 40, GW - 520));
+      sbSt = 'top:' + top + 'px;left:' + left + 'px';
+    }
+
+    // ---- cell bar ----
+    var selIsMerge = active === 'A1';
+    var aRow = active ? rowOf(active) : 0, aCol = active ? colOf(active) : '';
+    var dataCell = aRow >= 3 && aRow <= 15;
+    var cbFx = has.formulas && (S.fx || (dataCell && aCol === 'H'));
+    var tokens = S.tokens !== null ? S.tokens : (active ? [{ t: (S.cells[active] && S.cells[active].v !== undefined) ? S.cells[active].v : raw(active) }] : []);
+    tokens = tokens.filter(function (t) { return t.t !== ''; }).map(function (t) { return { t: t.t, cls: t.cls || '' }; });
+    var editable = isEdit && dataCell;
+    var cb = {
+      fx: cbFx, fxCls: 'spx-fx' + (S.fxRo || !isEdit ? ' ro' : '') + (S.fxDim ? ' dim' : ''), fxTitle: S.fxRo || !isEdit ? 'Formula · read-only in View' : 'Formula (formulas plugin)', fxMk: S.fxMk,
+      valCls: 'spx-val' + (S.editing ? ' ed' : '') + (editable ? '' : ' ro'), tokens: tokens, empty: !!active && tokens.length === 0, editing: S.editing, valMk: S.valMk,
+      chips: S.chips.map(function (c) { return { t: c.t, cls: c.cls, mk: c.mk || '' }; })
+    };
+    if (selIsMerge) cb.chips.unshift({ t: 'Merged A1:J1 · centred', cls: 'spx-chip', mk: '' });
+
+    // ---- format row ----
+    var showFr = isEdit && (has.numfmt || has.styles);
+    var FM = [['General', '322080'], ['Number', '3,22,080.00'], ['Currency', '₹3,22,080.00'], ['Accounting', '₹ 3,22,080.00'], ['Date', '—'], ['Time', '—'], ['Percentage', '32208000.00%'], ['Fraction', '322080'], ['Scientific', '3.22E+05'], ['Text', '322080'], ['Custom…', '₹#,##,##0.00']];
+    var fmts = FM.map(function (f) { var o = f[0] === S.fmtVal; return { name: f[0], prev: f[1], on: o, ck: o ? '✓' : '', cls: 'spx-mi' + (o ? ' on' : '') }; });
+    var BD = [['All borders', 'M4 4h16v16H4zM4 12h16M12 4v16', 1.75], ['Outside borders', 'M4 4h16v16H4z', 1.75], ['Top border', 'M4 4h16', 2], ['Bottom border', 'M4 20h16', 2], ['Left border', 'M4 4v16', 2], ['Right border', 'M20 4v16', 2], ['Thick bottom border', 'M4 20h16', 3.5], ['No border', 'M0 0', 0]];
+    var borders = BD.map(function (b, k) { return { name: b[0], d: b[1], sw: b[2], cls: 'spx-mi' + (k === 3 ? ' hov' : '') }; });
+    var fo = { b: !!S.fo.b, i: !!S.fo.i, u: !!S.fo.u, s: !!S.fo.s, left: !!S.fo.left, center: !!S.fo.center, right: !!S.fo.right, top: !!S.fo.top, middle: !!S.fo.middle, bottom: !!S.fo.bottom, wrap: !!S.fo.wrap };
+
+    var tabCnt = isEdit && issueSet.length ? String(issueSet.length) : '';
+    var memNote = S.changes ? '· ' + S.changes + (S.changes === 1 ? ' change' : ' changes') + ' kept in memory until you export' : '';
+    var h = parseInt(p.height, 10) || 602;
+
+    return {
+      rootCls: 'spx' + (dark ? ' spx-dark' : '') + (narrow ? ' spx-narrow' : ''),
+      rootSt: 'height:' + h + 'px',
+      wide: !narrow, narrow: narrow, slots: slots, has: has,
+      isEdit: isEdit, isView: !isEdit, viewCls: isEdit ? '' : 'on', editCls: isEdit ? 'on' : '',
+      cnt: cnt,
+      mk: { undo: mk('undo'), freeze: mk('freeze'), expline: mk('expline'), fmtsel: mk('fmtsel'), dec: mk('dec'), text: mk('text'), color: mk('color'), fill: mk('fill'), borders: mk('borders'), align: mk('align'), wrap: mk('wrap'), clear: mk('clear'), more: mk('more'), sbbold: mk('sbbold'), sbmerge: mk('sbmerge') },
+      showUndo: isEdit && p.core !== 'today',
+      showFreeze: isEdit && p.core !== 'today', openFreeze: open === 'freeze',
+      exportMenu: !!has.comments, openExport: open === 'export' && !!has.comments,
+      changesLabel: S.changes ? S.changes + (S.changes === 1 ? ' change' : ' changes') + ' in memory' : 'No changes yet',
+      showFr: showFr, frCls: 'spx-fr' + (slots ? ' spx-slot' : ''), frGhost: slots && !showFr && isEdit,
+      fmtVal: S.fmtVal, openNumfmt: open === 'numfmt', fmts: fmts,
+      fo: fo, colorBarSt: 'background:' + S.colorBar, fillBarSt: 'background:' + S.fillBar, fillSwSt: 'background:' + (S.fillBar === 'transparent' ? 'transparent' : S.fillBar),
+      openBorders: open === 'borders', bordersCls: 'spx-fb' + (open === 'borders' ? ' is-on' : ''), borders: borders,
+      openMore: open === 'more', moreCls: 'spx-fb' + (open === 'more' ? ' is-on' : ''),
+      cbCls: 'spx-cb' + (slots ? ' spx-slot' : ''), selRef: selIsMerge ? 'A1:J1' : (active || '—'), cb: cb,
+      gwCls: 'spx-gw' + (slots ? ' spx-slot' : ''), giSt: 'width:' + GW + 'px;height:' + GH + 'px',
+      cols: cols, rows: rows,
+      paneSt: 'left:' + paneL + 'px;top:' + paneT + 'px;width:' + (GW - paneL) + 'px;height:' + (GH - paneT) + 'px',
+      ovs: ovs, pins: pins,
+      showSelbar: showSelbar, sbCls: 'spx-sb' + (slots ? ' spx-slot' : ''), sbSt: sbSt,
+      sbStyles: !!has.styles, sbMerge: !!has.styles && !!S.range,
+      hasTabs: true, tabCnt: tabCnt,
+      stCls: 'spx-st' + (slots ? ' spx-slot' : ''), memNote: memNote,
+      status: S.status.map(function (s) { return { t: s.t, cls: s.cls || 'pl', mk: s.mk || '' }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

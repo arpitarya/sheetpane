@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Baseline — no plugins</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1400px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 1 · reference · Edit mode</span>
+<h1 class="h1">Baseline — no plugins installed. Today's grid, with the six slots outlined.</h1>
+<p class="muted" style="max-width: 980px">Nothing here is new. The dashed outlines only name the places a plugin may add to; with no plugins they stay empty, the format row is not drawn, and every pixel matches Host-Tab-Edit. Plugins add inside these six places — they never move or restyle what is already there.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">&lt;sheetpane-excel mode="edit"&gt; · plugins: none · Client holdings — Q3 2026.xlsx</span>
+<dc-import name="PluginKit" mode="edit" scene="baseline" slots="true" core="today" height="602" hint-size="100%,602px"></dc-import>
+</div>
+
+<section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{slots}}" as="s" hint-placeholder-count="6">
+<article class="bd-card">
+<div class="row" style="gap: 8px"><span class="bd-slot" style="font-size: 12px">{{s.id}}</span><span class="xs faint">{{s.modes}}</span></div>
+<p class="small">{{s.where}}</p>
+<dl class="kv" style="font-size: 12px; gap: 6px 14px">
+<dt>Today (core)</dt><dd style="font-family: var(--sans); font-size: 12px">{{s.today}}</dd>
+<dt>Plugins add</dt><dd style="font-family: var(--sans); font-size: 12px">{{s.adds}}</dd>
+</dl>
+</article>
+</sc-for>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<p class="small">Your app decides which plugins are installed. Here: none, so the grid is exactly today's.</p>
+<pre>import 'sheetpane';                       // defines &lt;sheetpane-excel&gt;, &lt;sheetpane-errors&gt;
+const sheet = document.querySelector('sheetpane-excel');
+sheet.plugins = [];                       // nothing installed → no format row, no extra controls</pre>
+</div>
+<div class="bd-card" style="gap: 8px">
+<span class="h4">Rules every plugin board keeps</span>
+<ul class="ul">
+<li>Add only inside a named slot. Never move, hide or restyle a core part.</li>
+<li>“Flag issue” stays first in the selection bar; plugin buttons come after the core ones.</li>
+<li>No font family anywhere — text inherits the host font. Size and weight only inside the styles row.</li>
+<li>Colour never alone: changed = corner mark, flagged = numbered pin, derived = ⟳, stale = “may be stale”.</li>
+<li>Toolbar 36 px · format row 32 px · cells 28 px at 100 %. --sp-* tokens only, light and dark.</li>
+<li>Core grows too, outside the slots: Undo · Redo (W-23) and Freeze ▾ (W-24) join the toolbar in Edit. This board is the grid before them; every other board shows them.</li>
+</ul>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      slots: [
+        { id: 'format-row', modes: 'Edit only', where: 'A 32 px row under the toolbar. Not drawn at all until a plugin adds to it — so the grid with no plugins keeps today\'s height.', today: 'Not drawn.', adds: 'numfmt (format menu, decimals) · styles (text, colour, fill, borders, align, wrap, clear).' },
+        { id: 'selbar', modes: 'Edit only', where: 'The dark bar that floats by the selection.', today: 'Flag issue (F) — always first · Copy ref · Copy value.', adds: 'styles (Bold, Fill; Merge / Unmerge when a range is selected) — after the core buttons.' },
+        { id: 'cellbar', modes: 'View and Edit', where: 'Reference box + value box under the toolbar.', today: 'Ref · value · “Merged … centred” · “Changed · was …” · “Error n”.', adds: 'formulas (fx + formula) · numfmt (raw value, format chip) · validation (rule chip) · styles (style chip).' },
+        { id: 'status', modes: 'View and Edit', where: 'The line under the sheet tabs.', today: 'Sheet · rows × columns · changes kept in memory · “Read in this tab”.', adds: 'formulas (Sum · Avg · Count) · validation (n warnings) · charts (source) · condfmt · images.' },
+        { id: 'cell', modes: 'View and Edit', where: 'Inside one rendered cell — a mark, an arrow, a fill.', today: 'Severity ring (Edit) · corner mark for a changed value.', adds: 'formulas (⟳, ≈) · validation (list arrow) · comments (note mark) · condfmt and styles (fills, colours, borders, bars).' },
+        { id: 'overlay', modes: 'View and Edit', where: 'A layer in sheet space over the cells. Scrolls with them; frozen panes clip it.', today: 'Numbered error pins · find highlights.', adds: 'images · charts (frames) · formulas (reference outlines) · validation (⚠ pins, list) · condfmt (legend).' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

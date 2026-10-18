@@ -6,7 +6,7 @@ item: W-17
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -36,7 +36,7 @@ A plugin that renders and edits the subset of cell styles a reviewer needs. With
 | 1 · package | `packages/styles/` builds to ESM, no runtime dependency; `@sheetpane/grid` a peer; `./ui` entry | ⏳ |
 | 2 · decorate | `decorate(cell)` from `cellXfs` → `fonts`, `fills`, `borders`, `alignment`, with theme and indexed colours resolved; the subset is `background-color`, `color`, `font-weight`, `font-style`, `font-size`, `text-decoration`, `text-align`, `vertical-align`, `white-space`, `border-*`; nothing else, and **never `font-family`** | ⏳ |
 | 3 · merges | merge / unmerge controls (`selbar` and `format-row`) produce changes of kind `merge`; the core still renders merges without this plugin | ⏳ |
-| 4 · ui | `format-row` groups `text` · `colour` · `fill` · `border` · `align` · `wrap` · `clear`; `selbar`: Bold and Fill; every control toggles a change of kind `style` on the selection; the row is absent in View | ⏳ |
+| 4 · ui | `format-row` groups `text` · `colour` · `fill` · `border` · `align` · `wrap` · `clear`; `selbar`: Bold and Fill; every control toggles a change of kind `style` on the selection; the row is absent in View; the format-row states — hover, pressed, active, disabled, keyboard focus, light and dark — are drawn once on the Plugin-Styles board and every plugin control reuses them; every tooltip names its shortcut | ⏳ |
 | 5 · undo | every style change is undoable through W-23; the row does not ship before W-23 lands | ⏳ |
 | 6 · export | `exportPatch` appends deduplicated `<font>`, `<fill>`, `<border>` and `<xf>` entries and repoints `s` on every changed cell; untouched cells keep their original `s` | ⏳ |
 | 7 · a11y | colour is never the only carrier of a sheetpane state (changed, flagged) on a coloured cell — the corner mark and pins keep their contrast | ⏳ |
@@ -59,9 +59,10 @@ A new component record on completion. Until then this item owns `packages/styles
 
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Styles.dc.html`](../reference/design/boards/Plugin-Styles.dc.html) — the format row's groups, selbar Bold · Fill · Merge, file styles, and the states table
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `decorate`, decision 9
 - [SR-LAW-5](../../records/0007_LAW-5-host-font.md)
-- [W-14](W-14-plugin-host.md) · [W-13](W-13-import-package.md) · [W-23](W-23-undo-redo.md)
+- [W-14](W-14-plugin-host.md) · W-13 (closed — [SR-IMPORT](../../records/0104_IMPORT.md)) · [W-23](W-23-undo-redo.md)
 
 ## Prompt — paste into Claude Code once the blockers close
 

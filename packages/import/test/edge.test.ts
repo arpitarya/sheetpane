@@ -14,6 +14,10 @@ describe('refusals (reading verdict decision 4; SR-LAW-3)', () => {
     const cfb = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
     expect(await code(read(cfb, { name: 'locked.xlsx' }))).toBe('password-or-legacy');
     expect(await code(read(cfb))).toBe('password-or-legacy');
+    const enc = new Uint8Array([...cfb, ...Array.from('EncryptedPackage', (c) => [c.charCodeAt(0), 0]).flat()]);
+    expect(await read(enc, { name: 'fees.xlsx' }).catch((e: ImportError) => [e.detail, e.message])).toEqual(['password', '"fees.xlsx" is password-protected — remove the password in Excel and open it again']);
+    expect(await read(cfb, { name: 'holdings.xls' }).catch((e: ImportError) => e.code)).toBe('unsupported-format');
+    expect(await read(cfb, { name: 'old.xlsx' }).catch((e: ImportError) => e.detail)).toBe('legacy');
   });
   it('refuses a ZIP that is not a workbook, text named .xlsx, and a ZIP named .csv', async () => {
     const notWb = zipSync({ 'a.txt': strToU8('hi') });

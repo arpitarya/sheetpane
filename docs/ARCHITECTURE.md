@@ -224,6 +224,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 
 - **IndexedDB** (B-025) — the decider's deferred request; needs L6 and L9 rewritten.
 - **Largest workbook the tab can hold** (B-026) — unmeasured until W-01 lands.
-- **The mechanical checks still owed** (B-008 licences, B-009, B-012's element half,
-  B-017, B-020) — each becomes a test once there is code to check; the font,
-  framework-peer and publishable checks run today ([SR-BUILD](../records/0102_BUILD.md)).
+- **The mechanical check still owed:** B-008 (licences over the whole tree). The
+  font, framework-peer, publishable, refusal, round-trip and sync checks run
+  today ([SR-BUILD](../records/0102_BUILD.md), [SR-GRID](../records/0105_GRID.md)).
+- **SR-LAW-6's veto command flags the `src` loader's read** (B-030) — the decider's ruling.

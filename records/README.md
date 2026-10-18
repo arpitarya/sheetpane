@@ -105,11 +105,11 @@ Start from `TEMPLATE.md`.
 | [0002](0002_LAW-0-authority.md) | **SR-LAW-0** | **L0** — records are the only source of truth; Law records outrank every other record | accepted | yes |
 | [0003](0003_LAW-1-retired-records-archived.md) | **SR-LAW-1** | **L1** — a retired record is archived, never deleted | accepted | yes |
 | [0004](0004_LAW-2-foss-dependencies.md) | **SR-LAW-2** | **L2** — every dependency is free and open source | accepted | no — nothing checks it yet (B-008) |
-| [0005](0005_LAW-3-xlsx-and-csv-only.md) | **SR-LAW-3** | **L3** — sheetpane supports XLSX and CSV only | accepted | no — no code yet (B-009) |
-| [0006](0006_LAW-4-web-component.md) | **SR-LAW-4** | **L4** — sheetpane is always a web component | accepted | partly — no framework peer is tested (SR-BUILD decision 7); the element check waits on W-01 (B-012) |
+| [0005](0005_LAW-3-xlsx-and-csv-only.md) | **SR-LAW-3** | **L3** — sheetpane supports XLSX and CSV only | accepted | yes — other formats refused by name and bytes (SR-IMPORT tests) |
+| [0006](0006_LAW-4-web-component.md) | **SR-LAW-4** | **L4** — sheetpane is always a web component | accepted | yes — no framework peer (SR-BUILD decision 7); both elements register on import (SR-GRID tests) |
 | [0007](0007_LAW-5-host-font.md) | **SR-LAW-5** | **L5** — the font is the browser's default unless the host sets one | accepted | yes — no font in any package source is tested (SR-BUILD decision 7) |
-| [0008](0008_LAW-6-edits-in-memory-export-with-changes.md) | **SR-LAW-6** | **L6** — every change is held in memory and export carries it | accepted | no — no code yet (B-017) |
-| [0009](0009_LAW-7-surfaces-always-in-sync.md) | **SR-LAW-7** | **L7** — the view, edit and error components are always in sync | accepted | no — no code yet (B-020) |
+| [0008](0008_LAW-6-edits-in-memory-export-with-changes.md) | **SR-LAW-6** | **L6** — every change is held in memory and export carries it | accepted | yes — edits exported and read back (SR-GRID round-trip property) |
+| [0009](0009_LAW-7-surfaces-always-in-sync.md) | **SR-LAW-7** | **L7** — the view, edit and error components are always in sync | accepted | yes — the two elements in sync, both mount orders (SR-ERRORS) |
 | [0010](0010_LAW-8-npm-package.md) | **SR-LAW-8** | **L8** — sheetpane is consumed as an npm package | accepted | yes — publishable, lockstep and packed manifests are tested (SR-BUILD decisions 7, 10) |
 | [0011](0011_LAW-9-memory-is-a-javascript-object.md) | **SR-LAW-9** | **L9** — memory means a JavaScript object, for now | accepted | yes — nothing stores data yet; L6's veto command checks it |
 | [0051](0051_WORK-open-queue.md) | **SR-WORK-OPEN-QUEUE** | How `OPEN-WORK.md` works — the queue discipline in ten groups | accepted | yes |
@@ -122,10 +122,12 @@ Start from `TEMPLATE.md`.
 | [0058](0058_WORK-ownership.md) | **SR-WORK-OWNERSHIP** | `owns` and `describes`, and the commit guard | accepted | yes |
 | [0059](0059_WORK-governance.md) | **SR-WORK-GOVERNANCE** | The governance map — which file governs what; no counts | accepted | yes |
 | [0060](0060_WORK-registry.md) | **SR-WORK-REGISTRY** | The doc registry — rules in §2, the table in §3 | accepted | yes |
-| [0101](0101_DOWNLOAD.md) | **SR-DOWNLOAD** | `download()` — export output in, a saved `.xlsx` or `.csv` out | proposed | yes — built and tested in Chromium and WebKit; acceptance is the decider's (W-12) |
+| [0101](0101_DOWNLOAD.md) | **SR-DOWNLOAD** | `download()` — export output in, a saved `.xlsx` or `.csv` out | accepted | yes — Chromium, WebKit, Firefox; iOS Safari checked in W-09 |
 | [0102](0102_BUILD.md) | **SR-BUILD** | The monorepo build — pnpm, just, tsc, Vitest, CI, lockstep release | accepted | yes |
 | [0103](0103_EXPORT.md) | **SR-EXPORT** | `@sheetpane/export` — toXlsx, patchXlsx, toCsv, the shared ZIP and XML code | accepted | yes |
 | [0104](0104_IMPORT.md) | **SR-IMPORT** | `@sheetpane/import` — an .xlsx or .csv in, the workbook object out | accepted | yes |
+| [0105](0105_GRID.md) | **SR-GRID** | `@sheetpane/grid` — the pane's workbook store, `<sheetpane-excel>`, the plugin host, undo, freeze panes | accepted | yes |
+| [0106](0106_ERRORS.md) | **SR-ERRORS** | `<sheetpane-errors>` — the error list and the New error form | accepted | yes |
 
 ---
 
@@ -163,9 +165,8 @@ directions.
 | `packages/export/src/download/` | SR-DOWNLOAD | `download()` — a different decision from the writers |
 | `packages/export/` | SR-EXPORT | `@sheetpane/export` — the writers and the shared ZIP / XML code |
 | `packages/import/` | SR-IMPORT | `@sheetpane/import` — the reader |
-| `packages/grid/` | W-01 | `@sheetpane/grid`, the UI package — the sheet and the pane; until its component record exists |
-| `packages/grid/src/errors/` | W-02 | `<SheetPaneErrors>` — a different item from the sheet |
-| `packages/grid/src/plugins/` | W-14 | the plugin host — hooks, slots, descriptors; until W-01's record (or its own) exists |
+| `packages/grid/` | SR-GRID | `@sheetpane/grid` — the store, the sheet, the plugin host, undo, freeze |
+| `packages/grid/src/errors/` | SR-ERRORS | `<sheetpane-errors>` — a different element from the sheet |
 | `packages/numfmt/` | W-15 | `@sheetpane/numfmt`, a plugin; until its component record exists |
 | `packages/formulas/` | W-16 | `@sheetpane/formulas`, a plugin; until its component record exists |
 | `packages/styles/` | W-17 | `@sheetpane/styles`, a plugin; until its component record exists |

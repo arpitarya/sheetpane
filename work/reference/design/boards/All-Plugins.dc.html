@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>All plugins — density check</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 2420px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 11 · every plugin at once · Edit mode</span>
+<h1 class="h1">All plugins — every slot filled, at 1440 and at 1024</h1>
+<p class="muted" style="max-width: 1000px">numfmt · formulas · styles · validation · condfmt · images · charts · comments, plus core freeze. The format row holds two plugins' groups; the selection bar keeps Flag issue first; status items queue after the core text.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">1440 · light · G7:H7 selected</span>
+<dc-import name="PluginKit" mode="edit" plugins="numfmt,formulas,styles,validation,condfmt,images,charts,comments,freeze" scene="all" frozen="2,1" extra="4" height="634" hint-size="100%,634px"></dc-import>
+</div>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 1024px">
+<span class="bd-cap">1024 · format row collapsed into “More ▾” (open)</span>
+<dc-import name="PluginKit" mode="edit" plugins="numfmt,formulas,styles,validation,condfmt,images,charts,comments,freeze" scene="all" frozen="2,1" narrow="true" open="more" marks="more" height="634" hint-size="100%,634px"></dc-import>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">How it gives way</span>
+<ol class="ul" style="padding-left: 18px">
+<li>Toolbar first: file size chip and “n changes in memory” hide; Find becomes an icon (Mod+F).</li>
+<li>Format row: groups move into <b>More ▾</b> from the right — Clear, Wrap, Align, Borders, Fill, Colour. Number format and Text never move.</li>
+<li>Selection bar never wraps; plugin buttons drop to a “⋯” at the end before any core button would.</li>
+<li>Status: “Read in this tab” goes first; plugin items then cut from the right.</li>
+</ol>
+<div class="row" style="gap: 6px"><span class="spx-mk">a</span><span class="xs">More ▾ — format-row overflow, owned by core</span></div>
+</div>
+<div class="bd-card">
+<span class="h4">Count at 1440</span>
+<dl class="kv" style="font-size: 12px; gap: 6px 14px">
+<dt>Toolbar</dt><dd>+3 core (Undo, Redo — W-23 · Freeze — W-24)</dd>
+<dt>Format row</dt><dd>8 groups · 18 controls</dd>
+<dt>Selbar</dt><dd>3 core + 3 plugin</dd>
+<dt>Cell bar</dt><dd>fx · value · 1 chip</dd>
+<dt>Status</dt><dd>4 plugin items</dd>
+</dl>
+</div>
+</div>
+</section>
+
+<div class="bd-frame">
+<span class="bd-cap">1440 · dark — same state, --sp-* dark tokens; file colours unchanged</span>
+<dc-import name="PluginKit" mode="edit" theme="dark" plugins="numfmt,formulas,styles,validation,condfmt,images,charts,comments,freeze" scene="all" frozen="2,1" extra="4" height="634" hint-size="100%,634px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2420}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

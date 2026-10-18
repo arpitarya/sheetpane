@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Core — freeze panes</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1460px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 10 · core (no plugin) · Edit and View</span>
+<h1 class="h1">Freeze panes — keep the title, the headers and the account ID in view</h1>
+<p class="muted" style="max-width: 1000px">The file froze rows 1–2 and column A; sheetpane opens it that way. A 2 px divider marks the edge of the frozen part. “Freeze ▾” is a core toolbar control in Edit (W-24) — never a format-row control, so the no-plugin guardrail holds.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">Edit · B3 selected · Freeze menu open</span>
+<dc-import name="PluginKit" mode="edit" plugins="freeze" scene="freeze" frozen="2,1" open="freeze" marks="freeze,divider,stfreeze" height="602" hint-size="100%,602px"></dc-import>
+</div>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 900px">
+<span class="bd-cap">View · scrolled to row 9 and column E — title, headers and column A held</span>
+<dc-import name="PluginKit" mode="view" plugins="freeze" scene="freeze-scrolled" frozen="2,1" scroll="6,3" rows="12" height="490" hint-size="100%,490px"></dc-import>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">New controls and marks</span>
+<div class="stack" style="gap: 8px">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="3">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-card">
+<span class="h4">Behaviour</span>
+<ul class="ul">
+<li>Two menu items only: Freeze at selection · Unfreeze. No “freeze top row” presets.</li>
+<li>Overlay items in the scrolling part are clipped at the divider; pins on frozen cells stay put.</li>
+<li>A new freeze is a change of kind <span class="mono xs">freeze</span>: counted, undoable (W-23), and written to <span class="mono xs">&lt;pane&gt;</span> on export. An unchanged freeze is left as the file had it.</li>
+<li>View keeps the file's freeze and scrolls the same way, but shows no menu.</li>
+</ul>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<p class="xs muted">Nothing to install or set — freeze panes are core (W-24).</p>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1460}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: '“Freeze ▾” — Freeze at selection / Unfreeze, Edit only', slot: 'toolbar', plug: 'core' },
+        { k: 'b', t: '2 px divider under row 2 and right of column A', slot: 'cell', plug: 'core' },
+        { k: 'c', t: '“Frozen · rows 1–2 · column A”', slot: 'status', plug: 'core' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

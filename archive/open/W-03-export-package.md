@@ -6,7 +6,7 @@ item: W-03
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Claude Code, claude-opus-5-5)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -64,7 +64,7 @@ CRLF, BOM on, formula guard on and reported; browsers and Node 20+.
 | 5 · rules | sheet names validated (1–31 characters, none of `[ ] : * ? / \`, unique ignoring case); over 1,048,576 rows or 16,384 columns is an error with the sheet and size named | ✅ `src/validate.ts`; the tests name `Big`/`A1048577`, `Wide`/`XFE2`, duplicates ignoring case, forbidden characters, apostrophes, NaN, over-long text, overlapping merges |
 | 6 · deterministic | in `store` mode the same object gives the same bytes on every engine — a test proves it; `deflate` output round-trips through the reader | ✅ `store` output identical across runs and equal to the committed golden `test/fixtures/sheetpane-sample.store.xlsx` in **Node 24 and Chromium 156** (`engines.browser.test.ts`); deflate output read back by our reader and fflate in both |
 | 7 · read back | an independent reader (dev dependency or a CI step) reads each test file back with the same values, sheet names and merges | ✅ ExcelJS (values, sheet names, merges, widths, hidden), PapaParse (CSV), fflate (ZIP) — every test file |
-| 8 · opened | Arpit opens a sample `.xlsx` in Excel and LibreOffice with **no repair prompt**, and a `.csv` with the BOM shows accents correctly; the result is noted here | ⏳ 🔴 Arpit |
+| 8 · opened | Arpit opens a sample `.xlsx` in Excel and LibreOffice with **no repair prompt**, and a `.csv` with the BOM shows accents correctly; the result is noted here | ✅ Arpit, 2026-10-18: `sheetpane-sample.xlsx` and `sheetpane-sample.store.xlsx` opened in Excel and LibreOffice with no repair prompt; `sheetpane-sample.csv` in Excel shows accents (é) correctly |
 | 9 · runtimes | works in evergreen browsers (`CompressionStream('deflate-raw')`) and Node 20+ (`zlib.deflateRawSync`); no DOM touched; what was run is written here | ✅ run 2026-10-18 on Arpit's MacBook: Node 24.13.0 (`zlib`) and Chromium 156 headless (`CompressionStream('deflate-raw')`); CI on Node 22; no DOM touched (grep: no `document`/`window` outside `download/`) |
 | 9a · download | `download()` is exported from this package's index — built by **W-12** inside `packages/export/src/download/`; W-03 leaves the export slot and the README section for it | ✅ W-12 landed `download()` in `packages/export/src/download/`, exported from the index; README §Save the file |
 | 10 · record | a component record (next free from `0101`); the Ownership row for `packages/export/` moved from W-03 to it; `packages/export/README.md` documents the API | ✅ [SR-EXPORT](../../records/0103_EXPORT.md) (0103); Ownership `packages/export/` → SR-EXPORT; README documents the API |
@@ -72,9 +72,7 @@ CRLF, BOM on, formula guard on and reported; browsers and Node 20+.
 
 ## Blockers
 
-None for the code. DoD 8 is the decider's: open
-`packages/export/test/fixtures/sheetpane-sample.xlsx` in Excel and LibreOffice,
-and `sheetpane-sample.csv` in Excel.
+None. **Closed 2026-10-18**: every DoD row is ✅; the live answer is [SR-EXPORT](../../records/0103_EXPORT.md).
 
 ## Record affected
 

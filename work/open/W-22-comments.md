@@ -6,7 +6,7 @@ item: W-22
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -19,6 +19,7 @@ ball: agent
 | 1 | Read notes (`xl/comments*.xml`) and threaded comments (`xl/threadedComments/`) into the error pane as notes from author `file` | what the file's authors already said is part of the review | ⏳ |
 | 2 | On export, write every sheetpane error as a threaded comment Excel displays | the review travels inside the .xlsx — no sidecar | ⏳ |
 | 3 | Also write the legacy comment and VML parts Excel needs, so older Excel sees a note | every Excel shows it | ⏳ |
+| 4 | Arpit rules: an on/off "Write review as Excel comments" line in Export ▾, or always write | whether writing the review into the file is optional | 🔴 decider decides |
 
 **Arpit, 2026-10-18:** *"Let's create separate packages, plugins for number format, formulas, styles. Merge cells, freeze panes, data validation, conditional formatting, images, charts, pivots, comments, notes. Decide, do some research and have them as separate packages or plugins."*
 
@@ -44,6 +45,8 @@ A plugin that connects Excel's comments to sheetpane's errors in both directions
 
 Waiting on **W-14** (`exportPatch`), **W-13** (comment parts from the reader), **W-02** (the pane) and **W-03** (`patchXlsx`).
 
+**Blocked on the decider** for one control (inbox, 2026-10-18): the Plugin-Comments board draws an on/off line "Write review as Excel comments ✓" in Export ▾. That menu is no slot of the six, so keeping it needs an extension point the plugins verdict does not have. Until ruled, DoD 3 writes comments on every export, as filed.
+
 ## Record affected
 
 A new component record on completion. Until then this item owns `packages/comments/`.
@@ -56,9 +59,10 @@ A new component record on completion. Until then this item owns `packages/commen
 
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Comments.dc.html`](../reference/design/boards/Plugin-Comments.dc.html) — file notes and a thread in `<sheetpane-errors>`, the Export menu line (unruled), and the cell as Excel shows it
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `exportPatch`
 - [`../compare/workbook-and-error-contract.compare.md`](../compare/workbook-and-error-contract.compare.md) — the error schema
-- [W-14](W-14-plugin-host.md) · [W-13](W-13-import-package.md) · [W-02](W-02-sheetpane-errors.md) · [W-03](W-03-export-package.md)
+- [W-14](W-14-plugin-host.md) · W-13 (closed — [SR-IMPORT](../../records/0104_IMPORT.md)) · [W-02](W-02-sheetpane-errors.md) · W-03 (closed — [SR-EXPORT](../../records/0103_EXPORT.md))
 
 ## Prompt — paste into Claude Code once the blockers close
 

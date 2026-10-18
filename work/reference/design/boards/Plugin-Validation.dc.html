@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — data validation</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1340px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 5 · @sheetpane/validation · Edit mode</span>
+<h1 class="h1">Validation — the workbook's own rules become a second author in the error list</h1>
+<p class="muted" style="max-width: 1000px">Rules saved in the .xlsx (list, decimal, whole number, date) are checked as the file loads and after every edit. Failures sit beside the reviewer's errors, marked ⚠ in a square so you always know a person didn't write them.</p>
+</header>
+
+<section style="display: flex; gap: 16px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 1004px">
+<span class="bd-cap">&lt;sheetpane-excel mode="edit"&gt; · C11 list open · plugins: validation</span>
+<dc-import name="PluginKit" mode="edit" plugins="validation" scene="validation" marks="ddarrow,listopen,wbpin,stvalid" height="602" hint-size="100%,602px"></dc-import>
+</div>
+<div class="bd-frame" style="flex: none; width: 324px">
+<span class="bd-cap">&lt;sheetpane-errors&gt;</span>
+<section class="spx-e" style="height: 602px" aria-label="Errors">
+<div class="spx-e-hd"><span class="t">Errors</span><span class="spx-e-cnt">12 open</span></div>
+<div class="spx-e-flt">
+<div class="row"><span class="lb">Severity</span><div class="spx-seg" role="group" aria-label="Filter by severity"><button class="on" type="button" aria-pressed="true">All 12</button><button type="button" aria-pressed="false">✕ 4</button><button type="button" aria-pressed="false">! 7</button><button type="button" aria-pressed="false">i 1</button></div></div>
+<div class="row"><span class="lb">Author</span><div class="spx-seg" role="group" aria-label="Filter by author"><button type="button" aria-pressed="false">All</button><button type="button" aria-pressed="false">Person 8</button><button class="on" type="button" aria-pressed="true">Workbook 4</button><button type="button" aria-pressed="false" disabled title="Needs the comments plugin">File</button></div><span class="spx-mk">e</span></div>
+</div>
+<div class="spx-e-list">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+<div>
+<button class="{{r.cls}}" type="button" aria-expanded="{{r.on}}">
+<span class="spx-n wb" aria-label="From the workbook">⚠</span>
+<sc-if value="{{r.first}}" hint-placeholder-val="{{false}}"><span class="spx-mk" style="margin: 2px 0 0 -6px">f</span></sc-if>
+<span class="bd">
+<span class="t">{{r.type}}</span>
+<span class="rule">Found <b>{{r.found}}</b> · Rule: {{r.rule}}<sc-if value="{{r.first}}" hint-placeholder-val="{{false}}"><span class="spx-mk">g</span></sc-if></span>
+<span class="m">{{r.ref}} · ! Warning · Workbook</span>
+</span>
+</button>
+<sc-if value="{{r.on}}" hint-placeholder-val="{{false}}">
+<div class="spx-e-det ro">
+<p class="spx-xs" style="color: var(--sp-ink-2)">From the workbook's data validation on C3:C15. Read-only: fix the cell, or dismiss it for this review. It clears itself when C11 passes.</p>
+<div class="spx-e-act"><button class="spx-btn spx-btn-p" type="button">Show in sheet</button><button class="spx-btn" type="button">Dismiss</button><span class="spx-mk">h</span></div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+</div>
+</section>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 600px">
+<span class="bd-cap">View — differs: no list arrows, no ⚠ pins · status still counts</span>
+<dc-import name="PluginKit" mode="view" plugins="validation" scene="validation-view" rows="6" scroll="8,1" marks="stvalid" mstart="8" height="322" hint-size="100%,322px"></dc-import>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">New controls and marks</span>
+<div class="bd-legend" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="9">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { validation } from '@sheetpane/validation';
+sheet.plugins = [validation({ severity: 'warning' })];</pre>
+<p class="xs muted">The host sets the severity workbook findings get (warning here) and whether Submit is blocked while any remain.</p>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1340}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var R = [
+      { ref: 'C11', type: 'Not in list', found: '(blank)', rule: 'list — S. Kapoor, A. Rao' },
+      { ref: 'I6', type: 'Out of range', found: '7.5%', rule: 'decimal between 0.00% and 2.00%' },
+      { ref: 'F10', type: 'Out of range', found: '-150', rule: 'whole number ≥ 0' },
+      { ref: 'J13', type: 'Invalid date', found: '31-Sep-2026', rule: 'date between 01-Jul-2026 and 30-Sep-2026' }
+    ];
+    return {
+      rows: R.map(function (r, k) { return { ref: r.ref, type: r.type, found: r.found, rule: r.rule, on: k === 0, first: k === 0, cls: 'spx-iss' + (k === 0 ? ' on' : '') }; }),
+      legend: [
+        { k: 'a', t: 'List arrow in every list-rule cell (C3:C15)', slot: 'cell', plug: 'validation' },
+        { k: 'b', t: 'The list, open, with the rule\'s choices', slot: 'overlay', plug: 'validation' },
+        { k: 'c', t: '⚠ square pin, top-right — person pins keep top-left', slot: 'overlay', plug: 'validation' },
+        { k: 'd', t: '“! 4 validation warnings”', slot: 'status', plug: 'validation' },
+        { k: 'e', t: 'Author filter: Person · Workbook · File (File needs comments)', slot: 'errors list', plug: 'validation' },
+        { k: 'f', t: '⚠ in a square for rows the workbook wrote', slot: 'errors list', plug: 'validation' },
+        { k: 'g', t: '“Found 7.5% · Rule: decimal between …” — found value and the rule, in words', slot: 'errors list', plug: 'validation' },
+        { k: 'h', t: 'Read-only: Show in sheet — no Resolve, no Delete; clears itself when the cell passes (W-18). Dismiss is proposed, not yet ruled.', slot: 'errors list', plug: 'validation' },
+        { k: 'i', t: 'View: count stays in the status line', slot: 'status', plug: 'validation' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

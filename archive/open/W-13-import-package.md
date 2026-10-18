@@ -6,7 +6,7 @@ item: W-13
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Claude Code, claude-opus-5-5)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -73,16 +73,14 @@ await toXlsx(book);                  // or patchXlsx(original, changes) — the 
 | 6 · refuse | the reading verdict's decision 4: extension and magic bytes both checked; legacy or password-protected files, non-workbook ZIPs, ZIP64 and over-limit sizes each throw a **typed error** the grid maps to its "Can't open" and password states (W-01 DoD 3) | ✅ `ImportError` codes `unsupported-format`, `password-or-legacy`, `not-workbook`, `too-large`, `corrupt`, `needs-dom` — every one exercised in `edge.test.ts` (incl. a macro-enabled workbook renamed `.xlsx`) |
 | 7 · round-trip | `toXlsx(await read(file))` read back gives the same values, sheet names and merges, for every fixture (B-017's shape) | ✅ `toXlsx(read(file))` read again equals the first read — values, sheet names, merges, hidden — fast-check, 50 runs (seed 6); the design sample reads back cell for cell |
 | 8 · grid uses it | `@sheetpane/grid` depends on `@sheetpane/import`; `packages/grid/src/read/` is never created; W-01 DoD 2 reads only through this package | ✅ `packages/grid/package.json` depends on `@sheetpane/import` (`workspace:*`); no `packages/grid/src/read/` exists; W-01 reads only through it |
-| 9 · fixtures | files saved by Excel, Google Sheets, LibreOffice and Numbers, and the design's sample workbook built with `@sheetpane/export`; the 250,000-row CSV generated at test time; tests run where `DOMParser` and `DecompressionStream` are real (W-11's verdict) | ⏳ 🔴 Arpit — ExcelJS-made fixtures and the design sample are in; the 250,000-row CSV generates at test time (136 ms in Chromium); files saved by **Excel, Google Sheets, LibreOffice and Numbers** are his to provide (none on the build machine) — `test/fixtures/FIXTURES.md` |
+| 9 · fixtures | files saved by Excel, Google Sheets, LibreOffice and Numbers, and the design's sample workbook built with `@sheetpane/export`; the 250,000-row CSV generated at test time; tests run where `DOMParser` and `DecompressionStream` are real (W-11's verdict) | ➡ moved to W-30 (Arpit, 2026-10-18: hold it; a separate testing item). ExcelJS-made fixtures, the design sample and the generated 250,000-row CSV are in |
 | 10 · docs | `docs/ARCHITECTURE.md` diagram (`docs/architecture.svg`) redrawn with three packages; the README documents the API with examples | ✅ `docs/architecture.svg` redrawn with three packages (rendered in Chromium and checked); `docs/ARCHITECTURE.md` layout and order; the README documents the API |
 | 11 · record | a component record (next free from `0101`); Ownership rows for `packages/import/` added to the register, owned by W-13 until then | ✅ [SR-IMPORT](../../records/0104_IMPORT.md) (0104); Ownership `packages/import/` → SR-IMPORT |
 | 12 · for plugins | also exposed, as parsed objects, so no plugin re-reads the ZIP: each cell's style index `s`; `numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs` and `theme1.xml` colours; `<sheetView><pane>`; `<dataValidations>`; `<conditionalFormatting>`; drawing anchors, media and chart parts; comment, threaded-comment and person parts (plugins verdict Consequences) | ✅ `styleIndex`; `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`, `indexedColors`); `themeColors`; `freeze`; `dataValidations` (incl. `x14`); `conditionalFormats`; `drawings` (anchors, media, chart paths) + `part(path)`; `notes`, `threadedComments`, `persons`; `pivotTables` — each asserted on a fixture |
 
 ## Blockers
 
-The code is built. DoD 9 is the decider's: real files saved by Excel, Google
-Sheets, LibreOffice and Numbers, added under `packages/import/test/fixtures/`
-with a row each in `FIXTURES.md`.
+None. **Closed 2026-10-18**: DoD 9 moved to W-30, every other row ✅; the live answer is [SR-IMPORT](../../records/0104_IMPORT.md).
 
 ## Record affected
 

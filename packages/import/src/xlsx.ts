@@ -18,6 +18,20 @@ const REL_PERSON = 'http://schemas.microsoft.com/office/2017/10/relationships/pe
 
 export const isCfb = (b: Uint8Array) => b.length >= 4 && b[0] === 0xd0 && b[1] === 0xcf && b[2] === 0x11 && b[3] === 0xe0;
 
+/** An encrypted .xlsx is an OLE file holding an `EncryptedPackage` stream (its directory names are UTF-16LE). */
+export function cfbRefusal(b: Uint8Array, name: string | undefined): ImportError {
+  const needle = Array.from('EncryptedPackage', (ch) => [ch.charCodeAt(0), 0]).flat();
+  let found = false;
+  outer: for (let i = 0; i + needle.length <= b.length; i++) {
+    for (let k = 0; k < needle.length; k++) if (b[i + k] !== needle[k]) continue outer;
+    found = true; break;
+  }
+  const who = name ? `"${name}"` : 'this workbook';
+  return found
+    ? new ImportError('password-or-legacy', `${who} is password-protected — remove the password in Excel and open it again`, 'password')
+    : new ImportError('password-or-legacy', `${who} is the older Excel format (.xls) — save it as .xlsx or .csv and open it again`, 'legacy');
+}
+
 export async function toBytes(data: ArrayBuffer | Uint8Array | Blob): Promise<Uint8Array> {
   if (data instanceof Uint8Array) return data;
   if (data instanceof ArrayBuffer) return new Uint8Array(data);
@@ -294,7 +308,7 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
 /** Reads an .xlsx. Throws ImportError with a typed code for anything it refuses. */
 export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOptions = {}): Promise<ImportedWorkbook> {
   const bytes = await toBytes(data);
-  if (isCfb(bytes)) throw new ImportError('password-or-legacy', 'this is a password-protected workbook or a legacy .xls — sheetpane opens .xlsx and .csv only');
+  if (isCfb(bytes)) throw cfbRefusal(bytes, undefined);
   if (!isZip(bytes)) throw new ImportError('not-workbook', 'not an .xlsx workbook (no ZIP signature)');
   const limits = { maxEntrySize: o.maxEntrySize ?? DEFAULT_LIMITS.maxEntrySize, maxTotalSize: o.maxTotalSize ?? DEFAULT_LIMITS.maxTotalSize };
   let list: ZipEntry[];

@@ -4,7 +4,7 @@ kind: component
 name: SR-DOWNLOAD
 title: "SR-DOWNLOAD (0101) — download(): export output in, a saved .xlsx or .csv out"
 description: "One function, download(data, filename, options?), turns what @sheetpane/export produces into a file the browser saves — .xlsx or .csv only, bytes unchanged, errors never silent."
-status: proposed
+status: accepted
 date: 2026-10-18
 feature: saving an export as a file
 owns: [packages/export/src/download/]
@@ -198,7 +198,7 @@ writing that itself would duplicate it and get the timing wrong.
   Playwright for examples 1–5, 7 and 8 (`download.browser.test.ts`) — Chromium
   on every push, WebKit and Firefox nightly (all three green, run 39124283729).
 - **iOS Safari: not tested.** No iOS device or simulator is reachable from the
-  build machine; the decider tests it on a phone (W-12 DoD 7). Desktop WebKit
+  build machine; the decider tests it on a phone once the demo runs (W-09 DoD 10). Desktop WebKit
   passes every example.
 - **Hosts in sandboxed iframes** must add `allow-downloads`. The README says so.
 - **Easier:** a host saves an export in one line. The grid's Export button
@@ -219,8 +219,9 @@ writing that itself would duplicate it and get the timing wrong.
 
 ### Reference (required)
 
-- [`work/open/W-12-downloader.md`](../work/open/W-12-downloader.md): the item
-  this record specifies.
+- [`packages/export/src/download/index.ts`](../packages/export/src/download/index.ts):
+  the code this record specifies; `download.test.ts` and
+  `download.browser.test.ts` beside it prove decisions 2–8.
 - [`work/reference/specs/web/mdn-url-createobjecturl.md`](../work/reference/specs/web/mdn-url-createobjecturl.md)
   · [`mdn-blob.md`](../work/reference/specs/web/mdn-blob.md) — the mechanism
   in decision 6.
@@ -245,7 +246,7 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/open/W-12-downloader.md`](../work/open/W-12-downloader.md) · [`work/compare/export-shape.compare.md`](../work/compare/export-shape.compare.md) decision 4 (the home) · [`work/compare/workbook-and-error-contract.compare.md`](../work/compare/workbook-and-error-contract.compare.md) (events) · [`work/compare/testing.compare.md`](../work/compare/testing.compare.md) (the runner)
+- [`packages/export/src/download/index.ts`](../packages/export/src/download/index.ts) · [`work/compare/export-shape.compare.md`](../work/compare/export-shape.compare.md) decision 4 (the home) · [`work/compare/workbook-and-error-contract.compare.md`](../work/compare/workbook-and-error-contract.compare.md) (events) · [`work/compare/testing.compare.md`](../work/compare/testing.compare.md) (the runner)
 - [`work/reference/specs/web/mdn-url-createobjecturl.md`](../work/reference/specs/web/mdn-url-createobjecturl.md) · [`work/reference/specs/web/mdn-blob.md`](../work/reference/specs/web/mdn-blob.md)
 
 **External**

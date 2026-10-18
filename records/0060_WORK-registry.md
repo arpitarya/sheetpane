@@ -87,23 +87,23 @@ Documents rot silently; a trigger and a date make staleness visible.
 |---|---|---|---|
 | `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — layout line: a pnpm workspace run by just (W-10) |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-13 red on fixtures (inbox); W-01 green; W-13 waits dropped |
-| `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-015, B-023 closed by SR-BUILD's package checks; B-012 narrowed to the element half |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-01, W-02, W-14, W-23, W-24 closed; W-09, W-15–W-18, W-20, W-26 green |
+| `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-009, B-012, B-017, B-020 closed by tests; B-030 (L6 veto flags the src read) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
-| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 pnpm workspace; §2 W-25–W-28 |
-| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — W-13 landed |
+| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — §1 plugin boards in the design snapshot; §2 two new decider rulings; closures and the events-and-rules verdict |
+| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — W-01, W-02, W-14, W-23, W-24 landed |
 | `work/LESSONS.md` | a failure teaches something durable | 2026-10-18 | 2026-10-18 — git add -A committed another session's items |
 | `work/MACHINE.md` | a surface breaks in a way the code did not cause | 2026-10-18 | 2026-10-18 — Firefox does not launch on macOS 27 |
-| `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — plugins verdict filed (sixth doc) |
-| `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — first proposal: live pivot tables (B-028) |
+| `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — the contract verdict's decision 9 rewritten (undo built) |
+| `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |
 | `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — plugin, hook, slot, derived cell, column rules |
-| `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — three packages: the SVG redrawn, layout and order updated |
-| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-IMPORT (0104); packages/import/ owned |
+| `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — B-030; the law checks that now run |
+| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-GRID (0105), SR-ERRORS (0106); packages/grid/ owned |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
-| `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — created: specs and design snapshot for W-01–W-08 |
-| `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — created: snapshot of the canvas |
+| `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
+| `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — refreshed: fifteen plugin boards, PluginKit, sp-plugins.css, reconciled with W-14–W-24 |
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
-| `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — renamed from `packages/sheetpane/` (package `sheetpane` → `@sheetpane/grid`) |
+| `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — the API: both elements, React 19/18, events, plugins, styling |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |
 
 ---

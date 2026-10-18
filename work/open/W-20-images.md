@@ -6,7 +6,7 @@ item: W-20
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -35,7 +35,7 @@ A plugin that shows the pictures a workbook carries. It is the first `overlay` p
 | 1 · package | `packages/images/` builds to ESM, no runtime dependency; `@sheetpane/grid` a peer; no `./ui` | ⏳ |
 | 2 · anchors | `oneCellAnchor` (from + ext) and `twoCellAnchor` (from, to) with EMU offsets converted through column widths and row heights, including hidden rows and columns; `absoluteAnchor` positioned from the sheet origin | ⏳ |
 | 3 · media | PNG, JPEG, GIF, SVG, BMP as object URLs from the ZIP part, created on first scroll into view and revoked when the workbook is replaced; EMF and WMF show a placeholder frame with the file name | ⏳ |
-| 4 · overlay | items `{ id, sheet, rect, element }`; the grid places them under pins and find-highlights, above cells; `alt` from the picture's `descr` | ⏳ |
+| 4 · overlay | items `{ id, sheet, rect, element }`; the grid places them under pins and find-highlights, above cells; `alt` from the picture's `descr`; in Edit a click on a picture selects the cell under it, and pins draw above pictures (board Plugin-Images) | ⏳ |
 | 5 · export | patch mode leaves drawing and media parts as they were (the fidelity ruling); a deleted row shifts anchors — documented as not re-anchored in v1 | ⏳ |
 | 6 · tests | fixtures with each anchor type from Excel and LibreOffice; rect arithmetic against Excel's rendered positions; memory: object URLs revoked | ⏳ |
 | 7 · record | a component record; Ownership rows for `packages/images/` | ⏳ |
@@ -55,8 +55,9 @@ A new component record on completion. Until then this item owns `packages/images
 
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Images.dc.html`](../reference/design/boards/Plugin-Images.dc.html) — a picture anchored C4:F9, the EMF frame, scrolled, a pin above the picture
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `overlay`
-- [W-14](W-14-plugin-host.md) · [W-13](W-13-import-package.md)
+- [W-14](W-14-plugin-host.md) · W-13 (closed — [SR-IMPORT](../../records/0104_IMPORT.md))
 
 ## Prompt — paste into Claude Code once the blockers close
 

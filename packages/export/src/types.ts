@@ -13,6 +13,8 @@ export interface Sheet {
   /** Column widths in Excel's character units (`<col width>`), index 0 = column A. */
   columnWidths?: number[];
   hidden?: boolean;
+  /** Frozen rows and columns (top-left), written as `<pane state="frozen">`. */
+  freeze?: { rows: number; cols: number };
 }
 
 export interface Workbook {

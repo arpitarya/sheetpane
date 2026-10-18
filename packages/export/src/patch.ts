@@ -7,7 +7,7 @@ import { CT, NS_PKG_REL, REL, XML_DECL } from './ooxml.js';
 import { cellRef, parseRange, parseRef, rangeRef, rangesIntersect, type RangePos } from './refs.js';
 import type { Cell, Change } from './types.js';
 import { checkCell } from './validate.js';
-import { cellXml } from './xlsx.js';
+import { cellXml, paneXml } from './xlsx.js';
 import { escapeAttr, fromUtf8, unescapeXml, utf8 } from './xml.js';
 import { DEFAULT_LIMITS, inflateEntry, readZip, writeZip, type WriteOptions, type ZipEntry, type ZipInput, type ZipLimits } from './zip.js';
 
@@ -42,6 +42,8 @@ export interface PatchOptions extends WriteOptions, ZipLimits {
   exportPatch?: ExportPatchHook[];
   /** Called with every `Sheet!A1` whose text lost characters XML forbids. */
   onStripped?: (refs: string[]) => void;
+  /** Freeze panes to write (W-24); `rows: 0, cols: 0` unfreezes. Sheets not named keep their `<pane>` untouched. */
+  freeze?: { sheet: string; rows: number; cols: number }[];
 }
 
 const dirOf = (p: string) => p.slice(0, p.lastIndexOf('/') + 1);
@@ -314,6 +316,23 @@ export function patchSheetXml(xml: string, sheetName: string, changes: Map<strin
   return { xml: result, formulaTouched };
 }
 
+/** Replaces the first sheet view's `<pane>` (and its pane selections) with a frozen pane, or removes it. */
+export function setPane(xml: string, f: { rows: number; cols: number }): string {
+  const P = /<(\w+:)?worksheet\b/.exec(xml)?.[1] ?? '';
+  const pane = paneXml(f, P);
+  const view = new RegExp(`<${P}sheetView\\b[^>]*?(/>|>[\\s\\S]*?</${P}sheetView>)`).exec(xml);
+  if (!view) {
+    if (!pane) return xml;
+    const el = `<${P}sheetViews><${P}sheetView workbookViewId="0">${pane}</${P}sheetView></${P}sheetViews>`;
+    const at = xml.search(new RegExp(`<${P}(sheetFormatPr|cols|sheetData)\\b`));
+    return xml.slice(0, at) + el + xml.slice(at);
+  }
+  const open = /^<[^>]*?(?=\/?>)/.exec(view[0])![0].replace(/\s*\/$/, '');
+  const inner = view[1] === '/>' ? '' : view[0].slice(view[0].indexOf('>') + 1, view[0].lastIndexOf('<'));
+  const kept = inner.replace(new RegExp(`<${P}pane\\b[^>]*/>`), '').replace(new RegExp(`<${P}selection\\b[^>]*\\bpane="(?:bottomRight|bottomLeft|topRight)"[^>]*/>`, 'g'), '');
+  return xml.replace(view[0], `${open}>${pane}${kept}</${P}sheetView>`);
+}
+
 /** Elements that follow `<calcPr>` in CT_Workbook's sequence. */
 const AFTER_CALCPR = ['oleSize', 'customWorkbookViews', 'pivotCaches', 'smartTagPr', 'smartTagTypes', 'webPublishing', 'fileRecoveryPr', 'webPublishObjects', 'extLst'];
 
@@ -362,6 +381,11 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
     const r = patchSheetXml(xml, name, cells, stripped);
     formulaTouched ||= r.formulaTouched;
     parts.write(path, r.xml);
+  }
+  for (const f of o.freeze ?? []) {
+    const sheet = sheets.find((s) => s.name === f.sheet);
+    if (!sheet) throw new ExportError('no-sheet', `no sheet named "${f.sheet}" in the workbook`, { sheet: f.sheet });
+    parts.write(sheet.path, setPane((await parts.text(sheet.path))!, f));
   }
   if (changes.length) {
     parts.write(wbPath, setFullCalcOnLoad((await parts.text(wbPath))!));

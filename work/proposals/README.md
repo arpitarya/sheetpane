@@ -25,3 +25,4 @@ timestamp: <ISO 8601>
 | doc | idea | graduation trigger | status |
 |-----|------|--------------------|--------|
 | [`pivots.md`](pivots.md) | live pivot tables re-aggregated in the grid | a host asks for it after W-16 lands; decider rules | proposed |
+| [`dismiss-workbook-errors.md`](dismiss-workbook-errors.md) | Dismiss a workbook-authored error for this review | a host asks for it after W-18 lands, or the decider rules it in | proposed |

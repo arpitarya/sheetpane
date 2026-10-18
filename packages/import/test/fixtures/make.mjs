@@ -62,5 +62,13 @@ async function date1904() {
   writeFileSync(new URL('exceljs-1904.xlsx', here), Buffer.from(await wb.xlsx.writeBuffer()));
 }
 
-await features();
-await date1904();
+async function freezes() {
+  const wb = new ExcelJS.Workbook();
+  const views = { rows: { state: 'frozen', ySplit: 2 }, cols: { state: 'frozen', xSplit: 1 }, both: { state: 'frozen', xSplit: 2, ySplit: 3 }, split: { state: 'split', xSplit: 2000, ySplit: 1500 } };
+  for (const [name, v] of Object.entries(views)) wb.addWorksheet(name, { views: [v] }).addRow([name, 1, 2]);
+  writeFileSync(new URL('exceljs-freeze.xlsx', here), Buffer.from(await wb.xlsx.writeBuffer()));
+}
+
+const which = process.argv.slice(2);
+const all = { features, date1904, freezes };
+for (const [k, f] of Object.entries(all)) if (!which.length || which.includes(k)) await f();

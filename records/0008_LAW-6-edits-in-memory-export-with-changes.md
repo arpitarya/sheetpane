@@ -80,7 +80,10 @@ loaded, every change is kept in memory and an export carries every change.
   Detail: [`work/compare/export-shape.compare.md`](../work/compare/export-shape.compare.md).
 - Exporting a multi-sheet workbook to CSV, which holds one sheet, is a
   component decision, owed by the record that owns export.
-- **Judgment today:** no code exists. The check is backlog B-017 (`ungated`).
+- **Checked today:** an edited workbook exported and loaded again carries
+  every change (SR-GRID round-trip property); the upload's bytes are compared
+  unchanged after export. The veto command's `fetch(` hit is the `src` loader's
+  read — backlog B-030.
 
 ### Alternatives considered
 
@@ -100,7 +103,7 @@ loaded, every change is kept in memory and an export carries every change.
 differs from the in-memory workbook in any changed cell — or sheetpane writes
 workbook data to storage or the network.
 
-**How to check it:** `grep -rnE "localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon" --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=records --exclude-dir=work --exclude-dir=docs . || echo clean` — plus the round-trip test once B-017 lands.
+**How to check it:** `grep -rnE "localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon" --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=records --exclude-dir=work --exclude-dir=docs . || echo clean` (one known hit: the `src` loader's read, B-030) — plus the round-trip test: `just test-pkg grid -t 'round-trips'`.
 
 ---
 
@@ -113,5 +116,5 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/BACKLOG.md`](../work/BACKLOG.md) — B-017
+- [SR-GRID](0105_GRID.md) · [SR-IMPORT](0104_IMPORT.md) · [SR-ERRORS](0106_ERRORS.md) — the checks
 - [`work/WORKLOG.md`](../work/WORKLOG.md)

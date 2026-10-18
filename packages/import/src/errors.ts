@@ -16,9 +16,12 @@ export type ImportErrorCode =
 
 export class ImportError extends Error {
   readonly code: ImportErrorCode;
-  constructor(code: ImportErrorCode, message: string) {
+  /** For `password-or-legacy`: which of the two the OLE file holds, when it can be told. */
+  readonly detail: 'password' | 'legacy' | undefined;
+  constructor(code: ImportErrorCode, message: string, detail?: 'password' | 'legacy') {
     super(message);
     this.name = 'ImportError';
     this.code = code;
+    this.detail = detail;
   }
 }

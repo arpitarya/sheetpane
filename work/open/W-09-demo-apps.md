@@ -6,7 +6,7 @@ item: W-09
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -54,6 +54,7 @@ from the design:
 | 7 · files | both apps open the design's sample workbook and a `.csv`; dropping any other format shows the refusal state (L3) | ⏳ |
 | 8 · run | `just demo-react` and `just demo-html` (W-10's justfile) are in the root README; a browser test opens each app and runs DoD 4 | ⏳ |
 | 9 · record | **no SR affected** unless the apps become a maintained surface; the Ownership rows for `examples/` are added to the register in the change that creates the directory, owned by W-09 | ⏳ |
+| 10 · iOS | open either demo on an iPhone and press Export (`.xlsx` and `.csv`); what iOS Safari does is recorded in SR-DOWNLOAD Consequences — moved from W-12 DoD 7 (Arpit, 2026-10-18) | ⏳ 🔴 Arpit, once the demo runs |
 
 ## Blockers
 

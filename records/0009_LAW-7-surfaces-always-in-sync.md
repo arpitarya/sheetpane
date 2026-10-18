@@ -80,7 +80,9 @@ the error list never sees, an error the grid never marks. The decider ruled on
   "matches suggestion". Resolving stays a human act, so a review can be
   audited. The error component shows the new value either way (decision 3).
   Detail: [`work/compare/workbook-and-error-contract.compare.md`](../work/compare/workbook-and-error-contract.compare.md).
-- **Judgment today:** no code exists. The check is backlog B-020 (`ungated`).
+- **Checked today:** the sync test mounts both elements on one pane, in two
+  containers, one inside a `<dialog>`, in both orders, and checks a change, an
+  error, a resolve and a selection in each (SR-ERRORS Consequences).
 
 ### Alternatives considered
 
@@ -99,8 +101,7 @@ the error list never sees, an error the grid never marks. The decider ruled on
 from another after the change completes, or any component holds its own copy
 of workbook data.
 
-**How to check it:** the cross-component sync test, once B-020 lands; until
-then, review — no code exists.
+**How to check it:** `just test-pkg grid -t 'always in sync'`
 
 ---
 
@@ -113,5 +114,5 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/BACKLOG.md`](../work/BACKLOG.md) — B-020
+- [SR-GRID](0105_GRID.md) · [SR-IMPORT](0104_IMPORT.md) · [SR-ERRORS](0106_ERRORS.md) — the checks
 - [`work/WORKLOG.md`](../work/WORKLOG.md)

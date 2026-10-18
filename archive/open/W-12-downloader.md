@@ -6,7 +6,7 @@ item: W-12
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Claude Code, claude-opus-5-5)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -117,14 +117,13 @@ button.addEventListener('click', async () => {
 | 4 · revoke delay | measured, and written into SR-DOWNLOAD decision 6 | ✅ measured 2026-10-18 with a 64 MB file: Chromium 156 and WebKit (Safari 27.2) save it whole even revoked in the click's task; Firefox 157 too (nightly); 30 s kept as the margin until iOS is measured — written into SR-DOWNLOAD decision 6 |
 | 5 · zero-dep | no runtime dependency (SR-DOWNLOAD decision 9) | ✅ no import outside the package; the package check holds `dependencies: {}` |
 | 6 · tests | a Vitest browser-mode test on Playwright ([`testing.compare.md`](../compare/testing.compare.md)) catches the download in Chromium per push and Firefox and WebKit nightly: name, size and first bytes for examples 1–5, and every error in example 7; what was run is written here | ✅ Playwright catches each download through `armDownload` / `takeDownload` (`test/commands.ts`): name, size and first bytes for examples 1–5 and 8, every error of example 7, no link left behind — **Chromium 156 and WebKit (macOS) green locally, 22 tests**; Firefox cannot launch on this Mac (`work/MACHINE.md`); **Firefox 157 green in nightly run 39124283729** (Linux), with Chromium and WebKit |
-| 7 · iOS | what iOS Safari does is tested and recorded in SR-DOWNLOAD Consequences | ⏳ 🔴 Arpit — no iOS device or simulator reachable from the build machine |
+| 7 · iOS | what iOS Safari does is tested and recorded in SR-DOWNLOAD Consequences | ➡ moved to W-09 DoD 10 (Arpit, 2026-10-18): there is nothing to press on an iPhone until the demo runs |
 | 8 · docs | the owning package's README documents `download` with the examples above and the iframe note | ✅ `packages/export/README.md` §Save the file — examples 1–10 and the iframe note |
-| 9 · accepted | Arpit moves SR-DOWNLOAD from `proposed` to `accepted`; the register says `built: yes` | ⏳ 🔴 Arpit |
+| 9 · accepted | Arpit moves SR-DOWNLOAD from `proposed` to `accepted`; the register says `built: yes` | ✅ Arpit accepted SR-DOWNLOAD, 2026-10-18; the register says `accepted`, built yes |
 
 ## Blockers
 
-The code is built. Two rows are the decider's: DoD 7 (open the demo on an
-iPhone and press Export) and DoD 9 (accept SR-DOWNLOAD).
+None. **Closed 2026-10-18**: DoD 7 moved to W-09, every other row ✅; the live answer is [SR-DOWNLOAD](../../records/0101_DOWNLOAD.md).
 
 ## Record affected
 

@@ -20,6 +20,8 @@ decided_by: "Arpit (Cowork, claude-fable-5-1) — ruling 'resolve all the blocke
 > ever observed out of step, or a host cannot save and reload a review from
 > the events alone.
 
+> **Extended 2026-10-18** by [`grid-events-and-host-rules.compare.md`](grid-events-and-host-rules.compare.md): editing events, column rules, `author: "host"`.
+
 ## Context
 
 L7 says the view, edit and error components read **one** in-memory workbook
@@ -107,7 +109,7 @@ interface SheetpaneError {
    `sheetpane-change`, stores what it likes, and gives errors back through
    `setErrors()`; a saved error whose cell no longer holds `found` is shown
    with a "stale" tag, never silently moved.
-9. **Undo/redo for cell edits: out of scope for v1** — filed as backlog B-027.
+9. **Undo/redo: in scope** — B-027 was promoted to W-23 by the plugins verdict and built: one stack per pane over every change and error mutation ([SR-GRID](../../records/0105_GRID.md) decision 7).
 
 ## Consequences
 

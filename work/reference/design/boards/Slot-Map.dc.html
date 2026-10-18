@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slot map</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.mx{display:grid;grid-template-columns:128px repeat(9,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.mx>div{padding:8px 6px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);font-size:11.5px;line-height:1.3;min-height:58px;display:flex;flex-direction:column;gap:3px}
+.mx>div.hd{min-height:0;background:var(--ground);font:600 11px/1.2 'IBM Plex Mono',monospace;color:var(--ink-2);justify-content:flex-end}
+.mx>div.sl{font:600 12px/1.2 'IBM Plex Mono',monospace;color:#6B55CC;background:#F3F0FC}
+.mx>div.sl.ext{color:var(--ink-3);background:var(--ground)}
+.mx>div.on b{display:inline-flex;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.mx>div.sep{grid-column:1 / -1;min-height:0;background:var(--sunken);font:500 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:8px 10px}
+.sc{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:6px;font-size:13px}
+.sc-core{background:var(--sunken);color:var(--ink-2);border:1px solid var(--line)}
+.sc-slot{background:#F3F0FC;color:#4A3A9A;border:1.5px dashed #6B55CC;font-weight:600}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; height: 1120px; min-height: 0; padding: 0; position: relative; overflow: hidden">
+<div style="position: absolute; left: 64px; top: 56px; width: 1312px" class="stack">
+<span class="over">Slot map · one page</span>
+<h1 class="h1">Six slots — which plugin fills which</h1>
+<p class="muted small">Left: where each slot sits in &lt;sheetpane-excel&gt;. Right: what each plugin puts there. The last three rows sit outside the six slots: the core toolbar, the Export menu (one line there needs a ruling) and the errors list, which plugins feed through hooks.</p>
+</div>
+
+<div style="position: absolute; left: 64px; top: 196px; width: 440px; height: 600px; box-sizing: border-box; border: 1px solid var(--line-strong); border-radius: 10px; background: #FFFFFF"></div>
+<div style="position: absolute; left: 64px; top: 172px; font: 500 11px/1 'IBM Plex Mono', monospace; color: var(--ink-3); letter-spacing: .06em; text-transform: uppercase">&lt;sheetpane-excel&gt;</div>
+<div class="sc sc-core" style="left: 80px; top: 212px; width: 408px; height: 40px"><span>Toolbar · core <span class="xs faint">(36 px)</span></span></div>
+<div class="sc sc-slot" style="left: 80px; top: 260px; width: 408px; height: 40px"><span>format-row <span class="xs" style="font-weight: 400">· Edit only · 32 px · drawn only if filled</span></span></div>
+<div class="sc sc-slot" style="left: 80px; top: 308px; width: 408px; height: 40px"><span>cellbar <span class="xs" style="font-weight: 400">· ref + value</span></span></div>
+<div style="position: absolute; left: 80px; top: 356px; width: 408px; height: 300px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; background: repeating-linear-gradient(0deg, transparent 0 27px, #E6E6E1 27px 28px)"></div>
+<div class="sc sc-slot" style="left: 92px; top: 368px; width: 384px; height: 276px; align-items: flex-start; padding-top: 10px; background: rgba(107,85,204,.05)"><span>overlay <span class="xs" style="font-weight: 400">· sheet space · scrolls with cells</span></span></div>
+<div class="sc sc-slot" style="left: 120px; top: 440px; width: 120px; height: 36px; background: #FFFFFF"><span>cell</span></div>
+<div class="sc" style="left: 236px; top: 540px; width: 228px; height: 36px; background: #16171A; color: #FFFFFF; outline: 1.5px dashed #6B55CC; outline-offset: 2px; font-weight: 600"><span>selbar <span class="xs" style="font-weight: 400; opacity: .8">· Edit only · after core buttons</span></span></div>
+<div class="sc sc-core" style="left: 80px; top: 664px; width: 408px; height: 32px"><span>Sheet tabs · core</span></div>
+<div class="sc sc-slot" style="left: 80px; top: 704px; width: 408px; height: 36px"><span>status <span class="xs" style="font-weight: 400">· after core text</span></span></div>
+<div class="sc sc-core" style="left: 64px; top: 820px; width: 440px; height: 52px; border-style: dashed"><span>&lt;sheetpane-errors&gt; · not a slot: rows come from the shared pane (issue sources)</span></div>
+<div style="position: absolute; left: 64px; top: 892px; width: 440px" class="stack">
+<span class="xs muted">Paint order inside the grid, bottom to top: cells → cell slot → overlay (pictures, charts, outlines) → pins → selection bar → menus.</span>
+<div class="row" style="gap: 10px; flex-wrap: wrap"><span class="bd-slot">slot</span><span class="xs faint">dashed purple = a slot plugins may fill</span><span class="bd-plug">core</span><span class="xs faint">grey = core, never touched</span></div>
+</div>
+
+<div style="position: absolute; left: 544px; top: 196px; width: 832px">
+<div class="mx">
+<div class="hd">slot ↓ / plugin →</div><div class="hd">numfmt</div><div class="hd">formulas</div><div class="hd">styles</div><div class="hd">validation</div><div class="hd">condfmt</div><div class="hd">images</div><div class="hd">charts</div><div class="hd">comments</div><div class="hd">core</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="9">
+<sc-if value="{{r.sep}}" hint-placeholder-val="{{false}}"><div class="sep">{{r.sep}}</div></sc-if>
+<div class="{{r.slCls}}">{{r.slot}}<span class="xs faint" style="font-family: 'IBM Plex Sans', sans-serif; font-weight: 400">{{r.sub}}</span></div>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="9"><div class="{{c.cls}}"><sc-if value="{{c.on}}" hint-placeholder-val="{{false}}"><b aria-hidden="true"></b></sc-if><span>{{c.t}}</span></div></sc-for>
+</sc-for>
+</div>
+<p class="xs muted" style="margin-top: 10px">● = adds something in that place. core = undo / redo, freeze panes, the “may be stale” mark without formulas, and the More ▾ overflow — no plugin needed.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var P = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'core'];
+    var R = [
+      { slot: 'format-row', sub: 'Edit only', m: { numfmt: 'Format menu · .0← .00→', styles: 'Text · Colour · Fill · Borders · Align · Wrap · Clear', core: 'More ▾ when narrow' } },
+      { slot: 'selbar', sub: 'Edit only', m: { styles: 'Bold · Fill · Merge / Unmerge' } },
+      { slot: 'cellbar', sub: 'View + Edit', m: { numfmt: 'Raw value · format chip', formulas: 'fx + formula', styles: 'Style chip', validation: 'Rule chip', charts: 'Source chip', core: '≈ may be stale' } },
+      { slot: 'status', sub: 'View + Edit', m: { formulas: 'Sum · Avg · Count · ⟳ n', validation: 'n warnings', condfmt: 'n rules', images: 'n pictures', charts: 'Chart source', core: 'Frozen rows · cols' } },
+      { slot: 'cell', sub: 'View + Edit', m: { formulas: '⟳ · #REF!', styles: 'File fills, colours, borders', validation: 'List arrow', condfmt: 'Scale · bars · fills', comments: 'Note mark', core: '≈ · freeze divider' } },
+      { slot: 'overlay', sub: 'View + Edit', m: { formulas: 'Reference outlines', validation: '⚠ pins · open list', condfmt: 'Rule legend', images: 'Pictures · EMF frame', charts: 'Frame · source cells' } },
+      { sep: 'Outside the six slots', slot: 'toolbar', sub: 'core only', ext: true, m: { core: 'Undo · Redo (W-23) · Freeze ▾ (W-24)' } },
+      { slot: 'export menu *', sub: 'needs a ruling (W-22)', ext: true, m: { comments: 'Write review as Excel comments' } },
+      { slot: 'errors list', sub: 'fed by hooks, not a slot', ext: true, m: { validation: 'Workbook author · ⚠ rows · filter', comments: 'File author · threads' } }
+    ];
+    return {
+      rows: R.map(function (r) {
+        return {
+          sep: r.sep || '', slot: r.slot, sub: r.sub, slCls: 'sl' + (r.ext ? ' ext' : ''),
+          cells: P.map(function (k) { var t = r.m[k] || ''; return { on: !!t, t: t, cls: t ? 'on' : '' }; })
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

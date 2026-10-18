@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — formulas</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1540px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 3 · @sheetpane/formulas · Edit, View, and without the plugin</span>
+<h1 class="h1">Formulas — see what a value is made of, and what changed because of you</h1>
+<p class="muted" style="max-width: 1000px">The reviewer fixed Price in G7 (286.40 → 268.40); Market value in H7 recalculated and carries ⟳. Now they are editing H12 — the cells its formula reads are outlined in the same colours as the formula text.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">Edit · editing H12 · plugins: formulas</span>
+<dc-import name="PluginKit" mode="edit" plugins="formulas" scene="formulas" marks="fx,refs,recalc,referr,strecalc" height="602" hint-size="100%,602px"></dc-import>
+</div>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 640px">
+<span class="bd-cap">View — differs: fx read-only · selection stats in status</span>
+<dc-import name="PluginKit" mode="view" plugins="formulas" scene="formulas-view" rows="6" scroll="2,5" marks="fxro,ststats" mstart="5" height="322" hint-size="100%,322px"></dc-import>
+</div>
+<div class="bd-frame" style="flex: none; width: 600px">
+<span class="bd-cap">No formulas plugin · Edit · after an edit to F12</span>
+<dc-import name="PluginKit" mode="edit" plugins="" scene="formulas-none" rows="6" scroll="8,4" marks="stalecell,stalechip" mstart="7" issues="none" height="322" hint-size="100%,322px"></dc-import>
+</div>
+</section>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-card" style="flex: 1; min-width: 0">
+<span class="h4">New controls and marks</span>
+<div class="bd-legend">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="9">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-host" style="flex: none; width: 380px">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { formulas } from '@sheetpane/formulas';
+sheet.plugins = [formulas()];</pre>
+<p class="xs muted">Without it, sheetpane shows the cached values saved in the file. A formula cell that depends on a changed cell is marked “may be stale” (W-01 DoD 15); export asks Excel to recalculate.</p>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1540}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: '“fx” badge + the formula, editable in Edit', slot: 'cellbar', plug: 'formulas' },
+        { k: 'b', t: 'Cells the formula reads, outlined and labelled F12, G12 — same colours as the formula text', slot: 'overlay', plug: 'formulas' },
+        { k: 'c', t: '⟳ on H7 — recalculated because G7 changed', slot: 'cell', plug: 'formulas' },
+        { k: 'd', t: '#REF! from the file, shown as text — never hidden or coloured only', slot: 'cell', plug: 'formulas' },
+        { k: 'e', t: '“⟳ 1 cell recalculated”', slot: 'status', plug: 'formulas' },
+        { k: 'f', t: 'View: fx is read-only (dashed); you can read the formula, not edit it', slot: 'cellbar', plug: 'formulas' },
+        { k: 'g', t: 'Sum · Avg · Count of the selection', slot: 'status', plug: 'formulas' },
+        { k: 'h', t: '≈ on a formula cell — its saved value may be out of date', slot: 'cell', plug: 'core' },
+        { k: 'i', t: '“may be stale” chip on the selected formula cell', slot: 'cellbar', plug: 'core' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

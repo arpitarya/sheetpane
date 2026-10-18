@@ -3,6 +3,7 @@ import fc from 'fast-check';
 import { toCsv, toXlsx, type Workbook } from '@sheetpane/export';
 import features from './fixtures/exceljs-features.xlsx?inline';
 import d1904 from './fixtures/exceljs-1904.xlsx?inline';
+import freezeFx from './fixtures/exceljs-freeze.xlsx?inline';
 import { fromCsv, fromXlsx, read, type ImportedWorkbook } from '../src/index.js';
 import { SAMPLE_BOOK, SAMPLE_CSV_SHEET } from '../../export/test/fixtures/sample.js';
 import { fromDataUrl } from './helpers.js';
@@ -76,6 +77,10 @@ describe('a workbook written by another program (ExcelJS)', async () => {
     expect(s.drawings).toEqual([expect.objectContaining({ kind: 'picture', anchor: 'oneCell', from: { col: 6, colOff: 0, row: 5, rowOff: 0 }, media: 'xl/media/image1.png' })]);
     const png = await b.part('xl/media/image1.png');
     expect([...png!.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+  });
+  it('reads row-only, column-only and both freezes; a split pane is not frozen (W-24 DoD 1)', async () => {
+    const b = await fromXlsx(fromDataUrl(freezeFx));
+    expect(b.sheets.map((x) => [x.name, x.freeze])).toEqual([['rows', { rows: 2, cols: 0 }], ['cols', { rows: 0, cols: 1 }], ['both', { rows: 3, cols: 2 }], ['split', { rows: 0, cols: 0 }]]);
   });
   it('honours the 1904 date system', async () => {
     const b4 = await fromXlsx(fromDataUrl(d1904));

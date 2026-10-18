@@ -6,7 +6,7 @@ item: W-16
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -61,10 +61,11 @@ A new component record on completion. Until then this item owns `packages/formul
 
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Formulas.dc.html`](../reference/design/boards/Plugin-Formulas.dc.html) — `fx`, reference outlines while editing, ⟳, `#REF!`, Sum · Avg · Count, View read-only
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `derive` hook, decision 9
 - [IronCalc](https://github.com/ironcalc/IronCalc) — `@ironcalc/wasm` API: `setUserInput`, `evaluate`, `getFormattedCellValue`
 - [`../reference/specs/spreadsheetml/working-with-formulas.md`](../reference/specs/spreadsheetml/working-with-formulas.md)
-- [W-14](W-14-plugin-host.md) · [W-13](W-13-import-package.md) · [W-03](W-03-export-package.md)
+- [W-14](W-14-plugin-host.md) · W-13 (closed — [SR-IMPORT](../../records/0104_IMPORT.md)) · W-03 (closed — [SR-EXPORT](../../records/0103_EXPORT.md))
 
 ## Prompt — paste into Claude Code once the blockers close
 

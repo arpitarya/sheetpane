@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pane sync across tabs</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.hostf{border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#F3F4F6}
+.htab{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;margin-bottom:-1px;color:#4B5563;font:500 14px/1 'IBM Plex Sans',sans-serif;border:0;border-bottom:2px solid transparent;background:none}
+.htab.on{color:#111827;border-bottom-color:#111827}
+.hbadge{font:600 11px/1 'IBM Plex Mono',monospace;padding:3px 6px;border-radius:999px;background:#FBF0D9;color:#875600}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 2000px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 12 · Host-Linked-Tabs variant · validation installed</span>
+<h1 class="h1">Pane sync — an edit in one tab raises a warning in the other, at once</h1>
+<p class="muted" style="max-width: 1000px">Sheet and errors sit in different host tabs but read one in-memory pane. The reviewer types 4.0% into Fee rate I7; the workbook's rule (0.00%–2.00%) fails, and the Errors tab already lists it before anyone switches.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">① Holdings file tab · I7 changed 0.40% → 4.0%</span>
+<div class="hostf">
+<header class="host-hd"><span class="host-logo">[Your app]</span><nav class="row" style="gap: 20px" aria-label="Main"><a class="small" href="#" style="color: #4B5563; text-decoration: none">Dashboard</a><a class="small" href="#" style="color: #111827; text-decoration: none; font-weight: 500">Approvals</a></nav></header>
+<div style="padding: 16px 20px 0; display: flex; align-items: center; gap: 12px"><div class="stack" style="gap: 4px"><span class="xs faint">Approvals / Q3 2026</span><span class="h2">Quarterly holdings — sign-off</span></div><span class="spacer"></span><button class="btn btn-p" type="button">Approve</button></div>
+<div class="host-tabs" role="tablist" aria-label="Sign-off sections" style="padding: 0 12px; margin-top: 12px; background: #FFFFFF">
+<button class="htab" type="button" role="tab" aria-selected="false">Errors <span class="hbadge">13 · 1 new</span><span class="spx-mk">d</span></button>
+<button class="htab on" type="button" role="tab" aria-selected="true">Holdings file</button>
+<button class="htab" type="button" role="tab" aria-selected="false">History</button>
+</div>
+<div style="padding: 16px; background: #F9FAFB">
+<dc-import name="PluginKit" mode="edit" plugins="validation" scene="sync" marks="newpin,newchip,stvalid" height="602" hint-size="100%,602px"></dc-import>
+</div>
+</div>
+</div>
+
+<div class="row" style="gap: 14px; justify-content: center; padding: 4px 0">
+<svg viewBox="0 0 24 24" fill="none" stroke="#45484F" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 28px; height: 28px"><path d="M12 4v16M6 14l6 6 6-6"/></svg>
+<span class="small muted">Same pane object · same frame · no save, no reload, no event wiring by the host</span>
+</div>
+
+<div class="bd-frame">
+<span class="bd-cap">② Errors tab · the new workbook warning is already at the top</span>
+<div class="hostf">
+<header class="host-hd"><span class="host-logo">[Your app]</span><nav class="row" style="gap: 20px" aria-label="Main"><a class="small" href="#" style="color: #4B5563; text-decoration: none">Dashboard</a><a class="small" href="#" style="color: #111827; text-decoration: none; font-weight: 500">Approvals</a></nav></header>
+<div style="padding: 16px 20px 0; display: flex; align-items: center; gap: 12px"><div class="stack" style="gap: 4px"><span class="xs faint">Approvals / Q3 2026</span><span class="h2">Quarterly holdings — sign-off</span></div><span class="spacer"></span><button class="btn btn-p" type="button">Approve</button></div>
+<div class="host-tabs" role="tablist" aria-label="Sign-off sections" style="padding: 0 12px; margin-top: 12px; background: #FFFFFF">
+<button class="htab on" type="button" role="tab" aria-selected="true">Errors <span class="hbadge">13</span></button>
+<button class="htab" type="button" role="tab" aria-selected="false">Holdings file</button>
+<button class="htab" type="button" role="tab" aria-selected="false">History</button>
+</div>
+<div style="padding: 16px; background: #F9FAFB; display: flex; gap: 20px; align-items: flex-start">
+<section class="spx-e" style="width: 560px; height: 520px; flex: none" aria-label="Errors">
+<div class="spx-e-hd"><span class="t">Errors</span><span class="spx-e-cnt">13 open</span></div>
+<div class="spx-e-flt">
+<div class="row"><span class="lb">Author</span><div class="spx-seg" role="group" aria-label="Filter by author"><button class="on" type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Person 8</button><button type="button" aria-pressed="false">Workbook 5</button><button type="button" aria-pressed="false" disabled title="Needs the comments plugin">File</button></div></div>
+</div>
+<div class="spx-e-list">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<button class="{{r.cls}}" type="button">
+<span class="{{r.nCls}}">{{r.n}}</span>
+<span class="bd">
+<span class="t">{{r.type}}<sc-if value="{{r.isNew}}" hint-placeholder-val="{{false}}"> <span class="spx-chip spx-chip-warn" style="height: 18px">new · just now</span><span class="spx-mk">e</span></sc-if></span>
+<span class="rule">{{r.text}}</span>
+<span class="m">{{r.meta}}</span>
+</span>
+</button>
+</sc-for>
+</div>
+</section>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">What moved, and who drew it</span>
+<div class="stack" style="gap: 8px">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="5">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>const pane = createPane(file, { plugins: [validation()] });
+excelTab.pane = pane;  errorsTab.pane = pane;
+pane.on('counts', c =&gt; setBadge(c.open, c.new));</pre>
+<p class="xs muted">The tab badge belongs to your app. Plugins are installed once, on the pane, so both elements see the same rules.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var R = [
+      { n: '⚠', nCls: 'spx-n wb', type: 'Out of range', text: 'Found 4.0% · Rule: decimal between 0.00% and 2.00%', meta: 'I7 · ! Warning · Workbook', isNew: true },
+      { n: '⚠', nCls: 'spx-n wb', type: 'Not in list', text: 'Found (blank) · Rule: list — S. Kapoor, A. Rao', meta: 'C11 · ! Warning · Workbook', isNew: false },
+      { n: '1', nCls: 'spx-n error', type: 'Doesn’t match source', text: '286.40 → 268.40', meta: 'G7 · Error · Arpit · 09:04', isNew: false },
+      { n: '2', nCls: 'spx-n warning', type: 'Wrong format', text: 'AC-1O044 → AC-10044', meta: 'A8 · Warning · Arpit · 09:07', isNew: false },
+      { n: '3', nCls: 'spx-n error', type: 'Wrong value', text: '7.5% → 0.75%', meta: 'I6 · Error · Arpit · 09:12', isNew: false }
+    ];
+    return {
+      rows: R.map(function (r) { return { n: r.n, nCls: r.nCls, type: r.type, text: r.text, meta: r.meta, isNew: r.isNew, cls: 'spx-iss' + (r.isNew ? ' new' : '') }; }),
+      legend: [
+        { k: 'a', t: 'New ⚠ pin on I7, ringed for a moment', slot: 'overlay', plug: 'validation' },
+        { k: 'b', t: '“⚠ New · decimal 0.00%–2.00%” on the edited cell', slot: 'cellbar', plug: 'validation' },
+        { k: 'c', t: 'Count goes 4 → 5', slot: 'status', plug: 'validation' },
+        { k: 'd', t: 'Errors tab badge “13 · 1 new”', slot: 'host', plug: 'your app' },
+        { k: 'e', t: 'New row on top, “new · just now”, left rule in warn', slot: 'errors list', plug: 'validation' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

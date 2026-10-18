@@ -22,12 +22,10 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| Open `packages/export/test/fixtures/sheetpane-sample.xlsx` in Excel and LibreOffice — any repair prompt? — and `sheetpane-sample.csv` in Excel — accents right? (W-03 DoD 8) | 2026-10-18 | 0 days |
-| ↳ **blocks:** W-03 (closing only — the code has landed) | | |
-| Accept SR-DOWNLOAD (`proposed` → `accepted`), and press Export on an iPhone once W-09's demo runs (W-12 DoD 7, 9) | 2026-10-18 | 0 days |
-| ↳ **blocks:** W-12 (closing only — the code has landed) | | |
-| Add small files saved by Excel, Google Sheets, LibreOffice and Numbers to `packages/import/test/fixtures/` — your own, a row each in `FIXTURES.md` (W-13 DoD 9) | 2026-10-18 | 0 days |
-| ↳ **blocks:** W-13 (closing only — the code has landed) | | |
+| Accept or change the dark `--sp-*` values (`work/reference/design/boards/sp-plugins.css`, `.spx-dark`) and say whether dark follows the computer's setting by default (W-29 DoD 1) | 2026-10-18 | 0 days |
+| ↳ **blocks:** W-29 | | |
+| Comments: keep an on/off "Write review as Excel comments" line in Export ▾ — an extension point beyond the six slots, the plugins verdict's reopen-trigger — or always write them, as W-22 is filed? (board Plugin-Comments) | 2026-10-18 | 0 days |
+| ↳ **blocks:** W-22 (the Export line only) | | |
 
 ---
 
@@ -35,34 +33,28 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🔴 **W-03** `agent` · `@sheetpane/export` built (`toXlsx`, `patchXlsx`, `toCsv`, `download`) — blocked on the decider opening the sample in Excel (DoD 8). Filed by Arpit (Cowork). [detail](open/W-03-export-package.md)
-- 🔴 **W-12** `agent` · `download()` built and tested in Chromium and WebKit — blocked on the decider accepting SR-DOWNLOAD and an iPhone check (DoD 7, 9). Filed by Arpit (Cowork). [detail](open/W-12-downloader.md)
-- 🔴 **W-13** `agent` · `@sheetpane/import` built and tested — blocked on the decider's real-app fixtures (DoD 9). Filed by Arpit (Cowork). [detail](open/W-13-import-package.md)
-- 🟢 **W-01** `agent` · Build the `<sheetpane-excel>` web component and its in-memory workbook: read, View/Edit, edits, flag, export. Filed by Arpit (Cowork). [detail](open/W-01-sheetpane-excel.md)
-- 🟡 **W-02** `agent` · Build the `<sheetpane-errors>` web component: list, form, resolve, Show in sheet, always in sync — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-02-sheetpane-errors.md)
-- 🟡 **W-09** `agent` · Demo apps — React and plain `index.html` — that take `@sheetpane/grid` as a dependency — waiting on W-01, W-02. Filed by Arpit (Cowork). [detail](open/W-09-demo-apps.md)
-- 🟡 **W-14** `agent` · Build the plugin host in `@sheetpane/grid`: six hooks, six slots, the `plugins` attribute, change kinds — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-14-plugin-host.md)
-- 🟡 **W-24** `agent` · Freeze panes in core: read `<pane>`, sticky rows and columns, Freeze/Unfreeze, export — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-24-freeze-panes.md)
-- 🟡 **W-23** `agent` · Undo / redo over every change and error, one stack per pane (B-027 promoted) — waiting on W-01. Filed by Arpit (Cowork). [detail](open/W-23-undo-redo.md)
-- 🟡 **W-15** `agent` · Build `@sheetpane/numfmt`: every Excel number format through the `numfmt` library, format dropdown — waiting on W-14. Filed by Arpit (Cowork). [detail](open/W-15-numfmt.md)
-- 🟡 **W-16** `agent` · Build `@sheetpane/formulas`: live recalculation through IronCalc (WASM, lazy), `fx` cell bar, status sums — waiting on W-14. Filed by Arpit (Cowork). [detail](open/W-16-formulas.md)
-- 🟡 **W-17** `agent` · Build `@sheetpane/styles`: fill, weight, colour, borders, alignment rendered and edited; the format row — waiting on W-14, W-23. Filed by Arpit (Cowork). [detail](open/W-17-styles.md)
-- 🟡 **W-18** `agent` · Build `@sheetpane/validation`: the workbook's data-validation rules flagged in the error pane; list dropdowns — waiting on W-14, W-02. Filed by Arpit (Cowork). [detail](open/W-18-validation.md)
+- 🔴 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — blocked on the decider's Export-line ruling. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
+- 🔴 **W-29** `agent` · Dark theme for the grid and the `--sp-*` tokens the plugin slots draw with — blocked on the decider's dark-values ruling. Filed by Arpit (Cowork). [detail](open/W-29-dark-theme-and-slot-tokens.md)
+- 🟢 **W-09** `agent` · Demo apps — React and plain `index.html` — that take `@sheetpane/grid` as a dependency. Filed by Arpit (Cowork). [detail](open/W-09-demo-apps.md)
+- 🟢 **W-15** `agent` · Build `@sheetpane/numfmt`: every Excel number format through the `numfmt` library, format dropdown. Filed by Arpit (Cowork). [detail](open/W-15-numfmt.md)
+- 🟢 **W-16** `agent` · Build `@sheetpane/formulas`: live recalculation through IronCalc (WASM, lazy), `fx` cell bar, status sums. Filed by Arpit (Cowork). [detail](open/W-16-formulas.md)
+- 🟢 **W-17** `agent` · Build `@sheetpane/styles`: fill, weight, colour, borders, alignment rendered and edited; the format row. Filed by Arpit (Cowork). [detail](open/W-17-styles.md)
+- 🟢 **W-18** `agent` · Build `@sheetpane/validation`: the workbook's data-validation rules flagged in the error pane; list dropdowns. Filed by Arpit (Cowork). [detail](open/W-18-validation.md)
 - 🟡 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — waiting on W-17. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
-- 🟡 **W-20** `agent` · Build `@sheetpane/images`: anchored pictures drawn in sheet space, view only — waiting on W-14. Filed by Arpit (Cowork). [detail](open/W-20-images.md)
+- 🟢 **W-20** `agent` · Build `@sheetpane/images`: anchored pictures drawn in sheet space, view only. Filed by Arpit (Cowork). [detail](open/W-20-images.md)
 - 🟡 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types — waiting on W-20. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
-- 🟡 **W-22** `agent` · Build `@sheetpane/comments`: notes and threads into the error pane; the review exported as threaded comments — waiting on W-14, W-02. Filed by Arpit (Cowork). [detail](open/W-22-comments.md)
-- 🟡 **W-26** `agent` · Editing and position events: edit start, typing, before-save (cancellable), cancel, sheet switch; column title on every event — waiting on W-25, W-01. Filed by Arpit (Cowork). [detail](open/W-26-edit-events.md)
-- 🟡 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list — waiting on W-25, W-14, W-26, W-02. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
-- 🟡 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as a package or recipes — waiting on W-25, W-26, W-01. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)
+- 🟢 **W-26** `agent` · Editing and position events: edit start, typing, before-save (cancellable), cancel, sheet switch; column title on every event. Filed by Arpit (Cowork). [detail](open/W-26-edit-events.md)
+- 🟡 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list — waiting on W-26. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
+- 🟡 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as recipes in the README and React demo — waiting on W-26. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)
 
 ### testing
+
+- 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
 
 ### record update
 
 ### research
 
-- 🟢 **W-25** `cowork` · Research the grid's editing events, host column rules and React hooks; Arpit rules on auto-resolve, block vs flag, headers and package vs recipes. Filed by Arpit (Cowork). [detail](open/W-25-research-events-rules-hooks.md)
 
 
 ---

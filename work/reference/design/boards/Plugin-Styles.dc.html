@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — styles</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.st-grid{display:grid;grid-template-columns:120px repeat(6,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.st-grid>div{padding:12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);display:flex;align-items:center;gap:6px;min-height:58px}
+.st-grid>div.h{min-height:0;font:500 11px/1 'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:var(--ground)}
+.st-grid>div.dk{background:color-mix(in srgb,#16171A 93%,#F6F6F4)}
+.st-grid>div.rl{font-size:13px;font-weight:600}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1580px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 4 · @sheetpane/styles · Edit mode</span>
+<h1 class="h1">Styles — render the file's look; let a reviewer mark a cell, not design a sheet</h1>
+<p class="muted" style="max-width: 1000px">The reviewer selected G7:H7 and made G7 bold with a fill to draw the uploader's eye. Groups run Text · Colour · Fill · Borders · Align · Wrap · Clear. Undo and Redo are core (W-23) and land before this row ships. No font picker — the host's font is used everywhere.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">Edit · G7:H7 selected · Borders menu open · plugins: styles</span>
+<dc-import name="PluginKit" mode="edit" plugins="styles" scene="styles" open="borders" marks="undo,text,color,fill,borders,align,wrap,clear,sbbold,sbmerge,stylechip,stylecorner,filestyle" height="634" hint-size="100%,634px"></dc-import>
+</div>
+
+<section class="stack" style="gap: 10px">
+<div class="row" style="gap: 10px"><span class="h3">Format-row states</span><span class="xs faint">Defined once here; every plugin that adds to the format row reuses them.</span></div>
+<div class="st-grid">
+<div class="h"></div><div class="h">Default</div><div class="h">Hover</div><div class="h">Pressed (on)</div><div class="h">Active · mouse down</div><div class="h">Disabled</div><div class="h">Keyboard focus</div>
+
+<div class="rl">Light</div>
+<div><span class="spx spx-bare" style="display: flex; gap: 4px"><button class="spx-fb" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button><button class="spx-fb" type="button" aria-label="Wrap text"><span>Wrap</span></button></span></div>
+<div><span class="spx spx-bare" style="display: flex; gap: 4px"><button class="spx-fb is-hover" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button><span class="spx-tip" style="position: static; font-size: 11px; padding: 4px 7px">Bold <span class="spx-kbd">Mod+B</span></span></span></div>
+<div><span class="spx spx-bare" style="display: flex; gap: 4px"><button class="spx-fb" type="button" aria-pressed="true" aria-label="Bold"><span class="lt spx-tB">B</span></button><button class="spx-fb" type="button" aria-pressed="true" aria-label="Align right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button></span></div>
+<div><span class="spx spx-bare" style="display: flex; gap: 4px"><button class="spx-fb is-active" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button></span></div>
+<div><span class="spx spx-bare" style="display: flex; gap: 4px"><button class="spx-fb" type="button" disabled aria-label="Merge"><span>Merge</span></button><span class="xs faint">one cell selected</span></span></div>
+<div><span class="spx spx-bare" style="display: flex; gap: 4px"><button class="spx-fb is-focus" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button><span class="xs faint">2 px ring</span></span></div>
+
+<div class="rl dk" style="color: #F6F6F4">Dark</div>
+<div class="dk"><span class="spx spx-bare spx-dark" style="display: flex; gap: 4px"><button class="spx-fb" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button><button class="spx-fb" type="button" aria-label="Wrap text"><span>Wrap</span></button></span></div>
+<div class="dk"><span class="spx spx-bare spx-dark" style="display: flex; gap: 4px"><button class="spx-fb is-hover" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button><span class="spx-tip" style="position: static; font-size: 11px; padding: 4px 7px">Undo <span class="spx-kbd">Mod+Z</span></span></span></div>
+<div class="dk"><span class="spx spx-bare spx-dark" style="display: flex; gap: 4px"><button class="spx-fb" type="button" aria-pressed="true" aria-label="Bold"><span class="lt spx-tB">B</span></button><button class="spx-fb" type="button" aria-pressed="true" aria-label="Align right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button></span></div>
+<div class="dk"><span class="spx spx-bare spx-dark" style="display: flex; gap: 4px"><button class="spx-fb is-active" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button></span></div>
+<div class="dk"><span class="spx spx-bare spx-dark" style="display: flex; gap: 4px"><button class="spx-fb" type="button" disabled aria-label="Merge"><span>Merge</span></button></span></div>
+<div class="dk"><span class="spx spx-bare spx-dark" style="display: flex; gap: 4px"><button class="spx-fb is-focus" type="button" aria-label="Bold"><span class="lt spx-tB">B</span></button><span class="spx-tip" style="position: static; font-size: 11px; padding: 4px 7px">Flag issue <span class="spx-kbd">F</span></span></span></div>
+</div>
+<p class="xs muted">Keyboard: Tab enters the format row once; ← → move between buttons, Home / End jump to the ends; Enter or Space toggles; ↓ opens a menu; Esc closes it and returns focus. Every tooltip names its shortcut: Bold Mod+B · Italic Mod+I · Underline Mod+U · Undo Mod+Z · Redo Mod+Shift+Z · Flag issue F.</p>
+</section>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-card" style="flex: 1; min-width: 0">
+<span class="h4">New controls and marks</span>
+<div class="bd-legend">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="13">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-host" style="flex: none; width: 380px">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { styles } from '@sheetpane/styles';
+sheet.plugins = [styles({ fills: 'proof' })];</pre>
+<p class="xs muted">The host picks the swatch set (Proof tokens here). Font family is never offered: the grid uses your app's font. Size and weight, if you enable them, live only in this row.</p>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1580}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: 'Undo · Redo (Mod+Z, Mod+Shift+Z) — core, one stack per pane (W-23); the format row waits on it', slot: 'toolbar', plug: 'core' },
+        { k: 'b', t: 'Text: Bold · Italic · Underline · Strikethrough', slot: 'format-row', plug: 'styles' },
+        { k: 'c', t: 'Text colour swatch', slot: 'format-row', plug: 'styles' },
+        { k: 'd', t: 'Fill swatch', slot: 'format-row', plug: 'styles' },
+        { k: 'e', t: 'Borders menu', slot: 'format-row', plug: 'styles' },
+        { k: 'f', t: 'Align left · centre · right, then top · middle · bottom', slot: 'format-row', plug: 'styles' },
+        { k: 'g', t: 'Wrap text', slot: 'format-row', plug: 'styles' },
+        { k: 'h', t: 'Clear formatting', slot: 'format-row', plug: 'styles' },
+        { k: 'i', t: 'Bold and Fill quick buttons, after the core buttons', slot: 'selbar', plug: 'styles' },
+        { k: 'j', t: 'Merge — or Unmerge on a merged range — only when a range is selected', slot: 'selbar', plug: 'styles' },
+        { k: 'k', t: '“Changed · style was plain → Bold, Fill”', slot: 'cellbar', plug: 'styles' },
+        { k: 'l', t: 'Corner mark on a style change (core mark)', slot: 'cell', plug: 'core' },
+        { k: 'm', t: 'File styles drawn: header fill and rule, title size, red text in F10', slot: 'cell', plug: 'styles' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

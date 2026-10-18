@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — images</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1620px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 7 · @sheetpane/images · View mode</span>
+<h1 class="h1">Images — pictures sit where Excel put them and scroll with their cells</h1>
+<p class="muted" style="max-width: 1000px">A photo anchored across C4:F9 lives in the overlay, in sheet space. Formats a browser can't draw (EMF, WMF) get a labelled frame of the same size, so nothing on the sheet silently disappears.</p>
+</header>
+
+<div class="bd-frame">
+<span class="bd-cap">&lt;sheetpane-excel mode="view"&gt; · plugins: images</span>
+<dc-import name="PluginKit" mode="view" plugins="images" scene="images" rows="22" marks="img,emf,stimg" height="770" hint-size="100%,770px"></dc-import>
+</div>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 820px">
+<span class="bd-cap">Edit · scrolled 5 rows — the picture moves with C4:F9 · pin 9 on E7 stays on top</span>
+<dc-import name="PluginKit" mode="edit" plugins="images" scene="images-edit" rows="12" scroll="5,0" marks="pinover" mstart="3" issues="none" height="490" hint-size="100%,490px"></dc-import>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">New marks</span>
+<div class="stack" style="gap: 8px">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="4">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+<p class="xs muted">View and Edit differ only in what sits above: in Edit, pins and the selection bar draw over pictures, and a click on a picture selects the cell underneath so it can still be flagged.</p>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { images } from '@sheetpane/images';
+sheet.plugins = [images({ maxBytes: 5_000_000 })];</pre>
+<p class="xs muted">The host caps picture size. Pictures are read from the file in this tab — never uploaded.</p>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: 'Picture anchored C4:F9 — scrolls and clips with its cells', slot: 'overlay', plug: 'images' },
+        { k: 'b', t: 'Frame for a format the browser can\'t draw: “logo.emf — preview unavailable”', slot: 'overlay', plug: 'images' },
+        { k: 'c', t: '“2 pictures · 1 preview unavailable”', slot: 'status', plug: 'images' },
+        { k: 'd', t: 'Pin 9 on E7, under the picture, still drawn on top', slot: 'overlay', plug: 'core' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

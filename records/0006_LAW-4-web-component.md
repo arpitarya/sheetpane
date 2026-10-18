@@ -87,7 +87,7 @@ use it.
   dependencies.
 - Shadow DOM or light DOM, the tag name, and the attribute/event names are
   component decisions, owed by the first record that owns the element.
-- **Checked today:** no UI framework is a dependency or peer of any package (SR-BUILD decision 7). The element-registration half is backlog B-012 (`ungated`) until W-01 lands.
+- **Checked today:** no UI framework is a dependency or peer of any package (SR-BUILD decision 7); `<sheetpane-excel>` and `<sheetpane-errors>` register on import (SR-GRID and SR-ERRORS tests). The shadow root is open; tags, attributes and events are SR-GRID decision 9 and SR-ERRORS decision 1.
 
 ### Alternatives considered
 
@@ -120,7 +120,7 @@ is never listed here.*
 
 **Project docs**
 
-- [`work/BACKLOG.md`](../work/BACKLOG.md) — B-012
+- [SR-GRID](0105_GRID.md) · [SR-IMPORT](0104_IMPORT.md) · [SR-ERRORS](0106_ERRORS.md) — the checks
 - [`work/WORKLOG.md`](../work/WORKLOG.md)
 
 **External**

@@ -143,3 +143,24 @@ describe('patchXlsx', () => {
     }), { seed: 5, numRuns: 40 });
   });
 });
+
+describe('freeze panes (W-24 DoD 4)', () => {
+  it('toXlsx writes <pane> with topLeftCell; ExcelJS reads it back frozen', async () => {
+    const { toXlsx } = await import('../src/index.js');
+    const z = unzipText(await toXlsx({ sheets: [{ name: 'S', rows: [[1]], freeze: { rows: 2, cols: 1 } }] }));
+    expect(z['xl/worksheets/sheet1.xml']).toContain('<pane xSplit="1" ySplit="2" topLeftCell="B3" activePane="bottomRight" state="frozen"/>');
+    const wb = await readBack(await toXlsx({ sheets: [{ name: 'S', rows: [[1]], freeze: { rows: 1, cols: 0 } }] }));
+    expect(wb.worksheets[0]!.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
+  });
+  it('patchXlsx writes a changed freeze, removes one set to 0, and leaves other sheets untouched', async () => {
+    const orig = await original();
+    const out = await patchXlsx(orig, [], { freeze: [{ sheet: 'Data', rows: 1, cols: 2 }] });
+    const z = unzipText(out);
+    expect(z['xl/worksheets/sheet1.xml']).toMatch(/<pane xSplit="2" ySplit="1" topLeftCell="C2" activePane="bottomRight" state="frozen"\/>/);
+    expect(rawData(out, readZip(out).find((e) => e.name === 'xl/worksheets/sheet2.xml')!)).toEqual(rawData(orig, readZip(orig).find((e) => e.name === 'xl/worksheets/sheet2.xml')!));
+    const back = await readBack(out);
+    expect(back.getWorksheet('Data')!.views[0]).toMatchObject({ state: 'frozen', xSplit: 2, ySplit: 1 });
+    const un = unzipText(await patchXlsx(out, [], { freeze: [{ sheet: 'Data', rows: 0, cols: 0 }] }));
+    expect(un['xl/worksheets/sheet1.xml']).not.toContain('<pane');
+  });
+});

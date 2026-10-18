@@ -6,7 +6,7 @@ item: W-18
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-fable-5-1)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -36,7 +36,7 @@ A plugin that turns the workbook's `<dataValidations>` into sheetpane errors. Th
 | 1 · package | `packages/validation/` builds to ESM, no runtime dependency; `@sheetpane/grid` a peer; `./ui` entry | ⏳ |
 | 2 · rules | `whole`, `decimal`, `date`, `time`, `textLength` with every operator; `list` from a literal list or a range; `custom` only when `formulas` is present | ⏳ |
 | 3 · validate | `validate(sheet)` returns errors `{ type: 'validation', severity: 'warning', author: 'workbook', found, expected: <the rule in words>, message: <the rule's own errorTitle/error text when present> }`; re-run for the affected cells on every change; a cell that now passes resolves its validation error automatically — the one auto-resolve, because the author is the workbook, not a person | ⏳ |
-| 4 · ui | `cell`: a dropdown arrow on `list` cells in Edit, opening the choices; `status`: "n validation warnings" | ⏳ |
+| 4 · ui | `cell`: a dropdown arrow on `list` cells in Edit, opening the choices; `status`: "n validation warnings"; workbook rows are read-only in `<sheetpane-errors>` (Show in sheet; no Resolve, no Delete) and their ⚠ pin sits 18 px in from the cell's right edge, so person pins keep the top-left | ⏳ |
 | 5 · filter | `<sheetpane-errors>` gains an author filter (person · workbook · file) — a W-02 addition made here | ⏳ |
 | 6 · skipped | `sheetpane-load` detail counts rules skipped (`custom` without formulas, unsupported operators) | ⏳ |
 | 7 · tests | a fixture with every rule type saved by Excel; load → expected error list; edit → resolve / reopen; the dropdown | ⏳ |
@@ -56,11 +56,15 @@ A new component record on completion; W-02's record gains the author filter. Unt
 - **Ranges as lists** (`$A$1:$A$9`) reference live cells; the dropdown re-reads them after a change.
 - **Excel's `showErrorMessage="0"`** rules still validate; they only suppress Excel's popup.
 
+- **Dismiss for a workbook row** (accept a rule for this review) is a parked proposal — [`../proposals/dismiss-workbook-errors.md`](../proposals/dismiss-workbook-errors.md), B-029. Not in the DoD.
+
 ## Reference
 
+- Design: [`../reference/design/boards/Plugin-Validation.dc.html`](../reference/design/boards/Plugin-Validation.dc.html) — list arrows, the open list, ⚠ pins, the author filter, rule text, View
+- Design: [`../reference/design/boards/Pane-Sync.dc.html`](../reference/design/boards/Pane-Sync.dc.html) — a new workbook warning reaching the Errors tab at once
 - [`../compare/plugins.compare.md`](../compare/plugins.compare.md) — `validate`
 - [`../compare/workbook-and-error-contract.compare.md`](../compare/workbook-and-error-contract.compare.md) — the error schema
-- [W-14](W-14-plugin-host.md) · [W-13](W-13-import-package.md) · [W-02](W-02-sheetpane-errors.md)
+- [W-14](W-14-plugin-host.md) · W-13 (closed — [SR-IMPORT](../../records/0104_IMPORT.md)) · [W-02](W-02-sheetpane-errors.md)
 
 ## Prompt — paste into Claude Code once the blockers close
 

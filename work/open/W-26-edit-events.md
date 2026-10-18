@@ -16,7 +16,7 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Add the events W-25 rules on: edit start, typing, before save, cancel, sheet switch | a host sees every step of an edit | ⏳ W-25 |
+| 1 | Add the events the verdict rules on: edit start, typing, before save, cancel, sheet switch | a host sees every step of an edit | ✅ settled 2026-10-18 — the verdict |
 | 2 | Put the column's index, letter and header title on every event | "you're in Email, row 7", no guesswork | ⏳ |
 | 3 | Let `editstart` and `beforechange` be cancelled | a host can lock a cell or refuse a value | ⏳ |
 
@@ -27,8 +27,8 @@ somebody is editing something or which cell they are on."*
 
 ## Goal
 
-The event set in W-25's verdict, built on the DOM contract (L4). Starting
-point: the events table in [W-25](W-25-research-events-rules-hooks.md).
+The event set in the verdict's verdict, built on the DOM contract (L4). Starting
+point: the events table in the [events-and-rules verdict](../compare/grid-events-and-host-rules.compare.md).
 
 ```js
 excel.addEventListener('sheetpane-select', e => show(e.detail.column.header, e.detail.value));
@@ -42,17 +42,17 @@ excel.addEventListener('sheetpane-beforechange', e => {
 
 | DoD | what | state |
 |---|---|---|
-| 1 · events | every event W-25 names fires at the moment it names, bubbling and composed, with the payload it names | ⏳ |
-| 2 · column | every payload carries `column: { index, letter, header }`, the header read from the configured title row (W-25 question 7) | ⏳ |
+| 1 · events | every event the verdict names fires at the moment it names, bubbling and composed, with the payload it names | ⏳ |
+| 2 · column | every payload carries `column: { index, letter, header }`, the header read from the configured title row (verdict decision 11) | ⏳ |
 | 3 · cancel | a cancelled `editstart` keeps the cell read-only; a cancelled `beforechange` leaves the cell as it was: not in the change map, the undo stack (W-23) or `derive` (W-16) — L6 | ⏳ |
-| 4 · batches | paste and fill follow W-25's ruling (per cell or per batch) | ⏳ |
+| 4 · batches | paste and fill fire `sheetpane-beforechange` once per cell; a refused cell is skipped, the rest saved (verdict decision 2) | ⏳ |
 | 5 · sync | an edit made through one element fires its events once, on the element where it happened; the other elements see it as the store update they already receive (L7) | ⏳ |
 | 6 · tests | browser tests for each event, each cancel and a paste, in the testing verdict's engine | ⏳ |
 | 7 · docs | the README's event table; W-01's component record gains the events | ⏳ |
 
 ## Blockers
 
-Waiting on **W-25** (the names and rulings) and **W-01** (the element).
+Waiting on **W-01** (the element). The design is settled: [verdict](../compare/grid-events-and-host-rules.compare.md) decisions 1–4.
 
 ## Record affected
 
@@ -67,4 +67,4 @@ W-01's component record (the DOM contract), in the same change.
 
 ## Reference
 
-- [W-25](W-25-research-events-rules-hooks.md) · [W-01](W-01-sheetpane-excel.md) · [W-23](W-23-undo-redo.md) · [`../compare/workbook-and-error-contract.compare.md`](../compare/workbook-and-error-contract.compare.md)
+- the [events-and-rules verdict](../compare/grid-events-and-host-rules.compare.md) · [W-01](W-01-sheetpane-excel.md) · W-23 (closed — [SR-GRID](../../records/0105_GRID.md)) · [`../compare/workbook-and-error-contract.compare.md`](../compare/workbook-and-error-contract.compare.md)

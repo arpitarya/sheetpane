@@ -59,35 +59,33 @@ placement is a tab or a pop-up; cells are plain text, formulas show their
 saved value, merge-and-centre is the only format; the error component has no
 "linked" chip and no export footer. The design is snapshotted in
 [`reference/design/`](reference/design/README.md) — **L4 and L5 supersede
-its React API and its IBM Plex font**.
+its React API and its IBM Plex font**. The snapshot also holds **fifteen plugin
+boards** (Cowork, later on 2026-10-18): one per plugin, freeze, a slot map, the
+all-plugins density check and pane sync, reconciled with W-14–W-24 — where a
+board and an item file disagreed, the board was changed.
 **Ground it before you edit it** — `git log`, the queue, the code.
 
 ## 2 · In flight, and the immediate next step
 
-Nothing in flight. Nineteen items are open, all build; **nothing waits on the
-decider** — the plugin rulings were read in as Arpit's "decide" of 2026-10-18,
-open to override (plugins verdict decision 9):
+*Updated 2026-10-18 (Claude Code).* **Built and closed:** W-10 (pnpm + just),
+W-04 (toolchain, CI), W-03 (export), W-12 (download), W-13 (import), W-01
+(the sheet + the pane's store), W-02 (errors), W-14 (plugin host), W-23
+(undo), W-24 (freeze). Records SR-BUILD, SR-EXPORT, SR-DOWNLOAD (proposed),
+SR-IMPORT, SR-GRID, SR-ERRORS. `just check` runs ~200 tests (Node + Chromium;
+WebKit and Firefox nightly).
 
-- **Next in Claude Code:** W-10 — pnpm and a justfile (🟢); then W-04 — build,
-  test (Vitest, browser mode for the grid), CI, lockstep publishing.
-- **Then:** W-03 (export, with `download`) and W-01 (excel + workbook) in
-  parallel, then W-13 (import — the reader, needs W-03's ZIP code) before W-01 can
-  read files; W-12 (downloader, spec: SR-DOWNLOAD `proposed`) inside W-03's package; W-02 (errors) after W-01;
-  W-09 (demo apps) last. **Plugins after that:** W-14 (host) → W-15 numfmt →
-  W-16 formulas → W-23 undo → W-17 styles → W-18 validation → W-19 condfmt →
-  W-20 images → W-21 charts → W-22 comments; W-24 freeze panes beside W-01. Every verdict they build from is in `work/compare/`;
-  read the five docs before writing code.
-- **Host-facing contract additions (filed 2026-10-18):** W-25 (research, Cowork)
-  settles editing and position events, column rules by header title, and React
-  hooks; then W-26 events → W-27 column rules (on W-14's `validate` hook,
-  `author: "host"`) → W-28 hooks. Arpit rules in W-25 on auto-resolve for host
-  errors, block vs flag, missing headers, and `@sheetpane/react` vs recipes
-  (a package would overrule "no wrappers in v1").
-- **Owed by the decider, when convenient:** install `scripts/sr-guard.sh` as the
-  `commit-msg` hook (W-04 DoD 7); create the `@sheetpane` npm org before the
-  first publish; open the sample `.xlsx` in Excel when W-03 asks (DoD 8);
-  override any 2026-10-18 verdict he disagrees with — each has a reopen-trigger.
-- **The map:** [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
+- **Next in Claude Code:** W-09 (demo apps), W-26 (editing events — W-25's
+  verdict), then the plugins W-15 numfmt, W-16 formulas, W-17 styles, W-18
+  validation, W-20 images; W-19 after W-17, W-21 after W-20; W-27 and W-28
+  after W-26.
+- **Owed by the decider:** W-30 (files from Excel, Google Sheets, LibreOffice,
+  Numbers); W-29's dark values; W-22's Export-line ruling; B-030 (SR-LAW-6's
+  veto command flags the `src` loader's GET); accepting SR-DOWNLOAD; the
+  `@sheetpane` npm org before `just release`.
+- **Know before you build on the grid:** the store is `packages/grid/src/pane/store.ts`
+  (one commit path: undo, derive, validate, events); plugins are plain objects
+  on six hooks (SR-GRID decisions 17–20); zoom scales geometry, not a
+  transform (SR-GRID Alternatives).
 
 ## 3 · Standing constraints
 

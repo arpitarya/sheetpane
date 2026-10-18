@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plugin — comments</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.xl{position:relative;background:#FFFFFF;border:1px solid #CBCBC5;border-radius:6px;padding:0;overflow:hidden;width:520px;height:260px}
+.xl-r{display:flex}
+.xl-r>span{flex:none;height:24px;line-height:24px;border-right:1px solid #E2E2DD;border-bottom:1px solid #E2E2DD;padding:0 6px;font:400 12px/24px 'IBM Plex Sans',sans-serif;color:#16171A;text-align:right}
+.xl-r>span.h{background:#EFEFEB;color:#63666E;text-align:center;font-size:11px}
+.xl-pop{position:absolute;left:250px;top:56px;width:250px;background:#FFFFFF;border:1px solid #CBCBC5;border-radius:6px;box-shadow:0 6px 20px rgba(22,23,26,.14);padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12px;line-height:1.4}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1320px; padding: 48px; gap: 24px">
+<header class="stack" style="gap: 8px">
+<span class="over">Board 9 · @sheetpane/comments · Edit mode</span>
+<h1 class="h1">Comments — read the file's notes, thread the review, write it back as Excel comments</h1>
+<p class="muted" style="max-width: 1000px">Notes already in the workbook show up read-only, authored “File · R. Mehta”. The reviewer's errors can carry a short thread. On export, one line in the menu writes every error as a threaded comment on its cell.</p>
+</header>
+
+<section style="display: flex; gap: 16px; align-items: flex-start">
+<div class="bd-frame" style="flex: none; width: 1004px">
+<span class="bd-cap">&lt;sheetpane-excel mode="edit"&gt; · export menu open · plugins: comments</span>
+<dc-import name="PluginKit" mode="edit" plugins="comments" scene="comments" open="export" marks="filenote,expline" height="602" hint-size="100%,602px"></dc-import>
+</div>
+<div class="bd-frame" style="flex: none; width: 324px">
+<span class="bd-cap">&lt;sheetpane-errors&gt;</span>
+<section class="spx-e" style="height: 602px" aria-label="Errors">
+<div class="spx-e-hd"><span class="t">Errors</span><span class="spx-e-cnt">8 open · 2 notes</span></div>
+<div class="spx-e-flt">
+<div class="row"><span class="lb">Author</span><div class="spx-seg" role="group" aria-label="Filter by author"><button class="on" type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Person 8</button><button type="button" aria-pressed="false" disabled title="Needs the validation plugin">Workbook</button><button type="button" aria-pressed="false">File 2</button></div><span class="spx-mk">f</span></div>
+</div>
+<div class="spx-e-list">
+<button class="spx-iss on" type="button" aria-expanded="true">
+<span class="spx-n file" aria-label="Note from the file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span>
+<span class="bd"><span class="t">Note from the file<span class="spx-mk">c</span></span><span class="rule">“Includes 200 units transferred in on 28-Sep.”</span><span class="m">H3 · File · R. Mehta</span></span>
+</button>
+<div class="spx-e-det ro">
+<p class="spx-xs" style="color: var(--sp-ink-2)">Read-only — written in Excel, kept exactly as it is on export.</p>
+<div class="spx-e-act"><button class="spx-btn spx-btn-p" type="button">Show in sheet</button><span class="spx-mk">d</span></div>
+</div>
+<button class="spx-iss on" type="button" aria-expanded="true">
+<span class="spx-n error">3</span>
+<span class="bd"><span class="t">Wrong value</span><span class="ba"><del>7.5%</del> → <ins>0.75%</ins></span><span class="m">I6 · Error · Arpit · 09:12 · 2 replies</span></span>
+</button>
+<div class="spx-e-det">
+<p class="spx-xs">Fee rate is 10× the account's tier (0.75%) and above the 2.00% cap.</p>
+<div class="spx-rep"><span class="who">S. Kapoor · 09:40</span><span class="spx-xs">Confirmed with ops — the tier is 0.75%.</span></div>
+<div class="spx-rep"><span class="who">Arpit · 09:44</span><span class="spx-xs">Thanks. Changing the cell before export.</span></div>
+<label style="display: flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Reply to error 3</span><input class="spx-input" placeholder="Reply…"></label>
+<div class="spx-e-act"><button class="spx-btn" type="button">✓ Resolve</button><button class="spx-btn spx-btn-g" type="button" style="color: var(--sp-fail)">Delete</button><span class="spx-mk">e</span></div>
+</div>
+<button class="spx-iss" type="button" aria-expanded="false">
+<span class="spx-n file" aria-label="Note from the file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span>
+<span class="bd"><span class="t">Note from the file</span><span class="rule">“Inflation-linked; units revised quarterly.”</span><span class="m">D9 · File · R. Mehta</span></span>
+</button>
+</div>
+</section>
+</div>
+</section>
+
+<section style="display: flex; gap: 20px; align-items: flex-start">
+<div class="bd-card" style="flex: none; width: 580px">
+<div class="row" style="gap: 8px"><span class="h4">The exported cell, opened in Excel</span><span class="chip chip-out" style="height: 20px; font-size: 11px">in Excel · illustration only</span></div>
+<div class="xl" role="img" aria-label="Illustration: cell I6 in Excel with a threaded comment from the sheetpane review">
+<div class="xl-r"><span class="h" style="width: 36px"></span><span class="h" style="width: 100px">H</span><span class="h" style="width: 80px">I</span><span class="h" style="width: 110px">J</span></div>
+<div class="xl-r"><span class="h" style="width: 36px">5</span><span style="width: 100px">32,185.50</span><span style="width: 80px">0.75%</span><span style="width: 110px">30-Sep-2026</span></div>
+<div class="xl-r"><span class="h" style="width: 36px">6</span><span style="width: 100px">90,200.00</span><span style="width: 80px; position: relative; outline: 2px solid #16171A; outline-offset: -2px">0.75%<i style="position: absolute; top: 0; right: 0; border: 5px solid transparent; border-top-color: #B42318; border-right-color: #B42318"></i></span><span style="width: 110px">30-Sep-2026</span></div>
+<div class="xl-r"><span class="h" style="width: 36px">7</span><span style="width: 100px">85,920.00</span><span style="width: 80px">0.75%</span><span style="width: 110px">30-Sep-2026</span></div>
+<div class="xl-r"><span class="h" style="width: 36px">8</span><span style="width: 100px">33,472.00</span><span style="width: 80px">0.40%</span><span style="width: 110px">30-Sep-2026</span></div>
+<div class="xl-pop">
+<b>Arpit · sheetpane review</b>
+<span>Error 3 · Wrong value · Found 7.5% → Should be 0.75%</span>
+<span style="color: #45484F">Fee rate is 10× the account's tier (0.75%) and above the 2.00% cap.</span>
+<span style="color: #63666E; border-top: 1px solid #E2E2DD; padding-top: 6px">S. Kapoor: Confirmed with ops — the tier is 0.75%.<br>Arpit: Thanks. Changing the cell before export.</span>
+</div>
+</div>
+<p class="xs muted">One comment per error, replies kept in order. The cell holds the corrected value because “Also change the cell” was used.</p>
+</div>
+<div class="stack" style="flex: 1; gap: 16px; min-width: 0">
+<div class="bd-card">
+<span class="h4">New controls and marks</span>
+<div class="bd-legend" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+<div class="bd-li"><span class="spx-mk">{{l.k}}</span><span class="tx"><span>{{l.t}}</span><span class="bd-tags"><span class="bd-slot">{{l.slot}}</span><span class="bd-plug">{{l.plug}}</span></span></span></div>
+</sc-for>
+</div>
+</div>
+<div class="bd-host">
+<span class="bd-host-lbl">Host responsibility · outside the component</span>
+<pre>import { comments } from '@sheetpane/comments';
+sheet.plugins = [comments({ author: currentUser.name })];</pre>
+<p class="xs muted">The host supplies the reviewer's name. Threads live in the pane and reach the file only on export.</p>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      legend: [
+        { k: 'a', t: 'Note mark in cells that carry a file note (H3, D9) — bottom-right, clear of pins and corner marks', slot: 'cell', plug: 'comments' },
+        { k: 'b', t: 'Export menu line “Write review as Excel comments ✓” — not one of the six slots; needs Arpit\'s ruling (W-22). Without it, comments are always written.', slot: 'export menu *', plug: 'comments' },
+        { k: 'c', t: 'Speech-bubble glyph and author “File · R. Mehta”', slot: 'errors list', plug: 'comments' },
+        { k: 'd', t: 'Read-only file note: Show in sheet only — no Resolve, no Delete', slot: 'errors list', plug: 'comments' },
+        { k: 'e', t: 'Thread on error 3: two replies and a Reply box', slot: 'errors list', plug: 'comments' },
+        { k: 'f', t: 'Author filter gains “File 2”', slot: 'errors list', plug: 'comments' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

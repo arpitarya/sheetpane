@@ -97,7 +97,8 @@ carry over unchanged; the plugins verdict added what plugins read.
    forbidden characters → `_`, 31 characters at most, `Sheet1` when empty).
 6. **Refusals** (`ImportError.code`): an extension other than `.xlsx` /
    `.csv` → `unsupported-format` before reading; an OLE header `D0 CF 11 E0`
-   → `password-or-legacy`; a ZIP named `.csv` or a workbook part whose
+   → `password-or-legacy`, with `detail: 'password'` when the file holds an
+   `EncryptedPackage` stream and `'legacy'` otherwise; a ZIP named `.csv` or a workbook part whose
    content type is not `…sheet.main+xml` (`.xlsm`, `.xltx`) →
    `unsupported-format`; no workbook part, or `.xlsx` bytes that are not a ZIP
    → `not-workbook`; ZIP64, over 512 MB in a part or 1 GB in all, past
@@ -124,7 +125,7 @@ carry over unchanged; the plugins verdict added what plugins read.
   dialects, a round-trip property with `toCsv`, the 250,000-row CSV (136 ms in
   Chromium on Arpit's MacBook). `test/ssr.test.ts` imports it in Node.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
-  and Numbers (W-13 DoD 9) — none of those programs is on the build machine.
+  and Numbers (W-30) — none of those programs is on the build machine.
   Until then the reader is proven on ExcelJS output and hand-written XML, and
   the reading verdict's "1 in 100" trigger cannot be measured.
 - Non-UTF-8 CSV (Windows-1252) decodes with replacement characters; the
