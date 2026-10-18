@@ -9,7 +9,7 @@ const root = new URL('..', import.meta.url).pathname;
 const tmp = mkdtempSync(join(tmpdir(), 'sheetpane-demo-'));
 const run = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' });
 const tarballs = {};
-for (const pkg of ['export', 'import', 'grid', 'numfmt', 'styles', 'formulas', 'validation', 'condfmt', 'images', 'charts', 'comments']) {
+for (const pkg of ['export', 'import', 'grid', 'numfmt', 'styles', 'formulas', 'validation', 'condfmt', 'images', 'charts', 'comments', 'fixtures']) {
   const out = run('pnpm', ['pack', '--pack-destination', tmp], join(root, 'packages', pkg)).trim().split('\n').pop();
   tarballs[`@sheetpane/${pkg}`] = `file:${out}`;
 }

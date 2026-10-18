@@ -9,6 +9,7 @@
     "@sheetpane/comments": "workspace:*",
     "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/export": "workspace:*",
+    "@sheetpane/fixtures": "workspace:*",
     "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",
     "@sheetpane/images": "workspace:*",

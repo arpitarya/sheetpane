@@ -62,9 +62,9 @@ demo-html: build
 demo-react: build
     pnpm --filter sheetpane-example-react dev
 
-# rewrite the plugin gallery's workbook in both demos (W-32; hand-built, not Excel-saved)
-showcase: build
-    node examples/shared/make-showcase.mjs
+# rewrite @sheetpane/fixtures' files and manifest (W-42; hand-built, not Excel-saved)
+fixtures: build
+    node packages/fixtures/scripts/make.mjs
 
 # open both demos in Chromium and use them: flag, resolve, edit, download, font, pop-up, CSV, refusal (W-09), every gallery tab (W-32)
 demo-check: build

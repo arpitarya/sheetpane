@@ -115,7 +115,7 @@
     { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'charts (needs images) — a column and a line chart drawn at their anchors; Show source cells selects the data.' },
     { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'comments — the note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
     { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
-    { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (sheetpane.rules.json, rules-src) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
+    { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json, rules-src) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
   ];
   const gallery = document.getElementById('gallery'), panels = document.getElementById('galleryPanels'), blurb = document.getElementById('blurb');
   gallery.innerHTML = TABS.map((t, i) => `<button role="tab" id="tab-${t.id}" data-tab="${t.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">${t.label}</button>`).join('');
@@ -128,9 +128,9 @@
     const x = document.createElement('sheetpane-excel'), e = document.createElement('sheetpane-errors');
     for (const el of [x, e]) { el.setAttribute('pane', `gallery-${t.id}`); el.setAttribute('author', 'Demo reviewer'); if (t.plugins) el.setAttribute('plugins', t.plugins); }
     x.setAttribute('mode', 'edit');
-    if (t.rules) { x.setAttribute('rules-src', './sheetpane.rules.json'); x.setAttribute('flagging', 'off'); }
+    if (t.rules) { x.setAttribute('rules-src', './node_modules/@sheetpane/fixtures/files/showcase.rules.json'); x.setAttribute('flagging', 'off'); }
     x.addEventListener('sheetpane-load', () => x.select(t.sheet, 'A1'), { once: true });
-    x.setAttribute('src', './showcase.xlsx');
+    x.setAttribute('src', './node_modules/@sheetpane/fixtures/files/showcase.xlsx'); // @sheetpane/fixtures (W-42)
     div.append(x, e);
     panels.append(div);
     opened.set(t.id, div);

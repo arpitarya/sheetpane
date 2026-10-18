@@ -1,0 +1,120 @@
+---
+type: Standing Record
+kind: component
+name: SR-FIXTURES
+title: "SR-FIXTURES (0115) — @sheetpane/fixtures: known workbooks and their manifest"
+description: "A dependency-free package of hand-built test workbooks — the showcase, its rules sample, edge cases, CSV dialects — with a manifest of what each holds and url / path / bytes to reach them from any runner."
+status: accepted
+date: 2026-10-18
+feature: testing a host against known files
+owns: [packages/fixtures/]
+laws: [L2, L3, L8]
+timestamp: 2026-10-19T03:00:00Z
+content_sha: ""
+ratifies: W-42
+---
+
+# SR-FIXTURES — @sheetpane/fixtures
+
+## §1 — For humans
+
+**Test files you don't have to make.** A host, a demo or a test loads a known
+workbook and knows what is in it: its sheets, its titles, the features it
+exercises, the errors the rules sample produces on it.
+
+```mermaid
+flowchart LR
+    M["scripts/make.mjs (writeZip)"] --> F["files/: showcase · rules · edge · csv"]
+    M --> J["fixtures.json + src/manifest.ts + src/urls.ts"]
+    F --> A["url() · path() · bytes() · info()"]
+    J --> A
+    A --> T["tests · demos · @sheetpane/testing"]
+```
+
+<details>
+<summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
+
+```text
+   scripts/make.mjs (writeZip) --> files/ (showcase, rules sample, edge cases, csv dialects)
+                               --> fixtures.json, src/manifest.ts, src/urls.ts
+   files + manifest --> url(), path(), bytes(), info() --> tests, demos, @sheetpane/testing
+```
+
+</details>
+
+---
+
+## §2 — For agents
+
+### Context
+
+W-42 asked for the samples scattered across `examples/` and the plugins' test
+helpers to become one package any runner can load (W-32 made the showcase).
+
+### Decision
+
+1. **The package** has no dependencies (`@sheetpane/export` is a
+   devDependency of the generator only) and ships `dist/` and `files/` —
+   the one exception to SR-BUILD decision 7's `dist`-only rule, so that
+   `url()` reaches the files from `src/` and `dist/` alike. `./files/*` is
+   exported.
+2. **The files** — `showcase.xlsx`, `showcase.rules.json`, `edge/` (empty,
+   hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
+   `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
+   guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
+   same byte for byte on every run (`writeZip`'s fixed timestamps). The
+   250,000-row case is `hugeCsv(rows)`, not a file.
+3. **The manifest** `files/fixtures.json` (and `src/manifest.ts`, generated
+   beside it) lists per file its kind, `appSaved` (null for hand-built), its
+   sheets with titles, its features, and for the rules sample the cells it
+   fails; refused files are `kind: "refused"`.
+4. **The API:** `url(name)` (one literal `new URL('../files/…',
+   import.meta.url)` per file in the generated `src/urls.ts`, so every
+   bundler copies each — a template string reaches no subfolder),
+   `path(name)` (Node), `bytes(name)` (disk in Node, `fetch` elsewhere, typed
+   without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
+5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
+   rules-file test; `@sheetpane/testing` (W-41) loads from here.
+
+### Consequences
+
+- **Enforced today:** `pnpm exec vitest run --project fixtures --project
+  node` — every listed file read in Chromium matches its sheets and titles;
+  refused files are refused; the hidden sheet and 1904 read as listed; the
+  rules sample on the showcase fails exactly the listed cells; `path()` and
+  `bytes()` in Node; `hugeCsv()`. `pack-check` checks the `./files/*` folder.
+- **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers,
+  with `appSaved` naming the app and version — W-30 (DoD 5). The import
+  package's ExcelJS fixtures stay with their generator (ExcelJS is that
+  package's devDependency).
+
+### Alternatives considered
+
+- Fixtures inside `dist/` only — rejected: `url()` from `src/` (the
+  workspace's `source` condition) would point at nothing.
+- One template `new URL(\`../files/${name}\`, import.meta.url)` — rejected:
+  Vite rewrites it into a one-level glob and subfolders resolve to nothing.
+
+### Reference (required)
+
+- [`packages/fixtures/`](../packages/fixtures/) · [`packages/fixtures/scripts/make.mjs`](../packages/fixtures/scripts/make.mjs)
+
+### Veto condition
+
+**Reopen this decision if:** a listed file stops matching its manifest, or the
+generator writes different bytes from the same source.
+
+**How to check it:** `just fixtures && git diff --exit-code packages/fixtures/files`
+
+---
+
+## References
+
+*Every source this record cites, gathered in one place. An archived document
+is never listed here.*
+
+**Records** — [SR-BUILD](0102_BUILD.md) · [SR-GRID](0105_GRID.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md)
+
+**Code**
+
+- [`packages/fixtures/src/index.ts`](../packages/fixtures/src/index.ts) · [`packages/fixtures/scripts/make.mjs`](../packages/fixtures/scripts/make.mjs)

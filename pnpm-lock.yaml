@@ -59,6 +59,9 @@ importers:
       '@sheetpane/export':
         specifier: workspace:*
         version: link:../../packages/export
+      '@sheetpane/fixtures':
+        specifier: workspace:*
+        version: link:../../packages/fixtures
       '@sheetpane/formulas':
         specifier: workspace:*
         version: link:../../packages/formulas
@@ -95,6 +98,9 @@ importers:
       '@sheetpane/condfmt':
         specifier: workspace:*
         version: link:../../packages/condfmt
+      '@sheetpane/fixtures':
+        specifier: workspace:*
+        version: link:../../packages/fixtures
       '@sheetpane/formulas':
         specifier: workspace:*
         version: link:../../packages/formulas
@@ -174,6 +180,18 @@ importers:
       papaparse:
         specifier: 5.7.0
         version: 5.7.0
+
+  packages/fixtures:
+    devDependencies:
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+      '@sheetpane/import':
+        specifier: workspace:*
+        version: link:../import
 
   packages/formulas:
     dependencies:

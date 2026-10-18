@@ -103,7 +103,9 @@ pnpm and a justfile; the testing verdict chose the runner.
    `workspace:*` for `@sheetpane/*`; no UI framework as a dependency or peer;
    no third-party runtime dependency except `numfmt` and `@ironcalc/wasm`,
    each pinned exactly; no font file, `@font-face`, web-font URL or named
-   `font-family` in any package source.
+   `font-family` in any package source. Each package ships `dist` only —
+   except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
+   reaches them from `src/` and `dist/` alike (W-42).
 8. **CI:** `.github/workflows/ci.yml` runs install, `just check` and
    `just pack-check` on every push to `main` and every PR (Chromium);
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit.
@@ -113,7 +115,7 @@ pnpm and a justfile; the testing verdict chose the runner.
    tags. Never `npm publish`: npm ships `workspace:*` literally.
 10. **Pack check:** `scripts/pack-check.mjs` packs each package as publish
     would and fails on a surviving `workspace:` or `source` entry or a missing
-    exported file.
+    exported file (for a subpath pattern such as `./files/*`, its folder).
 11. **Demos:** `examples/html` (one `index.html`, an import map onto the
     packages' `dist/`, served by `scripts/serve.mjs`) and `examples/react`
     (Vite + React 19) are workspace members that depend on the packages by
@@ -127,11 +129,11 @@ pnpm and a justfile; the testing verdict chose the runner.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
-    plugins · Rules file (W-33: `examples/shared/sheetpane.rules.json`,
-    copied into both demos by the generator — `rules-src` in HTML, the `rules`
-    prop in React — with `flagging="off"`). Every gallery tab opens one showcase workbook
-    (`examples/shared/make-showcase.mjs` → `showcase.xlsx` in both demos,
-    zipped by `writeZip`, hand-built, not Excel-saved; `just showcase`) on its
+    plugins · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
+    tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
+    the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
+    `?url` import in React; W-42) on its
     own `pane`, mounted when the tab first opens and kept after; a plugin's
     peer loads with it (condfmt with styles, charts with images). Both demos
     depend on all eight plugins, and the HTML import map lists them with

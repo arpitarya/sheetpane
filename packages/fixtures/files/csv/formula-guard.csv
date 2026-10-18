@@ -1,0 +1,5 @@
+Cell,Text
+A,=1+1
+B,+SUM(1)
+C,-2
+D,@user

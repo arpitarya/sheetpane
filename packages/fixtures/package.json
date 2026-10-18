@@ -1,0 +1,49 @@
+{
+  "name": "@sheetpane/fixtures",
+  "version": "0.0.0",
+  "description": "Known workbooks for testing a sheetpane host: the showcase, its rules sample, CSV dialects and edge cases, with a manifest of what each holds.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/fixtures"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./files/*": "./files/*"
+  },
+  "files": [
+    "dist",
+    "files"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "make": "node scripts/make.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/grid": "workspace:*",
+    "@sheetpane/import": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./files/*": "./files/*"
+    }
+  }
+}

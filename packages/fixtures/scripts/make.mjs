@@ -1,13 +1,14 @@
-// Writes the plugin-gallery workbook both demos open in every tab (W-32):
-// one sheet per plugin — Numbers, Styles, Formulas, Validation, CondFmt,
-// Images, Charts, Comments — with each part's XML written here and zipped by
-// @sheetpane/export's writeZip, the way the plugins' test helpers do it.
+// Writes every hand-built fixture in packages/fixtures/files/ (W-42; first written
+// for the plugin gallery, W-32): the showcase workbook — one sheet per plugin —
+// its rules sample, CSV dialects and edge cases, each part written here and
+// zipped by @sheetpane/export's writeZip, plus fixtures.json and src/manifest.ts
+// (what each file holds). The 250,000-row case is a generator in src/, not a file.
 //
-// ⚠ Hand-built, not saved by Excel: it proves the demos, not Excel
-// compatibility — that is W-30's real-app files.
+// ⚠ Hand-built, not saved by Excel: they prove behaviour, not Excel
+// compatibility — that is W-30's real-app files, listed by the app that saved them.
 //
-// Run after `just build`:  node examples/shared/make-showcase.mjs
-import { copyFileSync, writeFileSync } from 'node:fs';
+// Run after `just build`:  just fixtures   (or: node packages/fixtures/scripts/make.mjs)
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import { writeZip } from '@sheetpane/export';
 
@@ -173,9 +174,65 @@ parts['_rels/.rels'] = `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId
 parts['[Content_Types].xml'] = `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${overrides.join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/charts/chart2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/comments1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/><Override PartName="/xl/threadedComments/threadedComment1.xml" ContentType="application/vnd.ms-excel.threadedcomments+xml"/><Override PartName="/xl/persons/person.xml" ContentType="application/vnd.ms-excel.person+xml"/></Types>`;
 
 const enc = (x) => (typeof x === 'string' ? new TextEncoder().encode(x) : new Uint8Array(x));
-// writeZip stamps every entry 1980-01-01, so the file is the same byte for byte on every run
-const bytes = await writeZip(Object.entries(parts).map(([name, data]) => ({ name, data: enc(data) })));
-for (const out of ['examples/html/showcase.xlsx', 'examples/react/public/showcase.xlsx']) writeFileSync(new URL(`../../${out}`, import.meta.url), bytes);
-// the Rules file tab (W-33): the HTML demo reads it with rules-src, the React demo imports it
-for (const out of ['examples/html/sheetpane.rules.json', 'examples/react/src/sheetpane.rules.json']) copyFileSync(new URL('./sheetpane.rules.json', import.meta.url), new URL(`../../${out}`, import.meta.url));
-console.log(`showcase.xlsx: ${bytes.length} bytes, ${sheets.length} sheets → examples/html, examples/react/public`);
+const files = new URL('../files/', import.meta.url);
+const out = (name, data) => { const u = new URL(name, files); mkdirSync(new URL('.', u), { recursive: true }); writeFileSync(u, typeof data === 'string' ? data : data); };
+// writeZip stamps every entry 1980-01-01, so every file is the same byte for byte on every run
+const zip = (p) => writeZip(Object.entries(p).map(([name, data]) => ({ name, data: enc(data) })));
+out('showcase.xlsx', await zip(parts));
+
+// ── a minimal workbook for the edge cases ──────────────────────────────────────
+async function book(spec) {
+  const p = {
+    '_rels/.rels': `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `${XML}<Relationships xmlns="${PR}">${spec.sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${spec.sheets.length + 1}" Type="${R}/styles" Target="styles.xml"/></Relationships>`,
+    'xl/styles.xml': styles,
+    '[Content_Types].xml': `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${spec.sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+  };
+  spec.sheets.forEach((s, i) => { p[`xl/worksheets/sheet${i + 1}.xml`] = sheetXml(s); });
+  return zip(p);
+}
+const EDGE = [
+  { name: 'edge/empty.xlsx', spec: { sheets: [{ name: 'Sheet1', cells: {} }] }, features: ['an empty sheet'] },
+  { name: 'edge/hidden-sheet.xlsx', spec: { sheets: [{ name: 'Visible', cells: { A1: 'Shown' } }, { name: 'Secret', hidden: true, cells: { A1: 'Hidden in Excel' } }] }, features: ['a hidden sheet'] },
+  { name: 'edge/unicode-names.xlsx', spec: { sheets: [{ name: 'Übersicht', cells: { A1: 'Größe', B1: 'Prix (€)' } }, { name: '数据', cells: { A1: '名前', A2: 'たなか' } }] }, features: ['non-ASCII sheet names and text'] },
+  { name: 'edge/merged.xlsx', spec: { sheets: [{ name: 'Merged', cells: { A1: { v: 'A banner over three columns', s: XF.banner }, A2: 'a', B2: 'b', C2: 'c' }, tail: '<mergeCells count="1"><mergeCell ref="A1:C1"/></mergeCells>' }] }, features: ['a merged range'] },
+  { name: 'edge/date1904.xlsx', spec: { date1904: true, sheets: [{ name: 'Dates', cells: { A1: 'Date', A2: { v: 44834, s: XF.date } } }] }, features: ['the 1904 date system'] },
+  { name: 'edge/formula-errors.xlsx', spec: { sheets: [{ name: 'Errors', cells: { A1: 0, B1: { f: '1/A1', v: '#DIV/0!' }, C1: { f: '#REF!+1', v: '#REF!' }, D1: { f: 'NA()', v: '#N/A' } } }] }, features: ['cached formula errors'] },
+];
+for (const e of EDGE) out(e.name, await book(e.spec));
+// refused on purpose (SR-LAW-3: .xlsx and .csv only)
+out('edge/legacy.xls', new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, ...new Array(504).fill(0)]));
+out('edge/not-a-zip.xlsx', 'this is not a workbook');
+
+// ── CSV dialects ──────────────────────────────────────────────────────────────
+const ROWS = [['Account', 'Units', 'Price'], ['AC-10021', '1200', '268.4'], ['AC-10037', '430', '74.85']];
+const CSV = {
+  'csv/comma.csv': ROWS.map((r) => r.join(',')).join('\r\n'),
+  'csv/semicolon.csv': ROWS.map((r) => r.map((v) => v.replace('.', ',')).join(';')).join('\r\n'),
+  'csv/tab.csv': ROWS.map((r) => r.join('\t')).join('\n'),
+  'csv/bom.csv': `﻿${ROWS.map((r) => r.join(',')).join('\r\n')}`,
+  'csv/quoted.csv': 'Name,Note\r\n"Smith, Jane","She said ""yes"""\r\n"Lee","two\nlines"',
+  'csv/formula-guard.csv': 'Cell,Text\r\nA,=1+1\r\nB,+SUM(1)\r\nC,-2\r\nD,@user',
+};
+for (const [name, text] of Object.entries(CSV)) out(name, text);
+
+// ── the manifest: what each file holds ────────────────────────────────────────
+const headersOf = (cells) => Object.entries(cells).filter(([ref]) => /^[A-Z]+1$/.test(ref)).sort(([a], [b]) => a.length - b.length || a.localeCompare(b)).map(([, c]) => (c !== null && typeof c === 'object' ? c.v : c));
+const manifest = {
+  version: 1,
+  note: 'Hand-built by scripts/make.mjs unless appSaved names the app that saved it; hand-built files prove behaviour, not Excel compatibility.',
+  files: [
+    { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread'] },
+    { name: 'showcase.rules.json', kind: 'rules', appSaved: null, for: 'showcase.xlsx', errors: ['Validation!C3', 'Validation!B4', 'Formulas!B3', 'Formulas!B6', 'Formulas!B7', 'Numbers!B3'] },
+    ...EDGE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: e.features })),
+    { name: 'edge/legacy.xls', kind: 'refused', appSaved: null, features: ['a legacy .xls (compound file) header'] },
+    { name: 'edge/not-a-zip.xlsx', kind: 'refused', appSaved: null, features: ['not a ZIP package'] },
+    ...Object.keys(CSV).map((name) => ({ name, kind: 'csv', appSaved: null, sheets: [{ name: name.slice(4, -4), headers: name === 'csv/quoted.csv' ? ['Name', 'Note'] : name === 'csv/formula-guard.csv' ? ['Cell', 'Text'] : ROWS[0] }], features: [name.slice(4, -4)] })),
+  ],
+};
+out('fixtures.json', `${JSON.stringify(manifest, null, 2)}\n`);
+writeFileSync(new URL('../src/manifest.ts', import.meta.url), `// Generated by scripts/make.mjs beside files/fixtures.json — do not edit by hand.\nexport const MANIFEST = ${JSON.stringify(manifest, null, 2)} as const;\n`);
+// one literal `new URL(…, import.meta.url)` per file: bundlers copy each as an asset (a template string would not reach subfolders)
+writeFileSync(new URL('../src/urls.ts', import.meta.url), `// Generated by scripts/make.mjs — do not edit by hand.\nexport const URLS = {\n${manifest.files.map((f) => `  '${f.name}': () => new URL('../files/${f.name}', import.meta.url),`).join('\n')}\n} as const;\n`);
+console.log(`fixtures: ${manifest.files.length} files → packages/fixtures/files`);

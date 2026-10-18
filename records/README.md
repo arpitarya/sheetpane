@@ -137,6 +137,7 @@ Start from `TEMPLATE.md`.
 | [0112](0112_COMMENTS.md) | **SR-COMMENTS** | `@sheetpane/comments` — file comments in, the review out | accepted | yes |
 | [0113](0113_CHARTS.md) | **SR-CHARTS** | `@sheetpane/charts` — charts as frames and SVG | accepted | yes |
 | [0114](0114_CONDFMT.md) | **SR-CONDFMT** | `@sheetpane/condfmt` — conditional formatting, drawn | accepted | yes |
+| [0115](0115_FIXTURES.md) | **SR-FIXTURES** | `@sheetpane/fixtures` — known workbooks and their manifest | accepted | yes |
 
 ---
 
@@ -190,6 +191,7 @@ directions.
 | `packages/images/` | SR-IMAGES | `@sheetpane/images` — pictures, view only |
 | `packages/charts/` | SR-CHARTS | `@sheetpane/charts` — charts |
 | `packages/comments/` | SR-COMMENTS | `@sheetpane/comments` — comments in and out |
+| `packages/fixtures/` | SR-FIXTURES | `@sheetpane/fixtures` — test workbooks |
 
 <!-- OWNERSHIP-TABLE-END -->
 

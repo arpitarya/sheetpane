@@ -57,7 +57,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-41** `agent` · New package `@sheetpane/testing`: Playwright and Vitest-browser helpers — cell and error-row locators, `waitForLoad`, `edit`, `readDownload` (parses the .xlsx/.csv) — so hosts can test their integration. Filed by Arpit (Cowork). [detail](open/W-41-testing-package.md)
 
-- 🟢 **W-42** `agent` · New package `@sheetpane/fixtures`: the showcase workbook, the rules sample, CSV variants, edge cases and (after W-30) the real-app files, as paths and byte loaders with a manifest. Filed by Arpit (Cowork). [detail](open/W-42-fixtures-package.md)
 
 ### record update
 

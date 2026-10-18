@@ -12,7 +12,7 @@ const resolve = { conditions: ['source'] };
 const ssr = { resolve: { conditions: ['source'], externalConditions: ['source'] } };
 // Workbook fixtures load in browser tests as assets (`?inline` data URLs).
 const assetsInclude = ['**/*.xlsx', '**/*.csv'];
-const browserPackages = ['export-browser', 'import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments'];
+const browserPackages = ['export-browser', 'import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'fixtures'];
 // the React hook recipes (W-28) run against the demo's own React 19
 const testDirs: Record<string, string> = { 'export-browser': 'packages/export/test/**/*.browser.test.ts', 'react-recipes': 'examples/react/test/**/*.test.ts' };
 
@@ -29,12 +29,15 @@ export default defineConfig({
     projects: [
       { resolve, ssr, test: { name: 'repo', include: ['test/**/*.test.ts'], environment: 'node' } },
       { resolve, ssr, test: { name: 'export', include: ['packages/export/test/**/*.test.ts'], exclude: ['**/*.browser.test.ts'], environment: 'node' } },
+      // a package's Node-only checks (`*.node.test.ts`), e.g. @sheetpane/fixtures' path() and bytes() from disk
+      { resolve, ssr, test: { name: 'node', include: ['packages/*/test/**/*.node.test.ts'], environment: 'node' } },
       ...[...browserPackages, 'react-recipes'].map((name) => ({
         resolve,
         assetsInclude,
         test: {
           name,
           include: [testDirs[name] ?? `packages/${name}/test/**/*.test.ts`],
+          exclude: ['**/*.node.test.ts', '**/node_modules/**'],
           passWithNoTests: true,
           browser: {
             enabled: true,

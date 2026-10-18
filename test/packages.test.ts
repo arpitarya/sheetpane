@@ -30,7 +30,8 @@ describe('SR-LAW-8 — every package is publishable, in lockstep (B-023)', () =>
     expect(p.name).toBe(`@sheetpane/${dir}`);
     expect(p.license).toBe('MIT');
     expect(p.type).toBe('module');
-    expect(p.files).toEqual(['dist']);
+    // @sheetpane/fixtures also ships its files, which url() reaches from src/ and dist/ alike (SR-BUILD decision 7)
+    expect(p.files).toEqual(dir === 'fixtures' ? ['dist', 'files'] : ['dist']);
     for (const [entry, target] of Object.entries<any>(p.exports)) {
       if (typeof target === 'string') continue; // a stylesheet
       expect(target.types, `${dir} ${entry}`).toMatch(/^\.\/dist\/.*\.d\.ts$/);

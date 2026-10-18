@@ -20,7 +20,9 @@ for (const dir of readdirSync(join(root, 'packages'))) {
   if (manifest.includes('"source"')) problems.push('the source condition (points into src/) survived packing');
   for (const target of Object.values(p.exports)) {
     for (const f of typeof target === 'string' ? [target] : [target.types, target.import]) {
-      if (!existsSync(join(x, 'package', f))) problems.push(`missing ${f}`);
+      // a subpath pattern (`./files/*`) needs its folder; anything else, the file itself
+      const want = f.includes('*') ? f.slice(0, f.indexOf('*')) : f;
+      if (!existsSync(join(x, 'package', want))) problems.push(`missing ${f}`);
     }
   }
   console.log(`${problems.length ? '✗' : '✓'} ${p.name}@${p.version}${problems.length ? ' — ' + problems.join('; ') : ''}`);

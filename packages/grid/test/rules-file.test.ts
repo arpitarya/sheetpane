@@ -125,7 +125,7 @@ describe('the JSON Schema (DoD 3)', () => {
   }
   it('the README example is valid; a typo is caught where the editor would underline it', async () => {
     expect(check(README_RULES, schema as S)).toEqual([]);
-    const shared = (await import('../../../examples/shared/sheetpane.rules.json')).default;
+    const shared = (await import('../../fixtures/files/showcase.rules.json')).default;
     expect(check(shared, schema as S)).toEqual([]);
     expect(check({ version: 1, sheets: { S: { columns: { A: { reqired: true } }, cells: { 'B 1': {} } } } }, schema as S)).toEqual(['$.sheets.S.columns.A.reqired: not allowed', '$.sheets.S.cells.B 1: bad name']);
   });
