@@ -23,6 +23,9 @@ jobs:
       - name: run from a release tag
         run: |
           [ "$GITHUB_REF_TYPE" = tag ] || { echo "::error::run the release from a v<version> tag"; exit 1; }
+          [ -n "$NPM_TOKEN" ] || { echo "::error::add the NPM_TOKEN repository secret, then re-run this job"; exit 1; }
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
