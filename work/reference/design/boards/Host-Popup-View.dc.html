@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Host app — sheetpane in a pop-up, View</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2346C8}a:hover{color:#1A36A0}
+</style>
+</helmet>
+<div class="ps" style="background: #F3F4F6">
+<header class="host-hd">
+<span class="host-logo">[Your app]</span>
+<span class="small" style="color: #4B5563">Uploads</span>
+</header>
+<main class="wrap stack" style="gap: 16px; max-width: 980px">
+<h1 class="h2">Uploaded files</h1>
+<div class="panel scroll">
+<table class="tbl">
+<thead><tr><th>File</th><th>Comes from</th><th class="r">Size</th><th></th></tr></thead>
+<tbody>
+<tr class="sel"><td class="small" style="font-weight: 500">holdings-q3.csv</td><td class="xs mono faint">upload · File</td><td class="r">9 KB</td><td style="text-align: right"><button class="btn btn-sm" type="button">View</button></td></tr>
+<tr><td class="small" style="font-weight: 500">Client holdings — Q3 2026.xlsx</td><td class="xs mono faint">API · base64</td><td class="r">48 KB</td><td style="text-align: right"><a class="btn btn-sm" href="Host-Popup-Edit.dc.html">View</a></td></tr>
+<tr><td class="small" style="font-weight: 500">Fee schedule 2026.xlsx</td><td class="xs mono faint">link · /files/fees.xlsx</td><td class="r">22 KB</td><td style="text-align: right"><button class="btn btn-sm" type="button">View</button></td></tr>
+</tbody>
+</table>
+</div>
+</main>
+
+<div class="scrim" style="padding: 24px">
+<div role="dialog" aria-modal="true" aria-label="holdings-q3.csv" style="width: 100%; max-width: 1200px; border-radius: 14px; box-shadow: 0 24px 64px rgba(22,23,26,.22); background: #fff; overflow: hidden; display: flex; flex-direction: column; gap: 0">
+<dc-import name="Sheetpane" mode="view" display="popup" file="csv" height="820" sel="F9" hint-size="100%,820px"></dc-import>
+</div>
+<span class="pkg-tag" style="position: absolute; top: 6px; left: 24px">&lt;SheetPaneExcel src={csvFile} display="popup" open onClose={close} /&gt;</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

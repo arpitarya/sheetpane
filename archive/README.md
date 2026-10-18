@@ -27,6 +27,11 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 
 | file | closed | where the live answer lives now |
 |---|---|---|
+| `W-05-research-xlsx-csv-reading.md` | 2026-10-18 | [`work/compare/xlsx-csv-reading.compare.md`](../work/compare/xlsx-csv-reading.compare.md); built by W-01 |
+| `W-06-research-grid-rendering.md` | 2026-10-18 | [`work/compare/grid-rendering.compare.md`](../work/compare/grid-rendering.compare.md); built by W-01 |
+| `W-07-research-pane-and-error-contract.md` | 2026-10-18 | [`work/compare/workbook-and-error-contract.compare.md`](../work/compare/workbook-and-error-contract.compare.md); built by W-01 and W-02 |
+| `W-08-research-export-shape.md` | 2026-10-18 | [`work/compare/export-shape.compare.md`](../work/compare/export-shape.compare.md); built by W-03 |
+| `W-11-research-testing.md` | 2026-10-18 | [`work/compare/testing.compare.md`](../work/compare/testing.compare.md); built by W-04, then every item's tests |
 
 ## `records/`
 

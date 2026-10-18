@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SheetPaneErrors component</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section class="spe" style="{{rootStyle}}" aria-label="Errors">
+
+<sc-if value="{{composing}}" hint-placeholder-val="{{false}}">
+<div class="sp-side-hd">
+<span class="h4">New error</span>
+<span class="chip mono" style="font-family: var(--mono); height: 22px">{{sheet}}!{{sel}}</span>
+<span class="spacer"></span>
+<button class="btn btn-sm btn-g btn-i" type="button" aria-label="Cancel" onClick="{{cancelCompose}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<div class="spe-scroll">
+<div class="panel-bd stack" style="gap: 14px">
+<dl class="fe">
+<dt>Found</dt><dd>{{foundText}}</dd>
+<dt>Column</dt><dd style="font-family: var(--sans); font-weight: 400">{{colName}}</dd>
+<dt>Row</dt><dd style="font-family: var(--sans); font-weight: 400">{{rowDesc}}</dd>
+</dl>
+<div class="field">
+<span class="lbl" id="spe-ty">What kind of problem?</span>
+<div class="tchips" role="group" aria-labelledby="spe-ty">
+<sc-for list="{{types}}" as="t" hint-placeholder-count="8"><button class="{{t.cls}}" type="button" aria-pressed="{{t.on}}" onClick="{{t.pick}}">{{t.name}}</button></sc-for>
+</div>
+</div>
+<div class="field">
+<label for="spe-why">What's wrong</label>
+<textarea id="spe-why" class="input" rows="3" placeholder="{{ex.why}}" value="{{why}}" onChange="{{onWhy}}"></textarea>
+</div>
+<div class="field">
+<label for="spe-want">What it should be</label>
+<input id="spe-want" class="input mono" placeholder="{{ex.want}}" value="{{want}}" onChange="{{onWant}}">
+</div>
+<label class="check"><input type="checkbox" checked="{{applyFix}}" onChange="{{onApply}}">Also change the cell to this value</label>
+<div class="field">
+<span class="lbl" id="spe-sv">Severity</span>
+<div class="seg" role="group" aria-labelledby="spe-sv" style="align-self: flex-start">
+<sc-for list="{{sevs}}" as="s" hint-placeholder-count="3"><button class="{{s.cls}}" type="button" aria-pressed="{{s.on}}" onClick="{{s.pick}}"><span class="g {{s.gc}}">{{s.g}}</span>{{s.name}}</button></sc-for>
+</div>
+<span class="xs faint">{{sevHelp}}</span>
+</div>
+<div class="hint">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" style="width: 16px; height: 16px; flex: none; margin-top: 1px; color: var(--ink-3)"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>
+<span><b>Example · {{ex.name}}</b><br>What's wrong: “{{ex.why}}”<br>Should be: <span class="mono">{{ex.want}}</span></span>
+</div>
+</div>
+</div>
+<div class="dialog-ft">
+<span class="xs faint"><span class="kbd">⌘</span> <span class="kbd">↵</span></span>
+<span class="spacer"></span>
+<button class="btn btn-g" type="button" onClick="{{cancelCompose}}">Cancel</button>
+<button class="btn btn-p" type="button" onClick="{{addIssue}}">Add error</button>
+</div>
+</sc-if>
+
+<sc-if value="{{notComposing}}" hint-placeholder-val="{{true}}">
+<div class="sp-side-hd">
+<span class="h4">Errors</span><span class="count">{{openCount}} open</span>
+</div>
+<div class="row" style="padding: 10px 14px; border-bottom: 1px solid var(--line); gap: 8px; flex-wrap: wrap">
+<div class="seg" role="group" aria-label="Filter by severity">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button class="{{f.cls}}" type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}">{{f.label}}</button></sc-for>
+</div>
+<span class="xs faint">{{fileName}}</span>
+</div>
+<div class="spe-scroll">
+<sc-if value="{{noIssues}}" hint-placeholder-val="{{false}}">
+<div class="empty"><p class="small muted">{{emptyText}}</p></div>
+</sc-if>
+<div class="divide">
+<sc-for list="{{list}}" as="it" hint-placeholder-count="8">
+<div>
+<button class="{{it.cls}}" type="button" onClick="{{it.pick}}" aria-expanded="{{it.on}}">
+<span class="n" style="{{it.nStyle}}">{{it.n}}</span>
+<span class="bd">
+<span class="t">{{it.type}}</span>
+<span class="ba"><del>{{it.found}}</del> → <ins>{{it.want}}</ins></span>
+<span class="m">{{it.range}} · {{it.sevName}}{{it.tag}}</span>
+</span>
+</button>
+<sc-if value="{{it.on}}" hint-placeholder-val="{{false}}">
+<div class="spe-detail">
+<p class="why">{{it.why}}</p>
+<span class="xs faint">Arpit · {{it.when}}</span>
+<div class="row" style="gap: 6px; flex-wrap: wrap">
+<sc-if value="{{canReveal}}" hint-placeholder-val="{{false}}"><button class="btn btn-sm btn-p" type="button" onClick="{{it.reveal}}">Show in sheet</button></sc-if>
+<sc-if value="{{canChange}}" hint-placeholder-val="{{true}}"><button class="btn btn-sm" type="button" onClick="{{it.toggle}}">{{it.doneLabel}}</button><button class="btn btn-sm btn-g btn-d" type="button" onClick="{{it.remove}}">Delete</button></sc-if>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"height":{"editor":"int","default":700,"min":320,"max":1200,"unit":"px"},"readOnly":{"editor":"boolean","default":false},"file":{"editor":"enum","options":["xlsx","csv"],"default":"xlsx"},"shared":{"editor":null},"onShared":{"editor":null},"onReveal":{"editor":null},"sel":{"editor":null},"compose":{"editor":null},"seed":{"editor":null},"$preview":{"width":380,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var p = this.props || {};
+    var linked = typeof p.onShared === 'function';
+    var S = linked ? (p.shared || {}) : (this.state || {});
+    function set(o) { if (linked) p.onShared(o); else self.setState(o); }
+    var file = p.file === 'csv' ? 'csv' : 'xlsx';
+    var base = file === 'xlsx' ? 3 : 2;
+    var readOnly = p.readOnly === true || p.readOnly === 'true';
+    var mode = S.mode || p.mode || 'edit';
+    var L = 'ABCDEFGHIJ'.split('');
+    function rowOf(ref) { return parseInt(String(ref).replace(/[A-Z]/g, ''), 10); }
+    function colOf(ref) { return String(ref).replace(/[0-9]/g, ''); }
+    var HDR = ['Account ID', 'Client', 'Advisor', 'Security', 'Ticker', 'Units', 'Price', 'Market value', 'Fee rate', 'As of'];
+    var D = [
+      ['AC-10021', 'R. Mehta', 'S. Kapoor', 'Total Market Index Fund', 'TMKT', '1,200', '268.40', '322,080.00', '0.75%', '30-Sep-2026'],
+      ['AC-10021', 'R. Mehta', 'S. Kapoor', 'Short-Term Bond Fund', 'STBF', '850', '101.12', '85,952.00', '0.40%', '30-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Dividend Growth ETF', 'DIVG', '430', '74.85', '32,185.50', '0.75%', '30-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Global Equity Fund', 'GLEQ', '2,000', '45.10', '90,200.00', '7.5%', '30-Sep-2026'],
+      ['AC-10042', 'P. Iyer', 'S. Kapoor', 'Total Market Index Fund', 'TMKT', '300', '286.40', '85,920.00', '0.75%', '30-Sep-2026'],
+      ['AC-1O044', 'K. Sharma', 'A. Rao', 'Municipal Bond Fund', 'MUNI', '640', '52.30', '33,472.00', '0.40%', '30-Sep-2026'],
+      ['AC-10044', 'K. Sharma', 'A. Rao', 'Real Estate Income Fund', 'REIF', '210', '38.95', '8,179.50', '0.85%', '30-Sep-2026'],
+      ['AC-10051', 'M. D’Souza', 'S. Kapoor', 'Small-Cap Value ETF', 'SCVE', '-150', '61.20', '-9,180.00', '0.75%', '30-Sep-2026'],
+      ['AC-10051', 'M. D’Souza', '', 'Treasury Inflation Fund', 'TIPF', '500', '27.64', '13,820.00', '0.40%', '30-Sep-2026'],
+      ['AC-10063', 'N. Gupta', 'A. Rao', 'Total Market Index Fund', 'TMKT', '195', '268.40', '48,210.00', '0.75%', '30-Sep-2026'],
+      ['AC-10063', 'N. Gupta', 'A. Rao', 'Short-Term Bond Fund', 'STBF', '1,000', '101.12', '101,120.00', '0.40%', '31-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Dividend Growth ETF', 'DIVG', '430', '74.85', '32,185.50', '0.75%', '30-Sep-2026'],
+      ['AC-10070', 'V. Nair', 'S. Kapoor', 'Global Equity Fund', 'GLEQ', '820', '45.10', '36,982.00', '0.75%', '30-Sep-2026']
+    ];
+    var DEF = [
+      { n: 1, col: 'G', d: 4, sev: 'error', type: 'Doesn’t match source', found: '286.40', want: '268.40', why: 'Price differs from the 30-Sep pricing file for TMKT. Rows ' + base + ' and ' + (base + 9) + ' show 268.40 — digits look transposed.', when: '09:04' },
+      { n: 2, col: 'A', d: 5, sev: 'warning', type: 'Wrong format', found: 'AC-1O044', want: 'AC-10044', why: 'Letter O instead of zero. Account IDs follow AC-#####; the next row is the same client as AC-10044.', when: '09:07' },
+      { n: 3, col: 'I', d: 3, sev: 'error', type: 'Wrong value', found: '7.5%', want: '0.75%', why: 'Fee rate is 10× the account’s tier (0.75%) and above the 2.00% cap — looks like a misplaced decimal.', when: '09:12' },
+      { n: 4, col: 'H', d: 9, sev: 'error', type: 'Wrong value', found: '48,210.00', want: '52,338.00', why: 'Market value should be Units × Price: 195 × 268.40 = 52,338.00.', when: '09:15' },
+      { n: 5, col: 'J', d: 10, sev: 'error', type: 'Invalid date', found: '31-Sep-2026', want: '30-Sep-2026', why: '31 September doesn’t exist. Every other row is as of 30-Sep-2026.', when: '09:18' },
+      { n: 6, col: 'F', d: 7, sev: 'warning', type: 'Out of range', found: '-150', want: '150', why: 'Units can’t be negative for a holding. If this was a sale it belongs in the transactions file.', when: '09:21' },
+      { n: 7, col: 'C', d: 8, sev: 'warning', type: 'Missing value', found: '(blank)', want: 'S. Kapoor', why: 'Advisor is required. The same account (AC-10051) on row ' + (base + 7) + ' is S. Kapoor.', when: '09:22' },
+      { n: 8, col: 'A', d: 11, sev: 'note', type: 'Duplicate row', found: '= row ' + (base + 2), want: 'Delete row ' + (base + 11), why: 'Same account, security, units and price as row ' + (base + 2) + ' — it counts 32,185.50 twice.', when: '09:25', wholeRow: true }
+    ].map(function (i) {
+      var row = i.d + base;
+      return { n: i.n, sheet: 'Holdings', col: i.col, row: row, ref: i.col + row, range: i.wholeRow ? 'A' + row + ':J' + row : i.col + row, sev: i.sev, type: i.type, found: i.found, want: i.want, why: i.why, when: i.when, wholeRow: !!i.wholeRow, done: false };
+    });
+    var issues = S.issues || (p.seed === 'two' ? DEF.filter(function (i) { return i.n <= 2; }) : (p.seed === 'none' ? [] : DEF));
+    var sheet = S.sheet || 'Holdings';
+    var sel = S.sel !== undefined ? S.sel : (p.sel || '');
+    var composeProp = p.compose === true || p.compose === 'true';
+    var composing = linked && mode === 'edit' && !readOnly && (S.composing !== undefined ? S.composing : composeProp);
+    var selRow = rowOf(sel), selCol = colOf(sel);
+    var changes = S.changes || {};
+
+    var SV = {
+      error: { g: '✕', gc: 'g-err', name: 'Error', bg: 'var(--fail)', help: 'Must be fixed before this file is accepted.' },
+      warning: { g: '!', gc: 'g-warn', name: 'Warning', bg: 'var(--warn)', help: 'Needs a second look; may be fine.' },
+      note: { g: 'i', gc: 'g-info', name: 'Note', bg: 'var(--accent)', help: 'For information — nothing blocks.' }
+    };
+    var T = [
+      { id: 'value', name: 'Wrong value', sev: 'error', why: 'Fee rate is 10× the account’s tier (0.75%) — looks like a misplaced decimal.', want: '0.75%' },
+      { id: 'source', name: 'Doesn’t match source', sev: 'error', why: 'Price differs from the 30-Sep pricing file for TMKT (268.40).', want: '268.40' },
+      { id: 'format', name: 'Wrong format', sev: 'warning', why: 'Letter O instead of zero — account IDs follow AC-#####.', want: 'AC-10044' },
+      { id: 'date', name: 'Invalid date', sev: 'error', why: '31 September doesn’t exist; every other row is 30-Sep-2026.', want: '30-Sep-2026' },
+      { id: 'missing', name: 'Missing value', sev: 'warning', why: 'Advisor is required. The same account on the row above is S. Kapoor.', want: 'S. Kapoor' },
+      { id: 'bounds', name: 'Out of range', sev: 'warning', why: 'Units can’t be negative for a holding.', want: '150' },
+      { id: 'dup', name: 'Duplicate row', sev: 'note', why: 'Same account, security, units and price as an earlier row.', want: 'Delete this row' },
+      { id: 'other', name: 'Other', sev: 'warning', why: 'Say in plain words what’s wrong.', want: 'What the cell should contain' }
+    ];
+    var typeId = S.type || 'value';
+    var cur = T.filter(function (x) { return x.id === typeId; })[0] || T[0];
+    var sev = S.sev || cur.sev;
+    var why = S.why !== undefined ? S.why : (composeProp ? cur.why : '');
+    var want = S.want !== undefined ? S.want : (composeProp ? cur.want : '');
+    var applyFix = !!S.applyFix;
+    var types = T.map(function (x) { return { name: x.name, on: x.id === typeId, cls: 'tchip' + (x.id === typeId ? ' on' : ''), pick: function () { set({ type: x.id, sev: x.sev }); } }; });
+    var sevs = ['error', 'warning', 'note'].map(function (id) { var s = SV[id]; return { name: s.name, g: s.g, gc: s.gc, on: id === sev, cls: id === sev ? 'on' : '', pick: function () { set({ sev: id }); } }; });
+
+    var dataRow = sheet === 'Holdings' ? D[selRow - base] : null;
+    var cIdx = L.indexOf(selCol);
+    var foundRaw = dataRow ? (dataRow[cIdx] || '') : '';
+    var maxN = issues.reduce(function (m, i) { return Math.max(m, i.n); }, 0);
+    function addIssue() {
+      var it = { n: maxN + 1, sheet: sheet, col: selCol, row: selRow, ref: sel, range: sel, sev: sev, type: cur.name, found: foundRaw || '(blank)', want: want, why: why, when: 'just now', wholeRow: false, done: false, changed: applyFix && !!want };
+      var ch = {}; Object.keys(changes).forEach(function (k) { ch[k] = changes[k]; });
+      if (it.changed) ch[sheet + '!' + sel] = want;
+      set({ issues: issues.concat([it]), composing: false, changes: ch, why: '', want: '', applyFix: false });
+    }
+
+    function isSel(i) { return i.sheet === sheet && (i.ref === sel || (i.wholeRow && i.row === selRow)); }
+    var counts = { all: issues.length, error: 0, warning: 0, note: 0 }, openCount = 0;
+    issues.forEach(function (i) { counts[i.sev]++; if (!i.done) openCount++; });
+    var filter = S.filter || 'all';
+    var filters = [['all', 'All ' + counts.all], ['error', '✕ ' + counts.error], ['warning', '! ' + counts.warning], ['note', 'i ' + counts.note]].map(function (f) {
+      return { label: f[1], on: f[0] === filter, cls: f[0] === filter ? 'on' : '', pick: function () { set({ filter: f[0] }); } };
+    });
+    var canReveal = typeof p.onReveal === 'function';
+    var list = issues.filter(function (i) { return filter === 'all' || i.sev === filter; }).map(function (i) {
+      var on = isSel(i);
+      return {
+        n: i.n, type: i.type, found: i.found, want: i.want || '—', range: i.range, sevName: SV[i.sev].name, why: i.why || '—', when: i.when,
+        tag: (i.changed ? ' · cell changed' : '') + (i.done ? ' · resolved' : ''),
+        nStyle: 'background:' + (i.done ? 'var(--pass)' : SV[i.sev].bg) + ';margin-top:1px',
+        on: on, cls: 'issue' + (on ? ' on' : '') + (i.done ? ' done' : ''),
+        doneLabel: i.done ? 'Reopen' : '✓ Resolve',
+        pick: function () { set({ sel: i.ref, sheet: i.sheet, composing: false }); },
+        reveal: function () { set({ sel: i.ref, sheet: i.sheet, composing: false }); p.onReveal(i); },
+        toggle: function () { set({ issues: issues.map(function (x) { if (x.n !== i.n) return x; var o = {}; Object.keys(x).forEach(function (k) { o[k] = x[k]; }); o.done = !x.done; return o; }) }); },
+        remove: function () { set({ issues: issues.filter(function (x) { return x.n !== i.n; }) }); }
+      };
+    });
+    var h = parseInt(p.height, 10) || 700;
+    return {
+      rootStyle: 'height:' + h + 'px;font-family:var(--sans);color:var(--ink)',
+      composing: composing, notComposing: !composing,
+      sheet: sheet, sel: sel, foundText: foundRaw || '(blank)',
+      colName: (HDR[cIdx] || '') + ' (' + selCol + ')', rowDesc: dataRow ? dataRow[0] + ' · ' + dataRow[3] : '—',
+      types: types, sevs: sevs, sevHelp: SV[sev].help, ex: cur, why: why, want: want, applyFix: applyFix,
+      onWhy: function (e) { set({ why: e.target.value }); },
+      onWant: function (e) { set({ want: e.target.value }); },
+      onApply: function (e) { set({ applyFix: e.target.checked }); },
+      cancelCompose: function () { set({ composing: false }); },
+      addIssue: addIssue,
+      openCount: openCount, filters: filters, list: list, noIssues: list.length === 0,
+      emptyText: 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.',
+      linkCls: 'link-chip' + (linked ? '' : ' off'), linkLabel: linked ? 'linked to Excel' : 'not linked',
+      canReveal: canReveal, canChange: !readOnly,
+      fileName: file === 'csv' ? 'holdings-q3.csv' : 'Client holdings — Q3 2026.xlsx',
+      copyLabel: file === 'csv' ? 'Changed copy .csv' : 'Changed copy .xlsx',
+      copyNote: file === 'csv' ? 'CSV can’t hold comments, so errors go in the report.' : 'The changed copy carries each error as a cell comment. The upload is never changed.'
+    };
+  }
+}
+</script>
+</body>
+</html>

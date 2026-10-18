@@ -35,6 +35,7 @@ decision 13.
 | what has been named and nobody is doing | [`work/BACKLOG.md`](work/BACKLOG.md) |
 | the judgment behind the current state | [`work/INTERVIEW.md`](work/INTERVIEW.md) |
 | what has actually shipped | [`work/IMPLEMENTATION.md`](work/IMPLEMENTATION.md) |
+| how the pieces fit — packages, elements, the one workbook, the flows | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | the spec for anything | [the register](records/README.md) |
 | a closed fork and its reopen-trigger | [`work/compare/`](work/compare/README.md) |
 | a word you don't recognise | [`docs/GLOSSARY.md`](docs/GLOSSARY.md) |
@@ -58,6 +59,14 @@ Each law is stated in exactly one record and is **not restated here**:
 
 - **L0** — SRs are the only source of truth; Law records outrank every other record — [SR-LAW-0](records/0002_LAW-0-authority.md)
 - **L1** — a retired record is archived, never deleted — [SR-LAW-1](records/0003_LAW-1-retired-records-archived.md)
+- **L2** — every dependency is free and open source — [SR-LAW-2](records/0004_LAW-2-foss-dependencies.md)
+- **L3** — sheetpane supports XLSX and CSV only — [SR-LAW-3](records/0005_LAW-3-xlsx-and-csv-only.md)
+- **L4** — sheetpane is always a web component — [SR-LAW-4](records/0006_LAW-4-web-component.md)
+- **L5** — the font is the browser's default unless the host sets one — [SR-LAW-5](records/0007_LAW-5-host-font.md)
+- **L6** — every change is held in memory and export carries it — [SR-LAW-6](records/0008_LAW-6-edits-in-memory-export-with-changes.md)
+- **L7** — the view, edit and error components are always in sync — [SR-LAW-7](records/0009_LAW-7-surfaces-always-in-sync.md)
+- **L8** — sheetpane is consumed as an npm package — [SR-LAW-8](records/0010_LAW-8-npm-package.md)
+- **L9** — memory means a JavaScript object, for now — [SR-LAW-9](records/0011_LAW-9-memory-is-a-javascript-object.md)
 
 [SR-LAWS](records/0001_LAWS.md) assigns the handles and routes each to its
 record; that is all it does. Add a law by adding a record in the law range and
@@ -105,8 +114,9 @@ running.
 ```
 work/        THE SHARED MEMORY between sessions — start at work/README.md
 records/     THE STANDING RECORDS — the register, the template, the laws, the WORK records
-docs/        WHAT THE PROJECT IS — the glossary
+docs/        WHAT THE PROJECT IS — the architecture and the glossary
 archive/     THE ONE ARCHIVE — everything retired, mirroring the live tree
+packages/    THE CODE — npm workspaces: export/ (@sheetpane/export) and sheetpane/ (the UI)
 scripts/     the commit guard and the inbox check
 .claude/     hooks and their wiring
 ```

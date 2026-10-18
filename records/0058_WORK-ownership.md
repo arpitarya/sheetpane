@@ -81,8 +81,9 @@ prompt at commit time makes the update the default.
 - **Owed:** `owns:` ↔ Ownership table agreement (decision 2) is unchecked —
   backlog B-002.
 - **Accepted cost:** touched, never coherent (decision 8) — backlog B-006.
-- sheetpane has no package code yet; the first code directory gets its
-  Ownership row in the change that adds it.
+- The package code (`packages/`, the root build files) is owned by open
+  `W-nn` items until each writes its record; the guard resolves a `W-nn`
+  owner to its file in `work/open/`.
 
 ### Alternatives considered
 

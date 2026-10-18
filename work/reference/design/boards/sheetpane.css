@@ -1,0 +1,125 @@
+/* sheetpane — additions on top of Proof (proof.css, shared with PDF Suite).
+   Severity: Error = fail red + ✕, Warning = warn amber + !, Note = accent blue + i.
+   Colour never stands alone: every mark also carries a glyph or a number. */
+
+/* clickable grid cells (real buttons, same look as .srow>span) */
+.srow>button{flex:none;height:28px;padding:0 8px;border:0;border-right:1px solid #E6E6E1;border-bottom:1px solid #E6E6E1;border-radius:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:400 13px/28px var(--sans);color:var(--ink);text-align:left;position:relative;box-sizing:border-box;background:#fff;cursor:cell}
+.srow>button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
+.srow>button.c-num{text-align:right;font-family:var(--mono);font-size:12px}
+.srow>button.c-hd{font-weight:600}
+.srow>button.c-tot{font-weight:600;background:#FAFAF8}
+.srow.ch{position:sticky;top:0;z-index:3}
+.c-range{background:rgba(35,70,200,.07) !important}
+.c-dim{color:var(--ink-3)}
+.c-row-mark{background:#EBEEFB !important}
+
+/* severity pins on cells */
+.sp-pin{position:absolute;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:0;font:600 10px/18px var(--mono);color:#fff;text-align:center;z-index:4;box-shadow:0 0 0 2px #fff,0 1px 4px rgba(22,23,26,.3);cursor:pointer}
+.sp-e{background:var(--fail)}.sp-w{background:var(--warn)}.sp-i{background:var(--accent)}
+
+/* the floating selection bar */
+.selbar{position:absolute;display:flex;gap:2px;padding:3px;background:var(--ink);border-radius:var(--r);box-shadow:var(--shadow);z-index:7}
+.selbar button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:0;border-radius:4px;background:transparent;color:#fff;font:500 12px/1 var(--sans);cursor:pointer;white-space:nowrap}
+.selbar button:hover,.selbar button.on{background:rgba(255,255,255,.16)}
+.selbar svg{width:15px;height:15px}
+.selbar .sep{width:1px;background:rgba(255,255,255,.2);margin:4px 2px}
+
+/* callout card anchored to a cell */
+.callout{position:absolute;width:300px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);z-index:8;overflow:hidden}
+.callout-hd{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.callout-bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px}
+.callout-ft{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--ground);align-items:center}
+
+/* found → should be */
+.fe{display:grid;grid-template-columns:76px 1fr;gap:6px 10px;align-items:baseline;margin:0}
+.fe dt{font:500 10px/1.5 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.fe dd{margin:0;font:500 13px/1.45 var(--mono);min-width:0;overflow-wrap:anywhere}
+.found{color:var(--fail);text-decoration:line-through;background:var(--fail-soft);padding:1px 4px;border-radius:3px}
+.want{color:var(--pass);background:var(--pass-soft);padding:1px 4px;border-radius:3px}
+.why{font-size:13px;line-height:1.45;color:var(--ink)}
+
+/* issue type chips (toggle buttons) */
+.tchips{display:flex;flex-wrap:wrap;gap:6px}
+.tchip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);color:var(--ink-2);font:500 12px/1 var(--sans);cursor:pointer;white-space:nowrap}
+.tchip:hover{border-color:var(--ink-3);color:var(--ink)}
+.tchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tchip svg{width:14px;height:14px}
+
+textarea.input{height:auto;min-height:76px;padding:8px 10px;font:400 13px/1.45 var(--sans);resize:vertical;width:100%}
+.hint{display:flex;gap:8px;padding:10px 12px;border-radius:var(--r);background:var(--ground);border:1px dashed var(--line-strong);font-size:12px;color:var(--ink-2);line-height:1.45}
+.hint b{color:var(--ink);font-weight:600}
+.kbd{display:inline-block;font:500 11px/1 var(--mono);padding:3px 5px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:4px;color:var(--ink-2);background:var(--surface)}
+
+/* issue list rows */
+.issue{display:flex;gap:10px;padding:12px 14px;align-items:flex-start;width:100%;border:0;background:none;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.issue:hover{background:var(--ground)}
+.issue.on{background:var(--accent-soft)}
+.issue .bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.issue .t{font:500 13px/1.3 var(--sans)}
+.issue .m{font:400 12px/1.4 var(--mono);color:var(--ink-3)}
+.issue .ba{font:400 12px/1.5 var(--mono)}
+.issue.done .t{color:var(--ink-3);text-decoration:line-through}
+
+/* examples catalog */
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden}
+.ex-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.ex-ic{width:30px;height:30px;border-radius:8px;background:var(--sunken);display:flex;align-items:center;justify-content:center;color:var(--ink-2);flex:none}
+.ex-ic svg{width:16px;height:16px}
+.ex-bd{padding:14px 16px;display:flex;flex-direction:column;gap:12px;flex:1}
+.ba-cells{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.xc{display:inline-flex;align-items:center;height:30px;padding:0 10px;border:1px solid #DADAD4;border-radius:4px;font:400 13px/1 var(--mono);background:#fff;white-space:nowrap}
+.xc .ref{font:500 10px/1 var(--mono);color:var(--ink-3);margin-right:8px;padding-right:8px;border-right:1px solid var(--line)}
+.xc-bad{background:var(--fail-soft);border-color:#E7B4AD}
+.xc-warn{background:var(--warn-soft);border-color:#E6CF9C}
+.xc-note{background:var(--accent-soft);border-color:#C5CFF3}
+.xc-good{background:var(--pass-soft);border-color:#B5D8C2}
+.arrow{color:var(--ink-3);font:400 14px/1 var(--mono)}
+
+/* overview helpers */
+.mode{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:24px;display:flex;flex-direction:column;gap:16px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font:600 13px/1 var(--mono);flex:none}
+.step{display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);flex:1 1 220px;min-width:0}
+.ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2)}
+.ul li::marker{color:var(--ink-3)}
+.status{display:flex;align-items:center;gap:16px;padding:6px 12px;border-top:1px solid var(--line);background:#FAFAF8;font:400 12px/1.4 var(--mono);color:var(--ink-3);flex-wrap:wrap}
+
+/* ---- the package root: <SheetPane> ---- */
+.sp{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.45;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden;min-width:0;width:100%;-webkit-font-smoothing:antialiased}
+.sp *{box-sizing:border-box}
+.sp p{margin:0}
+.sp button{font-family:inherit}
+.sp-popup{border:0;border-radius:var(--r-xl)}
+.sp-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sp-bar .ico{width:18px;height:18px;color:var(--ink-3);flex:none}
+.sp-body{display:flex;flex-wrap:wrap;flex:1;min-height:0;overflow:hidden}
+.sp-grid{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;min-height:0;height:100%}
+.sp-side{flex:1 1 300px;max-width:360px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;height:100%;overflow:auto;background:var(--surface)}
+.sp-side-hd{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sp .fx{min-height:41px}
+.sp .grid-scroll{background:#fff}
+.srow>button.c-merge{text-align:center;font-weight:600;background:#FAFAF8}
+.c-merge-tag{font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line-strong);border-radius:4px;padding:3px 5px}
+
+/* host chrome placeholders */
+.host-hd{display:flex;align-items:center;gap:16px;padding:0 24px;min-height:56px;background:#fff;border-bottom:1px solid #E5E7EB;flex-wrap:wrap}
+.host-logo{font:600 15px/1 var(--sans);color:#374151;border:1.5px dashed #9CA3AF;padding:6px 10px;border-radius:6px}
+.host-tabs{display:flex;gap:4px;border-bottom:1px solid #E5E7EB;flex-wrap:wrap}
+.host-tab{display:inline-flex;align-items:center;gap:6px;padding:12px 14px;margin-bottom:-1px;color:#4B5563;font:500 14px/1 var(--sans);text-decoration:none;border-bottom:2px solid transparent}
+.host-tab.on{color:#111827;border-bottom-color:#111827}
+/* inline composer (SheetPaneExcel used alone) */
+.composer{position:absolute;width:330px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);z-index:9;display:flex;flex-direction:column;overflow:hidden}
+.composer .bd{padding:12px;display:flex;flex-direction:column;gap:10px}
+.composer textarea.input{min-height:56px}
+
+/* SheetPaneErrors */
+.spe{font-family:var(--sans);color:var(--ink);font-size:14px;line-height:1.45;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden;min-width:0;width:100%;-webkit-font-smoothing:antialiased}
+.spe *{box-sizing:border-box}
+.spe p{margin:0}
+.spe button{font-family:inherit}
+.spe-scroll{flex:1;min-height:0;overflow:auto}
+.spe-detail{padding:4px 14px 14px 42px;display:flex;flex-direction:column;gap:10px;background:var(--accent-soft)}
+.link-chip{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;font:500 11px/1 var(--mono);background:var(--pass-soft);color:var(--pass)}
+.link-chip.off{background:var(--sunken);color:var(--ink-3)}
+.link-chip svg{width:12px;height:12px}
+
+.pkg-tag{font:500 11px/1 var(--mono);color:var(--accent-ink);background:var(--accent-soft);border:1px dashed #9FB0EA;border-radius:4px;padding:4px 6px}

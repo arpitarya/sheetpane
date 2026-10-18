@@ -9,8 +9,22 @@ description: "Recurring terms, defined once."
 |---|---|
 | Standing Record (SR) | a maintained specification in `records/`, cited by name; see the register |
 | Law | a rule that outranks every other record; `SR-LAW-n` |
+| memory | JavaScript objects held in the page; not IndexedDB, browser storage or a server — see SR-LAW-9 |
+| error component | the review surface that marks incorrect data and states the correction; one of the three components SR-LAW-7 keeps in sync |
+| web component | a custom element registered through the Custom Elements standard, usable from any framework or plain HTML; see SR-LAW-4 |
+| FOSS | free and open source software — here, a licence on the OSI-approved list; see SR-LAW-2 |
 | W-nn | an open work item — a queue row plus a detail file |
 | B-nnn | a backlog row — named, unclaimed, no file |
 | ball | the one marker every queue row opens with: 🔴 🟣 🟡 🟢 |
 | blocker | `work/BLOCKED.json` with a decision other than `PROCEED` |
 | veto condition | the checkable condition under which a decision reopens |
+| pane | the one in-memory workbook a set of sheetpane elements share, named by their `pane` attribute; see `work/compare/workbook-and-error-contract.compare.md` |
+| change (sheetpane) | one edited cell held in the workbook as `sheet!ref → { was, now }`; export applies every change, the file is never modified |
+| sheetpane-excel | working name of the web component that is both the view and the edit component |
+| sheetpane-errors | working name of the web component that is the error component |
+| justfile | the root file of recipes for `just`, a command runner; `just --list` shows every repo command (W-10) |
+| Proof | the colour and spacing tokens sheetpane shares with PDF Suite — `work/reference/design/boards/proof.css`; its fonts do not ship (SR-LAW-5) |
+| plugin (sheetpane) | a separate npm package that registers against the one in-memory workbook through named hooks and adds controls to named slots; enabled per `pane` by `createWorkbook({ plugins })` or the `plugins` attribute — `work/compare/plugins.compare.md` |
+| hook | one of six named functions on the workbook store a plugin may provide: `format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch` |
+| slot | one of six named places in the grid a plugin's control descriptor may target: `format-row`, `selbar`, `cellbar`, `status`, `cell`, `overlay`; the grid draws the control, the plugin describes it |
+| derived cell | a cell whose value a plugin computed (`derive`) rather than the user typed; marked in the grid, never in the change map |

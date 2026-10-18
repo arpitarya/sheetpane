@@ -1,0 +1,21 @@
+{
+  "name": "@sheetpane/condfmt",
+  "version": "0.0.0",
+  "description": "Conditional formatting for sheetpane — cellIs, containsText, duplicates, top10, colour scales, data bars — rendered through the `decorate` hook after @sheetpane/styles.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "@sheetpane/grid": "0.0.0"
+  },
+  "dependencies": {}
+}

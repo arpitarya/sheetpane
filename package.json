@@ -1,0 +1,31 @@
+{
+  "name": "sheetpane-monorepo",
+  "private": true,
+  "description": "sheetpane \u2014 an .xlsx/.csv viewer and editor for single-page apps, the import and export libraries it uses, and its plugins.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arpitarya/sheetpane"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/export",
+    "packages/grid",
+    "packages/numfmt",
+    "packages/formulas",
+    "packages/styles",
+    "packages/validation",
+    "packages/condfmt",
+    "packages/images",
+    "packages/charts",
+    "packages/comments"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

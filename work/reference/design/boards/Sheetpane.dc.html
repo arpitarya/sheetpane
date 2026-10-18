@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SheetPaneExcel component</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section class="{{rootCls}}" style="{{rootStyle}}" aria-label="{{fileName}}">
+
+<div class="sp-bar">
+<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/></svg>
+<span class="h4" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 260px">{{fileName}}</span>
+<span class="chip mono" style="font-family: var(--mono)">{{fileMeta}}</span>
+<div class="seg" role="group" aria-label="Mode">
+<button class="{{viewCls}}" type="button" aria-pressed="{{isView}}" onClick="{{toView}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
+<button class="{{editCls}}" type="button" aria-pressed="{{isEdit}}" onClick="{{toEdit}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>Edit</button>
+</div>
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
+<span class="chip chip-fail">✕ {{cnt.error}}</span>
+<span class="chip chip-warn">! {{cnt.warning}}</span>
+<span class="chip chip-info">i {{cnt.note}}</span>
+</sc-if>
+<span class="spacer"></span>
+<label class="row" style="gap: 0; position: relative">
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find in file</span>
+<svg viewBox="0 0 24 24" fill="none" stroke="#63666E" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" style="width: 15px; height: 15px; position: absolute; left: 9px"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+<input class="input" placeholder="Find" style="height: 28px; width: 150px; padding-left: 30px; font-size: 13px">
+</label>
+<select class="input" style="height: 28px; font-size: 12px" aria-label="Zoom"><option>100 %</option><option>75 %</option><option>125 %</option></select>
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
+<span class="xs faint">{{changesLabel}}</span>
+<button class="btn btn-sm btn-p" type="button" onClick="{{doExport}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>{{exportLabel}}</button>
+</sc-if>
+<button class="btn btn-sm btn-g btn-i" type="button" aria-label="Download the original"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button>
+<sc-if value="{{isPopup}}" hint-placeholder-val="{{false}}">
+<button class="btn btn-sm btn-g btn-i" type="button" aria-label="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</sc-if>
+</div>
+
+<div class="fx">
+<span class="ref">{{selRef}}</span>
+<sc-if value="{{cellEditable}}" hint-placeholder-val="{{false}}"><label style="flex: 1; min-width: 0; display: flex; position: relative"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Value of {{selRef}}</span><input class="input mono" value="{{cellVal}}" placeholder="(empty)" onChange="{{onCell}}" style="height: 28px; flex: 1; max-width: 420px; border-color: var(--accent)"></label></sc-if>
+<sc-if value="{{cellReadonly}}" hint-placeholder-val="{{true}}"><span class="val" style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{selText}}</span></sc-if>
+<sc-if value="{{selIsMerge}}" hint-placeholder-val="{{false}}"><span class="c-merge-tag">Merged {{selMergeRange}} · centred</span></sc-if>
+<sc-if value="{{selChanged}}" hint-placeholder-val="{{false}}"><span class="chip chip-info" style="height: 22px">Changed · was {{selWas}}</span><sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}"><button class="btn btn-sm btn-g" type="button" onClick="{{revertCell}}">Revert</button></sc-if></sc-if>
+<sc-if value="{{selHasIssue}}" hint-placeholder-val="{{false}}"><span class="chip {{selIssue.chip}}" style="height: 22px">{{selIssue.g}} Error {{selIssue.n}}</span></sc-if>
+<sc-if value="{{linkedComposing}}" hint-placeholder-val="{{false}}"><span class="chip chip-info" style="height: 22px">Describe it in the Errors panel</span></sc-if>
+</div>
+
+<div class="sp-body">
+<div class="sp-grid">
+<div class="grid-scroll">
+<div style="position: relative; width: max-content">
+<div class="srow ch"><span class="rh"></span><sc-for list="{{cols}}" as="c" hint-placeholder-count="10"><span style="{{c.w}}">{{c.l}}</span></sc-for></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="20">
+<div class="srow"><span class="rh"><span class="g {{r.gc}}">{{r.g}}</span>{{r.n}}</span><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="10"><button type="button" class="{{c.cls}}" style="{{c.w}}" aria-label="{{c.al}}" onClick="{{c.pick}}">{{c.v}}</button></sc-for></div>
+</sc-for>
+
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="8"><button class="{{p.cls}}" type="button" aria-label="{{p.al}}" style="{{p.pos}}" onClick="{{p.pick}}">{{p.label}}</button></sc-for>
+</sc-if>
+
+<sc-if value="{{showPending}}" hint-placeholder-val="{{false}}">
+<span class="sp-pin" aria-hidden="true" style="{{pendingPos}}">{{nextN}}</span>
+</sc-if>
+
+<sc-if value="{{showSelbar}}" hint-placeholder-val="{{false}}">
+<div class="selbar" role="toolbar" aria-label="Selection" style="{{selbarPos}}">
+<button class="on" type="button" onClick="{{startCompose}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>Flag issue <span class="kbd" style="background: transparent; color: #fff; border-color: rgba(255,255,255,.35)">F</span></button>
+<span class="sep" aria-hidden="true"></span>
+<button type="button">Copy ref</button>
+<button type="button">Copy value</button>
+</div>
+</sc-if>
+
+<sc-if value="{{showCallout}}" hint-placeholder-val="{{false}}">
+<div class="callout" role="group" aria-label="Error details" style="{{co.pos}}">
+<div class="callout-hd">
+<span class="g {{co.gc}}" aria-hidden="true">{{co.g}}</span>
+<span class="h4">{{co.type}}</span>
+<span class="mono xs faint">{{co.range}}</span>
+<span class="spacer"></span>
+<button class="btn btn-sm btn-g btn-i" type="button" aria-label="Previous error" onClick="{{prev}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+<button class="btn btn-sm btn-g btn-i" type="button" aria-label="Next error" onClick="{{next}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+</div>
+<div class="callout-bd">
+<dl class="fe">
+<dt>Found</dt><dd><span class="found">{{co.found}}</span></dd>
+<dt>Should be</dt><dd><span class="want">{{co.want}}</span></dd>
+</dl>
+<p class="why">{{co.why}}</p>
+<span class="xs faint">{{co.meta}}</span>
+</div>
+<div class="callout-ft">
+<button class="btn btn-sm" type="button" onClick="{{toggleDone}}">{{co.doneLabel}}</button>
+<span class="spacer"></span>
+<button class="btn btn-sm btn-g btn-d" type="button" onClick="{{deleteIssue}}">Delete</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{showInline}}" hint-placeholder-val="{{false}}">
+<div class="composer" role="group" aria-label="New error" style="{{inlinePos}}">
+<div class="callout-hd"><span class="h4">New error</span><span class="mono xs faint">{{selRef}} · found {{foundText}}</span><span class="spacer"></span><button class="btn btn-sm btn-g btn-i" type="button" aria-label="Cancel" onClick="{{cancelCompose}}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="bd">
+<label class="field"><span class="lbl">Type</span><select class="input" style="height: 30px; font-size: 13px" value="{{typeId}}" onChange="{{onType}}"><sc-for list="{{types}}" as="t" hint-placeholder-count="8"><option value="{{t.id}}">{{t.name}}</option></sc-for></select></label>
+<label class="field"><span class="lbl">What's wrong</span><textarea class="input" rows="2" placeholder="{{ex.why}}" value="{{why}}" onChange="{{onWhy}}"></textarea></label>
+<label class="field"><span class="lbl">What it should be</span><input class="input mono" placeholder="{{ex.want}}" value="{{want}}" onChange="{{onWant}}"></label>
+<div class="seg" role="group" aria-label="Severity" style="align-self: flex-start"><sc-for list="{{sevs}}" as="s" hint-placeholder-count="3"><button class="{{s.cls}}" type="button" aria-pressed="{{s.on}}" onClick="{{s.pick}}"><span class="g {{s.gc}}">{{s.g}}</span>{{s.name}}</button></sc-for></div>
+</div>
+<div class="callout-ft"><span class="xs faint">Alone: the form opens here</span><span class="spacer"></span><button class="btn btn-sm btn-p" type="button" onClick="{{addIssue}}">Add error</button></div>
+</div>
+</sc-if>
+</div>
+</div>
+<sc-if value="{{hasTabs}}" hint-placeholder-val="{{true}}">
+<nav class="stabs" aria-label="Sheets">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="2"><button class="{{t.cls}}" type="button" onClick="{{t.pick}}">{{t.name}}<sc-if value="{{t.hasCnt}}" hint-placeholder-val="{{false}}"><span class="cnt cnt-e">{{t.cnt}}</span></sc-if></button></sc-for>
+</nav>
+</sc-if>
+</div>
+</div>
+
+<div class="status"><span>{{sheet}} · {{dims}}</span><span>{{memNote}}</span><span class="spacer"></span><span>Read in this tab — nothing uploaded</span><sc-if value="{{isPopup}}" hint-placeholder-val="{{false}}"><span>Esc to close</span></sc-if></div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["view","edit"],"default":"edit"},"display":{"editor":"enum","options":["tab","popup"],"default":"tab"},"file":{"editor":"enum","options":["xlsx","csv"],"default":"xlsx"},"height":{"editor":"int","default":700,"min":360,"max":1200,"unit":"px"},"sel":{"editor":null},"compose":{"editor":null},"seed":{"editor":null},"shared":{"editor":null},"onShared":{"editor":null},"$preview":{"width":1240,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var p = this.props || {};
+    var linked = typeof p.onShared === 'function';
+    var S = linked ? (p.shared || {}) : (this.state || {});
+    function set(o) { if (linked) p.onShared(o); else self.setState(o); }
+    var file = p.file === 'csv' ? 'csv' : 'xlsx';
+    var isPopup = p.display === 'popup';
+    var mode = S.mode || p.mode || 'edit';
+    var isEdit = mode === 'edit';
+    var base = file === 'xlsx' ? 3 : 2;
+    var sheet = file === 'csv' ? 'Holdings' : (S.sheet || 'Holdings');
+    var L = 'ABCDEFGHIJ'.split('');
+    function top(row) { return 24 + (row - 1) * 28; }
+    function rowOf(ref) { return parseInt(String(ref).replace(/[A-Z]/g, ''), 10); }
+    function colOf(ref) { return String(ref).replace(/[0-9]/g, ''); }
+
+    var HDR = ['Account ID', 'Client', 'Advisor', 'Security', 'Ticker', 'Units', 'Price', 'Market value', 'Fee rate', 'As of'];
+    var D = [
+      ['AC-10021', 'R. Mehta', 'S. Kapoor', 'Total Market Index Fund', 'TMKT', '1,200', '268.40', '322,080.00', '0.75%', '30-Sep-2026'],
+      ['AC-10021', 'R. Mehta', 'S. Kapoor', 'Short-Term Bond Fund', 'STBF', '850', '101.12', '85,952.00', '0.40%', '30-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Dividend Growth ETF', 'DIVG', '430', '74.85', '32,185.50', '0.75%', '30-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Global Equity Fund', 'GLEQ', '2,000', '45.10', '90,200.00', '7.5%', '30-Sep-2026'],
+      ['AC-10042', 'P. Iyer', 'S. Kapoor', 'Total Market Index Fund', 'TMKT', '300', '286.40', '85,920.00', '0.75%', '30-Sep-2026'],
+      ['AC-1O044', 'K. Sharma', 'A. Rao', 'Municipal Bond Fund', 'MUNI', '640', '52.30', '33,472.00', '0.40%', '30-Sep-2026'],
+      ['AC-10044', 'K. Sharma', 'A. Rao', 'Real Estate Income Fund', 'REIF', '210', '38.95', '8,179.50', '0.85%', '30-Sep-2026'],
+      ['AC-10051', 'M. D’Souza', 'S. Kapoor', 'Small-Cap Value ETF', 'SCVE', '-150', '61.20', '-9,180.00', '0.75%', '30-Sep-2026'],
+      ['AC-10051', 'M. D’Souza', '', 'Treasury Inflation Fund', 'TIPF', '500', '27.64', '13,820.00', '0.40%', '30-Sep-2026'],
+      ['AC-10063', 'N. Gupta', 'A. Rao', 'Total Market Index Fund', 'TMKT', '195', '268.40', '48,210.00', '0.75%', '30-Sep-2026'],
+      ['AC-10063', 'N. Gupta', 'A. Rao', 'Short-Term Bond Fund', 'STBF', '1,000', '101.12', '101,120.00', '0.40%', '31-Sep-2026'],
+      ['AC-10037', 'L. Fernandes', 'A. Rao', 'Dividend Growth ETF', 'DIVG', '430', '74.85', '32,185.50', '0.75%', '30-Sep-2026'],
+      ['AC-10070', 'V. Nair', 'S. Kapoor', 'Global Equity Fund', 'GLEQ', '820', '45.10', '36,982.00', '0.75%', '30-Sep-2026']
+    ];
+    var SHEETS = {
+      Holdings: { W: [84, 110, 96, 168, 64, 70, 76, 108, 70, 100], num: { F: 1, G: 1, H: 1, I: 1 }, title: file === 'xlsx' ? 'Client holdings — as of 30 Sep 2026' : null, hdr: HDR, data: D },
+      'Fee tiers': {
+        W: [120, 120, 120, 110, 240], num: { B: 1, C: 1, D: 1 }, title: 'Fee tiers — 2026', hdr: ['Tier', 'Min assets', 'Max assets', 'Annual rate', 'Applies to'],
+        data: [['Core', '0', '250,000', '0.75%', 'Equity funds and ETFs'], ['Income', '0', '—', '0.40%', 'Bond funds'], ['Real assets', '0', '—', '0.85%', 'Real estate funds'], ['Cap', '', '', '2.00%', 'Any single holding (maximum)']]
+      }
+    };
+    var sh = SHEETS[sheet];
+    var nc = sh.hdr.length;
+    var X = {}, acc = 52;
+    for (var j = 0; j < nc; j++) { X[L[j]] = acc; acc += sh.W[j]; }
+    var GW = acc;
+    var b = sh.title ? 3 : 2;
+    var changes = S.changes || {};
+    function orig(sheetName, ref) {
+      var s = SHEETS[sheetName], bb = s.title ? 3 : 2, r = rowOf(ref), c = L.indexOf(colOf(ref));
+      if (s.title && r === 1) return s.title;
+      if (r === bb - 1) return s.hdr[c] || '';
+      var row = s.data[r - bb];
+      return row ? (row[c] || '') : '';
+    }
+    function shown(sheetName, ref) { var k = sheetName + '!' + ref; return changes[k] !== undefined ? changes[k] : orig(sheetName, ref); }
+
+    var DEF = [
+      { n: 1, col: 'G', d: 4, sev: 'error', type: 'Doesn’t match source', found: '286.40', want: '268.40', why: 'Price differs from the 30-Sep pricing file for TMKT. Rows ' + base + ' and ' + (base + 9) + ' show 268.40 — digits look transposed.', when: '09:04' },
+      { n: 2, col: 'A', d: 5, sev: 'warning', type: 'Wrong format', found: 'AC-1O044', want: 'AC-10044', why: 'Letter O instead of zero. Account IDs follow AC-#####; the next row is the same client as AC-10044.', when: '09:07' },
+      { n: 3, col: 'I', d: 3, sev: 'error', type: 'Wrong value', found: '7.5%', want: '0.75%', why: 'Fee rate is 10× the account’s tier (0.75%) and above the 2.00% cap — looks like a misplaced decimal.', when: '09:12' },
+      { n: 4, col: 'H', d: 9, sev: 'error', type: 'Wrong value', found: '48,210.00', want: '52,338.00', why: 'Market value should be Units × Price: 195 × 268.40 = 52,338.00.', when: '09:15' },
+      { n: 5, col: 'J', d: 10, sev: 'error', type: 'Invalid date', found: '31-Sep-2026', want: '30-Sep-2026', why: '31 September doesn’t exist. Every other row is as of 30-Sep-2026.', when: '09:18' },
+      { n: 6, col: 'F', d: 7, sev: 'warning', type: 'Out of range', found: '-150', want: '150', why: 'Units can’t be negative for a holding. If this was a sale it belongs in the transactions file.', when: '09:21' },
+      { n: 7, col: 'C', d: 8, sev: 'warning', type: 'Missing value', found: '(blank)', want: 'S. Kapoor', why: 'Advisor is required. The same account (AC-10051) on row ' + (base + 7) + ' is S. Kapoor.', when: '09:22' },
+      { n: 8, col: 'A', d: 11, sev: 'note', type: 'Duplicate row', found: '= row ' + (base + 2), want: 'Delete row ' + (base + 11), why: 'Same account, security, units and price as row ' + (base + 2) + ' — it counts 32,185.50 twice.', when: '09:25', wholeRow: true }
+    ].map(function (i) {
+      var row = i.d + base;
+      return { n: i.n, sheet: 'Holdings', col: i.col, row: row, ref: i.col + row, range: i.wholeRow ? 'A' + row + ':J' + row : i.col + row, sev: i.sev, type: i.type, found: i.found, want: i.want, why: i.why, when: i.when, wholeRow: !!i.wholeRow, done: false };
+    });
+    var issues = S.issues || (p.seed === 'two' ? DEF.filter(function (i) { return i.n <= 2; }) : (p.seed === 'none' ? [] : DEF));
+
+    var sel = S.sel !== undefined ? S.sel : (p.sel || ('A' + base));
+    var composeProp = p.compose === true || p.compose === 'true';
+    var composing = isEdit && (S.composing !== undefined ? S.composing : composeProp);
+    var selRow = rowOf(sel), selCol = colOf(sel);
+    function matches(i) { return i.sheet === sheet && (i.ref === sel || (i.wholeRow && i.row === selRow)); }
+    var selIssue = isEdit ? issues.filter(matches)[0] : null;
+
+    var SV = {
+      error: { g: '✕', gc: 'g-err', chip: 'chip-fail', pin: 'sp-e', name: 'Error' },
+      warning: { g: '!', gc: 'g-warn', chip: 'chip-warn', pin: 'sp-w', name: 'Warning' },
+      note: { g: 'i', gc: 'g-info', chip: 'chip-info', pin: 'sp-i', name: 'Note' }
+    };
+    var markOf = { error: 'm-error', warning: 'm-warning', note: 'm-info' };
+    var rank = { error: 3, warning: 2, note: 1 };
+    var cellMark = {}, rowWorst = {};
+    if (isEdit) issues.forEach(function (i) {
+      if (i.sheet !== sheet) return;
+      var m = i.done ? 'm-pass' : markOf[i.sev];
+      if (i.wholeRow) { for (var k = 0; k < nc; k++) cellMark[L[k] + i.row] = m; } else cellMark[i.ref] = m;
+      if (!i.done && (!rowWorst[i.row] || rank[i.sev] > rank[rowWorst[i.row]])) rowWorst[i.row] = i.sev;
+    });
+
+    var nRows = Math.max(20, (b - 1) + sh.data.length + 3);
+    var rows = [];
+    for (var r = 1; r <= nRows; r++) {
+      var cells = [];
+      if (sh.title && r === 1) {
+        cells.push({ v: sh.title, w: 'width:' + (GW - 52) + 'px', cls: 'c-merge' + (sel === 'A1' ? ' c-sel' : ''), al: 'A1 to ' + L[nc - 1] + '1, merged: ' + sh.title, pick: function () { set({ sel: 'A1', composing: false }); } });
+      } else {
+        for (var c = 0; c < nc; c++) {
+          (function (r, c) {
+            var ref = L[c] + r, k = sheet + '!' + ref, v = shown(sheet, ref), cls = [];
+            if (r === b - 1) cls.push('c-hd');
+            if (r >= b && sh.num[L[c]]) cls.push('c-num');
+            if (cellMark[ref]) cls.push(cellMark[ref]);
+            if (changes[k] !== undefined) cls.push('c-edited');
+            if (ref === sel) cls.push('c-sel');
+            else if (selIssue && selIssue.wholeRow && r === selIssue.row) cls.push('c-range');
+            cells.push({ v: v, w: 'width:' + sh.W[c] + 'px', cls: cls.join(' '), al: ref + (v ? ' ' + v : ' empty'), pick: function () { set({ sel: ref, composing: false }); } });
+          })(r, c);
+        }
+      }
+      var w = rowWorst[r];
+      rows.push({ n: r, cells: cells, g: w ? SV[w].g : '', gc: w ? SV[w].gc : '' });
+    }
+    var gridH = 24 + nRows * 28;
+
+    var pins = issues.filter(function (i) { return i.sheet === sheet; }).map(function (i) {
+      var on = selIssue && selIssue.n === i.n;
+      return {
+        label: i.done ? '✓' : String(i.n),
+        cls: 'sp-pin ' + (i.done ? '' : SV[i.sev].pin),
+        pos: 'top:' + (top(i.row) - 8) + 'px;left:' + (X[i.col] - 6 + (i.col === 'A' ? 8 : 0)) + 'px' + (i.done ? ';background:var(--pass)' : '') + (on ? ';box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ink)' : ''),
+        al: 'Error ' + i.n + ', ' + i.range + ', ' + SV[i.sev].name + (i.done ? ', resolved' : ''),
+        pick: function () { set({ sel: i.ref, composing: false }); }
+      };
+    });
+
+    var isData = selRow >= b && selRow < b + sh.data.length;
+    var showSelbar = isEdit && !selIssue && !composing && isData;
+    var sbTop = selRow <= b + 1 ? top(selRow) + 32 : top(selRow) - 40;
+    var sbLeft = Math.max(52, Math.min((X[selCol] || 52) - 40, GW - 330));
+    var maxN = issues.reduce(function (m, i) { return Math.max(m, i.n); }, 0);
+
+    function sidePos(colKey, w, rowN, boxW, boxH) {
+      var left = X[colKey] + w + 10;
+      if (left + boxW > GW) left = X[colKey] - boxW - 10;
+      if (left < 56) left = 56;
+      var t = Math.max(24, Math.min(top(rowN) - 6, gridH - boxH));
+      return 'top:' + t + 'px;left:' + left + 'px';
+    }
+    var co = null;
+    if (selIssue && !composing) {
+      var cw = selIssue.wholeRow ? sh.W[0] : sh.W[L.indexOf(selIssue.col)];
+      var s1 = SV[selIssue.sev];
+      co = {
+        pos: sidePos(selIssue.col, cw, selIssue.row, 300, 260), g: s1.g, gc: s1.gc, type: selIssue.type, range: selIssue.range,
+        found: selIssue.found, want: selIssue.want || '—', why: selIssue.why || '—',
+        meta: s1.name + ' · Arpit · ' + selIssue.when + (selIssue.changed ? ' · cell changed' : ''),
+        doneLabel: selIssue.done ? 'Reopen' : '✓ Resolve'
+      };
+    }
+    var sheetIssues = issues.filter(function (i) { return i.sheet === sheet; });
+    var idx = selIssue ? sheetIssues.indexOf(selIssue) : -1;
+    function go(k) { return function () { if (!sheetIssues.length) return; var nx = sheetIssues[(idx + k + sheetIssues.length) % sheetIssues.length]; set({ sel: nx.ref, composing: false }); }; }
+
+    var T = [
+      { id: 'value', name: 'Wrong value', sev: 'error', why: 'Fee rate is 10× the account’s tier (0.75%) — looks like a misplaced decimal.', want: '0.75%' },
+      { id: 'source', name: 'Doesn’t match source', sev: 'error', why: 'Price differs from the 30-Sep pricing file for TMKT (268.40).', want: '268.40' },
+      { id: 'format', name: 'Wrong format', sev: 'warning', why: 'Letter O instead of zero — account IDs follow AC-#####.', want: 'AC-10044' },
+      { id: 'date', name: 'Invalid date', sev: 'error', why: '31 September doesn’t exist; every other row is 30-Sep-2026.', want: '30-Sep-2026' },
+      { id: 'missing', name: 'Missing value', sev: 'warning', why: 'Advisor is required. The same account on the row above is S. Kapoor.', want: 'S. Kapoor' },
+      { id: 'bounds', name: 'Out of range', sev: 'warning', why: 'Units can’t be negative for a holding.', want: '150' },
+      { id: 'dup', name: 'Duplicate row', sev: 'note', why: 'Same account, security, units and price as an earlier row.', want: 'Delete this row' },
+      { id: 'other', name: 'Other', sev: 'warning', why: 'Say in plain words what’s wrong.', want: 'What the cell should contain' }
+    ];
+    var typeId = S.type || 'value';
+    var cur = T.filter(function (x) { return x.id === typeId; })[0] || T[0];
+    var sev = S.sev || cur.sev;
+    var why = S.why !== undefined ? S.why : (composeProp ? cur.why : '');
+    var want = S.want !== undefined ? S.want : (composeProp ? cur.want : '');
+    var types = T.map(function (x) { return { id: x.id, name: x.name, on: x.id === typeId }; });
+    var sevs = ['error', 'warning', 'note'].map(function (id) { var s = SV[id]; return { name: s.name, g: s.g, gc: s.gc, on: id === sev, cls: id === sev ? 'on' : '', pick: function () { set({ sev: id }); } }; });
+    var foundRaw = orig(sheet, sel);
+    function addIssue() {
+      var it = { n: maxN + 1, sheet: sheet, col: selCol, row: selRow, ref: sel, range: sel, sev: sev, type: cur.name, found: foundRaw || '(blank)', want: want, why: why, when: 'just now', wholeRow: false, done: false, changed: false };
+      set({ issues: issues.concat([it]), composing: false, why: '', want: '', applyFix: false });
+    }
+
+    var open = { error: 0, warning: 0, note: 0 };
+    issues.forEach(function (i) { if (!i.done) open[i.sev]++; });
+    var tabs = file === 'csv' ? [] : ['Holdings', 'Fee tiers'].map(function (nm) {
+      var cnt = isEdit ? issues.filter(function (i) { return i.sheet === nm && !i.done; }).length : 0;
+      return { name: nm, cls: 'stab' + (nm === sheet ? ' on' : ''), hasCnt: cnt > 0, cnt: cnt, pick: function () { set({ sheet: nm, sel: 'A1', composing: false }); } };
+    });
+    var selK = sheet + '!' + sel;
+    var nChanges = Object.keys(changes).length;
+    var selIsMerge = !!sh.title && sel === 'A1';
+    var h = parseInt(p.height, 10) || 700;
+
+    return {
+      rootCls: 'sp' + (isPopup ? ' sp-popup' : ''),
+      rootStyle: 'height:' + h + 'px;font-family:var(--sans);color:var(--ink)',
+      fileName: file === 'csv' ? 'holdings-q3.csv' : 'Client holdings — Q3 2026.xlsx',
+      fileMeta: file === 'csv' ? 'csv · 9 KB · comma' : 'xlsx · 48 KB · 2 sheets',
+      isView: !isEdit, isEdit: isEdit, isPopup: isPopup, linked: linked && isEdit,
+      viewCls: isEdit ? '' : 'on', editCls: isEdit ? 'on' : '',
+      toView: function () { set({ mode: 'view', composing: false }); },
+      toEdit: function () { set({ mode: 'edit' }); },
+      cnt: open,
+      selRef: selIsMerge ? 'A1:' + L[nc - 1] + '1' : sel,
+      selText: shown(sheet, sel) || '(empty)',
+      selIsMerge: selIsMerge, selMergeRange: 'A1:' + L[nc - 1] + '1',
+      selChanged: changes[selK] !== undefined, selWas: orig(sheet, sel) || '(blank)',
+      selHasIssue: !!selIssue, selIssue: selIssue ? { n: selIssue.n, g: SV[selIssue.sev].g, chip: SV[selIssue.sev].chip } : { n: '', g: '', chip: '' },
+      linkedComposing: linked && composing,
+      cols: L.slice(0, nc).map(function (l, j) { return { l: l, w: 'width:' + sh.W[j] + 'px' }; }),
+      rows: rows, pins: pins,
+      showPending: composing && isData, nextN: maxN + 1,
+      pendingPos: 'top:' + (top(selRow) - 8) + 'px;left:' + ((X[selCol] || 52) - 6) + 'px;background:#fff;color:var(--accent);box-shadow:0 0 0 1.5px var(--accent)',
+      showSelbar: showSelbar, selbarPos: 'top:' + sbTop + 'px;left:' + sbLeft + 'px',
+      startCompose: function () { set({ composing: true, why: '', want: '', type: 'value', sev: 'error', applyFix: false }); },
+      showCallout: !!co, co: co || { pos: '', g: '', gc: '', type: '', range: '', found: '', want: '', why: '', meta: '', doneLabel: '' },
+      prev: go(-1), next: go(1),
+      toggleDone: function () { if (!selIssue) return; set({ issues: issues.map(function (i) { if (i.n !== selIssue.n) return i; var o = {}; Object.keys(i).forEach(function (k) { o[k] = i[k]; }); o.done = !i.done; return o; }) }); },
+      deleteIssue: function () { if (!selIssue) return; set({ issues: issues.filter(function (i) { return i.n !== selIssue.n; }) }); },
+      showInline: composing && !linked && isData,
+      inlinePos: sidePos(selCol || 'A', sh.W[L.indexOf(selCol)] || 84, selRow, 330, 360),
+      foundText: foundRaw || '(blank)',
+      types: types, typeId: typeId, sevs: sevs, ex: cur, why: why, want: want,
+      onType: function (e) { var t = T.filter(function (x) { return x.id === e.target.value; })[0]; set({ type: t.id, sev: t.sev }); },
+      onWhy: function (e) { set({ why: e.target.value }); },
+      onWant: function (e) { set({ want: e.target.value }); },
+      cancelCompose: function () { set({ composing: false }); },
+      addIssue: addIssue,
+      hasTabs: file !== 'csv', tabs: tabs, sheet: sheet,
+      dims: sh.data.length + ' rows × ' + nc + ' columns' + (sh.title ? ' · 1 merged range' : ''),
+      cellEditable: isEdit && !composing && isData,
+      cellReadonly: !(isEdit && !composing && isData),
+      cellVal: shown(sheet, sel),
+      onCell: function (e) {
+        var v = e.target.value, ch = {};
+        Object.keys(changes).forEach(function (k) { ch[k] = changes[k]; });
+        if (v === orig(sheet, sel)) delete ch[selK]; else ch[selK] = v;
+        set({ changes: ch, exportNote: '' });
+      },
+      revertCell: function () {
+        var ch = {};
+        Object.keys(changes).forEach(function (k) { if (k !== selK) ch[k] = changes[k]; });
+        set({ changes: ch, exportNote: '' });
+      },
+      changesLabel: nChanges === 0 ? 'No changes yet' : nChanges + (nChanges === 1 ? ' change' : ' changes') + ' in memory',
+      exportLabel: file === 'csv' ? 'Export .csv' : 'Export .xlsx',
+      doExport: function () { set({ exportNote: 'Exported with ' + nChanges + (nChanges === 1 ? ' change' : ' changes') + ' — latest values' }); },
+      memNote: S.exportNote ? S.exportNote : (nChanges ? '· ' + nChanges + (nChanges === 1 ? ' cell change' : ' cell changes') + ' kept in memory until you export' : '')
+    };
+  }
+}
+</script>
+</body>
+</html>

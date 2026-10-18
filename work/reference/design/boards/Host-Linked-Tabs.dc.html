@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Host app — Errors and Excel in different tabs</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2346C8}a:hover{color:#1A36A0}
+</style>
+</helmet>
+<div class="ps" style="background: #F3F4F6">
+<header class="host-hd">
+<span class="host-logo">[Your app]</span>
+<nav class="row" style="gap: 20px" aria-label="Main">
+<a class="small" href="#" style="color: #4B5563; text-decoration: none">Dashboard</a>
+<a class="small" href="#" style="color: #111827; text-decoration: none; font-weight: 500">Approvals</a>
+</nav>
+</header>
+<main class="wrap stack" style="gap: 16px; max-width: 1440px">
+<div class="row" style="gap: 12px; flex-wrap: wrap">
+<div class="stack" style="gap: 4px">
+<span class="xs faint">Approvals / Q3 2026</span>
+<h1 class="h2">Quarterly holdings — sign-off</h1>
+</div>
+<span class="chip chip-warn">Returned with errors</span>
+<span class="spacer"></span>
+<button class="btn btn-p" type="button">Approve</button>
+</div>
+
+<div class="panel" style="overflow: hidden">
+<div class="host-tabs" role="tablist" aria-label="Sign-off sections" style="padding: 0 12px">
+<button class="{{tabErrCls}}" type="button" role="tab" aria-selected="{{onErr}}" onClick="{{showErr}}" style="background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer">Errors</button>
+<button class="{{tabFileCls}}" type="button" role="tab" aria-selected="{{onFile}}" onClick="{{showFile}}" style="background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer">Holdings file</button>
+<button class="host-tab" type="button" role="tab" aria-selected="false" style="background: none; border-top: 0; border-left: 0; border-right: 0; cursor: pointer">History</button>
+</div>
+<div style="padding: 16px; background: #F9FAFB">
+<sc-if value="{{onErr}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div class="stack" style="flex: 1 1 420px; max-width: 560px; gap: 10px">
+<span class="pkg-tag" style="align-self: flex-start">&lt;SheetPaneErrors pane={pane} onReveal={() =&gt; setTab('file')} /&gt;</span>
+<dc-import name="Errors" file="xlsx" height="620" sel="A3" shared="{{shared}}" on-shared="{{update}}" on-reveal="{{reveal}}" hint-size="100%,620px"></dc-import>
+</div>
+<div class="panel panel-bd stack" style="flex: 1 1 300px; max-width: 420px; gap: 10px">
+<span class="h4">Same pane, different tabs</span>
+<p class="small muted">The approver reads errors here without the sheet on screen. <strong>Show in sheet</strong> on any error fires <span class="mono xs">onReveal</span>; your app switches to the Holdings file tab and the sheet opens on that cell.</p>
+<p class="xs faint">Resolve here and the pin in the sheet turns ✓ — both read one shared pane.</p>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{onFile}}" hint-placeholder-val="{{false}}">
+<div class="stack" style="gap: 10px">
+<span class="pkg-tag" style="align-self: flex-start">&lt;SheetPaneExcel pane={pane} mode="edit" /&gt;</span>
+<dc-import name="Sheetpane" mode="edit" display="tab" file="xlsx" height="620" sel="A3" shared="{{shared}}" on-shared="{{update}}" hint-size="100%,620px"></dc-import>
+</div>
+</sc-if>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var tab = st.hostTab || 'errors';
+    return {
+      shared: st,
+      update: function (o) { self.setState(o); },
+      reveal: function () { self.setState({ hostTab: 'file' }); },
+      onErr: tab === 'errors', onFile: tab === 'file',
+      tabErrCls: 'host-tab' + (tab === 'errors' ? ' on' : ''),
+      tabFileCls: 'host-tab' + (tab === 'file' ? ' on' : ''),
+      showErr: function () { self.setState({ hostTab: 'errors' }); },
+      showFile: function () { self.setState({ hostTab: 'file' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -28,6 +28,7 @@ better off. Every file has a trigger that says when it must change.
 | [`open/`](open/README.md) | one detail file per open `W-nn` | opened with the item, **archived** with it |
 | [`compare/`](compare/README.md) | live forks — verdict + reopen-trigger | a fork opens, closes, or its trigger fires |
 | [`proposals/`](proposals/README.md) | parked ideas, not adopted | filed, graduates, or rejected |
+| [`reference/`](reference/README.md) | downloaded specs and the design snapshot a builder reads — reference, never the spec | a reference doc is added, removed or refreshed |
 
 **Records live in [`../records/`](../records/README.md), and nowhere else.**
 

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Host app — Excel in a tab, Errors in the side column</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2346C8}a:hover{color:#1A36A0}
+</style>
+</helmet>
+<div class="ps" style="background: #F3F4F6">
+<header class="host-hd">
+<span class="host-logo">[Your app]</span>
+<nav class="row" style="gap: 20px" aria-label="Main">
+<a class="small" href="#" style="color: #4B5563; text-decoration: none">Dashboard</a>
+<a class="small" href="#" style="color: #111827; text-decoration: none; font-weight: 500">Uploads</a>
+<a class="small" href="#" style="color: #4B5563; text-decoration: none">Clients</a>
+</nav>
+</header>
+<main class="wrap stack" style="gap: 16px; max-width: 1440px">
+<div class="row" style="gap: 12px; flex-wrap: wrap">
+<div class="stack" style="gap: 4px">
+<span class="xs faint">Uploads / Q3 2026</span>
+<h1 class="h2">Quarterly holdings upload</h1>
+</div>
+<span class="chip chip-info">In review · Arpit</span>
+<span class="spacer"></span>
+<button class="btn" type="button">Send back to uploader</button>
+<button class="btn btn-p" type="button">Submit review</button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div class="panel" style="overflow: hidden; flex: 999 1 720px; min-width: 0">
+<nav class="host-tabs" aria-label="Upload sections" style="padding: 0 12px">
+<a class="host-tab" href="#">Overview</a>
+<a class="host-tab on" href="#" aria-current="page">Holdings file</a>
+<a class="host-tab" href="#">Documents</a>
+<a class="host-tab" href="#">Activity</a>
+</nav>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #F9FAFB">
+<span class="pkg-tag" style="align-self: flex-start">&lt;SheetPaneExcel pane={pane} mode="edit" height={660} /&gt;</span>
+<dc-import name="Sheetpane" mode="edit" display="tab" file="xlsx" height="660" sel="I6" compose="true" seed="two" shared="{{shared}}" on-shared="{{update}}" hint-size="100%,660px"></dc-import>
+</div>
+</div>
+
+<aside class="stack" aria-label="Review column" style="flex: 1 1 340px; max-width: 380px; gap: 10px">
+<div class="panel panel-bd stack" style="gap: 6px">
+<span class="h4">Your page's own side column</span>
+<p class="xs muted">The host decides where errors live. Here they sit outside the tab, next to the Submit button.</p>
+</div>
+<span class="pkg-tag" style="align-self: flex-start">&lt;SheetPaneErrors pane={pane} /&gt;</span>
+<dc-import name="Errors" file="xlsx" height="640" sel="I6" compose="true" seed="two" shared="{{shared}}" on-shared="{{update}}" hint-size="100%,640px"></dc-import>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    return { shared: this.state || {}, update: function (o) { self.setState(o); } };
+  }
+}
+</script>
+</body>
+</html>

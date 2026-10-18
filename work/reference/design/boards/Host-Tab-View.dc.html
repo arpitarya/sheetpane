@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Host app — sheetpane in a tab, View</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2346C8}a:hover{color:#1A36A0}
+</style>
+</helmet>
+<div class="ps" style="background: #F3F4F6">
+<header class="host-hd">
+<span class="host-logo">[Your app]</span>
+<nav class="row" style="gap: 20px" aria-label="Main">
+<a class="small" href="#" style="color: #4B5563; text-decoration: none">Dashboard</a>
+<a class="small" href="#" style="color: #111827; text-decoration: none; font-weight: 500">Uploads</a>
+<a class="small" href="#" style="color: #4B5563; text-decoration: none">Clients</a>
+</nav>
+</header>
+<main class="wrap stack" style="gap: 16px; max-width: 1440px">
+<div class="row" style="gap: 12px; flex-wrap: wrap">
+<div class="stack" style="gap: 4px">
+<span class="xs faint">Uploads / Q3 2026</span>
+<h1 class="h2">Quarterly holdings upload</h1>
+</div>
+<span class="chip chip-warn">Waiting for review</span>
+<span class="spacer"></span>
+<button class="btn" type="button">Replace file</button>
+<a class="btn btn-p" href="Host-Tab-Edit.dc.html">Start review</a>
+</div>
+<div class="panel" style="overflow: hidden">
+<nav class="host-tabs" aria-label="Upload sections" style="padding: 0 12px">
+<a class="host-tab" href="#">Overview</a>
+<a class="host-tab on" href="#" aria-current="page">Holdings file</a>
+<a class="host-tab" href="#">Documents</a>
+<a class="host-tab" href="#">Activity</a>
+</nav>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #F9FAFB">
+<span class="pkg-tag" style="align-self: flex-start">&lt;SheetPaneExcel src={file} mode="view" height={640} /&gt; — used alone, no Errors</span>
+<dc-import name="Sheetpane" mode="view" display="tab" file="xlsx" height="640" sel="H6" hint-size="100%,640px"></dc-import>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,3 +1,8 @@
 .claude/.locks/
 .claude/.stop-attempts
 .claude/.progress-nudged
+
+# third-party documents that may not be redistributed — fetched locally, see work/reference/README.md
+work/reference/specs/**/_local/
+node_modules/
+dist/

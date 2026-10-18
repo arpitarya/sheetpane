@@ -1,0 +1,38 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-18T08:35:00Z"},
+  "title": "sheetpane — Excel viewer & editor package",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1760, "title": "sheetpane — one package, two linked components: modes, placements, API"},
+    "Sheetpane.dc.html": {"x": 1520, "y": 0, "w": 1240, "h": 700, "title": "<SheetPaneExcel> — the sheet", "is_interactive": true},
+    "Errors.dc.html": {"x": 2840, "y": 0, "w": 380, "h": 700, "title": "<SheetPaneErrors> — the errors", "is_interactive": true},
+    "Host-Tab-View.dc.html": {"x": 0, "y": 2300, "w": 1440, "h": 940, "title": "In a tab · View (Excel only)", "expand": "fill", "is_interactive": true},
+    "Host-Tab-Edit.dc.html": {"x": 1520, "y": 2300, "w": 1440, "h": 940, "title": "In a tab · Edit — Excel in the tab, Errors in the page's side column", "expand": "fill", "is_interactive": true},
+    "Host-Linked-Tabs.dc.html": {"x": 3040, "y": 2300, "w": 1440, "h": 940, "title": "Linked across tabs — Errors in one tab, Excel in another", "expand": "fill", "is_interactive": true},
+    "Host-Popup-View.dc.html": {"x": 0, "y": 3780, "w": 1440, "h": 900, "title": "In a pop-up · View (.csv)", "expand": "fill", "is_interactive": true},
+    "Host-Popup-Edit.dc.html": {"x": 1520, "y": 3780, "w": 1440, "h": 900, "title": "In a pop-up · Edit — both components side by side", "expand": "fill", "is_interactive": true},
+    "View-Upload.dc.html": {"x": 0, "y": 5220, "w": 1440, "h": 980, "title": "Load an .xlsx or .csv + states", "expand": "fill"},
+    "Edit-Examples.dc.html": {"x": 1520, "y": 5220, "w": 1440, "h": 1080, "title": "Edit · error types, with examples"}
+  },
+  "order": [
+    "Main.dc.html",
+    "Sheetpane.dc.html",
+    "Errors.dc.html",
+    "Host-Tab-View.dc.html",
+    "Host-Tab-Edit.dc.html",
+    "Host-Linked-Tabs.dc.html",
+    "Host-Popup-View.dc.html",
+    "Host-Popup-Edit.dc.html",
+    "View-Upload.dc.html",
+    "Edit-Examples.dc.html"
+  ],
+  "notes": {
+    "t-top": {"x": 0, "y": -300, "text": "sheetpane — <SheetPaneExcel> + <SheetPaneErrors> · .xlsx and .csv", "kind": "title1", "maxW": 3220},
+    "t-tab": {"x": 0, "y": 2020, "text": "Placed in tabs of the host app", "kind": "title1", "maxW": 4480},
+    "t-pop": {"x": 0, "y": 3500, "text": "Placed in a pop-up over the host app", "kind": "title1", "maxW": 2960},
+    "t-more": {"x": 0, "y": 4940, "text": "Loading, states, and what Edit can call out", "kind": "title1", "maxW": 2960}
+  },
+  "designSystems": []
+}

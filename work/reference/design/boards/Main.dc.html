@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>sheetpane — one package, two components</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2346C8}a:hover{color:#1A36A0}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; height: 1760px; min-height: 0; padding: 56px 64px; gap: 36px; overflow: hidden">
+
+<header style="display: flex; flex-direction: column; gap: 14px">
+<div class="row" style="gap: 12px; flex-wrap: wrap">
+<div class="brand" style="font-size: 18px"><svg viewBox="0 0 24 24" aria-hidden="true" style="width: 24px; height: 24px"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3 9h18M9 9v12" stroke="currentColor" stroke-width="1.75" fill="none"/><rect x="13" y="13" width="5" height="5" rx="1" fill="currentColor"/></svg>sheetpane</div>
+<span class="chip mono" style="font-family: var(--mono)">npm i sheetpane</span>
+<span class="chip">1 package · 2 components</span>
+<span class="chip">.xlsx · .csv</span>
+<span class="chip chip-info">Same look as PDF Suite (Proof)</span>
+</div>
+<h1 class="h1" style="font-size: 40px; max-width: 1080px">Two components you place anywhere — linked behind the scenes.</h1>
+<p class="muted" style="font-size: 16px; max-width: 940px"><strong>SheetPaneExcel</strong> shows the file and lets people flag a cell. <strong>SheetPaneErrors</strong> lists what was flagged and holds the form. Put them in the same tab, different tabs, or a pop-up. They always share one <span class="mono small">pane</span>, so they act as one.</p>
+</header>
+
+<section style="display: grid; grid-template-columns: minmax(0, 1fr) 300px minmax(0, 1fr); gap: 0; align-items: center">
+<div class="mode" style="gap: 10px">
+<div class="row" style="gap: 10px"><span class="num">1</span><span class="h2 mono" style="font-family: var(--mono); font-size: 18px">&lt;SheetPaneExcel&gt;</span></div>
+<p class="small muted">The sheet. View or Edit. Cells as plain text, merged and centred cells, sheet tabs, find, zoom. In Edit, typed values stay in memory and Export writes the latest values.</p>
+<p class="xs faint">Alone in Edit: the error form opens next to the cell.</p>
+<a class="xs" href="Sheetpane.dc.html">Component board →</a>
+</div>
+<div class="stack" style="gap: 6px; align-items: center; padding: 0 16px">
+<span class="over">same pane</span>
+<div style="width: 100%; display: flex; align-items: center; gap: 0"><span style="flex: 1; height: 2px; background: var(--ink)"></span><span class="panel" style="padding: 10px 12px; text-align: center; border-color: var(--ink); border-width: 1.5px"><span class="mono xs" style="font-weight: 600">pane</span><br><span class="xs faint">file · selection · errors · mode · sheet · cell changes</span></span><span style="flex: 1; height: 2px; background: var(--ink)"></span></div>
+<span class="xs faint">useSheetPane() · or pane="id"</span>
+</div>
+<div class="mode" style="gap: 10px">
+<div class="row" style="gap: 10px"><span class="num">2</span><span class="h2 mono" style="font-family: var(--mono); font-size: 18px">&lt;SheetPaneErrors&gt;</span></div>
+<p class="small muted">The errors. Filter by severity, Found → Should be, resolve, delete. The New error form lives here.</p>
+<p class="xs faint">Always linked to its SheetPaneExcel through the same pane.</p>
+<a class="xs" href="Errors.dc.html">Component board →</a>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+<div class="stack" style="gap: 12px">
+<span class="over">What the link does</span>
+<div class="panel">
+<table class="tbl">
+<thead><tr><th>You do</th><th>SheetPaneExcel</th><th>SheetPaneErrors</th></tr></thead>
+<tbody>
+<tr><td class="small">Select a cell</td><td class="small">Cell outlined</td><td class="small">Its error, if any, is highlighted</td></tr>
+<tr><td class="small">Flag issue</td><td class="small">Dashed pin on the cell</td><td class="small">New error form opens</td></tr>
+<tr><td class="small">Add error</td><td class="small">Numbered pin, row glyph</td><td class="small">Added to the list</td></tr>
+<tr><td class="small">Click an error</td><td class="small">Jumps to the cell, callout opens</td><td class="small">Row expands</td></tr>
+<tr><td class="small">Resolve</td><td class="small">Pin turns ✓</td><td class="small">Struck through, counts drop</td></tr>
+<tr><td class="small">Type a new value</td><td class="small">Cell updates, corner mark, kept in memory</td><td class="small">Found stays the original value</td></tr>
+<tr><td class="small">Show in sheet</td><td class="small" colspan="2">Fires onReveal so your app can switch tab or open the pop-up</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="stack" style="gap: 12px">
+<span class="over">Where the boards place them</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<a class="step" href="Host-Tab-View.dc.html" style="text-decoration: none; color: inherit"><span class="h4">Tab · View</span><p class="xs muted">Excel only, inside a tab.</p></a>
+<a class="step" href="Host-Tab-Edit.dc.html" style="text-decoration: none; color: inherit"><span class="h4">Tab · Edit</span><p class="xs muted">Excel in the tab, Errors in your page's side column.</p></a>
+<a class="step" href="Host-Linked-Tabs.dc.html" style="text-decoration: none; color: inherit"><span class="h4">Across tabs</span><p class="xs muted">Errors in one tab; Show in sheet switches to the Excel tab.</p></a>
+<a class="step" href="Host-Popup-Edit.dc.html" style="text-decoration: none; color: inherit"><span class="h4">Pop-up · Edit</span><p class="xs muted">Both side by side inside one pop-up.</p></a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<div class="step"><span class="h4">Opens</span><p class="xs muted">.xlsx (every sheet) and .csv, from a File, URL, base64 or ArrayBuffer.</p></div>
+<div class="step"><span class="h4">Shows</span><p class="xs muted">Plain-text cells as stored, merged and centred cells, column widths.</p></div>
+<div class="step"><span class="h4">Leaves out</span><p class="xs muted">Formulas (saved value only), styling, charts, .xls and other formats.</p></div>
+</div>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+<div class="stack" style="gap: 12px">
+<span class="over">Install and place them — React</span>
+<pre class="code">import { useSheetPane, SheetPaneExcel, SheetPaneErrors } from 'sheetpane';
+import 'sheetpane/style.css';
+
+const pane = useSheetPane({ src: file, errors: saved });
+
+// Anywhere in your layout — same pane, so they're linked
+&lt;Tab title="Holdings file"&gt;
+  &lt;SheetPaneExcel pane={pane} mode="edit" height={640} /&gt;
+&lt;/Tab&gt;
+&lt;aside&gt;
+  &lt;SheetPaneErrors pane={pane} onReveal={() =&gt; setTab('file')} /&gt;
+&lt;/aside&gt;
+
+pane.on('errors', saveDraft);   // every add, edit, resolve, delete
+pane.export();                  // .xlsx or .csv with the latest values in memory
+
+// The sheet also works on its own (View, or Edit with its own form)
+&lt;SheetPaneExcel src={file} display="popup" open onClose={close} /&gt;
+
+// Web components link by id
+&lt;sheetpane-excel pane="q3" src="/files/holdings.xlsx"&gt;&lt;/sheetpane-excel&gt;
+&lt;sheetpane-errors pane="q3"&gt;&lt;/sheetpane-errors&gt;</pre>
+<span class="over" style="margin-top: 6px">One error — what pane.on('errors') gives you</span>
+<pre class="code">{
+  "id": "ERR-0003",
+  "sheet": "Holdings",
+  "range": "I6",
+  "type": "wrong-value",
+  "severity": "error",
+  "found": "7.5%",
+  "expected": "0.75%",
+  "message": "Fee rate is 10× the account tier — misplaced decimal.",
+  "cellChanged": false,
+  "status": "open",
+  "author": "Arpit"
+}</pre>
+</div>
+
+<div class="stack" style="gap: 12px">
+<span class="over">&lt;SheetPaneExcel&gt; props</span>
+<div class="panel">
+<table class="tbl">
+<tbody>
+<tr><td class="mono small">pane</td><td class="small">Link to a SheetPaneErrors. Optional.</td></tr>
+<tr><td class="mono small">src</td><td class="small">.xlsx or .csv — only when used without a pane.</td></tr>
+<tr><td class="mono small">mode · modes</td><td class="small">"view" | "edit"; modes hides Edit for read-only users.</td></tr>
+<tr><td class="mono small">display · open · onClose</td><td class="small">"tab" or "popup".</td></tr>
+<tr><td class="mono small">height</td><td class="small">Tab only.</td></tr>
+<tr><td class="mono small">allowCellChanges</td><td class="small">Let Edit change cell values (kept in memory).</td></tr>
+<tr><td class="mono small">onExport</td><td class="small">Export button — .xlsx/.csv with the latest values.</td></tr>
+</tbody>
+</table>
+</div>
+<span class="over" style="margin-top: 6px">&lt;SheetPaneErrors&gt; props</span>
+<div class="panel">
+<table class="tbl">
+<tbody>
+<tr><td class="mono small">pane</td><td class="small">Required — the same pane as its SheetPaneExcel.</td></tr>
+<tr><td class="mono small">errorTypes</td><td class="small">Your catalog; defaults to seven types.</td></tr>
+<tr><td class="mono small">readOnly</td><td class="small">List only: no form, no resolve (sign-off view).</td></tr>
+<tr><td class="mono small">onReveal</td><td class="small">“Show in sheet” — switch tab or open the pop-up.</td></tr>
+</tbody>
+</table>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 6px">
+<div class="step"><span class="h4">Edits stay in memory</span><p class="xs muted">Every typed value lives in the pane; Export writes the latest values.</p></div>
+<div class="step"><span class="h4">Order doesn't matter</span><p class="xs muted">Mount either first; they find each other through the pane.</p></div>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ description: "The SR register: the convention, the ownership table, and the stat
 
 **How to use this file.** The naming convention, the record shape, the
 ownership table and the rules every record obeys. Read it before writing a
-record, before citing one, and before adding a module under `scripts/` and `.claude/hooks/` (sheetpane has no package code yet; the first code directory gets its Ownership row in the change that adds it).
+record, before citing one, and before adding a module under `scripts/` and `.claude/hooks/` and the package code — the root build files and `packages/` — owned by their open `W-nn` items until each writes its record.
 
 One record per completed feature or ruled measurement. **Every record is cited
 by NAME in prose, never by number.**
@@ -48,7 +48,7 @@ record to become wrong?*
 
 | range | holds | a new record takes |
 |---|---|---|
-| `0001`–`0050` | the **Law** records only — `0001` SR-LAWS, `0002` SR-LAW-0, `0003` SR-LAW-1 | the next free number after the highest law |
+| `0001`–`0050` | the **Law** records only — `0001` SR-LAWS, `0002` SR-LAW-0, `0003` SR-LAW-1, `0004` SR-LAW-2, `0005` SR-LAW-3, `0006` SR-LAW-4, `0007` SR-LAW-5, `0008` SR-LAW-6, `0009` SR-LAW-7, `0010` SR-LAW-8, `0011` SR-LAW-9 | the next free number after the highest law |
 | `0051`–`0100` | the **WORK** records only — how work is done | the next free number after the highest |
 | `0101`– | every other record | the next free number after the highest |
 
@@ -104,6 +104,14 @@ Start from `TEMPLATE.md`.
 | [0001](0001_LAWS.md) | **SR-LAWS** | The laws have exactly one home each; this record routes the handles | accepted | yes |
 | [0002](0002_LAW-0-authority.md) | **SR-LAW-0** | **L0** — records are the only source of truth; Law records outrank every other record | accepted | yes |
 | [0003](0003_LAW-1-retired-records-archived.md) | **SR-LAW-1** | **L1** — a retired record is archived, never deleted | accepted | yes |
+| [0004](0004_LAW-2-foss-dependencies.md) | **SR-LAW-2** | **L2** — every dependency is free and open source | accepted | no — nothing checks it yet (B-008) |
+| [0005](0005_LAW-3-xlsx-and-csv-only.md) | **SR-LAW-3** | **L3** — sheetpane supports XLSX and CSV only | accepted | no — no code yet (B-009) |
+| [0006](0006_LAW-4-web-component.md) | **SR-LAW-4** | **L4** — sheetpane is always a web component | accepted | no — no code yet (B-012) |
+| [0007](0007_LAW-5-host-font.md) | **SR-LAW-5** | **L5** — the font is the browser's default unless the host sets one | accepted | no — no code yet (B-015) |
+| [0008](0008_LAW-6-edits-in-memory-export-with-changes.md) | **SR-LAW-6** | **L6** — every change is held in memory and export carries it | accepted | no — no code yet (B-017) |
+| [0009](0009_LAW-7-surfaces-always-in-sync.md) | **SR-LAW-7** | **L7** — the view, edit and error components are always in sync | accepted | no — no code yet (B-020) |
+| [0010](0010_LAW-8-npm-package.md) | **SR-LAW-8** | **L8** — sheetpane is consumed as an npm package | accepted | no — no `package.json` yet (B-023) |
+| [0011](0011_LAW-9-memory-is-a-javascript-object.md) | **SR-LAW-9** | **L9** — memory means a JavaScript object, for now | accepted | yes — nothing stores data yet; L6's veto command checks it |
 | [0051](0051_WORK-open-queue.md) | **SR-WORK-OPEN-QUEUE** | How `OPEN-WORK.md` works — the queue discipline in ten groups | accepted | yes |
 | [0052](0052_WORK-backlog.md) | **SR-WORK-BACKLOG** | How `BACKLOG.md` works — the named-but-unclaimed in five classes | accepted | yes |
 | [0053](0053_WORK-lifecycle.md) | **SR-WORK-LIFECYCLE** | How a feature travels — compare, proposal, handoff in the item file, the model line, one record | accepted | yes |
@@ -114,13 +122,14 @@ Start from `TEMPLATE.md`.
 | [0058](0058_WORK-ownership.md) | **SR-WORK-OWNERSHIP** | `owns` and `describes`, and the commit guard | accepted | yes |
 | [0059](0059_WORK-governance.md) | **SR-WORK-GOVERNANCE** | The governance map — which file governs what; no counts | accepted | yes |
 | [0060](0060_WORK-registry.md) | **SR-WORK-REGISTRY** | The doc registry — rules in §2, the table in §3 | accepted | yes |
+| [0101](0101_DOWNLOAD.md) | **SR-DOWNLOAD** | `download()` — export output in, a saved `.xlsx` or `.csv` out | proposed | no — not built (W-12); home package waits on W-08 |
 
 ---
 
 ## Ownership — which record owns which component
 
 **This table is the answer, not a judgement call.** Every component under
-`scripts/` and `.claude/hooks/` (sheetpane has no package code yet; the first code directory gets its Ownership row in the change that adds it) appears here exactly once. Most specific wins; a carve-out is
+`scripts/` and `.claude/hooks/` and the package code — the root build files and `packages/` — owned by their open `W-nn` items until each writes its record appears here exactly once. Most specific wins; a carve-out is
 justified by a *different decision*. A component with no decision yet is owned
 by an open `W-nn`. A record's `owns:` key and this table agree in both
 directions.
@@ -136,6 +145,21 @@ directions.
 | `.claude/hooks/stop-if-blocked.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/session-lock.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/require-progress.sh` | SR-WORK-SESSION | decision 5 |
+| `package.json` | W-04 | the monorepo root — npm workspaces; until the build record exists |
+| `package-lock.json` | W-04 | the workspace lockfile |
+| `tsconfig.base.json` | W-04 | the shared TypeScript settings |
+| `packages/export/` | W-03 | `@sheetpane/export`; until its component record exists |
+| `packages/grid/` | W-01 | `@sheetpane/grid`, the UI package — the sheet and the pane; until its component record exists |
+| `packages/grid/src/errors/` | W-02 | `<SheetPaneErrors>` — a different item from the sheet |
+| `packages/grid/src/plugins/` | W-14 | the plugin host — hooks, slots, descriptors; until W-01's record (or its own) exists |
+| `packages/numfmt/` | W-15 | `@sheetpane/numfmt`, a plugin; until its component record exists |
+| `packages/formulas/` | W-16 | `@sheetpane/formulas`, a plugin; until its component record exists |
+| `packages/styles/` | W-17 | `@sheetpane/styles`, a plugin; until its component record exists |
+| `packages/validation/` | W-18 | `@sheetpane/validation`, a plugin; until its component record exists |
+| `packages/condfmt/` | W-19 | `@sheetpane/condfmt`, a plugin; until its component record exists |
+| `packages/images/` | W-20 | `@sheetpane/images`, a plugin; until its component record exists |
+| `packages/charts/` | W-21 | `@sheetpane/charts`, a plugin; until its component record exists |
+| `packages/comments/` | W-22 | `@sheetpane/comments`, a plugin; until its component record exists |
 
 <!-- OWNERSHIP-TABLE-END -->
 
