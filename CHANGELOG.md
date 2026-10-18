@@ -1,9 +1,39 @@
 # Changelog
 
-Every package is versioned in lockstep (SR-BUILD); nothing is published yet.
+Every package is versioned in lockstep (SR-BUILD): one version for all of
+`@sheetpane/*` and `create-sheetpane`. Each section below is also that
+version's GitHub Release note.
 Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
+
+## 0.2.0 — 2026-10-19
+
+The first release on npm: all 17 packages at `0.2.0`. `v0.1.0` was tagged but
+never published, so this is the first version you can install.
+
+```bash
+npm i @sheetpane/grid
+```
+
+**Before you upgrade:** sheetpane now needs **Node 22 or later** wherever it
+runs in Node: SSR imports, tests, the MCP server, the CLIs. Node 20 is past
+end of life. Browsers are unaffected.
+
+### Release and tooling
+
+- **Published from CI only, with provenance.** A GitHub Release runs
+  `publish.yml`, which publishes nothing unless CI is green on that commit,
+  every version site agrees, and the tag matches the packages. It builds once,
+  checks each tarball (no `src/`, no tests, README and LICENSE present) and
+  publishes over npm trusted publishing (OIDC): no token, with signed
+  provenance. See `RELEASING.md`.
+- **CI on Linux, macOS and Windows × Node 22 and the current LTS.** Each run
+  installs the built tarballs into an empty folder and imports every package
+  from plain Node.
+- **`@sheetpane/mcp` on Windows:** `explain_code` returns the full entry
+  (cause, meaning, fix) when `ERRORS.md` has CRLF line endings.
+- **MIT `LICENSE` in every package.**
 
 ### Changed
 
