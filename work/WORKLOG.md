@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-18 — plugin gallery for the demos: W-32 filed  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"For demo items, I want HTML and React to have multiple tabs with vanilla grid, with different different plugins … and with all plugins … File a work item for this."*
+- **Done:** W-32 filed (🟢, `agent`, build lane): ten tabs in both demos (Vanilla · numfmt · styles · formulas · validation · condfmt · images · charts · comments · All plugins), one generated showcase workbook, per-tab `demo-check` assertions; SR-BUILD decision 11 to be amended. Not committed.
+- **Decided / left open:** read in: each tab its own `pane`; peers (styles for condfmt, images for charts) load with their tab and are labelled; the existing review demo stays; build after W-31 (both touch `demo-check`).
+- **Mistakes:** none.
+- **Next:** W-31, then W-32, in Claude Code.
+
+---
+
 ## 2026-10-18 — selection bar docked, one Download button: canvas redrawn, W-31 filed  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"whenever we click on a cell, there is always this bar … it hides the text behind it. Is there an other way to display it? Then there are two ways to download … It should only be one."*

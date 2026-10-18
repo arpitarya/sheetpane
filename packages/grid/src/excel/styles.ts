@@ -104,11 +104,23 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .pin.pending{background:var(--sp-cell);color:var(--sp-accent);box-shadow:0 0 0 1.5px var(--sp-accent)}
 .badge{position:absolute;font-size:11px;padding:2px 6px;border-radius:4px;background:var(--sp-sunken);color:var(--sp-ink-2);border:1px dashed var(--sp-line-strong);white-space:nowrap}
 .olay{position:absolute;overflow:hidden}
-.selbar{position:absolute;display:flex;gap:2px;padding:3px;background:var(--sp-ink);border-radius:var(--sp-r);box-shadow:var(--sp-shadow);z-index:7}
-.selbar button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:0;border-radius:4px;background:transparent;color:var(--sp-on-solid);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
-.selbar button:hover,.selbar button.on{background:rgba(255,255,255,.16)}
-.selbar svg{width:15px;height:15px}
-.selbar .sep{width:1px;background:rgba(255,255,255,.2);margin:4px 2px}
+.fx{container-type:inline-size}
+.dock{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.dock[hidden]{display:none}
+.dock .plug{display:inline-flex;gap:2px}
+.dock .kbd,.ctxmenu .kbd,.moremenu .kbd{margin-left:6px;font-size:10px;color:var(--sp-ink-3);border:1px solid var(--sp-line);border-radius:3px;padding:0 4px}
+.morewrap{position:relative;display:inline-flex}
+.moremenu{position:absolute;top:calc(100% + 4px);right:0;z-index:9;min-width:180px;padding:4px}
+.ctxmenu{position:absolute;z-index:9;min-width:190px;padding:4px}
+.mi{display:flex;align-items:center;justify-content:space-between;width:100%;height:30px;padding:0 10px;border:0;border-radius:var(--sp-r-sm);background:transparent;color:var(--sp-ink);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.mi:hover,.mi:focus-visible{background:var(--sp-sunken);outline:none}
+.mi[disabled]{color:var(--sp-ink-3);cursor:default}
+/* plugin buttons stay in the bar while it is wide, and fold into ⋯ before Flag issue moves */
+.moremenu .fold{display:none}
+@container (max-width: 720px){.dock .plug{display:none}.moremenu .fold{display:flex}}
+.warn-t{color:var(--sp-warn)}
+.export .badge-n{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--sp-on-solid);color:var(--sp-accent);font-size:11px;font-weight:700;line-height:18px;text-align:center}
+.export .badge-n[hidden]{display:none}
 .kbd{display:inline-block;font-size:11px;padding:2px 5px;border:1px solid rgba(255,255,255,.35);border-radius:4px}
 .card{position:absolute;background:var(--sp-surface);border:1px solid var(--sp-line);border-radius:var(--sp-r-lg);box-shadow:var(--sp-shadow);z-index:8;overflow:hidden;display:flex;flex-direction:column}
 .card .hd{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--sp-line)}

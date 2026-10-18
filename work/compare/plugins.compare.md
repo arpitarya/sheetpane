@@ -100,7 +100,7 @@ it (host font, labels, roving tabindex, `--sp-*` tokens applied once):
 | slot | where | shown |
 |---|---|---|
 | `format-row` | a row under the toolbar | Edit only, **and only if a plugin adds to it** |
-| `selbar` | the floating selection bar beside Flag issue | Edit |
+| `selbar` | docked in the cell bar after Flag issue, and on right-click (W-31; the slot id is unchanged) | Edit |
 | `cellbar` | the cell bar (`fx`, raw value) | both modes |
 | `status` | the status line (Sum · Avg · Count) | both modes |
 | `cell` | inside a rendered cell (a dropdown arrow, a "recalculated" mark) | both modes |

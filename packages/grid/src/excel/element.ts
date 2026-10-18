@@ -16,7 +16,7 @@ import { COL_VIRTUAL_AFTER, HEAD_H, ROWHEAD_W, ROW_H, colAt, mergeAt, sheetGeome
 import { EXCEL_CSS } from './styles.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'orig' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
 
 /** Turns a `src` attribute value into bytes: a data URL, raw base64, or a URL to fetch (a read; nothing is sent). */
@@ -71,7 +71,14 @@ export class SheetpaneExcel extends ElementBase {
 
   // ── the DOM contract: properties ─────────────────────────────────────────
   get workbook(): WorkbookStore | undefined { return this._store; }
-  set workbook(s: WorkbookStore | undefined) { this._explicitStore = s; if (this.isConnected) { this.unbind(); this.bind(); this.schedule(); } }
+  set workbook(s: WorkbookStore | undefined) {
+    this._explicitStore = s;
+    if (!this.isConnected) return;
+    this.unbind(); this.bind();
+    const m = this.getAttribute('mode'); // the element's mode applies to the store it is given, as on connect
+    if (m === 'edit' || m === 'view') this._store!.setMode(m, this);
+    this.schedule();
+  }
   get errors(): SheetpaneError[] { return this._store?.getErrors() ?? []; }
   set errors(list: SheetpaneError[]) { this.setErrors(list); }
   get errorTypes(): readonly ErrorType[] { return this._errorTypes; }
@@ -197,6 +204,7 @@ export class SheetpaneExcel extends ElementBase {
   /** One DOM event per action, on the element where it happened (or the pane's first sheet when nobody owns it). */
   private onStoreEvent(e: StoreEvent): void {
     if (e.type === 'select' && e.origin !== this) this.scrollToSel = true;
+    if (e.type === 'select' || e.type === 'load') { this.ctxOpen = false; this.moreOpen = false; } // a menu belongs to the cell it opened on
     const sheetBefore = this.lastSheet;
     if (e.type === 'load') this.lastSheet = this._store!.getSnapshot().selection.sheet;
     if (e.type === 'select') this.lastSheet = e.sheet;
@@ -243,9 +251,8 @@ export class SheetpaneExcel extends ElementBase {
    <button type="button" class="btn btn-g btn-i redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button>
    <button type="button" class="btn btn-g btn-i freeze" aria-label="Freeze panes at the selected cell" title="Freeze rows above and columns left of the selected cell">${ICON.freeze}</button>
    <span class="xs faint changes"></span>
-   <button type="button" class="btn btn-p export">${ICON.download}<span>Export</span></button>
   </span>
-  <button type="button" class="btn btn-g btn-i orig" aria-label="Download the original file" title="Download the original">${ICON.download}</button>
+  <button type="button" class="btn btn-p export">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button>
   <button type="button" class="btn btn-g btn-i help" aria-label="Keyboard shortcuts" aria-expanded="false" title="Keyboard shortcuts">?</button>
   <button type="button" class="btn btn-g btn-i close" aria-label="Close (Esc)" title="Close">${ICON.close}</button>
  </div>
@@ -259,6 +266,7 @@ export class SheetpaneExcel extends ElementBase {
   <span class="chip chip-info hint">Describe it in the Errors panel</span>
   <span class="chip rulemsg" role="status"></span>
   <span class="plug-cellbar" style="display:contents"></span>
+  <span class="dock" role="toolbar" aria-label="Selection"></span>
  </div>
  <div class="frow" part="format-row" role="toolbar" aria-label="Format"><span class="plug-frow" style="display:contents"></span><slot name="format-row"></slot></div>
  <div class="body">
@@ -274,7 +282,7 @@ export class SheetpaneExcel extends ElementBase {
     const $ = <T extends HTMLElement>(sel: string) => this.shadow.querySelector(sel) as T;
     this.q = {
       root: $('.sp'), dialog: $('dialog'), fname: $('.fname'), meta: $('.meta'), counts: $('.counts'), findin: $('.findin'), findcnt: $('.find .cnt'), zoom: $('.zoom'),
-      editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), orig: $('.orig'), close: $('.close'),
+      editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), close: $('.close'), dock: $('.dock'),
       help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
       grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
@@ -325,11 +333,9 @@ export class SheetpaneExcel extends ElementBase {
     q.undo.addEventListener('click', () => s().undo(this));
     q.redo.addEventListener('click', () => s().redo(this));
     q.freeze.addEventListener('click', () => this.toggleFreeze());
-    q.export.addEventListener('click', async () => {
-      const blob = await this.export();
-      if (this.lastExport?.ok) download(blob, this.lastExport.name);
-    });
-    q.orig.addEventListener('click', () => { const src = s().getSnapshot().source; if (src) download(src.bytes, src.name); });
+    q.export.addEventListener('click', () => void this.downloadFile());
+    q.dock.addEventListener('click', (e) => this.onDockClick(e));
+    q.dock.addEventListener('keydown', (e) => this.onMenuKey(e, '.moremenu'));
     q.help.addEventListener('click', () => { this.helpOpen = !this.helpOpen; q.help.setAttribute('aria-expanded', String(this.helpOpen)); this.schedule(); });
     q.revert.addEventListener('click', () => { const sel = s().getSnapshot().selection; s().revert(sel.sheet, sel.ref, this); });
     // The cell bar edits a draft; Enter, Tab and blur commit it (W-26, events verdict decisions 1–3).
@@ -340,6 +346,7 @@ export class SheetpaneExcel extends ElementBase {
       if (!allowed) { cell.readOnly = true; this.editing = undefined; queueMicrotask(() => q.grid.focus({ preventScroll: true })); return; }
       cell.readOnly = false;
       this.editing = { sheet: sel.sheet, ref: sel.ref, start: cell.value };
+      this.schedule(); // the docked actions step aside while the draft is edited
     });
     cell.addEventListener('input', () => {
       const ed = this.editing;
@@ -360,17 +367,26 @@ export class SheetpaneExcel extends ElementBase {
         q.grid.focus({ preventScroll: true });
       }
     });
-    cell.addEventListener('blur', () => this.commitDraft());
+    cell.addEventListener('blur', () => { this.commitDraft(); this.schedule(); });
     q.grid.addEventListener('paste', (e) => this.onPaste(e as ClipboardEvent));
     q.tabs.addEventListener('click', (e) => { const b = (e.target as Element).closest<HTMLElement>('[data-sheet]'); if (b) { s().select({ sheet: b.dataset.sheet!, ref: 'A1' }, this); this.q.scroller.scrollTo(0, 0); } });
     q.scroller.addEventListener('scroll', () => this.schedule(), { passive: true });
     q.scroller.addEventListener('mousedown', (e) => this.onPointer(e, 'down'));
     q.scroller.addEventListener('mousemove', (e) => { if (this.dragging) this.onPointer(e, 'move'); });
     addEventListener('mouseup', () => { this.dragging = false; });
+    // right-click on a cell: select it and open the selection actions under it (the browser's menu stays everywhere else)
+    q.scroller.addEventListener('contextmenu', (e) => {
+      const c = (e.target as Element).closest<HTMLElement>('.c');
+      if (!c || c.dataset.r === undefined) return;
+      e.preventDefault();
+      this.selectCell(Number(c.dataset.r), Number(c.dataset.c), false);
+      this.openContextMenu();
+    });
     q.scroller.addEventListener('dblclick', (e) => { if ((e.target as Element).closest('.c') && this.mode === 'edit') this.editCell(); });
     q.grid.addEventListener('keydown', (e) => this.onKey(e));
     q.overlay.addEventListener('click', (e) => this.onOverlayClick(e));
     q.overlay.addEventListener('keydown', (e) => {
+      if (this.onMenuKey(e, '.ctxmenu')) return;
       const opt = (e.target as HTMLElement).closest?.('.menu [data-act=pick-option]') as HTMLElement | null;
       if (opt && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); ((e.key === 'ArrowDown' ? opt.nextElementSibling : opt.previousElementSibling) as HTMLElement | null)?.focus(); return; }
       if (opt && e.key === 'Escape') { e.stopPropagation(); this.menu = undefined; this.schedule(); this.q.grid.focus({ preventScroll: true }); return; } if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.addFromComposer(); } if (e.key === 'Escape') { e.stopPropagation(); s().compose(null); this.q.grid.focus({ preventScroll: true }); } });
@@ -471,12 +487,103 @@ export class SheetpaneExcel extends ElementBase {
     s.setCells(cells, { origin: this });
   }
 
+  // ── selection actions (W-31): docked in the cell bar, and on right-click ──
+  private ctxOpen = false;
+  private moreOpen = false;
+  private notice = '';
+  private noticeTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** Copies to the clipboard; without a secure context it says so in the status line. */
+  private copy(text: string): void {
+    const fail = () => { this.notice = 'Copy needs a secure page (https or localhost)'; clearTimeout(this.noticeTimer); this.noticeTimer = setTimeout(() => { this.notice = ''; this.schedule(); }, 4000); this.schedule(); };
+    if (!navigator.clipboard?.writeText) { fail(); return; }
+    navigator.clipboard.writeText(text).catch(fail);
+  }
+
+  private openContextMenu(): void {
+    const s = this._store;
+    if (!s || s.getSnapshot().load.status !== 'ready' || s.getSnapshot().composing) return;
+    this.menu = undefined; this.moreOpen = false; this.ctxOpen = true;
+    this.schedule();
+    requestAnimationFrame(() => this.q.overlay.querySelector<HTMLElement>('.ctxmenu [role=menuitem]:not([disabled])')?.focus({ preventScroll: true }));
+  }
+
+  /** The actions as menu items: Flag issue (Edit), Copy ref, Copy value, then the `selbar` plugin controls. */
+  private actionItems(edit: boolean, err: SheetpaneError | undefined, o: { flag: boolean; plugins: boolean }): string {
+    const s = this._store!, snap = s.getSnapshot();
+    const item = (act: string, label: string, kbd = '') => `<button type="button" role="menuitem" class="mi" data-act="${act}">${esc(label)}${kbd ? `<span class="kbd">${esc(kbd)}</span>` : ''}</button>`;
+    const out = [o.flag && edit && !err ? item('flag', 'Flag issue', 'F') : '', item('copy-ref', 'Copy ref'), item('copy-value', 'Copy value', 'Ctrl/⌘+C')];
+    if (o.plugins && edit) for (const c of controlsFor(s.plugins, 'selbar', 'edit')) {
+      const label = c.labelFor?.(snap, snap.selection) ?? c.label;
+      const off = c.disabled?.(snap, snap.selection) ?? false;
+      out.push(`<button type="button" role="menuitem" class="mi fold" data-control="${esc(c.id)}"${off ? ' disabled' : ''}>${esc(label)}${c.shortcut ? `<span class="kbd">${esc(c.shortcut)}</span>` : ''}</button>`);
+    }
+    return out.join('');
+  }
+
+  private contextMenuHtml(x: number, y: number, edit: boolean, err: SheetpaneError | undefined): string {
+    return `<div class="card ctxmenu" role="menu" aria-label="Selection actions" style="top:${y}px;left:${x}px">${this.actionItems(edit, err, { flag: true, plugins: true })}</div>`;
+  }
+
+  /** Arrow keys move through a menu's items; Esc closes it and returns focus. True when handled. */
+  private onMenuKey(e: KeyboardEvent, sel: string): boolean {
+    const menu = (e.target as Element).closest?.(sel);
+    if (!menu) return false;
+    const items = [...menu.querySelectorAll<HTMLElement>('[role=menuitem]:not([disabled])')].filter((x) => x.offsetParent !== null);
+    const i = items.indexOf(e.target as HTMLElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus(); return true; }
+    if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1]?.focus(); return true; }
+    if (e.key === 'Escape' || e.key === 'Tab') {
+      e.preventDefault(); e.stopPropagation();
+      const fromMore = sel === '.moremenu';
+      this.ctxOpen = false; this.moreOpen = false; this.schedule();
+      if (fromMore) this.q.dock.querySelector<HTMLElement>('[data-act=more]')?.focus(); else this.q.grid.focus({ preventScroll: true });
+      return true;
+    }
+    return false;
+  }
+
+  private onDockClick(e: Event): void {
+    const t = e.target as HTMLElement, s = this._store!, sel = s.getSnapshot().selection;
+    const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
+    if (act === 'more') {
+      this.moreOpen = !this.moreOpen; this.schedule();
+      if (this.moreOpen) requestAnimationFrame(() => this.q.dock.querySelector<HTMLElement>('.moremenu [role=menuitem]')?.focus());
+      return;
+    }
+    if (t.closest('.moremenu')) this.moreOpen = false;
+    if (act === 'flag') this.flag();
+    else if (act === 'copy-ref') this.copy(sel.range ?? sel.ref);
+    else if (act === 'copy-value') this.copy(s.text(sel.sheet, sel.ref));
+    else if (t.closest('[data-control]')) this.runControl(e);
+    this.schedule();
+  }
+
+  /** Untouched: no change, and nothing a plugin would write (a review exported as comments). */
+  private untouched(): boolean {
+    const s = this._store!;
+    return s.changeCount === 0 && !(s.getSnapshot().errors.length && s.plugins.some((p) => p.provides.includes('exportPatch')));
+  }
+
+  /** The one Download button (W-31): the original bytes when untouched, else `export()` with every change. Both fire `sheetpane-export`. */
+  private async downloadFile(): Promise<void> {
+    const s = this._store, src = s?.getSnapshot().source;
+    if (!s || !src) return;
+    if (this.untouched()) {
+      const blob = new Blob([src.bytes as BlobPart], { type: src.kind === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true }, true)) download(src.bytes, src.name);
+      return;
+    }
+    const blob = await this.export();
+    if (this.lastExport?.ok) download(blob, this.lastExport.name);
+  }
+
   /** The grid's keys, then every plugin control's shortcut (W-14 DoD 8). */
   shortcuts(): { keys: string; what: string }[] {
     const own = [
       ['Arrows', 'Move'], ['Shift + arrows', 'Select a range'], ['Home / End', 'Row start / end'], ['Ctrl + Home / End', 'First / last cell'],
       ['Page Up / Down', 'Move a screen'], ['Enter or F2', 'Edit the cell (Edit)'], ['Type', 'Replace the cell (Edit)'], ['Delete', 'Clear the cell (Edit)'],
-      ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value'],
+      ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value'], ['Shift + F10 or Menu', 'Selection actions'],
     ].map(([keys, what]) => ({ keys: keys!, what: what! }));
     const plug = (this._store?.plugins ?? []).flatMap((p) => p.controls ?? []).filter((c) => c.shortcut).map((c) => ({ keys: c.shortcut!, what: c.label }));
     return [...own, ...plug];
@@ -536,7 +643,8 @@ export class SheetpaneExcel extends ElementBase {
     }
     if (mod && (k === 'z' || k === 'Z')) { if (e.shiftKey) s.redo(this); else s.undo(this); }
     else if (mod && (k === 'y' || k === 'Y')) s.redo(this);
-    else if (mod && (k === 'c' || k === 'C')) void navigator.clipboard?.writeText(s.text(snap.selection.sheet, snap.selection.ref)).catch(() => {});
+    else if (mod && (k === 'c' || k === 'C')) this.copy(s.text(snap.selection.sheet, snap.selection.ref));
+    else if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') this.openContextMenu();
     else if (k === 'ArrowDown') this.move(1, 0, e.shiftKey);
     else if (k === 'ArrowUp') this.move(-1, 0, e.shiftKey);
     else if (k === 'ArrowRight') this.move(0, 1, e.shiftKey);
@@ -558,6 +666,7 @@ export class SheetpaneExcel extends ElementBase {
   private escape(): boolean {
     const s = this._store;
     if (this.menu) { this.menu = undefined; this.schedule(); return true; }
+    if (this.ctxOpen || this.moreOpen) { this.ctxOpen = false; this.moreOpen = false; this.schedule(); return true; }
     if (s?.getSnapshot().composing) { s.compose(null); return true; }
     if (this.findText) { (this.q.findin as HTMLInputElement).value = ''; this.findText = ''; this.findHits = []; this.schedule(); return true; }
     return false;
@@ -647,13 +756,15 @@ export class SheetpaneExcel extends ElementBase {
     const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
     const pin = t.closest<HTMLElement>('[data-pin]');
     if (pin) { const err = snap.errors.find((x) => x.id === pin.dataset.pin); if (err) { const r = parseRange(err.range)!; this.anchor = { row: r.top, col: r.left }; s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); } return; }
+    const inCtx = !!t.closest('.ctxmenu');
+    if (inCtx) { this.ctxOpen = false; this.schedule(); queueMicrotask(() => this.q.grid.focus({ preventScroll: true })); }
     if (!act) { const c = t.closest<HTMLElement>('[data-control]'); if (c) this.runControl(e); return; }
     const sel = snap.selection;
     const err = this.errorAt(sel.sheet, sel.ref);
     switch (act) {
       case 'flag': this.flag(); break;
-      case 'copy-ref': void navigator.clipboard?.writeText(sel.range ?? sel.ref).catch(() => {}); break;
-      case 'copy-value': void navigator.clipboard?.writeText(s.text(sel.sheet, sel.ref)).catch(() => {}); break;
+      case 'copy-ref': this.copy(sel.range ?? sel.ref); break;
+      case 'copy-value': this.copy(s.text(sel.sheet, sel.ref)); break;
       case 'resolve': if (err) s.updateError(err.id, { status: err.status === 'open' ? 'resolved' : 'open' }, this); break;
       case 'delete': if (err) s.deleteError(err.id, this); break;
       case 'prev': case 'next': this.stepError(act === 'next' ? 1 : -1); break;
@@ -805,7 +916,13 @@ export class SheetpaneExcel extends ElementBase {
     q.freeze.title = frozen ? 'Unfreeze panes' : 'Freeze rows above and columns left of the selected cell';
     const n = s.changeCount;
     q.changes.textContent = n === 0 ? 'No changes yet' : `${n} change${n === 1 ? '' : 's'} in memory`;
-    q.export.querySelector('span')!.textContent = `Export .${src.kind}`;
+    // one Download button in View and Edit (W-31): its count says the file will carry changes
+    const n2 = s.changeCount;
+    q.export.querySelector('.lbl')!.textContent = `Download .${src.kind}`;
+    const badge = q.export.querySelector<HTMLElement>('.badge-n')!;
+    badge.hidden = n2 === 0; badge.textContent = String(n2);
+    const tip = this.untouched() ? `Download the file as it was opened` : `Download with ${n2} change${n2 === 1 ? '' : 's'}${n2 === 0 ? ' (the review as comments)' : ''}`;
+    q.export.title = tip; q.export.setAttribute('aria-label', `Download .${src.kind} — ${tip}`);
     // cell bar
     const sel = snap.selection;
     const p = parseRef(sel.ref)!;
@@ -843,6 +960,18 @@ export class SheetpaneExcel extends ElementBase {
       cell.title = rm.outcome.message;
     } else cell.removeAttribute('title');
     q.plugCellbar.innerHTML = this.controlsHtml(controlsFor(s.plugins, 'cellbar', snap.mode), 'btn btn-g');
+    // docked selection actions (W-31): Flag issue · selbar plugin controls · ⋯ — hidden while typing or composing
+    const typing = !!this.editing && this.shadow.activeElement === cell;
+    q.dock.hidden = typing || composing;
+    if (!q.dock.hidden) {
+      const flagBtn = edit && !err ? `<button type="button" class="btn btn-g" data-act="flag" title="Flag issue (F)" aria-label="Flag issue (F)">${ICON.flag}Flag issue<span class="kbd">F</span></button>` : '';
+      const plug = edit ? this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit'), 'btn btn-g') : '';
+      const more = `<button type="button" class="btn btn-g btn-i" data-act="more" aria-haspopup="menu" aria-expanded="${this.moreOpen}" title="More actions (Shift+F10)" aria-label="More actions (Shift+F10)">⋯</button>`;
+      // the ⋯ menu: Copy ref, Copy value, and the plugin buttons, which show here only once they fold out of the bar
+      const menu = this.moreOpen ? `<div class="card moremenu" role="menu" aria-label="More actions">${this.actionItems(edit, err, { flag: false, plugins: true })}</div>` : '';
+      const html = `${flagBtn}${plug ? `<span class="plug">${plug}</span>` : ''}<span class="morewrap">${more}${menu}</span>`;
+      if (q.dock.dataset.html !== html) { q.dock.innerHTML = html; q.dock.dataset.html = html; }
+    } else if (this.moreOpen) this.moreOpen = false;
     // format row: Edit only, and only when a plugin or the host put something in it
     const frow = controlsFor(s.plugins, 'format-row', 'edit');
     const hostSlot = (q.frow.querySelector('slot') as HTMLSlotElement).assignedElements().length > 0;
@@ -865,6 +994,7 @@ export class SheetpaneExcel extends ElementBase {
       `<span>${esc(sheet.name)} · ${dataRows} row${dataRows === 1 ? '' : 's'} × ${dataCols} column${dataCols === 1 ? '' : 's'}${g.g.merges.length ? ` · ${g.g.merges.length} merged range${g.g.merges.length === 1 ? '' : 's'}` : ''}</span>`,
       n ? `<span>· ${n} cell change${n === 1 ? '' : 's'} kept in memory until you export</span>` : '',
       ...statusPlug.map((t) => `<span>${esc(t)}</span>`),
+      this.notice ? `<span role="status" class="warn-t">· ${esc(this.notice)}</span>` : '',
       s.ruleProgress ? `<span role="status">· Checking column rules · ${Math.floor((100 * s.ruleProgress.done) / Math.max(1, s.ruleProgress.total))} %</span>` : '',
       `<span class="spacer"></span><span>Read in this tab — nothing uploaded</span>`,
       this.getAttribute('display') === 'popup' ? '<span>Esc to close</span>' : '',
@@ -1077,11 +1207,9 @@ export class SheetpaneExcel extends ElementBase {
       card = `<div class="card menu" role="listbox" aria-label="Choices" style="top:${p.y + RH}px;left:${p.x}px;min-width:${Math.max(cw, 140)}px;max-height:260px;overflow:auto">${m.options.map((o) => `<button type="button" role="option" class="btn btn-g" style="justify-content:flex-start;width:100%;border-radius:0" data-act="pick-option" data-v="${esc(o)}">${esc(o) || '(empty)'}</button>`).join('')}</div>`;
     } else if (err) {
       card = this.calloutHtml(err, sideLeft(300), sideTop(260));
-    } else if (edit && sel.sheet === sheet.name) {
-      const plug = this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit'), '');
-      const top = selP.row <= 1 ? p.y + RH + 4 : p.y - 40;
-      parts.push(`<div class="selbar" role="toolbar" aria-label="Selection" style="top:${top}px;left:${Math.max(RW, p.x - 40)}px"><button type="button" class="on" data-act="flag">${ICON.flag}Flag issue <span class="kbd">F</span></button><span class="sep" aria-hidden="true"></span><button type="button" data-act="copy-ref">Copy ref</button><button type="button" data-act="copy-value">Copy value</button>${plug ? `<span class="sep" aria-hidden="true"></span>${plug}` : ''}</div>`);
     }
+    // the context menu (right-click, Shift+F10, the Menu key) sits just under the cell, above any card
+    if (this.ctxOpen && sel.sheet === sheet.name) { const mg = mergeAt(g, selP.row, selP.col); card = this.contextMenuHtml(p.x, p.y + RH * (mg ? mg.bottom - mg.top + 1 : 1) + 2, edit, err); }
     if (!card && this.helpOpen) {
       const sc = this.q.scroller;
       card = `<div class="card help" role="dialog" aria-label="Keyboard shortcuts" style="top:${sc.scrollTop + 8}px;left:${sc.scrollLeft + sc.clientWidth - 300}px;width:290px"><div class="hd"><span class="t">Keyboard</span></div><div class="bd"><dl class="fe" style="grid-template-columns:120px 1fr">${this.shortcuts().map((x) => `<dt>${esc(x.keys)}</dt><dd>${esc(x.what)}</dd>`).join('')}</dl></div></div>`;

@@ -97,18 +97,19 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — the contract verdict's decision 9 rewritten (undo built) |
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |
 | `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-18 | 2026-10-18 — plugin, hook, slot, derived cell, column rules |
-| `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — B-030; the law checks that now run |
+| `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-18 | 2026-10-18 — one Download button and the docked selection actions (W-31) |
 | `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-VALIDATION (0108), SR-NUMFMT (0109), SR-STYLES (0110), SR-FORMULAS (0111), SR-COMMENTS (0112), SR-CHARTS (0113), SR-CONDFMT (0114) |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
 | `work/reference/design/README.md` | the design canvas changes | 2026-10-18 | 2026-10-18 — Selection-And-Download board; Sheetpane and PluginKit redrawn (W-31) |
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
-| `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — the editing events table |
+| `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-18 | 2026-10-18 — theme, Column rules, React hooks (recipes), right-click actions, one Download (W-27–W-31) |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |
 | `README.md` | the packages, the commands or the demos change | 2026-10-18 | 2026-10-18 — created: packages, demos, commands |
 | `packages/images/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the images plugin |
 | `packages/validation/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the validation plugin |
 | `packages/numfmt/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the numfmt plugin |
+| `CHANGELOG.md` | a public-facing change lands | 2026-10-18 | 2026-10-18 — created: W-31 (one Download, docked actions) and the Unreleased additions |
 
 ---
 

@@ -81,7 +81,7 @@ flowchart TB
 | piece | what it is | where it lives | decided in |
 |---|---|---|---|
 | **host application** | any web page; installs `@sheetpane/grid` from npm; places the elements; listens to events | the host's codebase; demos in `examples/` (W-09) | [SR-LAW-4](../records/0006_LAW-4-web-component.md), [SR-LAW-8](../records/0010_LAW-8-npm-package.md) |
-| **`<sheetpane-excel>`** | the sheet: the **view** component and the **edit** component as two modes of one element; reader, virtualised grid, cell bar, Flag issue, pins and callouts, Export | `packages/grid/src/excel/` (W-01) | [grid verdict](../work/compare/grid-rendering.compare.md) |
+| **`<sheetpane-excel>`** | the sheet: the **view** component and the **edit** component as two modes of one element; reader, virtualised grid, cell bar with the docked selection actions (Flag issue, ⋯, right-click), pins and callouts, one Download button | `packages/grid/src/excel/` (W-01) | [grid verdict](../work/compare/grid-rendering.compare.md) |
 | **`@sheetpane/import`** | the reader: turns an `.xlsx` or `.csv` into the same `Workbook` object export takes in: ZIP walk + inflate + XML, or a CSV state machine; display text through a small number-format subset; usable without the UI | `packages/import/` (W-13) | [reading verdict](../work/compare/xlsx-csv-reading.compare.md), decision 5 overridden by Arpit 2026-10-18 |
 | **in-memory workbook** | the one shared object — sheets and cells, cell **changes**, **errors**, selected cell, mode; a store with `subscribe` / `getSnapshot`; one instance per `pane` id | `packages/grid/src/pane/` (W-01) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
 | **`<sheetpane-errors>`** | the **error** component: the list (filter, resolve, delete) and the New error form; always on the same workbook as the sheet | `packages/grid/src/errors/` (W-02) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
@@ -125,8 +125,9 @@ source, `patchXlsx(originalBytes, changes)` rewrites only the changed cells and
 copies every other part byte for byte — charts, styles, comments and defined
 names survive; for a `.csv` source, `toCsv(activeSheet)` with BOM and the
 formula guard. The result is a `Blob`, dispatched as `sheetpane-export` and
-returned from `export()`; the Export button hands it to `download()` from the
-same package. The uploaded file is never modified.
+returned from `export()`; the Download button hands it to `download()` from the
+same package — or, when nothing changed, the original bytes untouched. The
+uploaded file is never modified.
 
 ## The public contract (working names)
 

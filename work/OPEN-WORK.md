@@ -31,7 +31,8 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-31** `agent` · Dock the selection actions in the cell bar (no floating bar; right-click opens them too) and keep one Download button in place of Export + Download original. Filed by Arpit (Cowork). [detail](open/W-31-docked-actions-one-download.md)
+
+- 🟢 **W-32** `agent` · Plugin tabs in both demos (HTML and React): Vanilla, one tab per plugin, All plugins — one showcase workbook in every tab; `demo-check` asserts each tab. Filed by Arpit (Cowork). [detail](open/W-32-plugin-gallery-demos.md)
 
 ### testing
 

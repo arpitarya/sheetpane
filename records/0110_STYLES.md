@@ -88,7 +88,7 @@ the number format is SR-NUMFMT's.
 6. **UI:** `format-row` groups text (Bold `Mod+B`, Italic `Mod+I`, Underline
    `Mod+U`, Strikethrough `Mod+5`) · colour · fill · border · align (left,
    centre, right with `Mod+Shift+L/E/R`; top, middle, bottom; Merge/Unmerge)
-   · wrap · clear (`Mod+\`); `selbar` adds Bold, Fill and Merge/Unmerge. Every
+   · wrap · clear (`Mod+\`); `selbar` (docked in the cell bar and in the right-click menu, SR-GRID 13) adds Bold, Fill and Merge/Unmerge. Every
    action restyles the selection as **one undo step** (`setChanges`). Merge
    calls the core's `setMerge` (kind `merge`), is labelled Merge or Unmerge,
    and is disabled on a CSV or a single unmerged cell. `ui({ colours, fills,

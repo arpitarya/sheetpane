@@ -4,7 +4,8 @@
 Two web components, always in sync through one in-memory workbook:
 
 - `<sheetpane-excel>` — the sheet. View or Edit; every change stays in memory;
-  Export writes a copy of the uploaded file with the changes in it.
+  **Download** hands back the file — as opened when nothing changed, else a
+  copy of the uploaded file with the changes in it.
 - `<sheetpane-errors>` — the errors flagged on the sheet: what's wrong, what it
   should be. Put it anywhere — beside the sheet, in a side column, in another tab.
 
@@ -107,7 +108,7 @@ const units = useSheetpane(sheet, (store) => store.value('Holdings', 'F3'), null
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export()` | `Promise<Blob>` — the upload with every change |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name}` (cancelable — prevent it to save the file yourself), `sheetpane-close` | bubbling, composed |
+| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, original?}` (cancelable — prevent it to save the file yourself; `original: true` when the Download button hands back the untouched file), `sheetpane-close` | bubbling, composed |
 
 ### Following an edit
 
@@ -134,7 +135,9 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
 ```
 
 **Keys:** arrows, Shift+arrows, Home/End, Ctrl+Home/End, PageUp/PageDown;
-Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**; Esc
+Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**;
+**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy value and
+plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
 

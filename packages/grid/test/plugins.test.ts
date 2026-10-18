@@ -199,7 +199,7 @@ describe('the six slots (W-14 DoD 3, 8)', () => {
     await frame();
     expect($(el, '.frow').hidden).toBe(false);
     expect($(el, '[data-control=ui-bold]').getAttribute('aria-label')).toBe('Bold (Mod+B)');
-    expect($(el, '.selbar [data-control=ui-sel]')).not.toBeNull();
+    expect($(el, '.dock [data-control=ui-sel]')).not.toBeNull();
     $(el, '.grid').focus();
     await userEvent.keyboard('{Control>}b{/Control}');
     expect(s.changeOf('Holdings', 'B3', 'style')!.kind).toBe('style');
@@ -224,7 +224,7 @@ describe('the six slots (W-14 DoD 3, 8)', () => {
     await frame();
     expect($(el, '.frow').hidden).toBe(true);
     expect(shadow(el).querySelectorAll('[data-control], .mk, .olay, .c.derived').length).toBe(0);
-    expect([...shadow(el).querySelectorAll('.selbar button')].map((b) => b.textContent)).toEqual(['Flag issue F', 'Copy ref', 'Copy value']);
+    expect([...shadow(el).querySelectorAll('.dock button')].map((b) => b.getAttribute('aria-label'))).toEqual(['Flag issue (F)', 'More actions (Shift+F10)']);
   });
 });
 

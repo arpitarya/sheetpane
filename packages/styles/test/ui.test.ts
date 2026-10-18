@@ -111,15 +111,15 @@ describe('the format row (W-17 DoD 4)', () => {
 });
 
 describe('the selection bar and merges (W-17 DoD 3, 4)', () => {
-  it('selbar carries Bold, Fill and Merge after the core buttons; Fill applies the highlight', async () => {
+  it('selbar controls (Bold, Fill, Merge) are docked in the cell bar after Flag issue; Fill applies the highlight', async () => {
     const { s, el } = await setup();
     await select(s, 'B3', 'B3:C3');
-    const ids = [...shadow(el).querySelectorAll('.selbar [data-control]')].map((x) => (x as HTMLElement).dataset.control);
+    const ids = [...shadow(el).querySelectorAll('.dock [data-control]')].map((x) => (x as HTMLElement).dataset.control);
     expect(ids).toEqual(['styles-sel-bold', 'styles-sel-fill', 'styles-sel-merge']);
-    $(el, '.selbar [data-control=styles-sel-fill]').click();
+    $(el, '.dock [data-control=styles-sel-fill]').click();
     await frame();
     expect(cellEl(el, 2, 1)!.style.backgroundColor).toBe('rgb(255, 242, 204)');
-    $(el, '.selbar [data-control=styles-sel-fill]').click();
+    $(el, '.dock [data-control=styles-sel-fill]').click();
     await frame();
     expect(cellEl(el, 2, 1)!.style.backgroundColor).toBe('');
   });
@@ -135,7 +135,7 @@ describe('the selection bar and merges (W-17 DoD 3, 4)', () => {
     expect(cellEl(el, 2, 1)).toBeNull(); // covered
     await select(s, 'A3');
     expect($(el, '[data-control=styles-merge]').getAttribute('aria-pressed')).toBe('true');
-    $(el, '.selbar [data-control=styles-sel-merge]').click();
+    $(el, '.dock [data-control=styles-sel-merge]').click();
     expect(spy).toHaveBeenLastCalledWith(H, 'A3:B4', false);
     expect(s.merges(H)).toEqual(['A1:E1']);
     // the file's own merge unmerges too, and undo restores it
