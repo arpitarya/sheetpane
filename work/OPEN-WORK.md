@@ -32,7 +32,6 @@ here. Read that record before changing anything below it.
 ### build
 
 - 🟢 **W-19** `agent` · Build `@sheetpane/condfmt`: conditional formatting rendered after styles; expression rules via formulas — W-17 closed 2026-10-18. Filed by Arpit (Cowork). [detail](open/W-19-condfmt.md)
-- 🟢 **W-21** `agent` · Build `@sheetpane/charts`: frame + title + Show source cells, then own SVG for five chart types. Filed by Arpit (Cowork). [detail](open/W-21-charts.md)
 - 🟢 **W-27** `agent` · Column rules by header title (`columns`, `validate`, flag or block) feeding the error list. Filed by Arpit (Cowork). [detail](open/W-27-host-column-rules.md)
 - 🟢 **W-28** `agent` · React hooks — selection, typing, changes, errors, events, column rules — as recipes in the README and React demo. Filed by Arpit (Cowork). [detail](open/W-28-react-hooks.md)
 

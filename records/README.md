@@ -134,6 +134,7 @@ Start from `TEMPLATE.md`.
 | [0110](0110_STYLES.md) | **SR-STYLES** | `@sheetpane/styles` — cell styles, the format row | accepted | yes |
 | [0111](0111_FORMULAS.md) | **SR-FORMULAS** | `@sheetpane/formulas` — recalculation through IronCalc | accepted | yes |
 | [0112](0112_COMMENTS.md) | **SR-COMMENTS** | `@sheetpane/comments` — file comments in, the review out | accepted | yes |
+| [0113](0113_CHARTS.md) | **SR-CHARTS** | `@sheetpane/charts` — charts as frames and SVG | accepted | yes |
 
 ---
 
@@ -184,7 +185,7 @@ directions.
 | `packages/validation/` | SR-VALIDATION | `@sheetpane/validation` — workbook rules as errors |
 | `packages/condfmt/` | W-19 | `@sheetpane/condfmt`, a plugin; until its component record exists |
 | `packages/images/` | SR-IMAGES | `@sheetpane/images` — pictures, view only |
-| `packages/charts/` | W-21 | `@sheetpane/charts`, a plugin; until its component record exists |
+| `packages/charts/` | SR-CHARTS | `@sheetpane/charts` — charts |
 | `packages/comments/` | SR-COMMENTS | `@sheetpane/comments` — comments in and out |
 
 <!-- OWNERSHIP-TABLE-END -->

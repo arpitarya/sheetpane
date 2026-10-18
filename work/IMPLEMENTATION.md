@@ -11,6 +11,7 @@ against this file before an item may be closed
 
 | date | item | what landed | outcome | evidence |
 |---|---|---|---|---|
+| 2026-10-18 | W-21 | `@sheetpane/charts`: chart frames at their anchors (title, type, series, Show source cells, data-changed tag) and own-SVG bar/column/line/pie/doughnut/scatter from caches or live cells; core: geometry past the drawn columns, grid widens to drawings, overlay `role`/live `alt`/`passThrough` | closed | `just test-pkg charts` (43) · grid's overlay and geometry tests |
 | 2026-10-18 | W-22 | `@sheetpane/comments`: notes and threads read as `file` errors; the review written as threaded comments + legacy notes + VML + persons, on by default with `write:false` / `export({comments:false})`; core: restore adopts errors by content, not id | closed | `just test-pkg comments` (26) · grid's restore test |
 | 2026-10-18 | W-16 | `@sheetpane/formulas`: IronCalc recalculation on `derive` (lazy WASM), typed formulas, `<f>`/`<v>` export, cell-bar formula, ⟳/↻/≈ marks, `evaluate()` for custom rules; core: `store.formula()`/`input()`, derive `clear`, read-only text controls | closed | `just test-pkg formulas` (34) · validation's custom-rule test |
 | 2026-10-18 | W-17 | `@sheetpane/styles`: decorate from cellXfs (theme/indexed colours, never a font family), the format row and selbar, merges via core, styles.xml export; core: per-kind change slots, controls `disabled`/`labelFor`, cell text span | closed | `just test-pkg styles` (46 tests) |

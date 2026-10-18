@@ -130,6 +130,41 @@ describe('the six hooks (W-14 DoD 1, 4, 5)', () => {
     expect(item.getAttribute('aria-label')).toBe('a box');
     expect(item.getBoundingClientRect().left - cellEl(el, 3, 2)!.getBoundingClientRect().left).toBeCloseTo(0, 0);
   });
+  it('overlay: role, a name that follows the item, pointer pass-through; geometry keeps growing past the drawn columns', async () => {
+    let name = 'loading';
+    const live: Plugin = { id: 'live', provides: ['overlay'], overlay: (sheet, ctx) => {
+      const g = ctx.geometry;
+      expect(g.colX(200) - g.colX(199)).toBe(64); // far past the data: x grows, 64 px a column
+      expect(g.colWidth(200)).toBe(64);
+      return sheet === 'Holdings' ? [
+        { id: 'grp', sheet, rect: { x: g.colX(2), y: g.rowY(3), width: 40, height: 20 }, alt: name, role: 'group' as const, render: () => document.createElement('span') },
+        { id: 'line', sheet, rect: { x: g.colX(4), y: g.rowY(3), width: 40, height: 20 }, passThrough: true, render: () => document.createElement('span') },
+      ] : [];
+    } };
+    const el = await mountExcel();
+    const s = createWorkbook({ plugins: [live] });
+    el.workbook = s;
+    await s.load(await sampleXlsx(), 's.xlsx');
+    await frame();
+    const [grp, line] = [...shadow(el).querySelectorAll<HTMLElement>('.overlay .plug .olay')];
+    expect(grp!.getAttribute('role')).toBe('group');
+    expect(grp!.getAttribute('aria-label')).toBe('loading');
+    expect(line!.getAttribute('role')).toBe('img');
+    expect(line!.hasAttribute('aria-label')).toBe(false);
+    expect(line!.style.pointerEvents).toBe('none');
+    expect(grp!.style.pointerEvents).toBe('auto');
+    name = 'Sales and costs';
+    s.select({ sheet: 'Holdings', ref: 'B2' });
+    await frame();
+    expect(grp!.getAttribute('aria-label')).toBe('Sales and costs');
+  });
+  it('the grid reaches a drawing anchored past the data', async () => {
+    const { sheetGeometry } = await import('../src/excel/geometry.js');
+    const sh = { name: 'S', rows: [[1, 2]], text: [['1', '2']], drawings: [{ kind: 'chart', anchor: 'twoCell', from: { col: 4, colOff: 0, row: 2, rowOff: 0 }, to: { col: 11, colOff: 9525, row: 40, rowOff: 0 }, name: 'Chart 1', descr: '' }] } as never;
+    const g = sheetGeometry(sh);
+    expect(g.cols).toBe(12); // to.col 11 with an offset reaches into column L (index 11)
+    expect(g.rows).toBe(40); // to.row 40 at offset 0 ends at row 41's top edge
+  });
   it('exportPatch: runs inside patchXlsx after the core', async () => {
     const s = createWorkbook({ plugins: [extra] });
     await s.load(await sampleXlsx(), 's.xlsx');

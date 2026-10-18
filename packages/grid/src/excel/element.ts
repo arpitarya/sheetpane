@@ -719,7 +719,8 @@ export class SheetpaneExcel extends ElementBase {
     const sh = this._store?.sheet(sheet);
     if (!sh) return undefined;
     const g = this.geom?.sheet === sh ? this.geom.g : sheetGeometry(sh);
-    return { colX: (c) => g.colX[Math.min(c, g.cols)] ?? g.colX[g.cols]! + (c - g.cols) * 64, colWidth: (c) => (g.colX[c + 1] ?? 0) - (g.colX[c] ?? 0) || 64, rowY: (r) => r * ROW_H, rowHeight: () => ROW_H };
+    // past the last drawn column a column is 64 px wide (Excel's default), so x keeps growing
+    return { colX: (c) => (c <= g.cols ? g.colX[c]! : g.colX[g.cols]! + (c - g.cols) * 64), colWidth: (c) => (c < g.cols ? g.colX[c + 1]! - g.colX[c]! : 64), rowY: (r) => r * ROW_H, rowHeight: () => ROW_H };
   }
 
   private render(): void {
@@ -1052,8 +1053,11 @@ export class SheetpaneExcel extends ElementBase {
       const id = `${sheet.name}|${it.id}`;
       keep.add(id);
       let el = this.overlayCache.get(id);
-      if (!el) { el = document.createElement('div'); el.className = 'olay'; el.setAttribute('role', 'img'); if (it.alt) el.setAttribute('aria-label', it.alt); el.append(it.render()); this.overlayCache.set(id, el); }
-      el.style.cssText = `left:${RW + it.rect.x * z}px;top:${HH + it.rect.y * z}px;width:${it.rect.width * z}px;height:${it.rect.height * z}px;pointer-events:auto`;
+      if (!el) { el = document.createElement('div'); el.className = 'olay'; el.append(it.render()); this.overlayCache.set(id, el); }
+      // role and name follow the item on every pass (a chart's title is known only after its part is read)
+      if (el.getAttribute('role') !== (it.role ?? 'img')) el.setAttribute('role', it.role ?? 'img');
+      if (it.alt) { if (el.getAttribute('aria-label') !== it.alt) el.setAttribute('aria-label', it.alt); } else el.removeAttribute('aria-label');
+      el.style.cssText = `left:${RW + it.rect.x * z}px;top:${HH + it.rect.y * z}px;width:${it.rect.width * z}px;height:${it.rect.height * z}px;pointer-events:${it.passThrough ? 'none' : 'auto'}`;
       if (el.parentNode !== layer) layer.append(el);
     }
     for (const [id, el] of this.overlayCache) if (!keep.has(id)) { el.remove(); if (!id.startsWith(`${sheet.name}|`)) continue; this.overlayCache.delete(id); }

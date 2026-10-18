@@ -84,6 +84,9 @@ importers:
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid
+      '@sheetpane/images':
+        specifier: workspace:*
+        version: link:../images
 
   packages/comments:
     devDependencies:

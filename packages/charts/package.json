@@ -1,7 +1,7 @@
 {
   "name": "@sheetpane/charts",
   "version": "0.0.0",
-  "description": "Charts for sheetpane — a frame at the chart's anchor with its title and Show source cells; later, own SVG for bar, column, line, pie and scatter — through the `overlay` hook.",
+  "description": "Charts for sheetpane \u2014 a frame at the chart's anchor with its title and Show source cells; later, own SVG for bar, column, line, pie and scatter \u2014 through the `overlay` hook.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -9,7 +9,12 @@
     "directory": "packages/charts"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/ui.js",
+    "./src/index.ts",
+    "./src/ui.ts"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -33,11 +38,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
-    "@sheetpane/grid": "workspace:*"
+    "@sheetpane/grid": "workspace:*",
+    "@sheetpane/images": "workspace:*"
   },
   "dependencies": {},
   "devDependencies": {
-    "@sheetpane/grid": "workspace:*"
+    "@sheetpane/grid": "workspace:*",
+    "@sheetpane/images": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

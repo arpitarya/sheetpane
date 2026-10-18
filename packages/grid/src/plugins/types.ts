@@ -57,7 +57,12 @@ export interface OverlayItem {
   sheet: string;
   rect: { x: number; y: number; width: number; height: number };
   render(): HTMLElement;
+  /** The item's accessible name; re-read on every overlay pass, so it may change (W-21). */
   alt?: string;
+  /** `img` (default): a picture; `group`: an item holding controls a keyboard or a screen reader can reach. */
+  role?: 'img' | 'group';
+  /** Pointer events pass through to the cells below (an outline, a highlight). */
+  passThrough?: boolean;
 }
 
 /** Sheet geometry a plugin needs to place things (W-20). Pixels at 100 % zoom. */

@@ -28,8 +28,14 @@ export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s
   const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
   const ruled = [...(s.dataValidations ?? []).flatMap((v) => v.sqref), ...(s.conditionalFormats ?? []).flatMap((f) => f.sqref)]
     .map((r) => parseRange(r)?.right ?? -1).filter((c) => c >= 0 && c < dataCols + 26);
-  const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1), ...ruled.map((c) => c + 1));
-  const rows = Math.max(s.rows.length + 3, 20, ...merges.map((m) => m.bottom + 1));
+  // pictures and charts sit beside the data: the grid reaches their anchor's far cell (W-20, W-21)
+  // (a `to` point at offset 0 is the left / top edge of that cell; a lone `from` needs its own cell)
+  const drawn = (s.drawings ?? []).map((d) => (d.to ? { col: d.to.col + (d.to.colOff > 0 ? 1 : 0), row: d.to.row + (d.to.rowOff > 0 ? 1 : 0) } : d.from ? { col: d.from.col + 1, row: d.from.row + 1 } : undefined))
+    .filter((n): n is { col: number; row: number } => !!n);
+  const drawnCols = drawn.map((n) => n.col).filter((n) => n <= dataCols + 26);
+  const drawnRows = drawn.map((n) => n.row).filter((n) => n <= s.rows.length + 200);
+  const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1), ...ruled.map((c) => c + 1), ...drawnCols);
+  const rows = Math.max(s.rows.length + 3, 20, ...merges.map((m) => m.bottom + 1), ...drawnRows);
   const dflt = s.defaultColWidth !== undefined ? charsToPx(s.defaultColWidth) : DEFAULT_COL_PX;
   const fileWidths = s.columnWidths ?? [];
   const guess = fileWidths.length === 0 && !s.path;
