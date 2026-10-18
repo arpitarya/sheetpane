@@ -8,6 +8,8 @@ import { armDownload, takeDownload } from './test/commands.ts';
 
 const browsers = (process.env.SP_BROWSERS ?? 'chromium').split(',') as ('chromium' | 'firefox' | 'webkit')[];
 const resolve = { conditions: ['source'] };
+// Node projects resolve through Vite's SSR environment, which needs the condition too.
+const ssr = { resolve: { conditions: ['source'], externalConditions: ['source'] } };
 // Workbook fixtures load in browser tests as assets (`?inline` data URLs).
 const assetsInclude = ['**/*.xlsx', '**/*.csv'];
 const browserPackages = ['export-browser', 'import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments'];
@@ -23,8 +25,8 @@ export default defineConfig({
       thresholds: { 'packages/export/src/**': { lines: 90 } },
     },
     projects: [
-      { resolve, test: { name: 'repo', include: ['test/**/*.test.ts'], environment: 'node' } },
-      { resolve, test: { name: 'export', include: ['packages/export/test/**/*.test.ts'], exclude: ['**/*.browser.test.ts'], environment: 'node' } },
+      { resolve, ssr, test: { name: 'repo', include: ['test/**/*.test.ts'], environment: 'node' } },
+      { resolve, ssr, test: { name: 'export', include: ['packages/export/test/**/*.test.ts'], exclude: ['**/*.browser.test.ts'], environment: 'node' } },
       ...browserPackages.map((name) => ({
         resolve,
         assetsInclude,

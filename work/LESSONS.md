@@ -11,7 +11,23 @@ named here only as the failure that produced it. A lesson whose remedy is
 
 ---
 
-## 2026-10-18 — two Cowork sessions, one working tree
+## 2026-10-18 — `git add -A` committed another session's items
+
+**What happened.** Claude Code committed W-03 with `git add -A` while a Cowork
+session had just filed W-25–W-28. Their four item files, queue rows, WORKLOG,
+INTERVIEW and GLOSSARY lines went into `206c093` under the W-03 message, and
+`coverage/` and Vitest failure screenshots went in with them. Pushed before
+anyone noticed.
+
+**What caught it.** Four rows in `OPEN-WORK.md` that this session had not
+written, and `git log -- work/open/W-25-…` naming the W-03 commit.
+
+**The remedy.** The rule already exists — SR-WORK-SESSION decision 10:
+commit with explicit pathspecs when the index can carry another session's
+work. `coverage/` and `.vitest/` are now ignored. History was not rewritten;
+the content is correct, only its commit message is wrong.
+
+
 
 **What happened.** While one session resolved the research items, another
 renamed the UI package, moved to pnpm and filed three items — twelve files

@@ -175,9 +175,9 @@ writing that itself would duplicate it and get the timing wrong.
    the same task as the click. **Measured 2026-10-18** (W-12,
    `download.browser.test.ts`, a 64 MB file): Chromium 156 and WebKit (Safari
    27.2, macOS) save the whole file even when the URL is revoked in the
-   click's own task. Firefox could not be launched on the measuring machine
-   (`work/MACHINE.md`); its result comes from the nightly run. The 30-second
-   margin stays until Firefox and iOS Safari are measured — it costs only the
+   click's own task; so does Firefox 157 (Linux, nightly run 39124283729) —
+   it could not be launched on the measuring Mac (`work/MACHINE.md`). The
+   30-second margin stays until iOS Safari is measured — it costs only the
    Blob's memory for that long.
 7. **No page, no download.** Where `document` is undefined (Node, a worker),
    the call throws an `Error` saying a browser page is needed. Never a silent
@@ -196,7 +196,7 @@ writing that itself would duplicate it and get the timing wrong.
 - **Built and tested:** `packages/export/src/download/index.ts`; Node tests
   for decisions 4, 5, 7, 8 (`download.test.ts`) and real downloads caught by
   Playwright for examples 1–5, 7 and 8 (`download.browser.test.ts`) — Chromium
-  on every push, WebKit and Firefox nightly.
+  on every push, WebKit and Firefox nightly (all three green, run 39124283729).
 - **iOS Safari: not tested.** No iOS device or simulator is reachable from the
   build machine; the decider tests it on a phone (W-12 DoD 7). Desktop WebKit
   passes every example.

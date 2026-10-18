@@ -6,3 +6,7 @@
 work/reference/specs/**/_local/
 node_modules/
 dist/
+
+# test output
+coverage/
+.vitest/

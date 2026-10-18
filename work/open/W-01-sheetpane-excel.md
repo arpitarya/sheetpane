@@ -6,7 +6,7 @@ item: W-01
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-18
-updated_by: "Arpit (Cowork, claude-fable-5-1)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -56,7 +56,7 @@ so it moves into this item's component record (DoD 14).
 | DoD | what | state |
 |---|---|---|
 | 1 · element | `customElements.define` registers `<sheetpane-excel>`; importing the package is enough; **no UI framework is a peer dependency**; the contract is attributes, properties, methods and DOM events only (L4) | ⏳ |
-| 2 · read | `.xlsx` (every sheet, shared and inline strings, a formula cell's **saved value only**, merged ranges, column widths, hidden sheets marked) and `.csv` (`,` `;` tab auto-detected) from a `File`, `Blob`, URL, base64 string or `ArrayBuffer`; the element turns a URL or base64 into bytes, and **all parsing goes through `@sheetpane/import` (W-13)** — no reader inside this package; typed cells shown through the number-format subset, raw otherwise | ⏳ W-13 |
+| 2 · read | `.xlsx` (every sheet, shared and inline strings, a formula cell's **saved value only**, merged ranges, column widths, hidden sheets marked) and `.csv` (`,` `;` tab auto-detected) from a `File`, `Blob`, URL, base64 string or `ArrayBuffer`; the element turns a URL or base64 into bytes, and **all parsing goes through `@sheetpane/import` (W-13)** — no reader inside this package; typed cells shown through the number-format subset, raw otherwise | ⏳ — `@sheetpane/import` landed (W-13) and `packages/grid/package.json` depends on it |
 | 3 · refuse | any other format — `.xls`, `.xlsm`, `.xlsb`, `.ods`, `.numbers` — gets the "Can't open this file" state, no partial parse (L3); a password-protected `.xlsx` gets the password state; ZIP64 or over-limit files get a clear message | ⏳ |
 | 4 · view | matches the boards `Sheetpane`, `Host-Tab-View`, `Host-Popup-View`: toolbar, View/Edit switch, cell bar, row and column headers, **merged-and-centred cells**, sheet tabs (`.xlsx` only), find, zoom, download original, status line | ⏳ |
 | 5 · placement | `display="tab"` fills its container; `display="popup"` opens over the page (`open` property, `sheetpane-close` event; Esc closes, focus trapped and returned) | ⏳ |
@@ -73,9 +73,8 @@ so it moves into this item's component record (DoD 14).
 
 ## Blockers
 
-Waiting on **W-04** (toolchain) and **W-03** (export — DoD 8 only). Steps 2–4
-may start the moment W-04 closes; W-03 and W-01 can run in parallel until
-DoD 8.
+None. The toolchain (W-04), the writers (W-03) and the reader (W-13) have
+landed.
 
 ## Record affected
 

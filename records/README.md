@@ -125,6 +125,7 @@ Start from `TEMPLATE.md`.
 | [0101](0101_DOWNLOAD.md) | **SR-DOWNLOAD** | `download()` — export output in, a saved `.xlsx` or `.csv` out | proposed | yes — built and tested in Chromium and WebKit; acceptance is the decider's (W-12) |
 | [0102](0102_BUILD.md) | **SR-BUILD** | The monorepo build — pnpm, just, tsc, Vitest, CI, lockstep release | accepted | yes |
 | [0103](0103_EXPORT.md) | **SR-EXPORT** | `@sheetpane/export` — toXlsx, patchXlsx, toCsv, the shared ZIP and XML code | accepted | yes |
+| [0104](0104_IMPORT.md) | **SR-IMPORT** | `@sheetpane/import` — an .xlsx or .csv in, the workbook object out | accepted | yes |
 
 ---
 
@@ -161,6 +162,7 @@ directions.
 | `.github/workflows/` | SR-BUILD | CI on every push; the three-engine nightly |
 | `packages/export/src/download/` | SR-DOWNLOAD | `download()` — a different decision from the writers |
 | `packages/export/` | SR-EXPORT | `@sheetpane/export` — the writers and the shared ZIP / XML code |
+| `packages/import/` | SR-IMPORT | `@sheetpane/import` — the reader |
 | `packages/grid/` | W-01 | `@sheetpane/grid`, the UI package — the sheet and the pane; until its component record exists |
 | `packages/grid/src/errors/` | W-02 | `<SheetPaneErrors>` — a different item from the sheet |
 | `packages/grid/src/plugins/` | W-14 | the plugin host — hooks, slots, descriptors; until W-01's record (or its own) exists |

@@ -157,13 +157,13 @@ React 19 renders the same tags; React 18 sets properties through a `ref`
 
 | law | what it fixes | where you see it in the shape |
 |---|---|---|
-| [L2](../records/0004_LAW-2-foss-dependencies.md) FOSS dependencies | every dependency OSI-licensed; no copyleft at runtime | both packages have **zero** runtime dependencies; the licence check is B-008 |
+| [L2](../records/0004_LAW-2-foss-dependencies.md) FOSS dependencies | every dependency OSI-licensed; no copyleft at runtime | export, import and grid have **no** third-party runtime dependency; the licence check is B-008 |
 | [L3](../records/0005_LAW-3-xlsx-and-csv-only.md) XLSX and CSV only | no other parser, reader or writer | the reader refuses by extension and magic bytes; `.csv` dialects (`,` `;` tab) are read; `download()` refuses other extensions |
 | [L4](../records/0006_LAW-4-web-component.md) always a web component | DOM-only contract; no framework peer | two custom elements; plain DOM inside; the host's framework is its own business |
 | [L5](../records/0007_LAW-5-host-font.md) the host's font | no font ships; every part inherits | shadow root with inherited `font`; `font: inherit` on controls; `--sp-*` tokens carry no font |
 | [L6](../records/0008_LAW-6-edits-in-memory-export-with-changes.md) edits in memory, export carries them | memory is the only store; export applies every change; original untouched | the `changes` map; `patchXlsx`; `beforeunload` warning |
 | [L7](../records/0009_LAW-7-surfaces-always-in-sync.md) always in sync | one workbook, no private copies | the store registry by `pane`; both elements subscribe; selection syncs |
-| [L8](../records/0010_LAW-8-npm-package.md) an npm package | one distribution; safe to import in Node | `packages/grid` and `packages/export`, lockstep versions; elements register only when `customElements` exists; `download()` throws cleanly without a `document` |
+| [L8](../records/0010_LAW-8-npm-package.md) an npm package | one distribution; safe to import in Node every package under `packages/`, lockstep versions; elements register only when `customElements` exists; `download()` throws cleanly without a `document` |
 | [L9](../records/0011_LAW-9-memory-is-a-javascript-object.md) memory is a JavaScript object | no IndexedDB or storage, for now | the store is objects in the page; IndexedDB waits on B-025 |
 
 ## Package layout
@@ -172,16 +172,15 @@ React 19 renders the same tags; React 18 sets properties through a `ref`
 pnpm-workspace.yaml       packages/*  (W-10: pnpm replaces npm workspaces)
 justfile                  install · build · test · typecheck · check · release
 packages/
-  export/                 @sheetpane/export — zero dependencies
+  export/                 @sheetpane/export — zero dependencies (SR-EXPORT)
     src/
-      zip/                read (central directory) + write; crc32; dos dates
-      xml/                tiny escaper and builders for the parts
-      xlsx/               toXlsx (build), patchXlsx (rewrite changed <c> only)
-      csv/                toCsv — RFC 4180, BOM, formula guard
-      download/           download(data, filename) — W-12, SR-DOWNLOAD
-      index.ts
-  import/                 @sheetpane/import — W-13; depends only on @sheetpane/export (zip, crc32, types)
-    src/                  xlsx.ts, csv.ts, formats.ts (the number-format subset), refuse.ts
+      zip.ts deflate.ts crc32.ts   read (central directory) + write; CompressionStream / zlib
+      xml.ts refs.ts formula.ts    escaping, A1 helpers, shiftFormula
+      xlsx.ts patch.ts validate.ts toXlsx (build), patchXlsx (rewrite changed <c> only), input rules
+      csv.ts                       toCsv — RFC 4180, BOM, formula guard
+      download/                    download(data, filename) — SR-DOWNLOAD
+  import/                 @sheetpane/import — depends only on @sheetpane/export (SR-IMPORT)
+    src/                  read.ts (detect + refuse), xlsx.ts, csv.ts, numfmt.ts (the subset), styles.ts, dom.ts
   grid/                   @sheetpane/grid — depends on @sheetpane/import and @sheetpane/export (workspace:)
     src/
       pane/               the workbook store, the pane registry, the error schema
@@ -205,9 +204,8 @@ examples/                 W-09 — html/ (one index.html) and react/ (Vite + Rea
 ## Build order
 
 ```text
-W-10 pnpm + just  ──►  W-04 build · test · CI · publish  ──►  W-03 export ──►  W-01 excel + workbook  ──►  W-02 errors  ──►  W-09 demos
-                                                              W-12 download (inside export's package, beside W-03)
-                                                              (W-01 may start beside W-03; only its Export step waits)
+W-10 pnpm + just ✓ ──► W-04 build · test · CI ✓ ──► W-03 export ✓ ──► W-13 import ✓ ──► W-01 excel + workbook ──► W-02 errors ──► W-09 demos
+                                                     W-12 download ✓ (inside export's package)
 ```
 
 Then the plugins, in this order (each waits on the plugin host and the reader):
@@ -225,7 +223,6 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 ## Still open, on purpose
 
 - **IndexedDB** (B-025) — the decider's deferred request; needs L6 and L9 rewritten.
-- **Undo/redo for cell edits** (B-027) — out of v1 by the contract verdict.
 - **Largest workbook the tab can hold** (B-026) — unmeasured until W-01 lands.
 - **The mechanical checks still owed** (B-008 licences, B-009, B-012's element half,
   B-017, B-020) — each becomes a test once there is code to check; the font,
