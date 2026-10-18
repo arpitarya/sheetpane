@@ -130,7 +130,7 @@ describe('fit to data (W-47 DoD 2)', () => {
     el.workbook!.setCell('S', 'E2', 'a very very very long text inside a merge that must not widen E');
     await frame();
     for (const c of [0, 1, 2, 3, 4]) { colEdge(el, c).dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true })); await frame(); }
-    const [a, b, cBold, dPlain, e] = [0, 1, 2, 3, 4].map((c) => width(el, c));
+    const [a, b, cBold, dPlain, e] = [0, 1, 2, 3, 4].map((c) => width(el, c)) as [number, number, number, number, number];
     expect(a).toBeGreaterThan(200);
     expect(b).toBeGreaterThan(64);
     expect(cBold).toBeGreaterThan(dPlain); // the same text, bold, is wider
@@ -217,6 +217,6 @@ describe('speed (W-47 DoD 7)', () => {
     const iv = gaps.slice(2).sort((a, b) => a - b), vsync = iv[Math.floor(iv.length / 2)]!;
     const report = `W-47 column drag, 250k rows: ${gaps.length} frames, vsync ${vsync.toFixed(1)} ms, worst ${iv[iv.length - 1]!.toFixed(1)} ms, p95 ${iv[Math.floor(iv.length * 0.95)]!.toFixed(1)} ms, dropped ${iv.filter((x) => x > vsync * 1.5).length} — ${navigator.hardwareConcurrency} cores`;
     console.info(report);
-    expect(el.sizes['transactions-q3']?.cols.B).toBeGreaterThan(64);
+    expect(el.sizes['transactions-q3']!.cols.B!).toBeGreaterThan(64);
   }, 60_000);
 });

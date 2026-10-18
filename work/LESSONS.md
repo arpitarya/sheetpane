@@ -11,6 +11,37 @@ named here only as the failure that produced it. A lesson whose remedy is
 
 ---
 
+## 2026-10-18 — an insert-by-script truncated CHANGELOG.md (`b0f7291`)
+
+**What happened.** Adding W-46's entry, a Python one-off wrote
+`s[:i] + entry` — the text before the insertion point and the new entry — and
+dropped everything after it: every older CHANGELOG entry went, in a commit
+whose message described an addition. Nothing failed; no test reads the
+CHANGELOG.
+
+**What caught it.** The next edit to the CHANGELOG looked for an anchor that
+was no longer there (W-43's close, `7c9eada`, restored it from `9b28465`).
+
+**The remedy (judgment).** An insertion is `s[:i] + new + s[i:]`, and a
+script that rewrites a file checks it did not shrink unexpectedly — `git diff
+--stat` on the file before staging: a "+12" that reads "+12 −60" is the tell.
+Once, not twice: no gate yet (SR-WORK-SESSION decision 13).
+
+## 2026-10-18 — `git add -A <dir>` staged another agent's new files
+
+**What happened.** Committing W-36, `git add -A -- packages/grid/src` swept in
+`packages/grid/src/frameworks/*.d.ts`, created minutes earlier by the W-37 agent
+working in the same tree. The SR guard refused the commit for an unrelated
+reason, which is how the extra files showed up.
+
+**The remedy (judgment).** With an agent working in the tree, stage named
+files, not directories; when a file holds both sessions' edits, stage only
+your hunk through the index (`git hash-object -w` + `git update-index
+--cacheinfo`), as done for OPEN-WORK, the grid README and the lockfile this
+day.
+
+---
+
 ## 2026-10-18 — a failed `git add` still let the commit run (`aae714d`)
 
 **What happened.** Closing W-17 and W-29, `git add` listed the item files
