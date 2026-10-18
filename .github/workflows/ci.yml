@@ -52,7 +52,8 @@ jobs:
       - run: node scripts/check-version-parity.mjs
       - run: pnpm run build
       - run: pnpm run typecheck
-      - run: pnpm exec vitest run --project export --project node
+      # the Node tests; playwright.node.test.ts drives Chromium, which `check` runs with a browser
+      - run: pnpm exec vitest run --project export --project node --exclude '**/playwright.node.test.ts'
       - run: node scripts/smoke-built.mjs
   # W-43: each `npm create sheetpane` template, installed from the packed tarballs, built and tested
   create:

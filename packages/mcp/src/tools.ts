@@ -245,7 +245,7 @@ let errorsDoc: string | undefined;
 /** docs/ERRORS.md as shipped in this package's dist (copied at build), else the repo's. */
 function errorsText(): string {
   if (errorsDoc !== undefined) return errorsDoc;
-  for (const p of [join(here, 'ERRORS.md'), join(here, '../../../docs/ERRORS.md')]) if (existsSync(p)) return (errorsDoc = readFileSync(p, 'utf8'));
+  for (const p of [join(here, 'ERRORS.md'), join(here, '../../../docs/ERRORS.md')]) if (existsSync(p)) return (errorsDoc = readFileSync(p, 'utf8').replace(/\r\n/g, '\n')); // a Windows checkout has CRLF
   throw new ToolError('SP-7007', 'docs/ERRORS.md is missing from this install');
 }
 
