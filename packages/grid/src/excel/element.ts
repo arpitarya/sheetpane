@@ -18,7 +18,7 @@ import { cellCount, clipOf, dataEdge, growForMerges, rangeText, refLabel, spanOf
 import { EXCEL_CSS } from './styles.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'hidlayer' | 'hidbar' | 'hidmenuslot' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'richmsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'hidlayer' | 'hidbar' | 'hidmenuslot' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
 /** A size kept inside the limits (W-47 DoD 1): columns 16–1,200 px, rows 12–600 px, at 100 %. */
 const clampSize = (axis: 'col' | 'row', px: number) => Math.round(axis === 'col' ? Math.min(COL_MAX, Math.max(COL_MIN, px)) : Math.min(ROW_MAX, Math.max(ROW_MIN, px)));
@@ -76,7 +76,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * Every event bubbles and is composed; an action's event fires once, on the element where it
  * happened. Cell payloads also carry `column: { index, letter, header }`.
  *
- * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
+ * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` for each change, undo and redo included.
  * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change.
  * @fires sheetpane-select `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release.
@@ -85,11 +85,11 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * @fires sheetpane-sheet `{ sheet }` when the selection moves to another sheet.
  * @fires sheetpane-mode `{ mode }` when the pane switches between View and Edit.
  * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
- * @fires sheetpane-editstart `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only.
+ * @fires sheetpane-editstart `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only.
  * @fires sheetpane-input `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed.
  * @fires sheetpane-beforechange `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused.
  * @fires sheetpane-editcancel `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it.
- * @fires sheetpane-export `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing.
+ * @fires sheetpane-export `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing.
  * @fires sheetpane-close `{}` when the pop-up closes.
  *
  * @slot format-row - Host controls for the format row (Edit only); the row shows when a plugin or this slot puts something in it.
@@ -293,11 +293,11 @@ export class SheetpaneExcel extends ElementBase {
     await store.load(data, nm!, this);
   }
 
-  /** Every change applied; the upload untouched. Also dispatches `sheetpane-export`. */
+  /** Every change applied; the upload untouched. Also dispatches `sheetpane-export`, with the blob's SHA-256 (W-65). */
   async export(options: Readonly<Record<string, unknown>> = {}, o: { format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<Blob> {
     const store = this.ensureStore();
     const r = await store.exportFile({ options, ...o, ...(o.format === 'csv' && !o.sheet ? { sheet: store.getSnapshot().selection.sheet } : {}) });
-    this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded, format: r.kind, converted: r.converted }, true), name: r.name };
+    this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded, format: r.kind, converted: r.converted, sha256: r.sha256 }, true), name: r.name };
     return r.blob;
   }
   private lastExport: { ok: boolean; name: string } | undefined;
@@ -404,7 +404,7 @@ export class SheetpaneExcel extends ElementBase {
       case 'load': {
         const snap = s.getSnapshot();
         fire(this, 'sheetpane-load', snap.load.status === 'ready'
-          ? { status: 'ready', name: snap.source!.name, kind: snap.source!.kind, sheets: snap.book!.sheets.map((x) => x.name), readMs: snap.source!.readMs }
+          ? { status: 'ready', name: snap.source!.name, kind: snap.source!.kind, sheets: snap.book!.sheets.map((x) => x.name), readMs: snap.source!.readMs, sha256: snap.source!.sha256 }
           : { ...snap.load });
         break;
       }
@@ -456,6 +456,7 @@ export class SheetpaneExcel extends ElementBase {
   <span class="chip issue"></span>
   <span class="chip chip-info hint">Describe it in the Errors panel</span>
   <span class="chip rulemsg" role="status"></span>
+  <span class="chip chip-warn richmsg" data-sp="rich-text" role="status" hidden></span>
   <span class="plug-cellbar" style="display:contents"></span>
   <span class="dock" role="toolbar" aria-label="Selection"></span>
  </div>
@@ -477,7 +478,7 @@ export class SheetpaneExcel extends ElementBase {
     this.q = {
       root: $('.sp'), dialog: $('dialog'), fname: $('.fname'), meta: $('.meta'), counts: $('.counts'), findin: $('.findin'), findcnt: $('.find .cnt'), zoom: $('.zoom'),
       editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), dlmore: $('.dlmore'), dlslot: $('.dlslot'), close: $('.close'), dock: $('.dock'),
-      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'),
+      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'), richmsg: $('.richmsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
       grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), sellayer: $('.sellayer'), hidlayer: $('.hidlayer'), hidbar: $('.hidbar'), hidmenuslot: $('.hidmenuslot'), selsay: $('.selsay'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
     } as Refs;
@@ -551,7 +552,8 @@ export class SheetpaneExcel extends ElementBase {
     const cell = q.cell as HTMLInputElement;
     cell.addEventListener('focus', () => {
       const sel = s().getSnapshot().selection;
-      const allowed = fire(this, 'sheetpane-editstart', { sheet: sel.sheet, ref: sel.ref, column: this.column(sel.sheet, sel.ref), value: s().value(sel.sheet, sel.ref) }, true);
+      const rich = !!s().runs(sel.sheet, sel.ref); // W-53: the edit writes plain text, the runs' formatting goes
+      const allowed = fire(this, 'sheetpane-editstart', { sheet: sel.sheet, ref: sel.ref, column: this.column(sel.sheet, sel.ref), value: s().value(sel.sheet, sel.ref), ...(rich ? { richText: true } : {}) }, true);
       if (!allowed) { cell.readOnly = true; this.editing = undefined; queueMicrotask(() => q.grid.focus({ preventScroll: true })); return; }
       cell.readOnly = false;
       this.editing = { sheet: sel.sheet, ref: sel.ref, start: cell.value };
@@ -925,7 +927,7 @@ export class SheetpaneExcel extends ElementBase {
     const fmt = format ?? src.kind;
     if (fmt === src.kind && this.untouched()) {
       const blob = new Blob([src.bytes as BlobPart], { type: src.kind === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true, format: fmt, converted: false }, true)) download(src.bytes, src.name);
+      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true, format: fmt, converted: false, sha256: src.sha256 }, true)) download(src.bytes, src.name);
       return;
     }
     const blob = await this.export(this.exportChoices(), { format: fmt });
@@ -2070,6 +2072,10 @@ export class SheetpaneExcel extends ElementBase {
       q.rulemsg.textContent = `${sv.glyph} ${rm.blocked ? 'Not saved — ' : ''}${rm.outcome.message}`;
       cell.title = rm.outcome.message;
     } else cell.removeAttribute('title');
+    // a rich-text cell being edited (W-53): saying so before the edit lands, since it writes plain text
+    const richEdit = edit && !!this.editing && this.editing.sheet === sel.sheet && this.editing.ref === sel.ref && !!s.runs(sel.sheet, sel.ref);
+    q.richmsg.hidden = !richEdit;
+    if (richEdit) q.richmsg.textContent = `${SEVERITY.warning.glyph} Mixed formatting — an edit saves plain text`;
     q.plugCellbar.innerHTML = this.controlsHtml(controlsFor(s.plugins, 'cellbar', snap.mode), 'btn btn-g');
     // docked selection actions (W-31): Flag issue · selbar plugin controls · ⋯ — hidden while typing or composing
     const typing = !!this.editing && this.shadow.activeElement === cell;
@@ -2272,7 +2278,10 @@ export class SheetpaneExcel extends ElementBase {
         for (const cc of cellControls) if (ctx && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
       }
       const title = stale ? ' title="May be stale — Excel recalculates on open"' : text.length > 24 ? ` title="${esc(text)}"` : '';
-      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-sp-ref="${cellRef(r, c)}" aria-colindex="${c + 2}" aria-selected="false" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
+      // a rich-text cell (W-53): its runs as spans when a decorate plugin draws them, else the plain text
+      const pieces = decorating ? s.decorateRuns(sheet.name, ref) : undefined;
+      const inner = pieces ? pieces.map((x) => (x.style ? `<span style="${esc(Object.entries(x.style).map(([k2, v2]) => `${k2}:${v2}`).join(';'))}">${esc(x.text)}</span>` : esc(x.text))).join('') : esc(text);
+      return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-sp-ref="${cellRef(r, c)}" aria-colindex="${c + 2}" aria-selected="false" style="${style}"${title}><span class="v">${inner}</span>${extra}</div>`;
     };
     const rowHead = (r: number) => {
       const w = rowWorst.get(r);

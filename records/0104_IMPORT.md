@@ -68,20 +68,24 @@ carry over unchanged; the plugins verdict added what plugins read.
    `fromXlsx(bytes | Blob)`, `fromCsv(text | Blob, { name?, delimiter? })` →
    `ImportedWorkbook`. Also exported: `detectDelimiter`, `parseCsv`,
    `sheetNameFrom`, `formatCode`, `general`, `inSubset`, `subsetCode`,
-   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, and every type.
+   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), and every type.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
-   `path`, `styleIndex`, `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
+   `path`, `styleIndex`, `runs` (decision 12), `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
    `state`, `rowOutline`, `colOutline`, `outline`, `autoFilter?` (W-49;
    `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
-   `conditionalFormats`, `drawings`, `notes`, `threadedComments`,
+   `conditionalFormats` (their types, and the `Dxf` / `Font` / `Fill` /
+   `Border` / `Alignment` / `Color` shapes, are `@sheetpane/export`'s,
+   re-exported here, so `toXlsx` and `patchXlsx` write what this reads —
+   W-57), `drawings`, `notes`, `threadedComments`,
    `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
    `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
-   `persons`, `definedNames`, `delimiter` (CSV) and `part(path)`.
+   `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
+   decision 11) and `part(path)`.
 3. **Cells:** `t="s"` / `inlineStr` → the text, phonetic runs left out,
-   `_xHHHH_` decoded; `str` → the text; `b` → a boolean shown `TRUE` /
+   `_xHHHH_` decoded, its formatted runs in `runs` (decision 12); `str` → the text; `b` → a boolean shown `TRUE` /
    `FALSE`; `e` → the error text; `d` → the ISO string; otherwise a number. A
    formula cell holds its **cached `<v>`**, never evaluated; its formula text
    is in `formulas`, shared formulas expanded with `shiftFormula`.
@@ -138,6 +142,34 @@ carry over unchanged; the plugins verdict added what plugins read.
     `{0, 0, true, true}`). The built-in XML reader reads the same (a parity
     test).
 
+11. **The file's fingerprint (W-65):** `read()` sets `sha256` — the SHA-256
+    of the bytes it was given, 64 lowercase hex digits — once, after the file
+    parsed (a refused file is not hashed). `fromXlsx` / `fromCsv` do not set
+    it (they may be given text or a part, not the file). The digest is Web
+    Crypto's `crypto.subtle.digest('SHA-256')` — no dependency (L2); every
+    modern browser on a secure page, Node 20 and later. Where `crypto.subtle`
+    is missing (a page that is not a secure context) or the digest fails,
+    `sha256` is absent and `console.warn` carries SP-1009 — **never a
+    substitute hash**, so nothing claims a provenance it does not have. The
+    helper is exported as `sha256(bytes | ArrayBuffer | Blob)` →
+    `Promise<string | undefined>`; the grid hashes its exports with it
+    (SR-GRID decision 6). Hashing is once per read or write, never per edit.
+
+12. **Rich text (W-53):** `runs` maps a cell to its string's runs —
+    `TextRun` `{ text, b?, i?, u?, strike?, color?, sz?, vertAlign? }` from
+    each `<r>` and its `<rPr>`, through the same font reader as `styles.xml`
+    — for shared (`<si>`) and inline (`<is>`) strings alike. **Only a rich
+    string is listed:** two or more runs, or one run that carries formatting
+    (a lone unformatted run, and a plain `<t>`, are not). A run with no
+    `<rPr>` is `{ text }` alone (it takes the cell's font). Phonetic runs
+    (`<rPh>`) are never runs; the family (`<rFont>`) is never read (L5). The
+    runs' text joined is the cell's value — `rows` and `text` are unchanged.
+    Cells sharing a string share one array (memory). A CSV has `{}`. The
+    built-in XML reader reads the same (a parity test). The grid draws runs
+    through the `decorate` hook (SR-GRID decision 17, SR-STYLES decision 9);
+    an edit writes plain text, and an untouched rich cell is never rewritten
+    (`patchXlsx` keeps `sharedStrings.xml` and the cell as they were).
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -151,8 +183,16 @@ carry over unchanged; the plugins verdict added what plugins read.
   threaded comments and persons, a pivot location, a chartsheet); CSV
   dialects, a round-trip property with `toCsv`, the 250,000-row CSV (136 ms in
   Chromium on Arpit's MacBook). `test/ssr.test.ts` imports it in Node.
+  `hash.test.ts` (W-65): the FIPS 180-2 vectors (`abc`, the empty message, the
+  448-bit message) on bytes, a view, an `ArrayBuffer` and a Blob; `read()` of a
+  CSV and an `.xlsx` however passed; no `crypto` or a failing digest → absent
+  with SP-1009.
+  `runs.test.ts` (W-53): runs of shared and inline strings, every run
+  property, phonetic runs left out, a lone run listed only when formatted,
+  shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
+  A rich-text cell saved by Excel is part of it (W-30 DoD 3).
   Until then the reader is proven on ExcelJS output and hand-written XML, and
   the reading verdict's "1 in 100" trigger cannot be measured.
 - Non-UTF-8 CSV (Windows-1252) decodes with replacement characters; the
@@ -188,7 +228,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
+- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`hash.ts`](../packages/import/src/hash.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
 
 **Project docs**
 

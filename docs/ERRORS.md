@@ -53,6 +53,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-1006](#sp-1006) | File too large | error |
 | [SP-1007](#sp-1007) | Damaged file | error |
 | [SP-1008](#sp-1008) | Reading .xlsx needs a DOM (retired) | error |
+| [SP-1009](#sp-1009) | No SHA-256 without Web Crypto | warning |
 | [SP-2001](#sp-2001) | Invalid sheet name | error |
 | [SP-2002](#sp-2002) | No visible sheet | error |
 | [SP-2003](#sp-2003) | Sheet past Excel’s limits | error |
@@ -67,6 +68,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-2012](#sp-2012) | Damaged archive | error |
 | [SP-2013](#sp-2013) | Archive over the size limit | error |
 | [SP-2014](#sp-2014) | Not a workbook package | error |
+| [SP-2015](#sp-2015) | Invalid validation or conditional-format rule | error |
 | [SP-2101](#sp-2101) | download() needs a file name | error |
 | [SP-2102](#sp-2102) | Only .xlsx or .csv can be saved | error |
 | [SP-2103](#sp-2103) | File type cannot be told | error |
@@ -203,6 +205,14 @@ grid shows it as "Can't open this file" (or the password state) and fires
 - **Likely cause:** an older `@sheetpane/import`.
 - **Fix:** upgrade `@sheetpane/import`. The code is kept so it is never reused.
 
+### SP-1009
+
+**No SHA-256 without Web Crypto** · warning · [SR-IMPORT](../records/0104_IMPORT.md) decision 11 · a console warning, not an `ImportError`
+
+- **Meaning:** the file opened (or was exported) but has no fingerprint: `read()`'s `sha256`, and the `sha256` of `sheetpane-load` and `sheetpane-export`, are `undefined`. sheetpane never puts a substitute hash in its place.
+- **Likely cause:** `crypto.subtle` is missing — the page is not a secure context (plain `http://` other than `localhost`, some embedded webviews), or a runtime without Web Crypto (Node before 20); rarely, `crypto.subtle.digest` itself failed.
+- **Fix:** serve the page over `https://` (or from `localhost`); in Node, use version 20 or later.
+
 ---
 
 ## 2xxx · export
@@ -322,6 +332,14 @@ plain `Error`s or `TypeError`s.
 - **Meaning:** `patchXlsx` was given a ZIP with no `xl/workbook.xml`.
 - **Likely cause:** the upload was not an `.xlsx`, or the wrong bytes were passed.
 - **Fix:** pass the original workbook's bytes.
+
+### SP-2015
+
+**Invalid validation or conditional-format rule** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'bad-rule'`
+
+- **Meaning:** a data-validation rule, conditional format or differential format given to `toXlsx` or `patchXlsx` cannot be written as Excel reads it (W-57).
+- **Likely cause:** an empty or malformed `sqref`; an unknown `type`, `operator`, `errorStyle`, `timePeriod`, cfvo type or icon set; a title over 32 or a message over 255 characters; a quoted list over 255 characters; a conditional format with no rule; a `dxfId` the workbook has no format for; a colour scale, data bar or icon set without the thresholds or colour it needs.
+- **Fix:** correct the rule the message names. Put a long list on a sheet and point `formula1` at the range; add the format to `dxfs` before naming its `dxfId`.
 
 ### SP-2101
 

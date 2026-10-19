@@ -292,7 +292,7 @@
               "kind": "method",
               "name": "export",
               "privacy": "public",
-              "description": "Every change applied; the upload untouched. Also dispatches `sheetpane-export`.",
+              "description": "Every change applied; the upload untouched. Also dispatches `sheetpane-export`, with the blob's SHA-256 (W-65).",
               "parameters": [
                 {
                   "name": "options",
@@ -513,9 +513,9 @@
             {
               "name": "sheetpane-load",
               "type": {
-                "text": "CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>"
+                "text": "CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number; sha256: string | undefined } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>"
               },
-              "description": "`{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`."
+              "description": "`{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`."
             },
             {
               "name": "sheetpane-change",
@@ -576,9 +576,9 @@
             {
               "name": "sheetpane-editstart",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>"
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown; richText?: true }>"
               },
-              "description": "`{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only."
+              "description": "`{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only."
             },
             {
               "name": "sheetpane-input",
@@ -604,9 +604,9 @@
             {
               "name": "sheetpane-export",
               "type": {
-                "text": "CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; original?: boolean }>"
+                "text": "CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; sha256: string | undefined; original?: boolean }>"
               },
-              "description": "`{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing."
+              "description": "`{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing."
             },
             {
               "name": "sheetpane-close",

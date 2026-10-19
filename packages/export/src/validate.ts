@@ -1,5 +1,6 @@
 // Input rules (export verdict decision 9): sheet names, sizes, values, merges.
 import { ExportError } from './errors.js';
+import { checkConditionalFormats, checkDataValidations, checkDxfs } from './rules.js';
 import { MAX_COLS, MAX_ROWS, cellRef, parseRange, rangesIntersect, type RangePos } from './refs.js';
 import type { Cell, Sheet, Workbook } from './types.js';
 
@@ -69,5 +70,11 @@ export function checkWorkbook(book: Workbook): RangePos[][] {
   const seen = new Set<string>();
   for (const s of book.sheets) checkSheetName(s.name, seen);
   if (book.sheets.every((s) => s.hidden)) throw new ExportError('sheet-count', 'at least one sheet must be visible');
-  return book.sheets.map(checkSheet);
+  checkDxfs(book.dxfs);
+  return book.sheets.map((s) => {
+    const merges = checkSheet(s);
+    if (s.dataValidations !== undefined) checkDataValidations(s.dataValidations, s.name);
+    if (s.conditionalFormats !== undefined) checkConditionalFormats(s.conditionalFormats, s.name, book.dxfs?.length ?? 0);
+    return merges;
+  });
 }

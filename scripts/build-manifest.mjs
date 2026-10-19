@@ -44,7 +44,7 @@ const FIELD = {
   column: '{ index: number; letter: string; header: string }', errors: 'SheetpaneError[]', plugins: 'string[]', error: 'SheetpaneError',
   mode: 'Mode', reason: "'undo' | 'redo' | 'cleared'", canUndo: 'boolean', canRedo: 'boolean',
   blob: 'Blob', name: 'string', guarded: 'string[] | false', format: "'xlsx' | 'csv'", converted: 'boolean', original: 'boolean',
-  sheets: 'string[]', readMs: 'number', code: 'string', spCode: 'SpCode', message: 'string', detail: 'string',
+  sheets: 'string[]', readMs: 'number', sha256: 'string | undefined', code: 'string', spCode: 'SpCode', message: 'string', detail: 'string',
 };
 const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" } };
 /** The type names payloads use, all exported by `@sheetpane/grid`. */

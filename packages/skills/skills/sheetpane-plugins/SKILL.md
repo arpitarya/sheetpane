@@ -16,7 +16,7 @@ workbook ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/010
 |---|---|---|---|
 | every Excel number format | `@sheetpane/numfmt` | `1 1/4`, `$1,234.50`, locales; a format dropdown | [SR-NUMFMT](https://github.com/arpitarya/sheetpane/blob/main/records/0109_NUMFMT.md) |
 | live formulas | `@sheetpane/formulas` | IronCalc recalculation, typed formulas, ⟳ marks | [SR-FORMULAS](https://github.com/arpitarya/sheetpane/blob/main/records/0111_FORMULAS.md) |
-| cell styles | `@sheetpane/styles` | fills, fonts, borders, alignment; the format row | [SR-STYLES](https://github.com/arpitarya/sheetpane/blob/main/records/0110_STYLES.md) |
+| cell styles | `@sheetpane/styles` | fills, fonts, borders, alignment; rich text (one italic word) as runs; the format row | [SR-STYLES](https://github.com/arpitarya/sheetpane/blob/main/records/0110_STYLES.md) |
 | the workbook's data validation | `@sheetpane/validation` | rule failures as errors, list arrows | [SR-VALIDATION](https://github.com/arpitarya/sheetpane/blob/main/records/0108_VALIDATION.md) |
 | conditional formatting | `@sheetpane/condfmt` (needs styles) | colour scales, data bars, rule fills | [SR-CONDFMT](https://github.com/arpitarya/sheetpane/blob/main/records/0114_CONDFMT.md) |
 | pictures | `@sheetpane/images` | images at their anchors | [SR-IMAGES](https://github.com/arpitarya/sheetpane/blob/main/records/0107_IMAGES.md) |
@@ -45,6 +45,10 @@ it on per element. Import `@sheetpane/x` for the headless plugin, or
   first element of the pane ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) decision 18).
 - **Peers:** condfmt draws after styles — list both; charts places with
   images' anchors — list both.
+- **Rich text** (a cell with one word in italic) is read by `@sheetpane/import`
+  always (each sheet's `runs`) but drawn only with `styles`; editing such a cell
+  writes plain text — the cell bar warns, and `sheetpane-editstart` carries
+  `richText: true` so a host can refuse the edit.
 - `@sheetpane/formulas` loads its WASM only on the first formula; a
   workbook without formulas never fetches it.
 - `@sheetpane/validation` reads rules **saved in the workbook**; your own

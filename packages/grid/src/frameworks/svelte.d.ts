@@ -8,7 +8,7 @@ export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 
 /** `<sheetpane-excel>` in Svelte: attributes, properties, `on:sheetpane-…` (Svelte 4) and `onsheetpane-…` (Svelte 5) listeners. */
 export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -26,7 +26,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-mode'?: ((event: SheetpaneExcelEventMap['sheetpane-mode'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneExcelEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   'on:sheetpane-editstart'?: ((event: SheetpaneExcelEventMap['sheetpane-editstart'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'on:sheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -34,11 +34,11 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
   'on:sheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'on:sheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{}` when the pop-up closes. */
   'on:sheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'onsheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'onsheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -56,7 +56,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'onsheetpane-mode'?: ((event: SheetpaneExcelEventMap['sheetpane-mode'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneExcelEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   'onsheetpane-editstart'?: ((event: SheetpaneExcelEventMap['sheetpane-editstart'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'onsheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -64,7 +64,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'onsheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
   'onsheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'onsheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{}` when the pop-up closes. */
   'onsheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;

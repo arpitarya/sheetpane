@@ -216,7 +216,7 @@ committed manifest drifts from the elements.
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
+| event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
 
 ### Following an edit
 
@@ -227,7 +227,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | event | fires | detail | cancel it to |
 |---|---|---|---|
 | `sheetpane-select` | the selected cell moves | `{sheet, ref, column, value}` | — |
-| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value}` | keep the cell read-only |
+| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value, richText?}` — `richText: true` on a rich-text cell, whose edit saves plain text | keep the cell read-only |
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |

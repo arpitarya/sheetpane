@@ -486,7 +486,7 @@ committed manifest drifts from the elements.
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
+| event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
 
 ### Following an edit
 
@@ -497,7 +497,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | event | fires | detail | cancel it to |
 |---|---|---|---|
 | `sheetpane-select` | the selected cell moves | `{sheet, ref, column, value}` | — |
-| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value}` | keep the cell read-only |
+| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value, richText?}` — `richText: true` on a rich-text cell, whose edit saves plain text | keep the cell read-only |
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
@@ -764,8 +764,12 @@ pnpm add @sheetpane/export      # or npm / yarn
 
 ```ts
 type Cell = string | number | boolean | null;
-interface Sheet { name: string; rows: Cell[][]; merges?: string[]; columnWidths?: number[]; hidden?: boolean }
-interface Workbook { sheets: Sheet[] }
+interface Sheet {
+  name: string; rows: Cell[][]; merges?: string[]; columnWidths?: number[]; hidden?: boolean;
+  freeze?: { rows: number; cols: number };
+  dataValidations?: DataValidation[]; conditionalFormats?: ConditionalFormat[];
+}
+interface Workbook { sheets: Sheet[]; dxfs?: Dxf[] }
 interface Change { sheet: string; ref: string; value: Cell }
 ```
 
@@ -787,6 +791,38 @@ Text is written as inline strings, numbers and booleans typed. `{ compression:
 'store' }` gives byte-identical output on every engine (larger; the audit
 mode); the default compresses with `CompressionStream` / `zlib`.
 
+## Dropdowns and conditional formats
+
+A sheet's `dataValidations` and `conditionalFormats` are written as Excel's
+own rules — the same shapes `@sheetpane/import` reads, so a rule read from a
+file can be written back unchanged. A conditional format's `dxfId` picks the
+format it applies from the workbook's `dxfs`.
+
+```ts
+const bytes = await toXlsx({
+  sheets: [
+    {
+      name: 'Spec', rows: [['Item', 'Unit'], ['Bolt', null]],
+      dataValidations: [{
+        sqref: ['B2:B200'], type: 'list', formula1: 'Lists!$A$2:$A$9',   // or a literal: '"kg,m,pcs"'
+        allowBlank: true, showErrorMessage: true, showDropDown: false,   // false shows the arrow (OOXML's inverted flag)
+        prompt: 'Pick a unit', error: 'Not a unit on the Lists sheet',
+      }],
+      conditionalFormats: [{
+        sqref: ['B2:B200'],
+        rules: [{ type: 'expression', priority: 1, stopIfTrue: false, formulas: ['AND($A2<>"",$B2="")'], dxfId: 0 }],
+      }],
+    },
+    { name: 'Lists', rows: [['Unit'], ['kg'], ['m'], ['pcs']] },
+  ],
+  dxfs: [{ font: { color: { rgb: 'FF9C0006' } }, fill: { patternType: 'solid', bgColor: { rgb: 'FFFFC7CE' } } }],  // a dxf's solid fill is bgColor
+});
+```
+
+A rule Excel would repair — an unknown type, a title over 32 or a message over
+255 characters, a typed-out list over 255, a `dxfId` with no format — is
+refused with `SP-2015`, naming the sheet and range.
+
 ## Patch the uploaded `.xlsx` — keep everything else
 
 ```ts
@@ -804,7 +840,8 @@ for byte. Excel is asked to recalculate formulas on open, and pivot tables
 whose source changed to refresh.
 
 Options also rewrite a sheet's frozen pane (`freeze`), its merged ranges
-(`merges`) and what it hides (`hidden`):
+(`merges`), its rules (`dataValidations`, `conditionalFormats`, with new
+formats in `dxfs`) and what it hides (`hidden`):
 
 ```ts
 await patchXlsx(originalBytes, [], {
@@ -820,6 +857,22 @@ listed rows and columns are hidden and every other one is shown. `<col>` spans
 are split and merged so widths and styles stay put. When the active sheet is
 hidden, the workbook opens on the first visible one. Hiding every sheet is
 refused (`SP-2002`).
+
+```ts
+const book = await read(originalBytes);                 // @sheetpane/import
+await patchXlsx(originalBytes, [], {
+  dataValidations: [{ sheet: 'Spec', rules: [...book.sheets[0].dataValidations, unitRule] }],
+  dxfs: [{ fill: { patternType: 'solid', bgColor: { rgb: 'FFFFC7CE' } } }],
+  conditionalFormats: [{ sheet: 'Spec', formats: [{ sqref: ['B2:B200'], rules: [
+    { type: 'containsBlanks', priority: 1, stopIfTrue: false, formulas: ['LEN(TRIM(B2))=0'], dxfId: book.styles.dxfs.length },
+  ] }] }],
+});
+```
+
+Each list is the sheet's **whole** set: `[]` removes the block. `dxfs` are
+added after the file's own, so the first new one is `book.styles.dxfs.length`.
+An `exportPatch` hook can do the same with `setDataValidations(xml, rules)`
+and `setConditionalFormats(xml, formats, dxfCount)`.
 
 ## Write CSV
 
@@ -844,7 +897,8 @@ Every refusal is an `ExportError` with a `code` and the `sheet` / `ref` it is
 about: a bad sheet name (1–31 characters, none of `[ ] : * ? / \`, unique
 ignoring case), more than 1,048,576 rows or 16,384 columns, `NaN` or
 `Infinity`, text over 32,767 characters, overlapping merges, a `hidden`
-option that would leave no sheet visible.
+option that would leave no sheet visible, a validation or conditional-format
+rule Excel would repair (`SP-2015`).
 
 ## Save the file — `download(data, filename, options?)`
 
@@ -924,9 +978,11 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `hiddenRows`, `hiddenCols` | 0-based, sorted; a zero height or width counts as hidden |
 | `rowOutline`, `colOutline`, `outline`, `autoFilter` | outline levels per row and column (sparse `{ level, collapsed? }`), the deepest levels and summary placement, and the filter range |
 | `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
-| `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins |
+| `runs` | rich-text cells only, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` — each run's text with its `b`, `i`, `u`, `strike`, `color`, `sz`, `vertAlign` (never the font family); phonetic runs left out; `rows` and `text` hold the joined text as before |
+| `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins; the first two are `@sheetpane/export`'s shapes, so `toXlsx` / `patchXlsx` write them back unchanged |
 | `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
+| `sha256` | from `read()`: the SHA-256 of the bytes opened, 64 lowercase hex digits — which file this is. Absent on a page without Web Crypto (not `https` or `localhost`), with a console warning `SP-1009`; never a substitute hash. `sha256(bytes)` is exported for hashing anything else |
 
 ## CSV
 
@@ -1226,7 +1282,13 @@ and returns only these CSS properties:
 - Patterns blend by density; a gradient shows its midpoint; diagonal borders,
   indent and rotation are not drawn.
 
-`styles({ fileStyles: false })` draws only the reviewer's own changes.
+**Rich text:** a cell whose string has formatted runs (one italic word) is drawn
+as spans through `decorateRuns` — each run's weight, style, decoration, size and
+colour against the cell's own font, superscript and subscript at three quarters
+of the size; never a font family. An edit writes plain text (the cell bar says
+so first); untouched rich cells export byte for byte.
+
+`styles({ fileStyles: false })` draws only the reviewer's own changes (rich text plain).
 
 ## The format row (`ui()`)
 
@@ -2413,6 +2475,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 | hook | one of six named functions on the workbook store a plugin may provide: `format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch` |
 | slot | one of six named places in the grid a plugin's control descriptor may target: `format-row`, `selbar`, `cellbar`, `status`, `cell`, `overlay`; the grid draws the control, the plugin describes it |
 | derived cell | a cell whose value a plugin computed (`derive`) rather than the user typed; marked in the grid, never in the change map |
+| rich text · run | a cell whose string mixes formatting (one word in italic); each differently formatted stretch is a run (`<r>`), read into a sheet's `runs` and drawn by `decorateRuns` — see SR-IMPORT decision 12 |
 
 
 ---
@@ -2469,6 +2532,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-1006](#sp-1006) | File too large | error |
 | [SP-1007](#sp-1007) | Damaged file | error |
 | [SP-1008](#sp-1008) | Reading .xlsx needs a DOM (retired) | error |
+| [SP-1009](#sp-1009) | No SHA-256 without Web Crypto | warning |
 | [SP-2001](#sp-2001) | Invalid sheet name | error |
 | [SP-2002](#sp-2002) | No visible sheet | error |
 | [SP-2003](#sp-2003) | Sheet past Excel’s limits | error |
@@ -2483,6 +2547,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-2012](#sp-2012) | Damaged archive | error |
 | [SP-2013](#sp-2013) | Archive over the size limit | error |
 | [SP-2014](#sp-2014) | Not a workbook package | error |
+| [SP-2015](#sp-2015) | Invalid validation or conditional-format rule | error |
 | [SP-2101](#sp-2101) | download() needs a file name | error |
 | [SP-2102](#sp-2102) | Only .xlsx or .csv can be saved | error |
 | [SP-2103](#sp-2103) | File type cannot be told | error |
@@ -2619,6 +2684,14 @@ grid shows it as "Can't open this file" (or the password state) and fires
 - **Likely cause:** an older `@sheetpane/import`.
 - **Fix:** upgrade `@sheetpane/import`. The code is kept so it is never reused.
 
+### SP-1009
+
+**No SHA-256 without Web Crypto** · warning · [SR-IMPORT](../records/0104_IMPORT.md) decision 11 · a console warning, not an `ImportError`
+
+- **Meaning:** the file opened (or was exported) but has no fingerprint: `read()`'s `sha256`, and the `sha256` of `sheetpane-load` and `sheetpane-export`, are `undefined`. sheetpane never puts a substitute hash in its place.
+- **Likely cause:** `crypto.subtle` is missing — the page is not a secure context (plain `http://` other than `localhost`, some embedded webviews), or a runtime without Web Crypto (Node before 20); rarely, `crypto.subtle.digest` itself failed.
+- **Fix:** serve the page over `https://` (or from `localhost`); in Node, use version 20 or later.
+
 ---
 
 ## 2xxx · export
@@ -2738,6 +2811,14 @@ plain `Error`s or `TypeError`s.
 - **Meaning:** `patchXlsx` was given a ZIP with no `xl/workbook.xml`.
 - **Likely cause:** the upload was not an `.xlsx`, or the wrong bytes were passed.
 - **Fix:** pass the original workbook's bytes.
+
+### SP-2015
+
+**Invalid validation or conditional-format rule** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'bad-rule'`
+
+- **Meaning:** a data-validation rule, conditional format or differential format given to `toXlsx` or `patchXlsx` cannot be written as Excel reads it (W-57).
+- **Likely cause:** an empty or malformed `sqref`; an unknown `type`, `operator`, `errorStyle`, `timePeriod`, cfvo type or icon set; a title over 32 or a message over 255 characters; a quoted list over 255 characters; a conditional format with no rule; a `dxfId` the workbook has no format for; a colour scale, data bar or icon set without the thresholds or colour it needs.
+- **Fix:** correct the rule the message names. Put a long list on a sheet and point `formula1` at the range; add the format to `dxfs` before naming its `dxfId`.
 
 ### SP-2101
 
@@ -4926,7 +5007,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     demo-packed`, nightly. Both share one look (2026-10-19): a host bar
     (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
     dark · auto, set on every component), the components filling the window,
-    and a footer of host events; `examples/react/src/demo.css` is the
+    and a footer of host events (the `sheetpane-export` line names the file,
+    the format and the first 12 hex digits of its SHA-256, W-65);
+    `examples/react/src/demo.css` is the
     stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
@@ -5067,6 +5150,12 @@ else.
    `Workbook { sheets }`; `Change { sheet, ref, value }`; `Sheet.freeze?:
    { rows, cols }` (W-24). `columnWidths` are
    Excel character units (`<col width>`), index 0 = column A.
+   `Sheet.dataValidations?: DataValidation[]`, `Sheet.conditionalFormats?:
+   ConditionalFormat[]` and `Workbook.dxfs?: Dxf[]` (W-57) — the shapes
+   `@sheetpane/import` reads (`DataValidation`, `ConditionalFormat`,
+   `CfRule`, `Cfvo`, `Dxf`, `Font`, `Fill`, `Border`, `BorderSide`,
+   `Alignment`, `Color` are defined here and re-exported by import), so a
+   rule read is a rule written; a rule's `dxfId` indexes `Workbook.dxfs`.
 2. **`toXlsx(book, { compression?, onStripped? }): Promise<Uint8Array>`**
    writes exactly `[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`,
    `xl/_rels/workbook.xml.rels`, `xl/worksheets/sheetN.xml`, `xl/styles.xml`.
@@ -5076,7 +5165,18 @@ else.
    is the active tab. The file's default font in `styles.xml` is Excel's
    (Calibri 11) — a property of the file for Excel, never read for display
    (SR-LAW-5). `toXlsx` writes no formulas and takes no change list, so it
-   writes no `<calcPr>`.
+   writes no `<calcPr>`. **Rules (W-57):** each sheet's
+   `conditionalFormats` as one `<conditionalFormatting>` per format and its
+   `dataValidations` as one `<dataValidations>`, in schema order after
+   `<mergeCells>` (`conditionalFormatting` before `dataValidations`);
+   `Workbook.dxfs` as `<dxfs>` after `<cellStyles>` in `styles.xml` (a dxf's
+   children in CT_Dxf order: font, numFmt, fill, alignment, border). A
+   validation with a `prompt` or `promptTitle` gets `showInputMessage="1"`
+   (the shape has no flag for it, and Excel shows no prompt without it);
+   `type="none"` and false flags are left out; attribute line breaks and tabs,
+   and a carriage return in a formula, are written as character references so
+   both readers give them back. A workbook with no rules and no dxfs is
+   written byte for byte as before.
 3. **`patchXlsx(original, changes, { compression?, exportPatch?, onStripped?, maxEntrySize?, maxTotalSize? })`**
    - rewrites only the changed `<c>` elements of the touched sheets, keeping
      each cell's `s` (style); new text goes in as inline strings; shared
@@ -5100,6 +5200,20 @@ else.
      for `Sheet.freeze` (W-24);
    - `merges: [{ sheet, ranges }]` rewrites that sheet's `<mergeCells>` to
      exactly those ranges (in schema position; removed when empty);
+   - `dataValidations: [{ sheet, rules }]` and `conditionalFormats: [{ sheet,
+     formats }]` (W-57) rewrite that sheet's `<dataValidations>` and every
+     top-level `<conditionalFormatting>` to exactly those (the new formats
+     where the first old block stood, else in schema position after
+     `mergeCells` / `phoneticPr`; `dataValidations` after them; removed when
+     empty); Excel 2010's `x14:` rules inside `<extLst>` are left as they are
+     (import does not read them). `dxfs: Dxf[]` is appended to the file's
+     `<dxfs>` (count updated; created before `tableStyles` / `colors` /
+     `extLst` when missing; a package with no style sheet gets sheetpane's,
+     with its relationship and content type); a rule's `dxfId` counts the
+     file's formats first, then the appended ones. Everything is checked
+     before anything is written; sheets not named stay byte for byte.
+     `setDataValidations(xml, rules)` and `setConditionalFormats(xml,
+     formats, dxfCount)` are exported for an `exportPatch` hook;
    - `hidden: [{ sheet, rows?, cols?, state?, outline?: { rows?, cols? } }]`
      (W-49): each list and outline map is the sheet's whole set after the
      edit (0-based); fields not given are left alone. Rows: the listed rows
@@ -5139,7 +5253,16 @@ else.
    or trailing `'`, unique ignoring case; at least one sheet, at least one
    visible; ≤ 1,048,576 rows and ≤ 16,384 columns, naming the first cell
    over; finite numbers; ≤ 32,767 characters of text; merges of two or more
-   cells that do not overlap.
+   cells that do not overlap. **Rules** (`bad-rule`, SP-2015, W-57): every
+   `sqref` non-empty and each entry a cell or range; a known validation
+   `type`, `operator` and `errorStyle`; `errorTitle` / `promptTitle` ≤ 32
+   characters, `error` / `prompt` ≤ 255, a quoted list ≤ 255 — Excel's own
+   limits, past which it repairs the file; a conditional format with at
+   least one rule, a known `type`, `operator` and `timePeriod`, a whole
+   `priority`, ≤ 3 formulas, a `dxfId` the workbook has; a colour scale with
+   2–3 thresholds and one colour each, a data bar with 2 and a colour, an
+   icon set with 2–5 and a known set name; `dxfs` a list of objects.
+   Characters XML forbids are dropped from a rule's text.
 7. **ZIP:** central-directory walk, sizes from the central directory, ZIP64
    and encrypted entries refused, methods 0 and 8 only, CRC-32 checked on
    every inflate; inflated size capped (512 MB per entry, 1 GB per archive by
@@ -5155,7 +5278,7 @@ else.
 10. **No runtime dependencies** (SR-LAW-2). `download()` lives in this
     package too — [SR-DOWNLOAD](0101_DOWNLOAD.md).
 
-**Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107.
+**Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107. W-57 adds SP-2015 (`bad-rule`).
 
 ### Consequences
 
@@ -5163,7 +5286,10 @@ else.
   tests (`just test-pkg export-browser`, which also catch real downloads —
   SR-DOWNLOAD): independent read-back through ExcelJS,
   PapaParse and fflate; fast-check properties (CSV identity, `toXlsx`
-  identity, `patchXlsx` changes exactly the named cells, string escape);
+  identity, `patchXlsx` changes exactly the named cells, string escape;
+  W-57: `import(toXlsx(x))` and `import(patchXlsx(upload, x))` give the
+  validation, conditional-format and dxf tables `x` back, through DOMParser
+  and the built-in XML reader — `packages/import/test/rules*.test.ts`);
   the committed golden `sheetpane-sample.store.xlsx` reproduced in Node and
   Chromium; coverage gate 90 % lines.
 - **Opened by the decider, 2026-10-18:** `sheetpane-sample.xlsx` and
@@ -5171,6 +5297,13 @@ else.
   prompt, and `sheetpane-sample.csv` shows its accents correctly in Excel. "Excel
   opens it" is backed by Excel and LibreOffice as well as three independent
   readers.
+- **Rules are checked for structure, not against the schema** (W-57): the
+  tests read what is written back through ExcelJS and the import package;
+  ECMA-376 schema validation is B-033. Opening a generated file with working
+  dropdowns and formats in Excel and LibreOffice is W-30 DoD 3.
+- `patchXlsx`'s `dxfs` are appended, never deduplicated or removed: a format
+  no rule names any more stays in `styles.xml` (harmless, like orphaned
+  shared strings).
 - Shared strings orphaned by a patch stay in the table (harmless; keeps the
   patch small); the table's `count` is not recomputed.
 
@@ -5207,7 +5340,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/export/src/index.ts`](../packages/export/src/index.ts) · [`patch.ts`](../packages/export/src/patch.ts) · [`xlsx.ts`](../packages/export/src/xlsx.ts) · [`csv.ts`](../packages/export/src/csv.ts) · [`zip.ts`](../packages/export/src/zip.ts)
+- [`packages/export/src/index.ts`](../packages/export/src/index.ts) · [`patch.ts`](../packages/export/src/patch.ts) · [`xlsx.ts`](../packages/export/src/xlsx.ts) · [`rules.ts`](../packages/export/src/rules.ts) · [`csv.ts`](../packages/export/src/csv.ts) · [`zip.ts`](../packages/export/src/zip.ts)
 
 **Project docs**
 
@@ -5272,20 +5405,24 @@ carry over unchanged; the plugins verdict added what plugins read.
    `fromXlsx(bytes | Blob)`, `fromCsv(text | Blob, { name?, delimiter? })` →
    `ImportedWorkbook`. Also exported: `detectDelimiter`, `parseCsv`,
    `sheetNameFrom`, `formatCode`, `general`, `inSubset`, `subsetCode`,
-   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, and every type.
+   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), and every type.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
-   `path`, `styleIndex`, `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
+   `path`, `styleIndex`, `runs` (decision 12), `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
    `state`, `rowOutline`, `colOutline`, `outline`, `autoFilter?` (W-49;
    `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
-   `conditionalFormats`, `drawings`, `notes`, `threadedComments`,
+   `conditionalFormats` (their types, and the `Dxf` / `Font` / `Fill` /
+   `Border` / `Alignment` / `Color` shapes, are `@sheetpane/export`'s,
+   re-exported here, so `toXlsx` and `patchXlsx` write what this reads —
+   W-57), `drawings`, `notes`, `threadedComments`,
    `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
    `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
-   `persons`, `definedNames`, `delimiter` (CSV) and `part(path)`.
+   `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
+   decision 11) and `part(path)`.
 3. **Cells:** `t="s"` / `inlineStr` → the text, phonetic runs left out,
-   `_xHHHH_` decoded; `str` → the text; `b` → a boolean shown `TRUE` /
+   `_xHHHH_` decoded, its formatted runs in `runs` (decision 12); `str` → the text; `b` → a boolean shown `TRUE` /
    `FALSE`; `e` → the error text; `d` → the ISO string; otherwise a number. A
    formula cell holds its **cached `<v>`**, never evaluated; its formula text
    is in `formulas`, shared formulas expanded with `shiftFormula`.
@@ -5342,6 +5479,34 @@ carry over unchanged; the plugins verdict added what plugins read.
     `{0, 0, true, true}`). The built-in XML reader reads the same (a parity
     test).
 
+11. **The file's fingerprint (W-65):** `read()` sets `sha256` — the SHA-256
+    of the bytes it was given, 64 lowercase hex digits — once, after the file
+    parsed (a refused file is not hashed). `fromXlsx` / `fromCsv` do not set
+    it (they may be given text or a part, not the file). The digest is Web
+    Crypto's `crypto.subtle.digest('SHA-256')` — no dependency (L2); every
+    modern browser on a secure page, Node 20 and later. Where `crypto.subtle`
+    is missing (a page that is not a secure context) or the digest fails,
+    `sha256` is absent and `console.warn` carries SP-1009 — **never a
+    substitute hash**, so nothing claims a provenance it does not have. The
+    helper is exported as `sha256(bytes | ArrayBuffer | Blob)` →
+    `Promise<string | undefined>`; the grid hashes its exports with it
+    (SR-GRID decision 6). Hashing is once per read or write, never per edit.
+
+12. **Rich text (W-53):** `runs` maps a cell to its string's runs —
+    `TextRun` `{ text, b?, i?, u?, strike?, color?, sz?, vertAlign? }` from
+    each `<r>` and its `<rPr>`, through the same font reader as `styles.xml`
+    — for shared (`<si>`) and inline (`<is>`) strings alike. **Only a rich
+    string is listed:** two or more runs, or one run that carries formatting
+    (a lone unformatted run, and a plain `<t>`, are not). A run with no
+    `<rPr>` is `{ text }` alone (it takes the cell's font). Phonetic runs
+    (`<rPh>`) are never runs; the family (`<rFont>`) is never read (L5). The
+    runs' text joined is the cell's value — `rows` and `text` are unchanged.
+    Cells sharing a string share one array (memory). A CSV has `{}`. The
+    built-in XML reader reads the same (a parity test). The grid draws runs
+    through the `decorate` hook (SR-GRID decision 17, SR-STYLES decision 9);
+    an edit writes plain text, and an untouched rich cell is never rewritten
+    (`patchXlsx` keeps `sharedStrings.xml` and the cell as they were).
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -5355,8 +5520,16 @@ carry over unchanged; the plugins verdict added what plugins read.
   threaded comments and persons, a pivot location, a chartsheet); CSV
   dialects, a round-trip property with `toCsv`, the 250,000-row CSV (136 ms in
   Chromium on Arpit's MacBook). `test/ssr.test.ts` imports it in Node.
+  `hash.test.ts` (W-65): the FIPS 180-2 vectors (`abc`, the empty message, the
+  448-bit message) on bytes, a view, an `ArrayBuffer` and a Blob; `read()` of a
+  CSV and an `.xlsx` however passed; no `crypto` or a failing digest → absent
+  with SP-1009.
+  `runs.test.ts` (W-53): runs of shared and inline strings, every run
+  property, phonetic runs left out, a lone run listed only when formatted,
+  shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
+  A rich-text cell saved by Excel is part of it (W-30 DoD 3).
   Until then the reader is proven on ExcelJS output and hand-written XML, and
   the reading verdict's "1 in 100" trigger cannot be measured.
 - Non-UTF-8 CSV (Windows-1252) decodes with replacement characters; the
@@ -5392,7 +5565,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
+- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`hash.ts`](../packages/import/src/hash.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
 
 **Project docs**
 
@@ -5467,7 +5640,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    host may assign a store to `el.workbook`.
 2. **Snapshot:** `load` (`empty` · `loading` · `ready` · `error` with the
    reader's code and `detail`), `source` (name, kind, size, the uploaded bytes
-   — never modified — and the read time), `book` (the `ImportedWorkbook`),
+   — never modified — the read time, and `sha256`, the bytes' SHA-256 from
+   `read()`, W-65), `book` (the `ImportedWorkbook`),
    `changes`, `derived`, `errors`, `selection`, `mode`, `composing`,
    `canUndo`, `canRedo`. Selection and mode are shared (contract decision 2);
    scroll, zoom, find and form drafts are per element.
@@ -5535,7 +5709,10 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    hook as `ctx.exportOptions`; `.xlsx`: `patchXlsx(upload, value changes,
    { exportPatch: plugin hooks, freeze })`; `.csv`: `toCsv` of the sheet with
    its changes, in the detected delimiter. `exportChanges()` and
-   `currentRows()` are public.
+   `currentRows()` are public. The result carries `sha256`, the SHA-256 of
+   the blob's bytes (W-65; `@sheetpane/import`'s `sha256`), taken once per
+   export — an edit never hashes; `undefined` without Web Crypto (SP-1009,
+   SR-IMPORT decision 11), never a substitute.
 7. **Undo / redo (W-23):** one stack per pane, 500 entries; an entry holds the
    state of `changes` and `errors` before and after; typing in one cell is one
    entry (coalesced until Enter, Tab, Esc or blur); selection and mode are not
@@ -5560,21 +5737,26 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    methods `load()`, `export()`,
    `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
    `shortcuts()`, `column()`, `reveal()`, `unreveal()` (W-49); attribute `header-row` (default 1); events
-   `sheetpane-load`, `-change {sheet, ref, kind, was, now}`, `-errors
+   `sheetpane-load` (ready: `{status, name, kind, sheets, readMs, sha256}`
+   — `sha256` the file's SHA-256, W-65), `-change {sheet, ref, kind, was, now}`, `-errors
    {errors, plugins}`, `-select {sheet, ref, range, column, value}` (`range`
    when more than one cell is selected; it fires when the selection settles —
    a drag fires once, on release), `-editstart
-   {…, value}` (cancellable: the cell stays read-only), `-input {…, draft,
+   {…, value, richText?}` (cancellable: the cell stays read-only; `richText:
+   true` on a rich-text cell — W-53, decision 15c), `-input {…, draft,
    was}`, `-beforechange {…, was, now}` (cancellable: the value is refused
    before the change map, undo, derive or validate see it), `-editcancel`,
    `-sheet {sheet}`, `-resize {sheet, axis, indexes, px, via}` (W-47: on
    release; `via` is `drag`, `fit`, `menu` or `reset`), `-visibility {sheet,
    axis, indexes, hidden, via}` (W-49, decision 21c), every payload naming `column: {index, letter, header}`
    (W-26, the events verdict); `-mode`, `-history`,
-   `-close`, `-export {blob, kind, name, guarded, format, converted,
+   `-close`, `-export {blob, kind, name, guarded, format, converted, sha256,
    original?}` (cancelable: the Download control downloads only when no
    listener prevents it; `original: true` when it hands back the file as
-   opened; `converted` when the format differs from the upload's), all
+   opened — its `sha256` is then the load's, not hashed again; `converted`
+   when the format differs from the upload's; `sha256` is the blob's SHA-256,
+   W-65 — in both events the key is always present and `undefined` without
+   Web Crypto, SP-1009), all
    bubbling and
    composed. An action's event fires once, on the element where it happened;
    an action with no element fires on the pane's first sheet. Setting `src`
@@ -5599,7 +5781,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `data-hc="<index>"`, row headers `data-hr="<index>"`, the corner
     `data-hall` and the status line's totals `data-sp="totals"` (W-46); the
     header edges `data-rz-c` / `data-rz-r` and the header menu
-    `data-sp="header-menu"` (W-47).
+    `data-sp="header-menu"` (W-47); the cell bar's rich-text warning
+    `data-sp="rich-text"` (W-53).
     `@sheetpane/testing`
     (SR-TESTING) uses only these, roles and labels.
 10. **Layout:** toolbar (file, kind and size, View/Edit, open counts, find,
@@ -5762,14 +5945,31 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     to `justify-content`) from `decorate` show; the state tints (range,
     find hits, error marks) are `::before` overlays above a `decorate` fill,
     never instead of it; the changed corner carries a cell-coloured outline.
+15c. **Rich text (W-53):** `store.runs(sheet, ref)` is the file's runs
+    (SR-IMPORT decision 12) while the cell holds the file's value — no
+    `value` or `formula` change, no derived value — and the cell context
+    carries them as `runs`; a style change keeps them, an edit drops them
+    (undo brings them back). `store.decorateRuns(sheet, ref)` asks the
+    `decorate` providers' optional `decorateRuns(cell)` (the last that
+    answers wins), drops CSS outside `STYLE_PROPS`, throws SP-3010 on a font
+    family, and answers `undefined` when the pieces' text joined is not the
+    display text; the grid then draws the pieces as spans inside
+    `<span class="v">`, else the plain text — so without a decorate plugin a
+    rich cell is plain. Editing one (the cell bar holding its draft, Edit
+    only) shows a warning chip in the cell bar — "Mixed formatting — an edit
+    saves plain text" (`role="status"`) — and `sheetpane-editstart` carries
+    `richText: true`; the edit stores plain text, which `patchXlsx` writes as
+    an inline string, leaving `sharedStrings.xml` and every untouched rich
+    cell byte for byte. Paste and Delete write plain text alike.
 16. **`beforeunload`** warns while the pane holds changes.
 
 ### Decision — the plugin host (W-14)
 
-17. **A plugin** is `{ id, provides, after?, format?, decorate?, derive?,
+17. **A plugin** is `{ id, provides, after?, format?, decorate?, decorateRuns?, derive?,
     validate?, overlay?, exportPatch?, controls?, exportOptions? }`
     (`exportOptions`: `{ key, label, default }` switches shown in the Download
-    menu, reaching `exportPatch` as `ctx.exportOptions[key]` — W-34). `format` and `derive`
+    menu, reaching `exportPatch` as `ctx.exportOptions[key]` — W-34;
+    `decorateRuns` is part of `decorate`, decision 15c). `format` and `derive`
     have one provider per pane (a second throws, naming both); a provided hook
     without its function throws; `decorate` providers run in `after` order,
     later winning per property, and a result naming `font-family` throws;
@@ -5962,7 +6162,7 @@ listeners — the `on-invalid` attribute does its job). `test/manifest.test.ts`
 fails when the manifest, the typings or the editor data drift from the code.
 Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
-**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69).
+**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69). A load or export with no Web Crypto logs SP-1009 from `@sheetpane/import` (W-65).
 
 ### Consequences
 
@@ -5999,7 +6199,16 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   is not a change and the download stays the original; `sizes` round-trip;
   overlays follow; a column-edge drag on 250,000 rows — 181 frames in 3 s,
   worst 16.8 ms, none dropped; the 5 s scroll with per-row heights — worst
-  16.8 ms, none dropped, also with 2 frozen rows); `theme.test.ts` (every token has a hex dark
+  16.8 ms, none dropped, also with 2 frozen rows); `fingerprint.test.ts`
+  (W-65: `source.sha256` and `exportFile().sha256` against the bytes, for
+  `.xlsx`, `.csv` and a conversion; twenty edits call no digest and one
+  export calls one; both events carry it, an untouched Download reuses the
+  load's; with no `crypto` both say `undefined` and SP-1009 is logged twice); `runs.test.ts`
+  (W-53: `runs()` and the cell context, dropped by an edit and back with undo,
+  kept by a restyle; pieces that do not match drawn plain, CSS off the
+  allow-list dropped, a font family SP-3010; spans drawn, plain with no plugin
+  and once edited; the cell-bar warning and `richText` on
+  `sheetpane-editstart`, absent on a plain cell and in View); `theme.test.ts` (every token has a hex dark
   value, the contrast table in both themes, the attribute restyling chrome
   while a `decorate` fill stays as saved, a host override winning);
   `rules.test.ts` (the four-column example: every rule kind, commit, undo,
@@ -6777,19 +6986,38 @@ the number format is SR-NUMFMT's.
    `applyTint`, `paletteOf`, `fontCss`, `fillCss` with `{ dxf: true }`,
    `borderCss`, `alignmentCss`, `dxfCss`, `ALLOWED_PROPS`, `allowListed`)
    are exported.
+9. **Rich text (W-53):** `decorateRuns` (on the `decorate` hook, SR-GRID
+   decision 17) draws a rich-text cell's runs (`cell.runs`, SR-IMPORT
+   decision 12) as pieces: a run with no formatting takes the cell's look; a
+   formatted run states `font-weight` (700 / 400), `font-style` (italic /
+   normal) and `text-decoration` (or `none`) outright — an Excel run's
+   `<rPr>` is its whole font — and its size (`em` of the cell's own font's
+   size) and colour only where they differ from the cell's own font (a cell
+   font with no colour is measured against the default font, so default ink
+   stays the host's); superscript and subscript are `vertical-align: super` /
+   `sub` at 0.75 of the size. Never a font family; allow-listed like
+   `decorate`. `fileStyles: false` draws runs plain. Exported:
+   `decorateRuns`, `runCss`. A restyle keeps the runs (only the cell's `s`
+   changes); a value edit drops them (plain text, SR-GRID). Nothing in
+   `exportPatch` touches `sharedStrings.xml`.
 
 ### Consequences
 
-- **Enforced today:** `just test-pkg styles` — 46 tests (colours: rgb, theme
+- **Enforced today:** `just test-pkg styles` — 56 tests (colours: rgb, theme
   and tint, indexed; decorate from the ExcelJS fixture property by property
   and from hand-made `styles.xml` for every border style, alignment, font and
   fill; the allow-list and the L5 veto over the package; the format row in
   View and Edit, every group, shortcuts, one undo step; merges; the core
   layout showing alignment and wrap with tints above a fill; contrast of the
   changed mark on every default fill; export round-trips, dedup, missing
-  `styles.xml`, byte-for-byte when untouched).
+  `styles.xml`, byte-for-byte when untouched). `runs.test.ts` (W-53, 10):
+  every run property against the cell's own font, superscript, the
+  allow-list and no family, `fileStyles: false`, the spans drawn, and export —
+  an edited rich cell written as a plain inline string while the shared
+  strings and every untouched rich cell stay byte for byte, a restyle
+  keeping the runs.
 - **Owed:** a fixture of every fill, font and border combination **saved by
-  Excel** — W-30.
+  Excel**, and a rich-text cell saved by Excel — W-30.
 
 ### Alternatives considered
 
@@ -7688,6 +7916,9 @@ flowchart LR
 - **Owed:** one real prompt per tool from the packed tarballs — W-48, the
   decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
+  `sheetpane-plugins` and `sheetpane-plugin-author` name rich text with W-53
+  (a sheet's `runs`, `decorateRuns`, `richText` on `sheetpane-editstart`), so the
+  drift check covers them.
 
 ### Alternatives considered
 
@@ -7797,6 +8028,12 @@ flowchart LR
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
   refused), after them.
+- **W-65** added SP-1009 (warning): no SHA-256 where Web Crypto is missing —
+  the file's fingerprint is `undefined`, never a substitute (SR-IMPORT
+  decision 11).
+- **W-57** added SP-2015 (error, `bad-rule`): a data-validation rule,
+  conditional format or differential format `toXlsx` / `patchXlsx` cannot
+  write as Excel reads it (SR-EXPORT decision 6).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

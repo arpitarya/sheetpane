@@ -45,7 +45,7 @@ An export option that turns a host's JSON rules file into the workbook's own dat
 
 ## Blockers
 
-🟡 W-57 (export writes data validation).
+None. W-57 closed 2026-10-19: `patchXlsx`'s `dataValidations` option, and `setDataValidations(xml, rules)` for an `exportPatch` hook, write the rules (SR-EXPORT decision 3).
 
 ## Record affected
 

@@ -132,6 +132,8 @@ export interface Source {
   bytes: Uint8Array;
   /** Milliseconds the read took. */
   readMs: number;
+  /** The SHA-256 of `bytes`, 64 lowercase hex digits, hashed once on load (W-65); absent where Web Crypto is missing (SP-1009). */
+  sha256?: string;
 }
 
 /** The pane's state at one moment: immutable, a new object per change (SR-GRID decision 2). */

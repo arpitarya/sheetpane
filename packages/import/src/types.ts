@@ -1,25 +1,10 @@
 // The imported workbook: @sheetpane/export's Workbook (raw values, what export
 // writes back) plus display text and the parsed tables plugins read
 // (W-13 DoD 3, 4, 12; plugins verdict Consequences).
-import type { Cell, Sheet, SheetState } from '@sheetpane/export';
+import type { Alignment, Border, BorderSide, Cell, CfRule, Cfvo, Color, ConditionalFormat, DataValidation, Dxf, Fill, Font, Sheet, SheetState } from '@sheetpane/export';
 
-/** A colour as SpreadsheetML stores it. */
-export interface Color { rgb?: string; theme?: number; tint?: number; indexed?: number; auto?: boolean }
-
-/** One `<font>` of `xl/styles.xml`. */
-export interface Font { b?: boolean; i?: boolean; u?: string; strike?: boolean; sz?: number; color?: Color; name?: string; vertAlign?: string }
-/** One `<fill>` of `xl/styles.xml`: a pattern or a gradient. */
-export interface Fill { patternType?: string; fgColor?: Color; bgColor?: Color; gradient?: { type?: string; degree?: number; stops: { position: number; color: Color }[] } }
-/** One side of a border: its line style and colour. */
-export interface BorderSide { style?: string; color?: Color }
-/** One `<border>` of `xl/styles.xml`. */
-export interface Border { left?: BorderSide; right?: BorderSide; top?: BorderSide; bottom?: BorderSide; diagonal?: BorderSide }
-/** A cell format's `<alignment>`. */
-export interface Alignment { horizontal?: string; vertical?: string; wrapText?: boolean; indent?: number; textRotation?: number; shrinkToFit?: boolean }
 /** One cell format (`<xf>` of `cellXfs`); a cell's `s` indexes these. */
 export interface CellXf { numFmtId: number; fontId: number; fillId: number; borderId: number; alignment?: Alignment; applyNumberFormat?: boolean; applyFont?: boolean; applyFill?: boolean; applyBorder?: boolean; applyAlignment?: boolean }
-/** A differential format (`<dxf>`), used by conditional formats. */
-export interface Dxf { font?: Font; fill?: Fill; border?: Border; numFmt?: { id: number; code: string }; alignment?: Alignment }
 
 /** `xl/styles.xml`, parsed. */
 export interface StyleTables {
@@ -33,47 +18,25 @@ export interface StyleTables {
   indexedColors?: string[];
 }
 
-/** One `<dataValidation>` rule of a worksheet. */
-export interface DataValidation {
-  /** Ranges the rule covers, e.g. `['B2:B100', 'D2']`. */
-  sqref: string[];
-  type: string;
-  operator?: string;
-  allowBlank: boolean;
-  showErrorMessage: boolean;
-  /** OOXML's inverted flag: `true` means Excel HIDES the in-cell list arrow. */
-  showDropDown: boolean;
-  errorStyle?: string;
-  errorTitle?: string;
-  error?: string;
-  promptTitle?: string;
-  prompt?: string;
-  formula1?: string;
-  formula2?: string;
+/**
+ * One run of a rich-text string (`<r>` of a shared or inline string, W-53): its text and the formatting its
+ * `<rPr>` names. A run with no `<rPr>` carries `text` alone and takes the cell's own font. The font's family
+ * (`<rFont>`) is never read — the host's font is the font (SR-LAW-5).
+ */
+export interface TextRun {
+  /** The run's text, SpreadsheetML escapes decoded. */
+  text: string;
+  b?: boolean;
+  i?: boolean;
+  /** The underline: `single`, `double`, `singleAccounting`, `doubleAccounting`. */
+  u?: string;
+  strike?: boolean;
+  color?: Color;
+  /** Size in points. */
+  sz?: number;
+  /** `superscript`, `subscript` or `baseline`. */
+  vertAlign?: string;
 }
-
-/** A conditional-format value object: a threshold of a colour scale, data bar or icon set. */
-export interface Cfvo { type: string; val?: string; gte?: boolean }
-/** One `<cfRule>` of a conditional format. */
-export interface CfRule {
-  type: string;
-  priority: number;
-  stopIfTrue: boolean;
-  dxfId?: number;
-  operator?: string;
-  text?: string;
-  rank?: number;
-  percent?: boolean;
-  bottom?: boolean;
-  aboveAverage?: boolean;
-  timePeriod?: string;
-  formulas: string[];
-  colorScale?: { cfvo: Cfvo[]; colors: Color[] };
-  dataBar?: { cfvo: Cfvo[]; color?: Color; minLength?: number; maxLength?: number };
-  iconSet?: { iconSet?: string; cfvo: Cfvo[] };
-}
-/** One `<conditionalFormatting>`: the ranges and their rules. */
-export interface ConditionalFormat { sqref: string[]; rules: CfRule[] }
 
 /** One position in a drawing: column / row, zero-based, plus an offset in EMU. */
 export interface AnchorPoint { col: number; colOff: number; row: number; rowOff: number }
@@ -132,6 +95,12 @@ export interface ImportedSheet extends Sheet {
   path: string;
   /** Each styled cell's `s` (index into `cellXfs`), sparse: `{ B2: 3 }`. */
   styleIndex: Record<string, number>;
+  /**
+   * Rich-text cells' runs, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` (W-53). Only a
+   * string of two or more runs, or of one run that carries formatting, is listed; phonetic runs are left out. The
+   * runs' text joined is the cell's value. Cells sharing a string share one array. `{}` for CSV.
+   */
+  runs: Record<string, TextRun[]>;
   /** Each formula cell's formula text, without the `=`, shared formulas expanded: `{ D2: 'B2*C2' }`. */
   formulas: Record<string, string>;
   /** Frozen rows and columns from `<sheetView><pane state="frozen">`; `{0,0}` when none. */
@@ -183,8 +152,11 @@ export interface ImportedWorkbook {
   definedNames: { name: string; formula: string; localSheetId?: number }[];
   /** The CSV delimiter that was detected; undefined for `.xlsx`. */
   delimiter?: ',' | ';' | '\t';
+  /** The SHA-256 of the bytes `read()` was given, 64 lowercase hex digits (W-65). Absent from `fromXlsx` / `fromCsv`, and where Web Crypto is missing (SP-1009). */
+  sha256?: string;
   /** Reads any part of the package (media, chart XML) without re-walking the ZIP. Resolves undefined for CSV. */
   part(path: string): Promise<Uint8Array | undefined>;
 }
 
-export type { Cell, SheetState };
+// The rule and format shapes are @sheetpane/export's, so what is read is what is written (W-57).
+export type { Alignment, Border, BorderSide, Cell, CfRule, Cfvo, Color, ConditionalFormat, DataValidation, Dxf, Fill, Font, SheetState };

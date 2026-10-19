@@ -1,7 +1,7 @@
 // The plugin contract (plugins verdict decisions 2–7; W-14): six hooks, six slots.
 // A plugin is a plain object; everything it may touch goes through the store.
 import type { Cell, PatchContext } from '@sheetpane/export';
-import type { ImportedSheet, ImportedWorkbook } from '@sheetpane/import';
+import type { ImportedSheet, ImportedWorkbook, TextRun } from '@sheetpane/import';
 import type { Mode, Selection, SheetpaneError, Snapshot } from '../pane/types.js';
 import type { WorkbookStore } from '../pane/store.js';
 
@@ -34,6 +34,14 @@ export interface CellContext {
   readonly value: Cell;
   /** The cell's style index (`s`), the change map's `style` entry applied by plugins themselves. */
   readonly styleIndex: number | undefined;
+  /** A rich-text cell's runs from the file (W-53) — only while the cell still holds the file's value; absent once it is edited. */
+  readonly runs?: readonly TextRun[];
+}
+
+/** One styled piece of a rich-text cell (W-53): a run's text and its CSS from {@link STYLE_PROPS}, never `font-family`. */
+export interface RunStyle {
+  text: string;
+  style?: StyleSubset;
 }
 
 /** What every plugin hook but `format` and `decorate` is given. */
@@ -135,6 +143,11 @@ export interface Plugin {
   after?: string[];
   format?(cell: CellContext): string | undefined;
   decorate?(cell: CellContext): StyleSubset | undefined;
+  /**
+   * Part of the `decorate` hook (W-53): a rich-text cell (`cell.runs`) drawn as styled spans inside the cell. The
+   * pieces' text joined must be the cell's display text, or the grid draws it plain. Later providers win.
+   */
+  decorateRuns?(cell: CellContext): RunStyle[] | undefined;
   derive?(input: DeriveInput, ctx: PluginContext): DerivedChange[] | Promise<DerivedChange[]>;
   validate?(sheet: string, ctx: PluginContext): ErrorDraft[];
   overlay?(sheet: string, ctx: PluginContext & { geometry: Geometry }): OverlayItem[];

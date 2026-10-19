@@ -85,6 +85,12 @@ flowchart LR
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
   refused), after them.
+- **W-65** added SP-1009 (warning): no SHA-256 where Web Crypto is missing —
+  the file's fingerprint is `undefined`, never a substitute (SR-IMPORT
+  decision 11).
+- **W-57** added SP-2015 (error, `bad-rule`): a data-validation rule,
+  conditional format or differential format `toXlsx` / `patchXlsx` cannot
+  write as Excel reads it (SR-EXPORT decision 6).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

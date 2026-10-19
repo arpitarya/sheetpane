@@ -3,8 +3,8 @@ import type { ChangeKind, Mode, SheetpaneError, SheetpaneErrors, SheetpaneExcel,
 
 /** The events `<sheetpane-excel>` dispatches, by name; each bubbles and is composed. */
 export interface SheetpaneExcelEventMap {
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
-  'sheetpane-load': CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>;
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  'sheetpane-load': CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number; sha256: string | undefined } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>;
   /** `{ errors, plugins }` when the pane's errors change. */
@@ -21,16 +21,16 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-mode': CustomEvent<{ mode: Mode }>;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'sheetpane-history': CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
-  'sheetpane-editstart': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>;
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
+  'sheetpane-editstart': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown; richText?: true }>;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'sheetpane-input': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; draft: string; was: unknown }>;
   /** `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused. */
   'sheetpane-beforechange': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; was: unknown; now: unknown }>;
   /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
   'sheetpane-editcancel': CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string }>;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
-  'sheetpane-export': CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; original?: boolean }>;
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
+  'sheetpane-export': CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; sha256: string | undefined; original?: boolean }>;
   /** `{}` when the pop-up closes. */
   'sheetpane-close': CustomEvent<Record<string, never>>;
 }

@@ -303,7 +303,7 @@ sheetpane-excel[display="popup"] { min-height: 0; flex: none; } /* its dialog si
   });
   // the host hears every component on the page: events bubble and are composed
   document.addEventListener('sheetpane-change', (e) => { const d = e.detail; $('evChange').textContent = `${d.sheet}!${d.ref} → ${String(d.now)}`; });
-  document.addEventListener('sheetpane-export', (e) => { const d = e.detail; $('evExport').textContent = `${d.name} · ${d.format ?? d.kind}${d.converted ? ' (converted)' : ''}`; });
+  document.addEventListener('sheetpane-export', (e) => { const d = e.detail; $('evExport').textContent = `${d.name} · ${d.format ?? d.kind}${d.converted ? ' (converted)' : ''}${d.sha256 ? ` · sha256 ${d.sha256.slice(0, 12)}…` : ''}`; });
 </script>
 </body>
 </html>

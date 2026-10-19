@@ -26,6 +26,8 @@ export interface HandMade {
   theme?: string;
   /** Extra worksheet XML after sheetData. */
   after?: string;
+  /** `<sst>` inner XML (the `<si>` list): adds xl/sharedStrings.xml (W-53). */
+  sst?: string;
 }
 
 /** A hand-written one-sheet package ("Data"), zipped with @sheetpane/export's writer. */
@@ -41,6 +43,11 @@ export async function handMade(o: HandMade): Promise<Uint8Array> {
     parts['xl/styles.xml'] = `<?xml version="1.0"?><styleSheet xmlns="${NS}">${o.styles}</styleSheet>`;
     rels.push(`<Relationship Id="rId2" Type="${R}/styles" Target="styles.xml"/>`);
     types.push('<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>');
+  }
+  if (o.sst !== undefined) {
+    parts['xl/sharedStrings.xml'] = `<?xml version="1.0"?><sst xmlns="${NS}">${o.sst}</sst>`;
+    rels.push(`<Relationship Id="rId4" Type="${R}/sharedStrings" Target="sharedStrings.xml"/>`);
+    types.push('<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>');
   }
   if (o.theme !== undefined) {
     parts['xl/theme/theme1.xml'] = o.theme;
