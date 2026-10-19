@@ -6,7 +6,7 @@ item: W-50
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5) — the look: quiet and optional"
+updated_by: "Arpit (Claude Code, claude-opus-5-5) — built and closed"
 ball: agent
 ---
 
@@ -16,10 +16,10 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Add two severities, `pass` and `skipped` (not checked), to the error schema; `v: 1` files stay valid | a host can report results, not only faults | ⏳ |
-| 2 | Keep results quiet and optional: three levels — **off**, **summary** (the default: one line of counts, nothing on the sheet) and **on the sheet** (a 9 px ✓ or — in the cell's bottom-left corner), chosen by the host, with one *On sheet* switch for the reviewer | results are there when wanted and invisible when not | ⏳ |
-| 3 | Errors list: *Problems · Passed · Not checked* chips, Problems by default; passes **grouped by check**, not-checked **grouped by reason**; tab counts and the Download badge count problems only | five failures are not buried under two thousand passes | ⏳ |
-| 4 | `@sheetpane/comments` writes `pass` / `skipped` into the file only when the host asks | a downloaded review stays a list of problems | ⏳ |
+| 1 | Add two severities, `pass` and `skipped` (not checked), to the error schema; `v: 1` files stay valid | a host can report results, not only faults | ✅ |
+| 2 | Keep results quiet and optional: three levels — **off**, **summary** (the default: one line of counts, nothing on the sheet) and **on the sheet** (a 9 px ✓ or — in the cell's bottom-left corner), chosen by the host, with one *On sheet* switch for the reviewer | results are there when wanted and invisible when not | ✅ |
+| 3 | Errors list: *Problems · Passed · Not checked* chips, Problems by default; passes **grouped by check**, not-checked **grouped by reason**; tab counts and the Download badge count problems only | five failures are not buried under two thousand passes | ✅ |
+| 4 | `@sheetpane/comments` writes `pass` / `skipped` into the file only when the host asks | a downloaded review stays a list of problems | ✅ |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -37,7 +37,7 @@ Results as well as faults — a passed cell and a not-checked cell marked in the
 
 ## How it looks
 
-Drawn on the board [`Results-Pass-NotChecked`](../reference/design/boards/Results-Pass-NotChecked.dc.html) (canvas v51, 2026-10-19). **Arpit, 2026-10-19:** *"what will be the best design — shouldn't be very overwhelming and should be optional."*
+Drawn on the board [`Results-Pass-NotChecked`](../../work/reference/design/boards/Results-Pass-NotChecked.dc.html) (canvas v51, 2026-10-19). **Arpit, 2026-10-19:** *"what will be the best design — shouldn't be very overwhelming and should be optional."*
 
 **Three levels.** The host sets the starting level with a `results` attribute on either element. The level is pane-wide, so both elements follow (L7). The reviewer can move between *summary* and *on the sheet*. Neither move is a change or undoable; the level lives in the pane's store while the pane lives.
 
@@ -71,12 +71,12 @@ Drawn on the board [`Results-Pass-NotChecked`](../reference/design/boards/Result
 
 | DoD | what | state |
 |---|---|---|
-| 1 · schema | `Severity` gains `pass` and `skipped`; types, `custom-elements.json`, `rules.schema.json` (if it names severities) and the backend envelope updated; a v1 file without them still loads | ⏳ |
-| 2 · marks | **Levels:** the `results` attribute (`off` · `summary` default · `marks`), pane-wide, plus the *On sheet* switch in the errors panel's summary line. **Mark:** a 9 px ✓ or — at the cell's bottom-left with no fill, border or pin, and a problem always wins. **Tokens:** `--sp-pass` and `--sp-skip` in light and dark, at least 3:1 against the cell. **Label:** `aria-label` naming the check or reason. **Cell bar:** a chip naming the check of the selected result cell. **Status line:** *n of m checked*. **axe:** clean. | ⏳ |
-| 3 · counts | tab counts, the Download badge and `sheetpane-errors` problem counts exclude `pass` and `skipped` | ⏳ |
-| 4 · list | **Summary line:** under the header at `summary` and `marks`. **Chips:** shown only when results exist; *Problems* is the default. **Groups:** passes grouped by check, not-checked by reason, each with a count, its range and *Show ▸* (selects the range and marks it, even at `summary`); a group opens to its cells, virtualised. **Order:** error › warning › note › skipped › pass. **Show in sheet:** works for all five severities. | ⏳ |
-| 5 · comments | export writes `pass` / `skipped` only with `exportOptions.includeResults` | ⏳ |
-| 6 · tests · docs | unit + browser tests; skill `sheetpane-errors`; CHANGELOG *Changed*; `llms*.txt` rebuilt | ⏳ |
+| 1 · schema | `Severity` gains `pass` and `skipped`; types, `custom-elements.json`, `rules.schema.json` (if it names severities) and the backend envelope updated; a v1 file without them still loads | ✅ `Severity` + `pass` / `skipped`, `ProblemSeverity`, `ResultSeverity`, `isResult`, `SEVERITY_ORDER`; `custom-elements.json` and the framework typings regenerated (`results`, `--sp-skip`); `rules.schema.json` unchanged on purpose — a failing rule is a problem, so rules keep `ProblemSeverity`; the saved `{ errors, plugins }` envelope carries them (sheetpane-backend skill); a validate plugin can report them, and one it stops reporting goes |
+| 2 · marks | **Levels:** the `results` attribute (`off` · `summary` default · `marks`), pane-wide, plus the *On sheet* switch in the errors panel's summary line. **Mark:** a 9 px ✓ or — at the cell's bottom-left with no fill, border or pin, and a problem always wins. **Tokens:** `--sp-pass` and `--sp-skip` in light and dark, at least 3:1 against the cell. **Label:** `aria-label` naming the check or reason. **Cell bar:** a chip naming the check of the selected result cell. **Status line:** *n of m checked*. **axe:** clean. | ✅ `results` on both elements → `store.setResults` (unknown → `summary`; `off` drops held and arriving results); `.rmk` glyph at `.69em` (≈ 9 px, scales with zoom), bottom-left, `role="img"` + `aria-label`, no fill / pin / row glyph, View and Edit; `store.resultAt` (problem wins); `--sp-pass` / `--sp-skip` 3:1 in both themes (theme test); cell-bar chip; status line "· n of m checked · k problems"; axe clean with marks on and a group open |
+| 3 · counts | tab counts, the Download badge and `sheetpane-errors` problem counts exclude `pass` and `skipped` | ✅ tab counts, toolbar ✕ ! i, hidden-span and hidden-sheet badges, *n open*, severity filters, callout prev/next; the Download badge counts changes and a pane holding only results downloads the untouched file |
+| 4 · list | **Summary line:** under the header at `summary` and `marks`. **Chips:** shown only when results exist; *Problems* is the default. **Groups:** passes grouped by check, not-checked by reason, each with a count, its range and *Show ▸* (selects the range and marks it, even at `summary`); a group opens to its cells, virtualised. **Order:** error › warning › note › skipped › pass. **Show in sheet:** works for all five severities. | ✅ summary line with an On sheet `role="switch"`; chips only with results; groups with count, range ("I3, I4, I5 …" when not contiguous) and Show ▸ (`store.focusResults`, fires `sheetpane-reveal`); an opened group draws 28 px rows only in view (5,000 passes: two list rows, < 20 cell rows while scrolling); `SEVERITY_ORDER`; Show in sheet tested for all five |
+| 5 · comments | export writes `pass` / `skipped` only with `exportOptions.includeResults` | ✅ `reviewOf(ctx, includeResults)`; headed `Passed` / `Not checked`; no Download-menu switch (the host asks) |
+| 6 · tests · docs | unit + browser tests; skill `sheetpane-errors`; CHANGELOG *Changed*; `llms*.txt` rebuilt | ✅ `packages/grid/test/results.test.ts` (16), theme `skip`, comments `write.test.ts` (+2); skills `sheetpane-errors` and `sheetpane-backend`; grid and comments READMEs; CHANGELOG *Changed*; `llms*.txt` and the Claude plugin rebuilt |
 
 ## Blockers
 
@@ -95,7 +95,7 @@ SR-ERRORS (severities, filters, the summary line, groups, `results`) · SR-GRID 
 
 - The classification and grouping: this item's siblings W-50 – W-69, filed together on 2026-10-19.
 - The host's side: pdfsuite (arpitarya/pdf-testing-suite) — `work/open/W-46-sheet-viewer.md`, `work/open/W-47-sheet-editor.md`, `records/0101_SPEC-intake.md`, `work/design/Spec-*.dc.html`, `Sheet-Editor.dc.html`.
-- Design: [`../reference/design/boards/Results-Pass-NotChecked.dc.html`](../reference/design/boards/Results-Pass-NotChecked.dc.html) — the three levels, the switch, the grouped lists, the mark.
+- Design: [`../reference/design/boards/Results-Pass-NotChecked.dc.html`](../../work/reference/design/boards/Results-Pass-NotChecked.dc.html) — the three levels, the switch, the grouped lists, the mark.
 - The plugin contract: `packages/grid/src/plugins/types.ts` (six hooks, six slots).
 
 ## The prompt to paste

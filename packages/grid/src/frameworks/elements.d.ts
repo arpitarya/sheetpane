@@ -67,6 +67,8 @@ export interface SheetpaneExcelAttributes {
   ref?: string | undefined;
   /** `none` (the default) or `hash`: the selection is kept in the URL fragment as `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link* joins the cell menu. The rest of the fragment is the host's and is kept as it was. */
   link?: 'none' | 'hash' | undefined;
+  /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
+  results?: 'summary' | 'marks' | 'off' | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-excel>`, typed as the element declares them. */
@@ -89,6 +91,8 @@ export interface SheetpaneExcelProperties {
   rules?: SheetpaneExcel['rules'] | undefined;
   /** `flagging="off"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read. */
   flagging?: SheetpaneExcel['flagging'] | undefined;
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  results?: SheetpaneExcel['results'] | undefined;
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   columns?: SheetpaneExcel['columns'] | undefined;
   /** `validate(ctx, signal)`, sync or async: `null`, or `{ severity, message, expected? }`. */
@@ -115,7 +119,7 @@ export interface SheetpaneErrorsEventMap {
   'sheetpane-select': CustomEvent<{ sheet: string; ref: string }>;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'sheetpane-history': CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55). */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50). */
   'sheetpane-reveal': CustomEvent<{ error: SheetpaneError }>;
 }
 
@@ -131,6 +135,8 @@ export interface SheetpaneErrorsAttributes {
   plugins?: string | undefined;
   /** `light` (the default), `dark` or `auto`. */
   theme?: 'light' | 'dark' | 'auto' | undefined;
+  /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
+  results?: 'summary' | 'marks' | 'off' | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-errors>`, typed as the element declares them. */
@@ -147,4 +153,6 @@ export interface SheetpaneErrorsProperties {
   theme?: SheetpaneErrors['theme'] | undefined;
   /** The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — the sheet's error card has its own. */
   renderDetail?: SheetpaneErrors['renderDetail'] | undefined;
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  results?: SheetpaneErrors['results'] | undefined;
 }

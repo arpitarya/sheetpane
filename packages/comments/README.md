@@ -61,7 +61,10 @@ That note is not listed a second time.
 
 On export, every error that did **not** come from the file is written:
 people's errors, workbook-rule errors and host-rule errors. Each one is
-anchored at the top-left cell of its range.
+anchored at the top-left cell of its range. Results — `pass` and `skipped`
+(not checked) entries — are left out, so a downloaded review stays a list of
+problems; `export({ includeResults: true })` writes them too, headed
+`Passed` or `Not checked`.
 
 - **The thread.** The first comment holds a header line (`ERR-0003 · Error · Wrong value · Found: 7.5%`) followed by the `message`. If the error has an `expected`, it follows as a reply (`Should be: 0.75%`). The thread is marked `done="1"` when the error is resolved.
 - **One comment per cell.** If several errors share a cell, they form one thread: the first error opens it and the rest follow as replies. It is marked done only when all of them are resolved.

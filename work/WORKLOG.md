@@ -24,6 +24,14 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-50 closed: pass and not-checked results, quiet by default  ·  Claude Code (claude-opus-5-5, lane f)
+
+- **Asked:** *build W-50 in its own worktree lane, alongside five other lanes.*
+- **Done:** severities `pass` / `skipped` with `isResult` and `SEVERITY_ORDER`; the pane-wide `results` level (`off` · `summary` · `marks`) on both elements; result marks (9 px ✓ / — bottom-left, `--sp-skip`), the cell-bar chip and *n of m checked*; the errors panel's summary line, On sheet switch, Problems · Passed · Not checked chips, grouped results with Show ▸ and virtualised cells; problems-only counts; `@sheetpane/comments` writes results only with `includeResults`. Records SR-GRID 5, 9, 13, 15a, 22a, new 23; SR-ERRORS 1, 3, new 13; SR-COMMENTS 3. W-59 told what W-50 hands it.
+- **Decided / left open:** rules keep `ProblemSeverity` (a failing rule is a problem), so `rules.schema.json` is unchanged; results are counted in cells, problems in entries; `includeResults` is host-only (no Download-menu switch); a result a `validate` provider stops reporting is removed, never resolved. Left open: a demo of results in `examples/` (not required by L10 — no example uses results).
+- **Mistakes:** none.
+- **Next:** merge lane f; then W-55/W-68/W-69's lane, which touches the same list.
+
 ## 2026-10-19 — law L11 filed: the workbook never leaves the browser  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Create a law. Everything should be within the browser. Nothing go back to the server. Meaning when you upload a CSV or when you upload an Excel file, it does not go to the server. It just stays within the browser."*

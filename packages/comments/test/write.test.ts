@@ -376,3 +376,28 @@ describe('accepted deviations (W-69)', () => {
     expect(ts.map((t) => [t.getAttribute('id'), t.getAttribute('done')])).toEqual([[errorGuids(a).comment, null]]);
   });
 });
+
+describe('results stay out of the review unless the host asks (W-50 DoD 5)', () => {
+  it('pass and skipped are left out of the parts; `includeResults: true` writes them, named', async () => {
+    const s = await storeOn(await plain());
+    const a = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    const p = s.addError({ sheet: 'Holdings', range: 'C4', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%', author: 'host' });
+    const k = s.addError({ sheet: 'Holdings', range: 'B2', type: 'spec', severity: 'skipped', message: 'Blank in the source', author: 'host' });
+    const ids = (xml: string) => [...parseXml(xml).getElementsByTagName('threadedComment')].map((t) => t.getAttribute('id'));
+    const plainTc = (await unzip(await exported(s))).get('xl/threadedComments/threadedComment1.xml')!;
+    expect(ids(plainTc)).toEqual([errorGuids(a).comment, errorGuids(a).expected]);
+    const withTc = (await unzip(await exported(s, { includeResults: true }))).get('xl/threadedComments/threadedComment1.xml')!;
+    expect(ids(withTc)).toEqual(expect.arrayContaining([errorGuids(p).comment, errorGuids(k).comment, errorGuids(a).comment]));
+    const text = [...parseXml(withTc).getElementsByTagName('threadedComment')].map((t) => t.textContent);
+    expect(text).toContain(`${p.id} · Passed · fee-rate · Found: 12\nFee rate 0.00%–2.00%`);
+    expect(text).toContain(`${k.id} · Not checked · spec · Found: AC-1O044\nBlank in the source`);
+  });
+  it('a review of results only writes nothing by default', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    s.addError({ sheet: 'Holdings', range: 'C4', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%', author: 'host' });
+    const parts = await unzip(await exported(s));
+    expect([...parts.keys()].some((n) => n.startsWith('xl/threadedComments/'))).toBe(false);
+    expect(plugin.lastExport).toBeUndefined();
+  });
+});

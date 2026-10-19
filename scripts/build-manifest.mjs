@@ -29,7 +29,7 @@ const TOKEN_DOC = {
   cell: 'The cell background.', head: 'Row and column headers.', grid: 'Cell gridlines.',
   ink: 'Body text.', 'ink-2': 'Secondary text.', 'ink-3': 'Muted text and icons.',
   accent: 'Selection, focus ring and primary buttons.', 'accent-ink': 'Accent text and pressed primary buttons.', 'accent-soft': 'The selected range and active rows.',
-  pass: 'Resolved, passing.', 'pass-soft': 'Resolved, passing — the tint.', fail: 'Errors.', 'fail-soft': 'Errors — the tint.',
+  pass: 'Resolved, passing; the ✓ result mark.', 'pass-soft': 'Resolved, passing — the tint.', skip: 'Not checked: the — result mark (W-50).', fail: 'Errors.', 'fail-soft': 'Errors — the tint.',
   warn: 'Warnings.', 'warn-soft': 'Warnings — the tint.', changed: 'The changed-cell mark.', 'changed-soft': 'The changed-cell mark — the tint.',
   note: 'Notes.', 'ref-1': 'The first reference colour (formula ranges, plugins).', 'ref-2': 'The second reference colour.', 'ref-3': 'The third reference colour.',
   'on-solid': 'Text on solid fills: pins, badges, primary buttons.', hit: 'Find hits.', 'hit-current': 'The current find hit.',

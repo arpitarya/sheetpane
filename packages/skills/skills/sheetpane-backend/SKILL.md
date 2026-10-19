@@ -58,6 +58,10 @@ restored error whose cell no longer shows it is marked **stale**
 - Restoring before `sheetpane-load` loses the review: the load resets the
   pane.
 - Save the **export**, not the upload, if you want the edits in the file.
+- **The saved review carries results too:** `severity` is `error`, `warning`
+  or `note` — or `pass` / `skipped` (not checked) when a check reported them
+  (W-50; none at `results="off"`). A server that validates `severity` must
+  accept all five; count problems with `!isResult(e)`.
 - Author names land in the review JSON (and, with the comments plugin, in
   the `.xlsx`) — personal data.
 

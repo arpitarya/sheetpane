@@ -52,6 +52,12 @@ None.
 
 new SR-REVIEW · SR-EXPORT (no change expected — the context suffices; confirm) · SR-BUILD (a new package).
 
+## What W-50 hands this item (closed 2026-10-19)
+
+- `severity` has two results, `pass` and `skipped` (not checked); `isResult(e)` from `@sheetpane/grid` tells them from problems.
+- **Follow `@sheetpane/comments`:** leave results out of the Review sheet and the fills unless `ctx.exportOptions.includeResults === true` (SR-COMMENTS decision 3) — a downloaded review stays a list of problems. Results never get a fill (SR-GRID decision 23: a result never tints a cell).
+- If the Review sheet lists results, list them after the problems in `SEVERITY_ORDER` (error › warning › note › skipped › pass).
+
 ## Hazards
 
 - Sheet name collision with the user's own sheet: suffix, never overwrite.

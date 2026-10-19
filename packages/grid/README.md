@@ -210,6 +210,7 @@ committed manifest drifts from the elements.
 | attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
+| attribute / property | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide; see [Results](#results-passed-and-not-checked) |
 | property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
@@ -429,6 +430,7 @@ opens no pop-up — the errors panel is the one place errors are read.
 |---|---|---|
 | attribute | `pane`, `author`, `plugins` | as above |
 | attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
+| attribute / property | `results` | as above; the panel's *On sheet* switch moves the pane between `summary` and `marks` |
 | property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
 | property | `renderDetail` | your extra detail in an open row — see below (W-68) |
 | event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
@@ -486,9 +488,38 @@ chip lists them. Reopen takes an acceptance back; so does undo. From code:
 workbook.acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' });
 ```
 
-A blank reason is refused (SP-3018). Count open errors with
-`status === 'open'`. With `@sheetpane/comments`, the export adds a reply
+A blank reason is refused (SP-3018). Count open problems with
+`status === 'open' && !isResult(e)`. With `@sheetpane/comments`, the export adds a reply
 *Accepted: <reason>* to the error's comment thread.
+
+## Results: passed and not checked
+
+A host that checks a sheet can report what passed as well as what failed:
+an entry with `severity: 'pass'` (✓) or `'skipped'` (— not checked; its
+`message` says why). Give them with `setErrors()` or from a plugin's
+`validate`. Results stay quiet:
+
+| `results=` | errors panel | sheet |
+|---|---|---|
+| `off` | results are dropped on arrival | as without results |
+| `summary` (default) | one line — *1 problem · ✓ 180 passed · — 28 not checked · On sheet* — and *Passed* / *Not checked* chips; the list opens on *Problems* | nothing marked; the status line says *186 of 214 checked* |
+| `marks` (or *On sheet*) | the same, switch on | a 9 px ✓ or — in each result cell's bottom-left corner |
+
+Passes are listed grouped by check (`type` + `message`), not-checked cells
+by reason (`message`); a group opens to its cells, and **Show ▸** selects its
+range and marks it even at `summary`. Selecting a result cell names its check
+in the cell bar. A problem on the same cell always wins. Tab counts, the
+toolbar counts, the panel's *n open* and the severity filters count problems
+only, and a download leaves results out (`@sheetpane/comments` writes them
+only with `export({ includeResults: true })`). A host that switches on
+`severity` meets two more values.
+
+```js
+errors.setErrors([
+  { v: 1, id: 'ERR-0001', sheet: 'Holdings', range: 'H3', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%',
+    found: '0.35%', expected: '', cellChanged: false, status: 'open', matchesExpected: false, author: 'host', createdAt: new Date().toISOString() },
+]);
+```
 
 ## Plugins
 

@@ -69,11 +69,15 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file`, at the top-left cell of its
-   range. An error with no cell, about a whole sheet or the workbook (W-55,
+   range — except results (`pass`, `skipped`; SR-GRID decision 23), which
+   are written only when `ctx.exportOptions.includeResults === true`
+   (`<sheetpane-excel>.export({ includeResults: true })`; W-50), so a
+   downloaded review stays a list of problems; there is no Download-menu
+   switch for it — the host asks. An error with no cell, about a whole sheet or the workbook (W-55,
    SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
    never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
    reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
-   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>` (`Passed`, `Not checked` for results),
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved or accepted. **An accepted error (W-69, SR-GRID 5c)** gets one
@@ -106,7 +110,7 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
-- **Enforced today:** `just test-pkg comments` — 30 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 32 tests (results left out unless `includeResults`, W-50; notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;

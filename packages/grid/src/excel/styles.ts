@@ -29,6 +29,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .chip-warn{background:var(--sp-warn-soft);color:var(--sp-warn)}
 .chip-info{background:var(--sp-accent-soft);color:var(--sp-accent-ink)}
 .chip-pass{background:var(--sp-pass-soft);color:var(--sp-pass)}
+.chip-skip{background:var(--sp-sunken);color:var(--sp-ink-2)}
 .input{height:28px;border:1px solid var(--sp-line-strong);border-radius:var(--sp-r);padding:0 8px;background:var(--sp-surface);min-width:0;font-size:13px}
 .input:focus{outline:2px solid var(--sp-accent);outline-offset:-1px;border-color:var(--sp-accent)}
 textarea.input{height:auto;min-height:56px;padding:6px 8px;resize:vertical;width:100%;line-height:1.45}
@@ -135,6 +136,8 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .c.m-note{box-shadow:inset 0 0 0 1.5px var(--sp-accent)}.c.m-note::before{background:var(--sp-accent-soft)}
 .c.m-pass{box-shadow:inset 0 0 0 1.5px var(--sp-pass)}
 .c.m-accepted{box-shadow:inset 0 0 0 1.5px var(--sp-ink-3)}
+.c>.rmk{position:absolute;left:3px;bottom:2px;z-index:2;font-size:.69em;font-weight:700;line-height:1;pointer-events:none}
+.rmk.pass{color:var(--sp-pass)}.rmk.skipped{color:var(--sp-skip)}
 .c.stale>.v{color:var(--sp-ink-3);font-style:italic}
 .c.stale>.v::before{content:"≈ ";color:var(--sp-warn);font-style:normal}
 .c.derived>.v{color:var(--sp-accent-ink)}

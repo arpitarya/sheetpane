@@ -84,7 +84,7 @@ export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneEr
   'on:sheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55). */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50). */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
   'onsheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
@@ -94,7 +94,7 @@ export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneEr
   'onsheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55). */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50). */
   'onsheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
 };
 

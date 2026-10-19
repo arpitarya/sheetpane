@@ -480,6 +480,7 @@ committed manifest drifts from the elements.
 | attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
+| attribute / property | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide; see [Results](#results-passed-and-not-checked) |
 | property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
@@ -699,6 +700,7 @@ opens no pop-up — the errors panel is the one place errors are read.
 |---|---|---|
 | attribute | `pane`, `author`, `plugins` | as above |
 | attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
+| attribute / property | `results` | as above; the panel's *On sheet* switch moves the pane between `summary` and `marks` |
 | property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
 | property | `renderDetail` | your extra detail in an open row — see below (W-68) |
 | event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
@@ -756,9 +758,38 @@ chip lists them. Reopen takes an acceptance back; so does undo. From code:
 workbook.acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' });
 ```
 
-A blank reason is refused (SP-3018). Count open errors with
-`status === 'open'`. With `@sheetpane/comments`, the export adds a reply
+A blank reason is refused (SP-3018). Count open problems with
+`status === 'open' && !isResult(e)`. With `@sheetpane/comments`, the export adds a reply
 *Accepted: <reason>* to the error's comment thread.
+
+## Results: passed and not checked
+
+A host that checks a sheet can report what passed as well as what failed:
+an entry with `severity: 'pass'` (✓) or `'skipped'` (— not checked; its
+`message` says why). Give them with `setErrors()` or from a plugin's
+`validate`. Results stay quiet:
+
+| `results=` | errors panel | sheet |
+|---|---|---|
+| `off` | results are dropped on arrival | as without results |
+| `summary` (default) | one line — *1 problem · ✓ 180 passed · — 28 not checked · On sheet* — and *Passed* / *Not checked* chips; the list opens on *Problems* | nothing marked; the status line says *186 of 214 checked* |
+| `marks` (or *On sheet*) | the same, switch on | a 9 px ✓ or — in each result cell's bottom-left corner |
+
+Passes are listed grouped by check (`type` + `message`), not-checked cells
+by reason (`message`); a group opens to its cells, and **Show ▸** selects its
+range and marks it even at `summary`. Selecting a result cell names its check
+in the cell bar. A problem on the same cell always wins. Tab counts, the
+toolbar counts, the panel's *n open* and the severity filters count problems
+only, and a download leaves results out (`@sheetpane/comments` writes them
+only with `export({ includeResults: true })`). A host that switches on
+`severity` meets two more values.
+
+```js
+errors.setErrors([
+  { v: 1, id: 'ERR-0001', sheet: 'Holdings', range: 'H3', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%',
+    found: '0.35%', expected: '', cellChanged: false, status: 'open', matchesExpected: false, author: 'host', createdAt: new Date().toISOString() },
+]);
+```
 
 ## Plugins
 
@@ -1947,7 +1978,10 @@ That note is not listed a second time.
 
 On export, every error that did **not** come from the file is written:
 people's errors, workbook-rule errors and host-rule errors. Each one is
-anchored at the top-left cell of its range.
+anchored at the top-left cell of its range. Results — `pass` and `skipped`
+(not checked) entries — are left out, so a downloaded review stays a list of
+problems; `export({ includeResults: true })` writes them too, headed
+`Passed` or `Not checked`.
 
 - **The thread.** The first comment holds a header line (`ERR-0003 · Error · Wrong value · Found: 7.5%`) followed by the `message`. If the error has an `expected`, it follows as a reply (`Should be: 0.75%`). The thread is marked `done="1"` when the error is resolved.
 - **One comment per cell.** If several errors share a cell, they form one thread: the first error opens it and the rest follow as replies. It is marked done only when all of them are resolved.
@@ -5712,8 +5746,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
 4. **Every mutation goes through one commit:** the undo entry, `matchesExpected`
    recomputed, one notification, then `validate` for the touched sheets and
    `derive` for the touched cells.
-5. **Errors** are SheetpaneError v1, exactly the contract verdict's schema:
-   ids `ERR-0001…`, never reused in a session (a restored review moves the
+5. **Errors** are SheetpaneError v1, exactly the contract verdict's schema,
+   `severity` one of `error` · `warning` · `note` — or, additive to v1 (W-50),
+   a result: `pass` · `skipped` (decision 23); ids `ERR-0001…`, never reused in a session (a restored review moves the
    counter past its highest id); `found` frozen from the uploaded display text
    (`(blank)` when empty; `row N` for a row range); a matching edit sets
    `matchesExpected`, never resolves; deleting an error keeps a cell change it
@@ -5785,8 +5820,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    shadow root; plain DOM. Attributes `pane`, `src` (URL — read with a GET,
    nothing is sent — data URL or base64), `mode`, `display` (`tab` ·
    `popup`), `open`, `author`, `plugins`, `ref` and `link` (W-66, decision
-   11d); properties `workbook`, `errors`,
-   `errorTypes`, `file`, `mode`, `open`, `src`, `ref`, `link`, `sizes` (W-47: `{ [sheet]:
+   11d), `results` (W-50, decision 23); properties `workbook`, `errors`,
+   `errorTypes`, `file`, `mode`, `open`, `src`, `ref`, `link`, `results`, `sizes` (W-47: `{ [sheet]:
    { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set),
    `renderDetail` (W-68: the error card's host region, SR-ERRORS decision 13);
    methods `load()`, `export()`,
@@ -6030,7 +6065,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     status line. **Download** (decision 10): the main part's file is the
     original bytes when untouched (no change, and no review a plugin would
     write), else `export()` with the menu's plugin options, the change count
-    on the button and in its tooltip. Also: numbered pins (✓ when resolved) and row glyphs ✕ ! i; the callout (Found →
+    on the button and in its tooltip (a pane holding only results is untouched — decision 23). Also: numbered pins (✓ when resolved) and row glyphs ✕ ! i, for problems only; the callout (Found →
     Should be, message, the host's `part="detail"` region when `renderDetail` is set — W-68, SR-ERRORS decision 13 —
     who accepted it, when and why — W-69, decision 5c —, tags, Resolve/Reopen
     (Reopen for a resolved or an accepted error), Delete, previous/next); Flag
@@ -6048,13 +6083,13 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `color-mix()` at runtime) are exported; the tokens are `ground`,
     `surface`, `sunken`, `cell`, `head`, `grid`, `line`, `line-strong`, `ink`,
     `ink-2`, `ink-3`, `accent`, `accent-ink`, `accent-soft`, `pass`, `fail`,
-    `warn` and `changed` (each with `-soft`), `note`, `ref-1`…`ref-3`,
+    `warn` and `changed` (each with `-soft`), `skip` (W-50: the — mark, = `ink-3`), `note`, `ref-1`…`ref-3`,
     `on-solid`, `hit`, `hit-current`, the radii and two shadows. The grid's
     CSS names no colour literal. A host's `--sp-*` on the element wins.
     **The file's colours are data:** a `decorate` result (styles, condfmt,
     chart fills) renders as saved in both themes. Contrast in both themes:
-    text 4.5:1 on its ground; glyphs, pins, the changed mark, reference
-    colours and the focus ring 3:1 on the cell.
+    text 4.5:1 on its ground; glyphs, pins, the changed mark, the result
+    marks (`pass`, `skip`), reference colours and the focus ring 3:1 on the cell.
 15b. **Cell layout:** a cell is a one-column flex box holding its text in
     `<span class="v">`, so `text-align`, wrapping and `vertical-align` (mapped
     to `justify-content`) from `decorate` show; the state tints (range,
@@ -6153,8 +6188,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     (not tested over 10,000 characters; on the element an invalid one throws
     at once, in a rules file it is a note), `oneOf`, `noneOf` (values never
     valid), `equals` (the one valid value; a blank fails it), `unique`,
-    `message`, `note` (for the maintainer, never the message), `severity`,
-    `onInvalid` (W-33 added `noneOf`, `equals`, `note`). Titles match trimmed
+    `message`, `note` (for the maintainer, never the message), `severity`
+    (a problem's — `error` · `warning` · `note`; a rule never reports a
+    result, W-50), `onInvalid` (W-33 added `noneOf`, `equals`, `note`). Titles match trimmed
     and case-insensitive, an exact title first. A title the file lacks is one
     `note`; a duplicated title checks the first column plus one `note`.
 22b. **Findings are cached per cell** and updated for the cells a commit or
@@ -6195,6 +6231,41 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `F` key or its help line, no composer (a host's `compose()` is cancelled),
     no callout card; a cell's error mark stays and selecting it marks its row
     in `<sheetpane-errors>`. Default `on`.
+
+### Decision — results (W-50)
+
+23. **Results:** an entry with `severity` `pass` (✓, *Passed*) or `skipped`
+    (—, *Not checked*, its `message` the reason) is a result, not a problem
+    (`isResult`; `SEVERITY_ORDER` is error › warning › note › skipped ›
+    pass). A host gives them with `setErrors()`, a plugin from `validate`
+    (one it stops reporting is removed — a result never resolves), a person
+    never (the form offers the three problem severities). **The level** is
+    the pane's (`store.results`, `setResults()`), set by the `results`
+    attribute or property on either element (L7) — `off` · `summary` (the
+    default) · `marks`; an unknown value is `summary`; it is a view setting,
+    never a change or an undo step, and lives while the store does. **`off`**
+    drops results on arrival — `setErrors`, `validate`, `addError`, undo —
+    and drops those held when set. **`summary`** marks nothing on the sheet;
+    **`marks`** puts a ✓ (`--sp-pass`) or — (`--sp-skip`) on every result
+    cell: a 9 px glyph (`.69em` of the cell text, scaling with zoom) at the
+    cell's **bottom-left**, `role="img"` with `aria-label` "Passed: <check>"
+    or "Not checked: <reason>" (the check is the message, else the type's
+    name) — no fill, border or pin, nothing in the row header, in View and
+    Edit. **`store.focusResults(sheet, range)`** (the errors panel's Show ▸)
+    marks one range's results even at `summary`, until the level changes, a
+    file loads or another range is focused. **A problem always wins:**
+    `store.resultAt(sheet, row, col)` — indexed once per errors list, so the
+    grid asks per cell — returns nothing where any problem's range covers
+    the cell. **The cell bar** shows a chip naming the selected result
+    cell's check ("✓ Passed · Fee rate 0.00%–2.00%"), View and Edit.
+    **The status line** says "· *n* of *m* checked · *k* problems" while the
+    pane holds results (`store.resultCounts()`: *n* = passed cells +
+    problem entries, *m* = *n* + not-checked cells, *k* open problems).
+    **Counts that ask for action ignore results:** the tab counts, the
+    toolbar's ✕ ! i, the hidden-sheets and hidden-span badges, previous /
+    next in the callout, `errorAt`, and the Download: a pane whose only
+    errors are results downloads the untouched file (an `exportPatch`
+    plugin writes results only when asked — SR-COMMENTS decision 3).
 
 ### Decision — freeze panes (W-24)
 
@@ -6358,7 +6429,14 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   `theme.test.ts` (every token has a hex dark
   value, the contrast table in both themes, the attribute restyling chrome
   while a `decorate` fill stays as saved, a host override winning);
-  `rules.test.ts` (the four-column example: every rule kind, commit, undo,
+  `results.test.ts` (W-50: the two severities, their order and a v1
+  review without them; a `validate` plugin's results and one it stops
+  reporting; `off` dropping on every arrival; `resultAt` with a problem
+  winning and a range result; `summary` marking nothing with the status
+  line; `marks` from the errors element marking the sheet — 9 px,
+  bottom-left, labelled, `--sp-pass`, no fill, no pin, no row glyph — in
+  View too; the On sheet switch as no change; the cell-bar chip; the counts;
+  axe), the `skip` token in the contrast table; `rules.test.ts` (the four-column example: every rule kind, commit, undo,
   `unique`, `setErrors`, sync and async `validate` with aborts, headers,
   `header-row`, rules changed after load, the input phase, flag and block in
   the element, the Column rules filter, 250,000 rows); `rules-file.test.ts`
@@ -6495,8 +6573,8 @@ the store and the contract are the contract verdict's and
 ### Decision
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
-   `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`, `theme`, `renderDetail` (W-68, decision 13); methods `getErrors()`, `setErrors(list, { plugins? })`; events
+   `author`, `plugins`, `theme` (SR-GRID decision 15a), `results` (decision 15); properties `workbook`, `errors`, `errorTypes`,
+   `readOnly`, `theme`, `results`, `renderDetail` (W-68, decision 13); methods `getErrors()`, `setErrors(list, { plugins? })`; events
    `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it
@@ -6504,8 +6582,8 @@ the store and the contract are the contract verdict's and
 2. **No private copy:** every render reads the store. Connecting registers the
    element with the store, so Flag issue opens the form here and not in the
    sheet; disconnecting releases it.
-3. **The list:** "n open"; severity filter (All · ✕ · ! · i, each with its
-   count) and — when errors come from more than people — an author filter
+3. **The list:** "n open" (problems only — decision 15); severity filter (All · ✕ · ! · i, each with its
+   count of problems) and — when errors come from more than people — an author filter
    (People · Workbook rules · Column rules — "Rules file" when the pane has
    a rules file, its rows then grouped by sheet — · File comments); rows open first then resolved,
    by number; each row shows the number (✓ when resolved), the type's name,
@@ -6588,6 +6666,37 @@ the store and the contract are the contract verdict's and
     13); the form itself is only here. The workbook's own errors (validation,
     file comments) are not accepted here — B-029.
 
+15. **Results (W-50):** `pass` and `skipped` entries (SR-GRID decision 23)
+    are listed apart from the problems. The `results` attribute (and
+    property) sets the pane's level, as on the sheet. **Summary line** —
+    under the header whenever the pane holds results and the level is not
+    `off`: "*n* problems · ✓ *n* passed · — *n* not checked" (problems are
+    open entries; results are cells) and an **On sheet** `role="switch"`
+    that moves the pane between `summary` and `marks` (a view setting: no
+    change, no undo step). **Chips** — *Problems n* · *✓ Passed n* · *— Not
+    checked n*, the result chips only when such results exist; *Problems* is
+    the default and the only view with the severity and author filters.
+    **Groups** — *Passed* lists one row per check (`type` + `message`),
+    *Not checked* one per reason (`message`, else `type`); each says its
+    name (the message, else the type's name), its cell count and where it
+    is (one range when its cells fill it, "H6, H31, H44 …" otherwise, "*n*
+    sheets" across sheets), largest first, with **Show ▸**: it selects the
+    group's bounding range on its first sheet, marks that range's results on
+    the sheet even at `summary` (`store.focusResults`) and fires
+    `sheetpane-reveal` with the group's first entry. A group opens to its
+    entries, **virtualised** — 28 px rows in a box at most 280 px tall, only
+    the rows in view (± 4) in the DOM; each row (with `data-sp-error` and
+    `data-sp-ref`) is Show in sheet for that entry, and marks its range.
+    **Counts that ask for action ignore results:** "n open", the severity
+    filters, and the sheet's tab and toolbar counts (SR-GRID decision 23) —
+    as they ignore accepted errors (decision 14); the summary line's *n*
+    problems and the *Problems n* chip leave both out too. **Problems** is
+    the view decision 3 describes — W-55's *Workbook* and whole-sheet groups
+    above *Cells*, the severity, **Accepted n** and author filters, the
+    expanded row with the host's detail (decision 13) and Accept…; the
+    result views have none of these. The form offers the three problem
+    severities only.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
@@ -6601,7 +6710,15 @@ the store and the contract are the contract verdict's and
   Cancel and ⌘↵, one undo step, Reopen, `readonly` and a rule's row, axe with
   the form open) and the
   L7 sync test in both mount orders with the errors element inside a
-  `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
+  `<dialog>`; the undo-across-elements test in `plugins.test.ts`;
+  `results.test.ts` (W-50: the summary line and chips only with results,
+  Problems by default, groups by check and by reason with their counts and
+  ranges, Show ▸ marking at `summary`, Show in sheet for all five
+  severities, the On sheet switch from here marking the sheet, counts that
+  ignore results, axe with a group open, 5,000 passes as two rows and an
+  opened group drawing fewer than 20 rows as it scrolls; with W-55 and
+  W-69, the Problems view keeping the scope groups and the Accepted chip,
+  and every count leaving out results and accepted errors alike).
 
 - **Known gap (found by W-55):** axe's label-in-name rule (WCAG 2.5.3) fails
   on every row and filter in the browser's default font. For example,
@@ -7430,11 +7547,15 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file`, at the top-left cell of its
-   range. An error with no cell, about a whole sheet or the workbook (W-55,
+   range — except results (`pass`, `skipped`; SR-GRID decision 23), which
+   are written only when `ctx.exportOptions.includeResults === true`
+   (`<sheetpane-excel>.export({ includeResults: true })`; W-50), so a
+   downloaded review stays a list of problems; there is no Download-menu
+   switch for it — the host asks. An error with no cell, about a whole sheet or the workbook (W-55,
    SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
    never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
    reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
-   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>` (`Passed`, `Not checked` for results),
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved or accepted. **An accepted error (W-69, SR-GRID 5c)** gets one
@@ -7467,7 +7588,7 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
-- **Enforced today:** `just test-pkg comments` — 30 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 32 tests (results left out unless `includeResults`, W-50; notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;

@@ -7,8 +7,8 @@ import { formatCode, general, ImportError, read, sha256, subsetCode, type Import
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import { STYLE_PROPS, type CellContext, type DeriveInput, type DerivedChange, type ErrorDraft, type Plugin, type PluginContext, type RunStyle, type StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
-import { ERROR_META_MAX, copyError, machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
+import { ERROR_META_MAX, RESULTS_LEVELS, SEVERITY_ORDER, copyError, isResult, machineAuthored } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, LoadState, Mode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
 /** What {@link createWorkbook} takes. */
 export interface StoreOptions {
@@ -39,6 +39,24 @@ export const HISTORY_CAP = 500;
 const BLANK = '(blank)';
 /** The CSS a run's span may carry (W-53): the `decorate` allow-list. */
 const ALLOWED_PROPS: ReadonlySet<string> = new Set(STYLE_PROPS);
+
+type Box = NonNullable<ReturnType<typeof parseRange>>;
+/** The cells a range covers. */
+const areaOf = (r: Box) => (r.bottom - r.top + 1) * (r.right - r.left + 1);
+const inBox = (r: Box, row: number, col: number) => row >= r.top && row <= r.bottom && col >= r.left && col <= r.right;
+/** One sheet's results and problems, indexed for the grid's per-cell lookup (W-50). */
+interface ResultSheet { cells: Map<string, SheetpaneError>; ranges: { r: Box; e: SheetpaneError }[]; problemCells: Set<string>; problemRanges: Box[] }
+/** What the pane's results add up to (W-50): problems are entries; results are cells. */
+export interface ResultCounts {
+  /** Every entry that is not a result, open or resolved. */
+  problems: number;
+  /** Open entries that are not results — what a count asking for action shows. */
+  open: number;
+  /** Cells that passed a check. */
+  pass: number;
+  /** Cells that were not checked. */
+  skipped: number;
+}
 
 /**
  * The change-map key of a cell: `Sheet1!B3` (exported as `cellKey`).
@@ -162,6 +180,10 @@ export class WorkbookStore {
   /** Plugin errors by `plugin|sheet|range|type` → error id. */
   private readonly pluginErrors = new Map<string, string>();
   private errorsViews = 0;
+  // results (W-50): the pane's level, the range Show ▸ marks, and the index the grid reads per cell
+  private resultsLevel: ResultsLevel = 'summary';
+  private focus: { sheet: string; range: string } | undefined;
+  private resultIdx: { errors: readonly SheetpaneError[]; sheets: Map<string, ResultSheet>; counts: ResultCounts } | undefined;
   /** The host's column rules (W-27): a built-in `validate` provider, never part of the frozen plugin set. */
   private readonly rules: HostRules = new HostRules({
     bookSheets: () => this.snap.book?.sheets,
@@ -228,7 +250,7 @@ export class WorkbookStore {
     }
     if (seq !== this.loadSeq) return;
     const source: Source = { name, kind: book.source, size: bytes.length, bytes, readMs: Math.round(performance.now() - t0), ...(book.sha256 ? { sha256: book.sha256 } : {}) };
-    this.undoStack = []; this.redoStack = []; this.textCache.clear(); this.pluginErrors.clear();
+    this.undoStack = []; this.redoStack = []; this.textCache.clear(); this.pluginErrors.clear(); this.focus = undefined;
     const first = book.sheets[book.activeSheet] ?? book.sheets[0]!;
     this.set({ load: { status: 'ready' }, source, book, changes: new Map(), derived: new Map(), errors: [], composing: null, selection: { sheet: first.name, ref: 'A1' } }, [{ type: 'load', origin }]);
     this.rules.reset(); // column rules: the `load` phase (time-sliced; it re-runs validate when done)
@@ -680,6 +702,7 @@ export class WorkbookStore {
       found: this.foundFor(d.sheet, d.range), expected: d.expected ?? '', message: d.message ?? '',
       cellChanged: !!d.cellChanged, status: 'open', matchesExpected: false, author: d.author ?? '', createdAt: new Date().toISOString(),
     }, d.meta);
+    if (this.resultsLevel === 'off' && isResult(e)) return e; // `results="off"`: a result is dropped on arrival (W-50)
     let changes = this.snap.changes;
     const keys: string[] = [];
     const events: StoreEvent[] = [{ type: 'errors', origin }];
@@ -754,7 +777,7 @@ export class WorkbookStore {
 
   /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). Each `meta` is kept as JSON, or dropped with SP-3016 (W-68). */
   setErrors(list: readonly SheetpaneError[], origin?: Origin): void {
-    const errors = list.map((e) => restoredStatus(withMeta({ ...e, v: 1 as const, matchesExpected: false }, e.meta)));
+    const errors = this.arriving(list).map((e) => restoredStatus(withMeta({ ...e, v: 1 as const, matchesExpected: false }, e.meta)));
     for (const e of errors) { const n = /^ERR-(\d+)$/.exec(e.id); if (n) this.nextError = Math.max(this.nextError, Number(n[1]) + 1); }
     this.undoStack = []; this.redoStack = [];
     this.pluginErrors.clear(); // ids now name the restored list's errors; validate re-adopts its own by what they say, never by id
@@ -784,7 +807,7 @@ export class WorkbookStore {
       if (a !== b) events.push({ type: 'change', origin, sheet, ref, kind: (b ?? a)!.kind, was: a ? a.now : b!.was, now: b ? b.now : a!.was });
     }
     if (this.snap.errors !== state.errors) events.push({ type: 'errors', origin });
-    this.set({ changes: state.changes, errors: this.withMatches(state.errors, state.changes) }, events);
+    this.set({ changes: state.changes, errors: this.withMatches(this.arriving(state.errors), state.changes) }, events);
     const sheets = [...new Set(h.keys.map((k) => splitKey(k).sheet))];
     if (sheets.length) {
       this.rules.touch(h.keys.map(splitKey).filter((c) => !c.ref.startsWith('#')));
@@ -822,6 +845,7 @@ export class WorkbookStore {
     if (!vs.length || !this.snap.book) return;
     let errors = [...this.snap.errors];
     let changed = false;
+    const gone = new Set<string>();
     const at = new Map(errors.map((e, i) => [e.id, i]));
     // restored errors a provider may adopt (setErrors): by what they say, built once
     let adoptable: Map<string, number[]> | undefined;
@@ -840,6 +864,7 @@ export class WorkbookStore {
         try { drafts = p.validate!(sheet, this.pluginContext()); } catch (e) { console.error(spMessage('SP-3013', `sheetpane: plugin "${p.id}" validate failed`), e); continue; }
         const seen = new Set<string>();
         for (const d of drafts) {
+          if (this.resultsLevel === 'off' && isResult(d)) continue; // `results="off"` (W-50)
           const k = `${p.id}|${d.sheet}|${d.range}|${d.type}${d.key ? `|${d.key}` : ''}`;
           seen.add(k);
           const id = this.pluginErrors.get(k);
@@ -868,11 +893,84 @@ export class WorkbookStore {
         for (const [k, id] of this.pluginErrors) {
           if (!k.startsWith(`${p.id}|${sheet}|`) || seen.has(k)) continue;
           const i = at.get(id) ?? -1;
-          if (i >= 0 && (errors[i]!.author === 'workbook' || errors[i]!.author === 'host') && (errors[i]!.status === 'open' || errors[i]!.status === 'accepted')) { errors[i] = { ...withoutAcceptance(errors[i]!), status: 'resolved' }; changed = true; }
+          // a result the provider no longer reports is no longer true: it goes, it never resolves (W-50)
+          if (i >= 0 && isResult(errors[i]!)) { gone.add(id); this.pluginErrors.delete(k); changed = true; }
+          else if (i >= 0 && (errors[i]!.author === 'workbook' || errors[i]!.author === 'host') && (errors[i]!.status === 'open' || errors[i]!.status === 'accepted')) { errors[i] = { ...withoutAcceptance(errors[i]!), status: 'resolved' }; changed = true; }
         }
       }
     }
+    if (gone.size) errors = errors.filter((e) => !gone.has(e.id));
     if (changed) this.set({ errors: this.withMatches(errors, this.snap.changes) }, [{ type: 'errors', origin }]);
+  }
+
+  // ── results (W-50): `pass` and `skipped` entries — counted apart, marked only when asked ──
+  /** How much of the results the pane shows: `off`, `summary` (the default) or `marks`. */
+  get results(): ResultsLevel { return this.resultsLevel; }
+  /**
+   * Sets the pane's results level — a view setting, never a change or an undo step. `off` drops
+   * the results the pane holds and every one that arrives after.
+   * @param level - `off`, `summary` or `marks`; anything else is ignored.
+   */
+  setResults(level: ResultsLevel): void {
+    if (!RESULTS_LEVELS.includes(level) || level === this.resultsLevel) return;
+    this.resultsLevel = level;
+    this.focus = undefined;
+    if (level === 'off' && this.snap.errors.some(isResult)) this.set({ errors: this.snap.errors.filter((e) => !isResult(e)) }, [{ type: 'errors', origin: undefined }]);
+    else this.set({});
+  }
+  /** The range whose results are marked on the sheet below `marks` (Show ▸ in the errors panel), or undefined. */
+  get resultFocus(): { sheet: string; range: string } | undefined { return this.focus; }
+  /**
+   * Marks one range's results on the sheet even at `summary` (Show ▸); `undefined` clears it. A view setting.
+   * @param sheet - The sheet's name.
+   * @param range - An A1 range, or undefined to clear.
+   */
+  focusResults(sheet: string, range: string | undefined): void {
+    const next = range && parseRange(range) ? { sheet, range } : undefined;
+    if (next?.sheet === this.focus?.sheet && next?.range === this.focus?.range) return;
+    this.focus = next;
+    this.set({});
+  }
+  /**
+   * The result a cell shows — `pass` or `skipped` — or undefined. A problem always wins: a cell any
+   * problem covers has no result. Indexed once per errors list, so the grid asks per cell.
+   * @param sheet - The sheet's name.
+   * @param row - The 0-based row.
+   * @param col - The 0-based column.
+   * @returns The result entry, or undefined.
+   */
+  resultAt(sheet: string, row: number, col: number): SheetpaneError | undefined {
+    const x = this.indexResults().sheets.get(sheet);
+    if (!x) return undefined;
+    const k = `${row},${col}`;
+    if (x.problemCells.has(k) || x.problemRanges.some((r) => inBox(r, row, col))) return undefined;
+    return x.cells.get(k) ?? x.ranges.find((y) => inBox(y.r, row, col))?.e;
+  }
+  /** Problems (entries) and results (cells) in the pane — what the summary line and the status line say. */
+  resultCounts(): ResultCounts { return this.indexResults().counts; }
+  private indexResults(): { sheets: Map<string, ResultSheet>; counts: ResultCounts } {
+    const errors = this.snap.errors;
+    if (this.resultIdx?.errors === errors) return this.resultIdx;
+    const sheets = new Map<string, ResultSheet>(), counts: ResultCounts = { problems: 0, open: 0, pass: 0, skipped: 0 };
+    for (const e of errors) {
+      const r = parseRange(e.range);
+      const result = isResult(e);
+      if (!result) { counts.problems++; if (e.status === 'open') counts.open++; }
+      if (!r) continue;
+      if (result) counts[e.severity as 'pass' | 'skipped'] += areaOf(r);
+      let x = sheets.get(e.sheet);
+      if (!x) sheets.set(e.sheet, (x = { cells: new Map(), ranges: [], problemCells: new Set(), problemRanges: [] }));
+      const one = r.top === r.bottom && r.left === r.right, k = `${r.top},${r.left}`;
+      if (!result) { if (one) x.problemCells.add(k); else x.problemRanges.push(r); }
+      else if (!one) x.ranges.push({ r, e });
+      else { const was = x.cells.get(k); if (!was || SEVERITY_ORDER[e.severity] > SEVERITY_ORDER[was.severity]) x.cells.set(k, e); }
+    }
+    this.resultIdx = { errors, sheets, counts };
+    return this.resultIdx;
+  }
+  /** A list as it arrives in the pane: at `off`, without its results. */
+  private arriving<T extends { severity: SheetpaneError['severity'] }>(list: readonly T[]): readonly T[] {
+    return this.resultsLevel === 'off' ? list.filter((e) => !isResult(e)) : list;
   }
 
   // ── column rules (W-27) ──────────────────────────────────────────────────

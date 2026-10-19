@@ -12,7 +12,7 @@ import { cellRef, colName, parseRange, parseRef, spError, spMessage, type RangeP
 import type { Cell } from '@sheetpane/import';
 import { serialToParts } from '@sheetpane/import';
 import type { ErrorDraft, Plugin } from '../plugins/types.js';
-import type { Severity } from './types.js';
+import type { ProblemSeverity as Severity } from './types.js'; // a failing rule is a problem, never a result (W-50)
 
 /** One rule, as plain JSON: for a column (by title) or for a cell or range (rules file). */
 export interface ColumnRule {
