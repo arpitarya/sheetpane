@@ -22,7 +22,8 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-*Empty since 2026-10-19 — W-44 closed: 0.3.0 published from CI. Next gate: W-30 and W-48, the decider's own hands-on runs (testing).*
+
+*Empty since 2026-10-19 — next gate: W-30 and W-48, the decider's hands-on runs (testing), and the first npm publish of `@sheetpane/tables`, `review` and `compare` for 0.4.0.*
 
 ---
 

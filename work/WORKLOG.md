@@ -24,6 +24,17 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-50–W-69 built in parallel lanes and merged; 0.4.0 prepared  ·  Claude Code (claude-opus-5-5, orchestrator)
+
+- **Asked:** *"look into open work and implement everything and commit and push and publish a new version"*, then *"do as many work items or feature in parallel as possible"*.
+- **Done:** committed and pushed the Cowork session's grid/demo fixes (`3640b72`) and the visibility tests they broke on CI (`a95fc33`). Built the 18 agent items W-50–W-69 with one agent per item in eight git worktrees (`../sheetpane-lanes/a`–`h`, branches `lane-*`), dependency-ordered; merged them on a branch `integration` with four merge passes, renumbering what two lanes issued alike (SP-3016–3020 several times over, W-52's SP-2015, the review plugin's SP-59xx → SP-50xx; SR-VALIDATION 9/10/11, SR-ERRORS 15–17, SR-IMPORT 11–15, SR-GRID 21d/e, W-30's DoD rows) and wiring what spanned items (W-63's `compare` layer, W-52 × W-61 / W-57 / W-64 / W-62, W-67's later marks, review skipping `compare`). A real bug found at the merge: reverting a `structure` Edits row left the workbook shifted. Filed B-036–B-046; CHANGELOG's 0.4.0 section written.
+- **Verified:** integration's full suite 1484/1485 (the miss is `@sheetpane/compare`'s 500 ms perf budget at 507 ms under load ≈ 7.6; passes alone), demo-check 57/57, pack-check 22, smoke-built 23, export coverage 95.98 %.
+- **Decided / left open:** the decider chose to publish the three new packages (`tables`, `review`, `compare`) by hand once, since CI's trusted publishing needs them to exist. The other session's fux setup is staged, uncommitted, in the main tree — it must rebase onto this push. Read in, for the decider to confirm: B-044–B-046.
+- **Mistakes:** committing `3640b72` without running the plugin suites — two visibility tests went red on CI; fixed in `a95fc33`. Agents shared one scratchpad file once (a commit message swapped, amended before any push); later prompts gave each lane its own temp folder.
+- **Next:** CI green on main → Arpit's first publish of the three → `just publish 0.4.0`.
+
+---
+
 ## 2026-10-19 — W-62 and W-67 merged into integration, and the cross-item wiring  ·  Claude Code (claude-opus-5-5, the orchestrator's merge lane)
 
 - **Asked:** *merge lane-e (W-62, `8fdbf88`) and lane-d (W-67, `55bd8f7`) into `integration` one at a time, renumber what collides, then wire W-62 × W-52, W-67's marks for W-50/51/53/55/69, and @sheetpane/review skipping the `compare` layer.*
