@@ -34,6 +34,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-39-mcp-server.md` | 2026-10-18 | [SR-MCP](../records/0119_MCP.md) |
 | `W-43-create-sheetpane.md` | 2026-10-18 | [SR-CREATE](../records/0120_CREATE.md) · [SR-BUILD](../records/0102_BUILD.md) decisions 7, 8 |
 | `W-49-hide-and-show.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 21c · [SR-VISIBILITY](../records/0121_VISIBILITY.md) · [SR-IMPORT](../records/0104_IMPORT.md) 10 · [SR-EXPORT](../records/0103_EXPORT.md) 3 |
+| `W-58-rules-file-as-excel-dropdowns.md` | 2026-10-19 | [SR-VALIDATION](../records/0108_VALIDATION.md) 1, 9 · [SR-GRID](../records/0105_GRID.md) 10, 17 · [SR-CODES](../records/0117_CODES.md) (SP-5401 – SP-5407) |
 | `W-57-export-writes-validation-and-conditional-formats.md` | 2026-10-19 | [SR-EXPORT](../records/0103_EXPORT.md) 1, 2, 3, 6 · [SR-IMPORT](../records/0104_IMPORT.md) 2 · [SR-CODES](../records/0117_CODES.md) (SP-2015) |
 | `W-53-rich-text-runs.md` | 2026-10-19 | [SR-IMPORT](../records/0104_IMPORT.md) 12 · [SR-GRID](../records/0105_GRID.md) 9, 9a, 15c, 17 · [SR-STYLES](../records/0110_STYLES.md) 9 |
 | `W-65-file-fingerprint.md` | 2026-10-19 | [SR-IMPORT](../records/0104_IMPORT.md) 11 · [SR-GRID](../records/0105_GRID.md) 2, 6, 9 · [SR-CODES](../records/0117_CODES.md) (SP-1009) |

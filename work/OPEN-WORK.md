@@ -42,8 +42,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-56** `agent` · **G1** · A hover event and a host highlight that does not move the selection. Filed by Arpit (Cowork). [detail](open/W-56-hover-and-highlight.md)
 
-- 🟢 **W-58** `agent` · **G2** · Write the rules file into the download as Excel's own dropdowns and checks. Filed by Arpit (Cowork). [detail](open/W-58-rules-file-as-excel-dropdowns.md)
-
 - 🟢 **W-59** `agent` · **G2** · New plugin `@sheetpane/review`: the review written into the download as its own sheet, flagged cells coloured. Filed by Arpit (Cowork). [detail](open/W-59-review-sheet-plugin.md)
 
 - 🟢 **W-60** `agent` · **G2** · Dependent dropdowns: a list that changes with another cell (`INDIRECT`). Filed by Arpit (Cowork). [detail](open/W-60-dependent-dropdowns.md)

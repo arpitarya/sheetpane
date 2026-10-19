@@ -5,10 +5,12 @@
 A plugin for `@sheetpane/grid`. It reads the `<dataValidations>` the file's
 author saved, including the x14 form Excel uses for lists on another sheet,
 and runs them through the `validate` hook. `<sheetpane-excel>` and
-`<sheetpane-errors>` on the same pane both see the result. No runtime
-dependencies; `@sheetpane/grid` is a peer. Versioned in lockstep with it.
+`<sheetpane-errors>` on the same pane both see the result. On export it can
+also write the host's rules file into the `.xlsx` as Excel's own dropdowns
+and checks. No third-party runtime dependencies (`@sheetpane/export` writes
+the rules); `@sheetpane/grid` is a peer. Versioned in lockstep with it.
 
-- `@sheetpane/validation`: the headless plugin (`validate` only).
+- `@sheetpane/validation`: the headless plugin (`validate`, and `exportPatch` for the rules file).
 - `@sheetpane/validation/ui`: opt-in. Adds the list arrow and the status-line count.
 
 ## Use
@@ -124,13 +126,52 @@ The plugin passes the formula with its relative references already shifted to
 the cell. `true` or a non-zero number passes. `false` or `0` fails. Anything
 else counts as unknown, and the cell is not flagged.
 
+## The rules file as Excel dropdowns (`rulesAsValidation`)
+
+A host that checks its sheets with a rules file (`rules-src`, or
+`excel.rules`) can hand the same rules to people who work in Excel. The
+Download menu shows **Write rules as Excel dropdowns** while the pane has a
+rules file or column rules; turned on, the `.xlsx` carries them as the
+workbook's own data validation.
+
+```ts
+validation({ rulesAsValidation: true });          // the switch on at first (default: off)
+await excel.export({ rulesAsValidation: true });  // or for one export
+lastRulesWrite(excel.workbook?.book);             // { written, merged, skipped, conflicts }
+rulesAsValidations(store);                        // the plan, without writing
+```
+
+| the rule says | Excel gets | skipped (code) |
+|---|---|---|
+| `oneOf`, `equals` | a dropdown list | a value with a comma, an empty list, over 255 characters (SP-5403) |
+| `integer` / `number`, `min` / `max` | whole number / decimal | a bound that is not a number (SP-5404) |
+| `date`, `min` / `max` | date | a bound not written `2026-01-31` or as a serial (SP-5404) |
+| `minLength` / `maxLength` | text length | (SP-5404) |
+| `boolean` | the list TRUE, FALSE | |
+| `required` | "ignore blank" off (alone: text length ≥ 1) | |
+| `pattern`, `noneOf`, `unique` | — | always (SP-5401) |
+| two checks in one rule | — | always (SP-5402) |
+
+A column rule covers its column from the row under the titles to the last
+row; a cell rule its range. The rule's `message` is Excel's error text, the
+rule in words its input prompt; `onInvalid: 'block'` is Excel's Stop, a
+`note` its Information, anything else its Warning.
+
+**The workbook's own rule wins.** Where the file already has a rule, the
+written one leaves those cells and the conflict is listed (SP-5406); a rule
+that checks the same thing joins the file's own instead of repeating it.
+Excel 2010 `x14` rules stay where they are. A rules-file title the workbook
+lacks is SP-5405. Every rule not written is a console warning with its code,
+and the status line adds `· k rules not written to Excel`. `.xlsx` only.
+
 ## The controls (`/ui`)
 
 - **List arrow** (`cell` slot, Edit only): appears in every cell a `list` rule
   covers. It opens the rule's current choices, and picking one sets the cell
   with `store.setCell`, which can be undone.
 - **Status** (`status` slot, View and Edit): `3 validation warnings`, plus
-  `· 1 rule not checked` when rules were skipped.
+  `· 1 rule not checked` when rules were skipped, plus `· 2 rules not written
+  to Excel` after an export that wrote the rules file.
 
 `<sheetpane-errors>` lists the rule rows with the reviewer's own errors. Its
 author filter (Anyone · People · Workbook rules · File comments) shows only

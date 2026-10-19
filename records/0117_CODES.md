@@ -87,6 +87,11 @@ flowchart LR
 - **W-57** added SP-2015 (error, `bad-rule`): a data-validation rule,
   conditional format or differential format `toXlsx` / `patchXlsx` cannot
   write as Excel reads it (SR-EXPORT decision 6).
+- **W-58** added SP-5401 – SP-5407 (warnings), the first 5400 codes: the
+  host's rules written into the download as Excel's own — a check Excel
+  cannot hold, two checks in one rule, a list it cannot type out, a bound it
+  cannot read, a missing column or sheet, cells that keep their own rule,
+  and a sheet whose rules could not be rewritten (SR-VALIDATION decision 9).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

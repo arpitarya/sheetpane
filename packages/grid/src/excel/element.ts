@@ -4,7 +4,7 @@
 import { cellRef, codeOf, colName, detailOf, download, parseRange, parseRef, spError, spMessage, type Cell, type RangePos } from '@sheetpane/export';
 import type { ImportedSheet } from '@sheetpane/import';
 import { controlsFor } from '../plugins/host.js';
-import type { ControlDescriptor, Geometry } from '../plugins/types.js';
+import type { ControlDescriptor, Geometry, Plugin } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
 import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
@@ -287,6 +287,7 @@ export class SheetpaneExcel extends ElementBase {
     const store = this.ensureStore();
     const r = await store.exportFile({ options, ...o, ...(o.format === 'csv' && !o.sheet ? { sheet: store.getSnapshot().selection.sheet } : {}) });
     this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded, format: r.kind, converted: r.converted, sha256: r.sha256 }, true), name: r.name };
+    this.schedule(); // a plugin's status may report on the export (W-58: rules not written to Excel)
     return r.blob;
   }
   private lastExport: { ok: boolean; name: string } | undefined;
@@ -893,10 +894,17 @@ export class SheetpaneExcel extends ElementBase {
     this.schedule();
   }
 
-  /** Untouched: no change, and nothing a plugin would write (a review exported as comments). */
+  /**
+   * Untouched: no change, and nothing a plugin would write — a review exported as comments, or a switch that applies
+   * and is on (W-58). A plugin whose every switch says when it applies is judged by its switches, not by the errors.
+   */
   private untouched(): boolean {
     const s = this._store!;
-    return s.changeCount === 0 && !(s.getSnapshot().errors.length && s.plugins.some((p) => p.provides.includes('exportPatch')));
+    if (s.changeCount !== 0) return false;
+    const judged = (p: Plugin) => !!p.exportOptions?.length && p.exportOptions.every((o) => o.applies);
+    if (s.getSnapshot().errors.length && s.plugins.some((p) => p.provides.includes('exportPatch') && !judged(p))) return false;
+    const on = this.exportChoices();
+    return !s.plugins.flatMap((p) => p.exportOptions ?? []).some((o) => on[o.key] && o.applies?.(s));
   }
 
   // ── Download (W-31, W-34): the main part in the upload's format; ▾ for either format and plugin options ──
@@ -928,7 +936,8 @@ export class SheetpaneExcel extends ElementBase {
     const note = (f: 'xlsx' | 'csv') => (f === kind ? '' : f === 'csv' ? 'The current sheet only — values as shown now, no formatting' : 'One sheet with the latest values');
     const items = order.map((f) => `<button type="button" role="menuitem" class="mi" data-fmt="${f}"><span>Download as .${f}</span>${f === kind ? '<span class="kbd">default</span>' : ''}</button>${note(f) ? `<span class="mnote">${note(f)}</span>` : ''}`).join('');
     const choices = this.exportChoices();
-    const opts = (this._store?.plugins ?? []).flatMap((p) => p.exportOptions ?? []);
+    const store = this._store;
+    const opts = (store?.plugins ?? []).flatMap((p) => p.exportOptions ?? []).filter((o) => !o.applies || (store && o.applies(store)));
     const optHtml = opts.length ? `<div role="separator" class="msep"></div>${opts.map((o) => `<button type="button" role="menuitemcheckbox" class="mi" data-opt="${esc(o.key)}" aria-checked="${choices[o.key]}"><span>${choices[o.key] ? '✓ ' : ''}${esc(o.label)}</span></button>`).join('')}` : '';
     return `<div class="card dlmenu" role="menu" aria-label="Download format">${items}${optHtml}</div>`;
   }

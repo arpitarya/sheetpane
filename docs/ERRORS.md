@@ -96,6 +96,13 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
 | [SP-5201](#sp-5201) | Recalculation failed | error |
 | [SP-5202](#sp-5202) | Formula engine did not load | error |
+| [SP-5401](#sp-5401) | Rule check Excel validation cannot hold | warning |
+| [SP-5402](#sp-5402) | Rule checks one Excel rule cannot combine | warning |
+| [SP-5403](#sp-5403) | List Excel cannot type out | warning |
+| [SP-5404](#sp-5404) | Rule bound Excel cannot read | warning |
+| [SP-5405](#sp-5405) | No column or sheet for a rule to write | warning |
+| [SP-5406](#sp-5406) | Cells keep the rule they already have | warning |
+| [SP-5407](#sp-5407) | Sheet rules could not be rewritten | warning |
 | [SP-5701](#sp-5701) | Chart part is not well-formed XML | error |
 | [SP-5702](#sp-5702) | Chart part holds no chart | error |
 | [SP-5801](#sp-5801) | Comment part has no container | error |
@@ -568,6 +575,62 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the WASM engine could not be fetched or started (with `preload`).
 - **Likely cause:** the `.wasm` file is not served, a wrong `wasm` option, or a CSP blocking WebAssembly.
 - **Fix:** serve the engine's `.wasm`, pass its URL as `wasm`, and allow `wasm-unsafe-eval` in the CSP.
+
+### SP-5401
+
+**Rule check Excel validation cannot hold** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** writing the host's rules into the download (`rulesAsValidation`, W-58), a rule uses a check Excel's data validation has none of; the rule is not written and stays checked in sheetpane.
+- **Likely cause:** the rule has a `pattern` (no regular expressions in Excel), a `noneOf` list, or `unique`.
+- **Fix:** nothing to do for sheetpane. For Excel, add a `custom` rule by hand (`COUNTIF` for unique), or split the rule so its other checks are written.
+
+### SP-5402
+
+**Rule checks one Excel rule cannot combine** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule holds two checks — a list with `min` or `max`, a number with a length, `equals` with `oneOf`, a list whose values do not fit its `type` — and one Excel rule holds one; it is not written.
+- **Likely cause:** a rule that asks for more than one thing.
+- **Fix:** keep the check Excel users need most in the rule for that column, and move the other to a cell rule or leave it to sheetpane.
+
+### SP-5403
+
+**List Excel cannot type out** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a `oneOf` (or `equals`) list cannot be written as Excel's typed-out list, so it is not written.
+- **Likely cause:** a value holds a comma (Excel splits the list on commas), the list is empty, or it is longer than 255 characters.
+- **Fix:** shorten the list, or drop the commas from its values. A long list belongs on a sheet, with a list rule pointing at its range, written in the workbook itself.
+
+### SP-5404
+
+**Rule bound Excel cannot read** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule's `min`, `max`, `minLength` or `maxLength` cannot be written as an Excel operand; the rule is not written.
+- **Likely cause:** a number bound that is not a number, a date bound not written as `2026-01-31` or a serial, a length that is not a whole number from 0, or a lower bound above the upper.
+- **Fix:** write the bound as a number, an ISO date (`2026-01-31`) or a date serial.
+
+### SP-5405
+
+**No column or sheet for a rule to write** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule names a column title no sheet has in its title row, or a sheet the workbook lacks; it is not written.
+- **Likely cause:** a renamed or misspelt column title or sheet name, or a `headerRow` that points at the wrong row. The rules engine says the same with SP-6022 or SP-6023.
+- **Fix:** correct the title, the sheet name or `headerRow` in the rules file.
+
+### SP-5406
+
+**Cells keep the rule they already have** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule written into the download reaches cells that already hold a different rule — the workbook's own data validation, which always wins, or a stronger rule from the rules file (a cell rule over a column rule, a named sheet's over `"*"`'s). Excel holds one rule per cell, so the written rule leaves those cells. A rule that checks the same thing as the workbook's own joins it instead, and is not reported.
+- **Likely cause:** the workbook was saved with its own rule on the column, or a cell rule sits inside a ruled column.
+- **Fix:** nothing, if the workbook's own rule is the one wanted; otherwise remove it from the workbook, or make the two rules agree.
+
+### SP-5407
+
+**Sheet rules could not be rewritten** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a sheet's own `<dataValidations>` could not be rewritten with the host's rules added, so that sheet keeps its block as it was and none of the host's rules are written to it.
+- **Likely cause:** the sheet's own rules include one `@sheetpane/export` refuses to write (SP-2015: an unknown type, a title over 32 characters, an `sqref` like `B:B`), or the sheet has no worksheet part.
+- **Fix:** resave the workbook in Excel so its rules are in Excel's own form, or correct the rule the message names.
 
 ### SP-5701
 

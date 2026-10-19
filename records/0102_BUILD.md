@@ -124,7 +124,9 @@ pnpm and a justfile; the testing verdict chose the runner.
    except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
    reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
-   dependency of every other package (W-35, SR-SKILLS) — and
+   dependency of every other package (W-35, SR-SKILLS). A plugin that writes
+   into the package at export depends on `@sheetpane/export` (`workspace:*`):
+   `@sheetpane/visibility` (W-49) and `@sheetpane/validation` (W-58) — and
    `@sheetpane/grid`, which ships `custom-elements.json` beside `dist` (W-37).
    **`create-sheetpane`** (W-43, SR-CREATE) is the one unscoped package — `npm
    create sheetpane` resolves that name — with `files: ['bin', 'templates']`,

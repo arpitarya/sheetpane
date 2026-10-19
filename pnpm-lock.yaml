@@ -340,13 +340,13 @@ importers:
 
   packages/validation:
     dependencies:
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
       '@sheetpane/skills':
         specifier: workspace:*
         version: link:../skills
     devDependencies:
-      '@sheetpane/export':
-        specifier: workspace:*
-        version: link:../export
       '@sheetpane/formulas':
         specifier: workspace:*
         version: link:../formulas

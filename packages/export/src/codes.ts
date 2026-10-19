@@ -83,7 +83,15 @@ const TABLE = {
   // 5200 · @sheetpane/formulas
   'SP-5201': { title: 'Recalculation failed', severity: 'error' },
   'SP-5202': { title: 'Formula engine did not load', severity: 'error' },
-  // 5300 styles · 5400 validation · 5500 condfmt · 5600 images — none raised yet
+  // 5300 styles · 5500 condfmt · 5600 images — none raised yet
+  // 5400 · @sheetpane/validation — the host's rules written as Excel's own (W-58)
+  'SP-5401': { title: 'Rule check Excel validation cannot hold', severity: 'warning' },
+  'SP-5402': { title: 'Rule checks one Excel rule cannot combine', severity: 'warning' },
+  'SP-5403': { title: 'List Excel cannot type out', severity: 'warning' },
+  'SP-5404': { title: 'Rule bound Excel cannot read', severity: 'warning' },
+  'SP-5405': { title: 'No column or sheet for a rule to write', severity: 'warning' },
+  'SP-5406': { title: 'Cells keep the rule they already have', severity: 'warning' },
+  'SP-5407': { title: 'Sheet rules could not be rewritten', severity: 'warning' },
   // 5700 · @sheetpane/charts
   'SP-5701': { title: 'Chart part is not well-formed XML', severity: 'error' },
   'SP-5702': { title: 'Chart part holds no chart', severity: 'error' },

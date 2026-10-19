@@ -66,7 +66,17 @@ export interface DerivedChange { sheet: string; ref: string; value: Cell; text: 
 export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
 
 /** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */
-export interface ExportOption { key: string; label: string; default: boolean }
+export interface ExportOption {
+  key: string;
+  label: string;
+  default: boolean;
+  /**
+   * Whether the switch has anything to do for this workbook (W-58). When it returns `false` the menu leaves the switch
+   * out; when it returns `true` and the switch is on, Download exports even an untouched workbook instead of handing back
+   * the original bytes. Absent: always shown, and Download decides by changes and errors alone.
+   */
+  applies?(store: WorkbookStore): boolean;
+}
 
 /** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
 export interface OverlayItem {

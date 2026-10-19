@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-58 closed: the rules file written into the download as Excel dropdowns  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-58 (write the rules file into the download as Excel's own dropdowns and checks) in lane b, its own worktree, while other agents build sibling items; use W-57's `setDataValidations`.*
+- **Done:** `@sheetpane/validation` `src/write.ts` (DOM-free): `validationOf` maps one rule to one Excel rule (SR-VALIDATION decision 9's table), `rulesAsValidations(store)` places them per sheet from `store.columnRules` through the grid's exported `checkDocument` (element columns < `"*"` < named sheet, as the rules engine merges; rules.ts untouched), `writeRules` writes each changed sheet's whole block with `setDataValidations` from the plugin's new `exportPatch`. Option `rulesAsValidation` (*Write rules as Excel dropdowns*, off unless `validation({ rulesAsValidation: true })`). Grid: `ExportOption.applies(store)` — the menu hides a switch with nothing to do, Download exports an untouched workbook while an applying switch is on, a plugin whose switches all say `applies` is no longer caught by the "errors + exportPatch" heuristic; `export()` re-renders when done so the status line can report. SP-5401 – SP-5407 (CODES, lock, ERRORS.md). `@sheetpane/export` moved from devDependency to dependency of validation (lockfile). Tests: `packages/validation/test/write.test.ts` (16) — the mapping row by row, placing and merging, `x14` left alone, SP-5407, the option, console and status line, the Download menu, and parity on the showcase. Records: SR-VALIDATION 1, 9; SR-GRID 10, 17; SR-CODES. Skills `sheetpane-rules-file`, `sheetpane-plugin-author`; validation README; `llms-full.txt`; CHANGELOG. DoD 3's Excel/LibreOffice opening joins W-30 DoD 3.
+- **Decided / left open:** "the file's own rule wins" read as the *workbook's* own validation (SR-VALIDATION §1's wording): a written rule leaves cells the workbook already rules (listed, SP-5406) and joins a rule that checks the same thing rather than repeating it; among written rules a cell rule beats a column rule, a named sheet's beats `"*"`'s. One rule → one Excel rule, or none: a rule with two checks is skipped whole, not half-written; no `custom` formulas are generated (they would need `@sheetpane/formulas` to be checked back). The switch is off by default, so Download is unchanged for every existing host. A rule that checks nothing (`type: 'text'` alone) is neither written nor listed. CSV downloads, and CSV converted to `.xlsx`, carry no rules. The element's `validate` function is not a rule and is not written.
+- **Mistakes:** the first Download-menu test toggled the still-open menu shut; the status line did not show the report until the grid re-rendered after `export()`.
+- **Next:** W-30 DoD 3 (the decider opens a written file in Excel and LibreOffice).
+
+---
+
 ## 2026-10-19 — W-57 closed: export writes data validation and conditional formatting  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-57 (export writes data validation and conditional formatting) in lane b, its own worktree, while other agents build sibling items.*
