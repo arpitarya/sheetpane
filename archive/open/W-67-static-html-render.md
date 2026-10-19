@@ -6,7 +6,7 @@ item: W-67
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Claude Code (claude-opus-5-5), lane d — closed"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `renderStatic` → one `<table>` string, inline CSS from the tokens, merges, hidden rows and columns honoured | a report shows the sheet | ⏳ |
-| 2 | Runs `format` (numfmt) and `decorate` (styles, condfmt) hooks headlessly; marks with glyphs and labels | it looks like the grid | ⏳ |
-| 3 | No script; every value escaped; light and dark | safe in any report or mail | ⏳ |
+| 1 | `renderStatic` → one `<table>` string, inline CSS from the tokens, merges, hidden rows and columns honoured | a report shows the sheet | ✅ |
+| 2 | Runs `format` (numfmt) and `decorate` (styles, condfmt) hooks headlessly; marks with glyphs and labels | it looks like the grid | ✅ |
+| 3 | No script; every value escaped; light and dark | safe in any report or mail | ✅ |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -38,10 +38,10 @@ ball: agent
 
 | DoD | what | state |
 |---|---|---|
-| 1 · entry | `@sheetpane/grid/static`, DOM-free (same import-graph test as W-54) | ⏳ |
-| 2 · fidelity | snapshot tests against the grid's computed styles on the fixtures | ⏳ |
-| 3 · safety | escaping fuzz test | ⏳ |
-| 4 · tests · docs | SR-GRID; skill `sheetpane-backend`; CHANGELOG | ⏳ |
+| 1 · entry | `@sheetpane/grid/static`, DOM-free (same import-graph test as W-54) | ✅ in `exports` and `publishConfig.exports`; `renderStatic(book, { sheet, range, errors, theme, headers })` with TSDoc and an `@example`; `loadWorkbook(bytes, options)` (on `/check` too: `check()` split into it plus the sort) gives the store; SP-3017 (not a loaded workbook), SP-3018 (unknown sheet, non-A1 range, > 200,000 cells). `test/check-entries.test.ts` walks `/static`'s graph (`excel/geometry.ts`, pure, the one `excel/` module allowed) and renders a CSV in Node; `smoke-built.mjs` renders with the built entry; `pack-check` ✓ |
+| 2 · fidelity | snapshot tests against the grid's computed styles on the fixtures | ✅ `packages/fixtures/test/static.test.ts` (Chromium): 6 workbooks (showcase, merged, hidden-sheet, unicode-names, date1904, comma.csv), every sheet, light and dark, numfmt + styles + condfmt + validation + comments, the rules sample and one edit — every cell's text, colours, weight, style, size, alignment, borders, padding, mark ring and tint, changed corner, stale mark, width and height, and every header, equal the grid's computed style; `static.node.test.ts` renders the same in Node and both equal `golden/static.json`. `packages/grid/test/static.test.ts`: ranges, hidden rows/columns, merges, marks, themes, dropped decorate values, derived values, the overlay note, refusals. Mail clients by hand → W-30 (DoD 6) |
+| 3 · safety | escaping fuzz test | ✅ fast-check, 150 runs (`packages/grid/test/static.test.ts`): a sheet name, cell text from a `format` hook, `decorate` values, an error's message and type — one `<table>`, allowed elements and attributes only, no URL, script, handler or font, every text read back unchanged; fails when `<` is left unescaped (checked by mutation) |
+| 4 · tests · docs | SR-GRID; skill `sheetpane-backend`; CHANGELOG | ✅ SR-GRID 22g (and 22f: `loadWorkbook`); SR-BUILD 5a, 8; SR-FIXTURES 6a; SR-CODES 2; SR-SKILLS 2; skill `sheetpane-backend`; grid README; ARCHITECTURE; GLOSSARY (static table); ERRORS.md; CHANGELOG; `llms*.txt` and `plugins/sheetpane` regenerated |
 
 ## Blockers
 

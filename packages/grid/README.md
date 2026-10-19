@@ -406,7 +406,46 @@ const errors = await check(await readFile('q3.xlsx'), {
   bytes throws SP-3016.
 - The store, the rules checker and the plugin contract are exported here too
   (`createWorkbook`, `checkDocument`, `registerPlugin`, the types), for a
-  DOM-free plugin or a host's own pipeline.
+  DOM-free plugin or a host's own pipeline. `loadWorkbook(bytes, options)`
+  takes the same options and returns the loaded store, every check finished,
+  instead of its errors.
+
+## A range as static HTML (`@sheetpane/grid/static`)
+
+`renderStatic(book, { sheet, range, errors, theme, headers })` returns one
+self-contained `<table>` — the text the pane shows (the `format` plugin), the
+look it draws (`decorate` plugins, merges, the theme's tokens as inline hex),
+hidden rows and columns left out, and the errors marked — for a report or an
+email. Made with no DOM, in Node, a worker or a page.
+
+```js
+import { readFile, writeFile } from 'node:fs/promises';
+import { loadWorkbook, renderStatic } from '@sheetpane/grid/static';
+import { numfmt } from '@sheetpane/numfmt';
+import { styles } from '@sheetpane/styles';
+import { condfmt } from '@sheetpane/condfmt';
+import { validation } from '@sheetpane/validation/check';
+
+const book = await loadWorkbook(await readFile('q3.xlsx'), { name: 'q3.xlsx', rules, plugins: [numfmt(), styles(), condfmt(), validation()] });
+await writeFile('report.html', renderStatic(book, { sheet: 'Holdings', range: 'A1:F20' }));
+```
+
+- **`book`** is a loaded store: `loadWorkbook()`'s, `createWorkbook()`'s after
+  `load()`, or an element's `workbook` — its changes and derived values show.
+  `sheet` defaults to the selected one, `range` to the used range (≤ 200,000
+  cells), `errors` to the workbook's own (`[]` marks nothing; pass `check()`'s
+  or a restored review), `theme` to `light` (`dark` too), `headers` to true.
+- **Marks:** a ring and a tint as the grid draws them, and a badge with the
+  glyph (✕ ! i ✓) and a number that the footer explains — severity, range,
+  type, message, *should be*. Never colour alone.
+- **Inert:** no script, no event attribute, no `class`, no stylesheet, no URL
+  (a `decorate` value that loads or escapes is dropped), every value escaped,
+  no font family — the reader's font is the font.
+- **Not drawn:** what an `overlay` plugin draws (pictures, charts) — the
+  footer says so and `data-sp-skipped` names the plugins. Interactive cell
+  controls (a list arrow) are not drawn either.
+- Refusals: SP-3017 when `book` is not a loaded workbook; SP-3018 for an
+  unknown sheet, a range that is not A1, or too many cells.
 
 ## `<sheetpane-errors>`
 

@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: teaching a host's coding agents to use sheetpane
 owns: [packages/skills/, packages/grid/src/skills-bin.ts, test/skills.test.ts, scripts/build-plugin.mjs, scripts/build-plugin.d.mts, plugins/sheetpane/, .claude-plugin/marketplace.json]
 laws: [L0, L2, L8]
-timestamp: 2026-10-19T13:30:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-35
 ---
@@ -65,7 +65,9 @@ flowchart LR
    once installed elsewhere) and never restates a rule as its own
    (SR-LAW-0). Where a host's step runs outside the page — checking a file
    on a server or in a worker — `sheetpane-setup` and `sheetpane-backend`
-   point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f).
+   point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f), and
+   `sheetpane-backend` at `@sheetpane/grid/static` for a report or an email
+   showing the sheet (W-67, SR-GRID decision 22g).
 2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
     in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
     (`$ARGUMENTS` where filled). Three are written as commands:

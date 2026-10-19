@@ -33,11 +33,13 @@
   "dependencies": {},
   "devDependencies": {
     "@sheetpane/comments": "workspace:*",
+    "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/export": "workspace:*",
     "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",
     "@sheetpane/import": "workspace:*",
     "@sheetpane/numfmt": "workspace:*",
+    "@sheetpane/styles": "workspace:*",
     "@sheetpane/validation": "workspace:*"
   },
   "publishConfig": {

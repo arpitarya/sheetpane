@@ -676,7 +676,46 @@ const errors = await check(await readFile('q3.xlsx'), {
   bytes throws SP-3016.
 - The store, the rules checker and the plugin contract are exported here too
   (`createWorkbook`, `checkDocument`, `registerPlugin`, the types), for a
-  DOM-free plugin or a host's own pipeline.
+  DOM-free plugin or a host's own pipeline. `loadWorkbook(bytes, options)`
+  takes the same options and returns the loaded store, every check finished,
+  instead of its errors.
+
+## A range as static HTML (`@sheetpane/grid/static`)
+
+`renderStatic(book, { sheet, range, errors, theme, headers })` returns one
+self-contained `<table>` — the text the pane shows (the `format` plugin), the
+look it draws (`decorate` plugins, merges, the theme's tokens as inline hex),
+hidden rows and columns left out, and the errors marked — for a report or an
+email. Made with no DOM, in Node, a worker or a page.
+
+```js
+import { readFile, writeFile } from 'node:fs/promises';
+import { loadWorkbook, renderStatic } from '@sheetpane/grid/static';
+import { numfmt } from '@sheetpane/numfmt';
+import { styles } from '@sheetpane/styles';
+import { condfmt } from '@sheetpane/condfmt';
+import { validation } from '@sheetpane/validation/check';
+
+const book = await loadWorkbook(await readFile('q3.xlsx'), { name: 'q3.xlsx', rules, plugins: [numfmt(), styles(), condfmt(), validation()] });
+await writeFile('report.html', renderStatic(book, { sheet: 'Holdings', range: 'A1:F20' }));
+```
+
+- **`book`** is a loaded store: `loadWorkbook()`'s, `createWorkbook()`'s after
+  `load()`, or an element's `workbook` — its changes and derived values show.
+  `sheet` defaults to the selected one, `range` to the used range (≤ 200,000
+  cells), `errors` to the workbook's own (`[]` marks nothing; pass `check()`'s
+  or a restored review), `theme` to `light` (`dark` too), `headers` to true.
+- **Marks:** a ring and a tint as the grid draws them, and a badge with the
+  glyph (✕ ! i ✓) and a number that the footer explains — severity, range,
+  type, message, *should be*. Never colour alone.
+- **Inert:** no script, no event attribute, no `class`, no stylesheet, no URL
+  (a `decorate` value that loads or escapes is dropped), every value escaped,
+  no font family — the reader's font is the font.
+- **Not drawn:** what an `overlay` plugin draws (pictures, charts) — the
+  footer says so and `data-sp-skipped` names the plugins. Interactive cell
+  controls (a list arrow) are not drawn either.
+- Refusals: SP-3017 when `book` is not a loaded workbook; SP-3018 for an
+  unknown sheet, a range that is not A1, or too many cells.
 
 ## `<sheetpane-errors>`
 
@@ -2224,6 +2263,7 @@ flowchart TB
 | **`@sheetpane/import`** | the reader: turns an `.xlsx` or `.csv` into the same `Workbook` object export takes in: ZIP walk + inflate + XML, or a CSV state machine; display text through a small number-format subset; usable without the UI | `packages/import/` (W-13) | [reading verdict](../work/compare/xlsx-csv-reading.compare.md), decision 5 overridden by Arpit 2026-10-18 |
 | **in-memory workbook** | the one shared object — sheets and cells, cell **changes**, **errors**, selected cell, mode; a store with `subscribe` / `getSnapshot`; one instance per `pane` id | `packages/grid/src/pane/` (W-01) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
 | **check entries** | the same store and checks with no element: `check(bytes, options)` gives the errors a pane holds after load, in Node, a worker or a page | `@sheetpane/grid/check` (`packages/grid/src/check.ts`), `@sheetpane/validation/check` (W-54) | [SR-GRID](../records/0105_GRID.md) decision 22f |
+| **static entry** | a range of a sheet as one inert HTML `<table>` — the grid's text, look and error marks, for a report or an email — made from the same store with no element | `@sheetpane/grid/static` (`packages/grid/src/static.ts`, W-67) | [SR-GRID](../records/0105_GRID.md) decision 22g |
 | **`<sheetpane-errors>`** | the **error** component: the list (filter, resolve, delete) and the New error form; always on the same workbook as the sheet | `packages/grid/src/errors/` (W-02) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
 | **`@sheetpane/export`** | a plain object or the original file plus changes → `.xlsx` or `.csv` bytes; `download()` to save it (W-12, [SR-DOWNLOAD](../records/0101_DOWNLOAD.md)); ZIP read and write, CRC-32, XML, CSV; zero dependencies; also usable without the UI | `packages/export/` (W-03, W-12) | [export verdict](../work/compare/export-shape.compare.md) |
 | **plugins** | eight separate packages that register against the one workbook through six hooks (`format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch`) and add controls to six slots the grid draws; the grid with none installed is unchanged | `packages/numfmt/` `formulas/` `styles/` `validation/` `condfmt/` `images/` `charts/` `comments/` (W-15–W-22); the host in `packages/grid/src/plugins/` (W-14) | [plugins verdict](../work/compare/plugins.compare.md) |
@@ -2332,6 +2372,7 @@ packages/
       plugins/            W-14 — hooks, slots, control descriptors, the plugins attribute
       index.ts            registers both elements when customElements exists
       check.ts            @sheetpane/grid/check — check() and the store, no element, no DOM (W-54)
+      static.ts           @sheetpane/grid/static — renderStatic(): a range as one HTML <table>, no DOM (W-67)
   numfmt/                 @sheetpane/numfmt — W-15; dep: numfmt 4.0.1
   formulas/               @sheetpane/formulas — W-16; dep: @ironcalc/wasm 0.9.0 (lazy-loaded)
   styles/                 @sheetpane/styles — W-17
@@ -2400,6 +2441,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 | sheetpane-errors | working name of the web component that is the error component |
 | justfile | the root file of recipes for `just`, a command runner; `just --list` shows every repo command (W-10) |
 | column rules | checks a host supplies per column header title (`columns`, `validate`); failures become errors with `author: "host"` that resolve themselves when the cell passes (SR-GRID decision 22) |
+| static table | the HTML `renderStatic()` from `@sheetpane/grid/static` returns: one `<table>` of a range with the grid's text, look and error marks, inline styles only, no script — for a report or an email (SR-GRID decision 22g) |
 | check entry | a package's DOM-free `/check` sub-path (`@sheetpane/grid/check`, `@sheetpane/validation/check`): the checks the pane runs on load, callable from Node or a worker, giving the same errors (SR-GRID decision 22f) |
 | skill | a Markdown file an AI coding agent reads to learn a task; `npx sheetpane-skills install` copies sheetpane's into a repository (SR-SKILLS) |
 | SP code | a permanent `SP-xxxx` code on every error, warning, note and refusal sheetpane shows, listed in `docs/ERRORS.md` (SR-CODES) |
@@ -2503,6 +2545,8 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
 | [SP-3016](#sp-3016) | Nothing to check | error |
+| [SP-3017](#sp-3017) | Nothing to render | error |
+| [SP-3018](#sp-3018) | Cannot render that range | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -2922,6 +2966,22 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** `check()` from `@sheetpane/grid/check` (or `@sheetpane/validation/check`) was given something that is not a file's bytes.
 - **Likely cause:** a path or a parsed workbook passed instead of the bytes; an unresolved promise (`readFile` without `await`).
 - **Fix:** pass the bytes — `await readFile(path)` in Node, a `File` or `Blob` in a page — and the file's `name` in the options.
+
+### SP-3017
+
+**Nothing to render** · error · [SR-GRID](../records/0105_GRID.md) decision 22g · `TypeError`
+
+- **Meaning:** `renderStatic()` from `@sheetpane/grid/static` was given something that is not a loaded workbook.
+- **Likely cause:** the file's bytes or a parsed workbook passed instead of a store; a store whose `load()` has not finished or was refused.
+- **Fix:** pass `await loadWorkbook(bytes, { name, plugins })`, or a store after `await store.load(…)` with `getSnapshot().load.status === 'ready'`.
+
+### SP-3018
+
+**Cannot render that range** · error · [SR-GRID](../records/0105_GRID.md) decision 22g · `RangeError`
+
+- **Meaning:** `renderStatic()` was asked for a sheet the workbook does not hold, a range that is not A1, or more than 200,000 cells.
+- **Likely cause:** a sheet name spelt differently; `range: 'Sheet1!A1:C3'` (the sheet goes in `sheet`); a whole-column range on a large sheet.
+- **Fix:** name the sheet as the workbook does, give `range` as `A1:F20`, and render the part of the sheet a reader needs.
 
 ---
 
@@ -4745,7 +4805,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     | entry | what | DOM |
     |---|---|---|
     | `@sheetpane/grid` | the elements, registered on import, and the API | a page (imports anywhere) |
-    | `@sheetpane/grid/check` | the pane's checks with no page — `check()`, the store, the rules checker (W-54, SR-GRID 22f) | none |
+    | `@sheetpane/grid/check` | the pane's checks with no page — `check()`, `loadWorkbook()`, the store, the rules checker (W-54, SR-GRID 22f) | none |
+    | `@sheetpane/grid/static` | a range as one static HTML `<table>` — `renderStatic()`, `loadWorkbook()` (W-67, SR-GRID 22g) | none |
     | `@sheetpane/grid/jsx` · `/vue` · `/svelte` · `/solid` | framework typings (W-37) | types only |
     | `@sheetpane/grid/style.css` · `/rules.schema.json` · `/llms.txt` · `/custom-elements.json` · `/vscode.*-custom-data.json` · `/web-types.json` | data | — |
     | `@sheetpane/<plugin>` | the plugin, registered on import | none |
@@ -4753,7 +4814,7 @@ pnpm and a justfile; the testing verdict chose the runner.
     | `@sheetpane/validation/check` | the plugin unregistered, and `check()` with it on (W-54, SR-VALIDATION 9) | none |
     | `@sheetpane/fixtures/files/*` | the fixture files | — |
 
-    A `/check` entry's import graph holds no element module and names no
+    A `/check` or `/static` entry's import graph holds no element module and names no
     `customElements`, `document` or `window` (`test/check-entries.test.ts`).
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
    Node; every other package runs in browser mode on Playwright, and so do
@@ -4826,7 +4887,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    version parity, build, typecheck, the Node unit tests, and
    `scripts/smoke-built.mjs`, which installs every package from its packed
    tarball with npm into an empty folder and imports it from plain Node (and
-   runs each `/check` entry on a CSV, W-54), so
+   runs each `/check` entry on a CSV, W-54, and renders one with
+   `/static`, W-67), so
    the BUILT package is what is tested); and `create` — a matrix over the six
    `create-sheetpane` templates running `scripts/create-check.mjs`
    (SR-CREATE decision 5). A branch's newer push cancels its older run; on
@@ -5841,7 +5903,36 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     plugin object itself is untouched) and for the load phase through
     `ruleProgress` — no store API was added. The entry also exports the store,
     the rules checker, the plugin contract and the codes, for a DOM-free
-    plugin or a host's pipeline.
+    plugin or a host's pipeline. `loadWorkbook(bytes, options)` takes
+    `check()`'s options and returns its store, every check finished.
+22g. **A range as static HTML (W-67):** `@sheetpane/grid/static` is a third
+    entry onto the same store — no element, no DOM global, no Node import.
+    `renderStatic(book, { sheet?, range?, errors?, theme?, headers? })` takes
+    a loaded store (else SP-3017) and returns one `<table>`: the cells the
+    grid would draw for an A1 range (default the used range — the data
+    widened to its merges; an unknown sheet, a non-A1 range or more than
+    200,000 cells is SP-3018), their text from `store.text()` (the `format`
+    hook, changes and derived values), the grid's cell look as inline CSS
+    (decisions 15, 15b: padding, grid lines, `.93em`, numbers right and
+    tabular, a merge centred, bold and on `head` as one cell with
+    `rowspan`/`colspan` clipped to the range, the derived colour, the stale
+    `≈`, the changed corner as a background layer), then each `decorate`
+    result — only `STYLE_PROPS`, `var(--sp-*)` resolved to the theme, and a
+    value dropped unless it is plain CSS (no URL or loading function, no
+    quote, semicolon, brace, comment or escape). Hidden rows and columns are
+    left out. The tokens are inline hex for `light` or `dark` (no `auto`: no
+    stylesheet). Marks (`STATIC_MARKS`, one function from an error to its
+    key — status, then severity): the grid's ring, its tint flattened at
+    60 % over the cell's own fill, and a badge — glyph and number — in the
+    first shown cell of the error's range; a shared cell takes the
+    higher-ranked mark; a row header carries its worst open glyph; the
+    footer lists every marked error in reading order (row, column, type,
+    message) with its label, range, type, message and `expected`. `errors`
+    defaults to the store's. An `overlay` plugin is not run: the footer
+    says what it would draw and `data-sp-skipped` names it. The output has
+    no `<script>`, event attribute, `class`, `<style>`, URL or font family;
+    every text is escaped (CR as `&#13;`, NUL as U+FFFD). Text is clipped to
+    its row as the grid clips it.
 
 ### Decision — freeze panes (W-24)
 
@@ -5928,6 +6019,17 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
 ### Consequences
 
+- **The static entry (W-67):** `test/check-entries.test.ts` walks
+  `@sheetpane/grid/static`'s graph too (the sheet's geometry, pure
+  arithmetic, is the one `excel/` module it may reach) and renders a CSV in
+  Node; `packages/grid/test/static.test.ts` (Chromium) covers ranges,
+  hidden rows and columns, merges, marks, themes, the dropped `decorate`
+  values and the refusals, and fuzzes escaping with fast-check (150 runs: a
+  sheet name, cell text from a `format` hook, `decorate` values, an error's
+  message and type — one `<table>`, allowed elements and attributes only,
+  no URL or font, every text read back unchanged); `@sheetpane/fixtures`'
+  static pair holds it to the grid's computed styles (SR-FIXTURES 6a).
+  **Owed by the decider:** the table opened in mail clients — W-30.
 - **The check entry (W-54):** `test/check-entries.test.ts` (`--project
   repo`) walks `@sheetpane/grid/check`'s import graph from source — no
   element module, no third-party or Node import, no free `customElements`,
@@ -7428,6 +7530,17 @@ helpers to become one package any runner can load (W-32 made the showcase).
    `createdAt`, in one order), so the browser and Node agree.
    `UPDATE_GOLDEN=1` rewrites it from Node. Those four plugins and
    `@sheetpane/validation` are this package's devDependencies for it.
+6a. **The static pair (W-67):** `test/static.ts` names the cases — the
+   showcase, `merged`, `hidden-sheet`, `unicode-names`, `date1904` and
+   `comma.csv`, with the rules sample, plugins numfmt, styles, condfmt,
+   validation and comments, and one edit on the showcase (a changed and a
+   stale cell). `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
+   Chromium) and, for every sheet in both themes, compares each cell and
+   header of `renderStatic()`'s table with the grid's — computed text,
+   colours, weight, style, size, alignment, borders, padding, the mark's ring
+   and tint, the changed corner, width and height; `static.node.test.ts`
+   renders the same in Node; both equal `test/golden/static.json`.
+   `@sheetpane/styles` and `@sheetpane/condfmt` are devDependencies for it.
 
 ### Consequences
 
@@ -7435,7 +7548,8 @@ helpers to become one package any runner can load (W-32 made the showcase).
   node` — every listed file read in Chromium matches its sheets and titles;
   refused files are refused; the hidden sheet and 1904 read as listed; the
   rules sample on the showcase fails exactly the listed cells; `path()` and
-  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6). `pack-check` checks the `./files/*` folder.
+  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6); the static
+  pair (decision 6a). `pack-check` checks the `./files/*` folder.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers,
   with `appSaved` naming the app and version — W-30 (DoD 5). The import
   package's ExcelJS fixtures stay with their generator (ExcelJS is that
@@ -7528,7 +7642,9 @@ flowchart LR
    once installed elsewhere) and never restates a rule as its own
    (SR-LAW-0). Where a host's step runs outside the page — checking a file
    on a server or in a worker — `sheetpane-setup` and `sheetpane-backend`
-   point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f).
+   point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f), and
+   `sheetpane-backend` at `@sheetpane/grid/static` for a report or an email
+   showing the sheet (W-67, SR-GRID decision 22g).
 2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
     in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
     (`$ARGUMENTS` where filled). Three are written as commands:
@@ -7681,7 +7797,9 @@ flowchart LR
    thrown errors, `console.warn` / `console.error`, rules-engine `note`
    errors, refused loads, event details that carry a reason.
 2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid
-   (SP-3016, W-54: `check()` given something other than bytes) ·
+   (SP-3016, W-54: `check()` given something other than bytes; SP-3017 and
+   SP-3018, W-67: `renderStatic()` given no loaded workbook, or a sheet or
+   range it cannot draw) ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
    5800 comments) · 6xxx column rules and the rules file · 7xxx mcp

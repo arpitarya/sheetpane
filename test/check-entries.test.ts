@@ -1,4 +1,4 @@
-// W-54 DoD 2: the DOM-free entries stay DOM-free. Each entry's import graph is walked from its
+// W-54 DoD 2 (and W-67 DoD 1, `/static`): the DOM-free entries stay DOM-free. Each entry's import graph is walked from its
 // source — relative imports and `@sheetpane/*` ones through their `source` export, `import type`
 // left out (erased), every other import kept (verbatimModuleSyntax keeps `import { type X }` as an
 // import) — and no file in it may name `customElements`, `document` or `window` as a global, nor
@@ -8,12 +8,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
-const ENTRIES = { '@sheetpane/grid/check': 'packages/grid/src/check.ts', '@sheetpane/validation/check': 'packages/validation/src/check.ts' };
+const ENTRIES = { '@sheetpane/grid/check': 'packages/grid/src/check.ts', '@sheetpane/validation/check': 'packages/validation/src/check.ts', '@sheetpane/grid/static': 'packages/grid/src/static.ts' };
 const BANNED = ['customElements', 'document', 'window'];
 /** A banned name used as a global: not a property (`x.document`), an object key or a type member (`document?:`). */
 const FREE = new RegExp(String.raw`(?<![.\w$])(${BANNED.join('|')})(?![\w$])(?!\s*\??:)`, 'g');
-/** The element modules and the registering entries: none may be reached. */
-const ELEMENT = /^packages\/grid\/src\/(index\.ts|excel\/|errors\/|shared\/dom\.ts|frameworks\/)|^packages\/validation\/src\/(index|ui)\.ts$/;
+/** The element modules and the registering entries: none may be reached (the sheet's geometry is pure arithmetic, shared with `/static`). */
+const ELEMENT = /^packages\/grid\/src\/(index\.ts|excel\/(?!geometry\.ts$)|errors\/|shared\/dom\.ts|frameworks\/)|^packages\/validation\/src\/(index|ui)\.ts$/;
 
 /** The code with comments, strings and regular expressions blanked, so only code is searched. */
 function codeOnly(src: string): string {
@@ -135,6 +135,21 @@ describe('W-54 DoD 2 — the check entries import no DOM', () => {
     expect(typeof val.validation).toBe('function');
     expect(await val.check(csv, { name: 'h.csv' })).toEqual([]); // a CSV holds no <dataValidations>
   }, 30_000); // the first import transforms both graphs from source: seconds on a loaded machine
+
+  it('W-67 DoD 1: /static renders a loaded workbook to one <table> in Node; SP-3017, SP-3018', async () => {
+    const { loadWorkbook, renderStatic } = await import('../packages/grid/src/static.ts');
+    const book = await loadWorkbook(new TextEncoder().encode('Account,Units\nAC-1,5\n<b>,-2\n'), { name: 'h.csv', columns: { Units: { min: 0 } } });
+    const html = renderStatic(book);
+    expect(html.startsWith('<table ') && html.endsWith('</table>')).toBe(true);
+    expect(html).toContain('data-sp-range="A1:B3"');
+    expect(html).toContain('&lt;b&gt;');
+    expect(html).toMatch(/data-sp-ref="B3" data-sp-mark="error"/);
+    expect(html).not.toMatch(/<script|font-family|url\(/i);
+    expect(() => renderStatic({} as never)).toThrow(/^SP-3017: /);
+    expect(() => renderStatic(book, { sheet: 'Nope' })).toThrow(/^SP-3018: /);
+    expect(() => renderStatic(book, { range: 'h!A1' })).toThrow(/^SP-3018: /);
+    expect(() => renderStatic(book, { range: 'A1:XFD1048576' })).toThrow(/^SP-3018: /);
+  }, 30_000);
 
   it('a refusal keeps the reader’s code; bytes are required (SP-3016)', async () => {
     const { check } = await import('../packages/grid/src/check.ts');

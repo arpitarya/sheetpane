@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: the monorepo toolchain
 owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, scripts/release-notes.mjs, scripts/test-durations.mjs, .github/actions/, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
-timestamp: 2026-10-19T13:30:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-04
 ---
@@ -93,7 +93,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     | entry | what | DOM |
     |---|---|---|
     | `@sheetpane/grid` | the elements, registered on import, and the API | a page (imports anywhere) |
-    | `@sheetpane/grid/check` | the pane's checks with no page — `check()`, the store, the rules checker (W-54, SR-GRID 22f) | none |
+    | `@sheetpane/grid/check` | the pane's checks with no page — `check()`, `loadWorkbook()`, the store, the rules checker (W-54, SR-GRID 22f) | none |
+    | `@sheetpane/grid/static` | a range as one static HTML `<table>` — `renderStatic()`, `loadWorkbook()` (W-67, SR-GRID 22g) | none |
     | `@sheetpane/grid/jsx` · `/vue` · `/svelte` · `/solid` | framework typings (W-37) | types only |
     | `@sheetpane/grid/style.css` · `/rules.schema.json` · `/llms.txt` · `/custom-elements.json` · `/vscode.*-custom-data.json` · `/web-types.json` | data | — |
     | `@sheetpane/<plugin>` | the plugin, registered on import | none |
@@ -101,7 +102,7 @@ pnpm and a justfile; the testing verdict chose the runner.
     | `@sheetpane/validation/check` | the plugin unregistered, and `check()` with it on (W-54, SR-VALIDATION 9) | none |
     | `@sheetpane/fixtures/files/*` | the fixture files | — |
 
-    A `/check` entry's import graph holds no element module and names no
+    A `/check` or `/static` entry's import graph holds no element module and names no
     `customElements`, `document` or `window` (`test/check-entries.test.ts`).
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
    Node; every other package runs in browser mode on Playwright, and so do
@@ -174,7 +175,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    version parity, build, typecheck, the Node unit tests, and
    `scripts/smoke-built.mjs`, which installs every package from its packed
    tarball with npm into an empty folder and imports it from plain Node (and
-   runs each `/check` entry on a CSV, W-54), so
+   runs each `/check` entry on a CSV, W-54, and renders one with
+   `/static`, W-67), so
    the BUILT package is what is tested); and `create` — a matrix over the six
    `create-sheetpane` templates running `scripts/create-check.mjs`
    (SR-CREATE decision 5). A branch's newer push cancels its older run; on

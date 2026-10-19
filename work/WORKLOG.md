@@ -24,6 +24,19 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-67 closed: a range as static HTML (`@sheetpane/grid/static`)  ·  Claude Code (claude-opus-5-5, lane d)
+
+- **Asked:** the orchestrator: build W-67 in worktree lane d (branch `lane-d`), one item, commit, do not push.
+- **Done:**
+  - **The entry:** `packages/grid/src/static.ts` — `renderStatic(book, options)` reads a loaded store (`text()`, `value()`, `decorate()`, `merges()`, `hidden()`, changes, derived, `mayBeStale()`) and writes one `<table>`: inline CSS mirroring the grid's cell, header and merge rules, the tokens as hex (light or dark), `decorate` values allow-listed and sanitised, hidden rows and columns skipped, merges as `rowspan`/`colspan` clipped to the range. Marks through `STATIC_MARKS` + `markOf()` (status, then severity): ring, tint flattened over the fill, numbered glyph badge, row-header glyph, a footer line per error. Overlay plugins are named, not run. `check()` split into `loadWorkbook()` + the sort. SP-3017, SP-3018.
+  - **Proof:** the graph test covers `/static`; a browser test compares every cell and header with the grid's computed style on six fixtures in both themes, and the HTML equals a golden that Node renders; the grid's static tests and a fast-check escaping fuzz (mutation-checked); smoke-built renders the built entry.
+  - **Records:** SR-GRID 22f/22g, SR-BUILD 5a/8, SR-FIXTURES 6a, SR-CODES 2, SR-SKILLS 2; registry rows; skill `sheetpane-backend`, grid README, ARCHITECTURE, GLOSSARY, ERRORS.md, CHANGELOG; `llms*.txt` and `plugins/sheetpane` regenerated. W-30 gained DoD 6 (mail clients, the decider's).
+- **Decided / left open:** read in: `book` is a store, not bytes (`loadWorkbook()` gives one), so a host renders many ranges from one load; inline hex, no `auto` theme (mail has no stylesheet); a shared cell takes the highest-ranked mark (the grid takes the last error's — the fidelity test met no shared cell); the changed corner is a background layer, the tint a flattened colour; text is clipped to the row as the grid clips it; no `tokens` override, no rich-text runs (not on this base), no condfmt icon sets or cell controls.
+- **Mistakes:** a first test cut compared `start` with `left` and the selected header's highlight; the first render let wrapped text grow its row — fixed by clipping the text span to the row.
+- **Next:** the orchestrator merges lane d (SP-3017/3018 may need renumbering; W-50/W-55/W-69 marks join `STATIC_MARKS`).
+
+---
+
 ## 2026-10-19 — W-54 closed: the pane's checks in Node (`@sheetpane/grid/check`, `@sheetpane/validation/check`)  ·  Claude Code (claude-opus-5-5, lane d)
 
 - **Asked:** the orchestrator: build W-54 in worktree lane d (branch `lane-d`), one item, commit, do not push.

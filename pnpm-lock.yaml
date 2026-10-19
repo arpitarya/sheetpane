@@ -213,6 +213,9 @@ importers:
       '@sheetpane/comments':
         specifier: workspace:*
         version: link:../comments
+      '@sheetpane/condfmt':
+        specifier: workspace:*
+        version: link:../condfmt
       '@sheetpane/export':
         specifier: workspace:*
         version: link:../export
@@ -228,6 +231,9 @@ importers:
       '@sheetpane/numfmt':
         specifier: workspace:*
         version: link:../numfmt
+      '@sheetpane/styles':
+        specifier: workspace:*
+        version: link:../styles
       '@sheetpane/validation':
         specifier: workspace:*
         version: link:../validation

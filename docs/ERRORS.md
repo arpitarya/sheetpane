@@ -90,6 +90,8 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
 | [SP-3016](#sp-3016) | Nothing to check | error |
+| [SP-3017](#sp-3017) | Nothing to render | error |
+| [SP-3018](#sp-3018) | Cannot render that range | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -509,6 +511,22 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** `check()` from `@sheetpane/grid/check` (or `@sheetpane/validation/check`) was given something that is not a file's bytes.
 - **Likely cause:** a path or a parsed workbook passed instead of the bytes; an unresolved promise (`readFile` without `await`).
 - **Fix:** pass the bytes — `await readFile(path)` in Node, a `File` or `Blob` in a page — and the file's `name` in the options.
+
+### SP-3017
+
+**Nothing to render** · error · [SR-GRID](../records/0105_GRID.md) decision 22g · `TypeError`
+
+- **Meaning:** `renderStatic()` from `@sheetpane/grid/static` was given something that is not a loaded workbook.
+- **Likely cause:** the file's bytes or a parsed workbook passed instead of a store; a store whose `load()` has not finished or was refused.
+- **Fix:** pass `await loadWorkbook(bytes, { name, plugins })`, or a store after `await store.load(…)` with `getSnapshot().load.status === 'ready'`.
+
+### SP-3018
+
+**Cannot render that range** · error · [SR-GRID](../records/0105_GRID.md) decision 22g · `RangeError`
+
+- **Meaning:** `renderStatic()` was asked for a sheet the workbook does not hold, a range that is not A1, or more than 200,000 cells.
+- **Likely cause:** a sheet name spelt differently; `range: 'Sheet1!A1:C3'` (the sheet goes in `sheet`); a whole-column range on a large sheet.
+- **Fix:** name the sheet as the workbook does, give `range` as `A1:F20`, and render the part of the sheet a reader needs.
 
 ---
 

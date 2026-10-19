@@ -71,6 +71,8 @@ const TABLE = {
   'SP-3014': { title: 'Plugin overlay failed', severity: 'error' },
   'SP-3015': { title: 'Source could not be read', severity: 'error' },
   'SP-3016': { title: 'Nothing to check', severity: 'error' },
+  'SP-3017': { title: 'Nothing to render', severity: 'error' },
+  'SP-3018': { title: 'Cannot render that range', severity: 'error' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 
