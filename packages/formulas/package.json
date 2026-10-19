@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/formulas",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Formula recalculation for sheetpane — edit a cell and every dependent formula updates — as a plugin on the `derive` hook, backed by IronCalc (WASM, lazy-loaded).",
   "license": "MIT",
   "repository": {

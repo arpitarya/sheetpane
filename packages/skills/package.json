@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/skills",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Agent skills for sheetpane — Claude Code, Kiro and Codex — and the `sheetpane-skills` installer that copies them into a host repository.",
   "license": "MIT",
   "repository": {

@@ -10,12 +10,12 @@
     "test": "npm run build && playwright test"
   },
   "dependencies": {
-    "@sheetpane/grid": "0.4.2"
+    "@sheetpane/grid": "0.5.0"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
-    "@sheetpane/fixtures": "0.4.2",
-    "@sheetpane/testing": "0.4.2",
+    "@sheetpane/fixtures": "0.5.0",
+    "@sheetpane/testing": "0.5.0",
     "typescript": "6.0.3",
     "vite": "8.3.4"
   }

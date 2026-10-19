@@ -1,6 +1,6 @@
 {
   "name": "create-sheetpane",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "`npm create sheetpane` — a working sheetpane app in vanilla, React, Next.js, Vue, Angular or Svelte: the sheet and its errors panel, a sample file and rules file, one test, and the agent skills.",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/review",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "The review written into the download as a sheet of its own — every error with a link to its cell — and, optionally, each flagged cell filled by severity. An export-only plugin for sheetpane.",
   "license": "MIT",
   "repository": {
