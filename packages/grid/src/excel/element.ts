@@ -8,7 +8,7 @@ import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
 import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type Mode, type RenderDetail, type SheetpaneError, type Severity } from '../pane/types.js';
-import { DETAIL_CSS, DetailRegion, inDetail } from '../shared/detail.js';
+import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
@@ -2229,7 +2229,7 @@ export class SheetpaneExcel extends ElementBase {
       if (e.sheet !== sheet.name) continue;
       const r = parseRange(e.range);
       if (!r) continue;
-      const m = e.status === 'resolved' ? 'm-pass' : `m-${e.severity}`;
+      const m = e.status === 'resolved' ? 'm-pass' : e.status === 'accepted' ? 'm-accepted' : `m-${e.severity}`; // an accepted deviation is marked quietly (W-69)
       for (let rr = r.top; rr <= Math.min(r.bottom, r.top + 2000); rr++) for (let cc = r.left; cc <= r.right; cc++) marks.set(`${rr},${cc}`, m);
       if (e.status === 'open') for (let rr = r.top; rr <= Math.min(r.bottom, r.top + 2000); rr++) { const w = rowWorst.get(rr); if (!w || sevOrder[e.severity] > sevOrder[w]) rowWorst.set(rr, e.severity); }
     }
@@ -2435,7 +2435,7 @@ export class SheetpaneExcel extends ElementBase {
         const on = r.top === selP.row && selP.col >= r.left && selP.col <= r.right;
         const mach = machineAuthored(e.author);
         const left = mach ? RW + X(r.right + 1) - 18 : p.x - 6;
-        parts.push(`<button type="button" class="pin ${e.status === 'resolved' ? 'resolved' : e.severity}${on ? ' on' : ''}${mach ? ' square' : ''}" data-pin="${esc(e.id)}" aria-label="${mach ? `${esc(BUILTIN_TYPE_NAMES[e.type] ?? e.type)}` : `Error ${errNum(e)}`}, ${esc(e.range)}, ${SEVERITY[e.severity].name}${e.status === 'resolved' ? ', resolved' : ''}" style="top:${p.y - 8}px;left:${left}px">${e.status === 'resolved' ? '✓' : mach ? '⚠' : errNum(e)}</button>`);
+        parts.push(`<button type="button" class="pin ${e.status === 'open' ? e.severity : e.status}${on ? ' on' : ''}${mach ? ' square' : ''}" data-pin="${esc(e.id)}" aria-label="${mach ? `${esc(BUILTIN_TYPE_NAMES[e.type] ?? e.type)}` : `Error ${errNum(e)}`}, ${esc(e.range)}, ${SEVERITY[e.severity].name}${e.status === 'open' ? '' : `, ${e.status}`}" style="top:${p.y - 8}px;left:${left}px">${e.status === 'resolved' ? '✓' : e.status === 'accepted' ? 'A' : mach ? '⚠' : errNum(e)}</button>`);
       }
     }
     const composing = snap.composing;
@@ -2521,9 +2521,9 @@ export class SheetpaneExcel extends ElementBase {
     const meta = [sv.name, e.author || '', e.code ?? '', e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '', e.cellChanged ? 'cell changed' : ''].filter(Boolean).join(' · ');
     const ro = machineAuthored(e.author);
     return `<div class="card callout" role="group" aria-label="Error details" data-sp="callout" style="top:${top}px;left:${left}px;width:300px">
-<div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
-<div class="bd"><dl class="fe"><dt>Found</dt><dd><span class="found">${esc(e.found)}</span></dd><dt>Should be</dt><dd><span class="want">${esc(e.expected || '—')}</span></dd></dl>${e.message ? `<p style="margin:0;font-size:13px">${esc(e.message)}</p>` : ''}${this.detailRegion.html()}${tags ? `<div style="display:flex;gap:6px">${tags}</div>` : ''}<span class="xs faint">${esc(meta)}</span></div>
-${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button></div>`}</div>`;
+<div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.status === 'accepted' ? 'accepted' : e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : e.status === 'accepted' ? 'A' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
+<div class="bd"><dl class="fe"><dt>Found</dt><dd><span class="found">${esc(e.found)}</span></dd><dt>Should be</dt><dd><span class="want">${esc(e.expected || '—')}</span></dd></dl>${e.message ? `<p style="margin:0;font-size:13px">${esc(e.message)}</p>` : ''}${this.detailRegion.html()}${acceptedHtml(e)}${tags ? `<div style="display:flex;gap:6px">${tags}</div>` : ''}<span class="xs faint">${esc(meta)}</span></div>
+${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve">${e.status === 'open' ? '✓ Resolve' : 'Reopen'}</button><span class="spacer"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button></div>`}</div>`;
   }
 
   private composerHtml(left: number, top: number, ref: string): string {

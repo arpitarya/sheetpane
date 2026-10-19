@@ -6,7 +6,7 @@ item: W-59
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Claude Code (claude-opus-5-5), lane a — DoD 5 from W-69"
 ball: agent
 ---
 
@@ -42,6 +42,7 @@ A new plugin that adds a *Review* sheet listing every error with a link to its c
 | 2 · sheet | workbook.xml, rels, content types, shared strings or inline strings; hyperlinks work in Excel | ⏳ |
 | 3 · fills | cloned xfs; untouched cells byte-identical; sheet-level errors (W-55) listed, not coloured | ⏳ |
 | 4 · tests · docs | round-trip via `@sheetpane/import`; `@sheetpane/testing` reads the Review sheet back; CHANGELOG | ⏳ |
+| 5 · accepted (W-69) | an error with `status: 'accepted'` is listed with its status and *Accepted: <reason>* (who — `acceptedBy` — and when — `acceptedAt`), never filled as a problem nor counted with the open ones; SR-ERRORS decision 14, SR-GRID 5c | ⏳ |
 
 ## Blockers
 

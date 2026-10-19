@@ -383,7 +383,7 @@ opens no pop-up — the errors panel is the one place errors are read.
 | kind | name | what |
 |---|---|---|
 | attribute | `pane`, `author`, `plugins` | as above |
-| attribute | `readonly` | hides the form, Resolve and Delete — a sign-off screen |
+| attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
 | property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
 | property | `renderDetail` | your extra detail in an open row — see below (W-68) |
 | event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
@@ -428,6 +428,22 @@ errors.renderDetail = detail;
 
 A `meta` that is not JSON or is over the cap is dropped (SP-3016); a hook
 that throws shows nothing (SP-3017).
+
+**Accepted deviations** (W-69): a known, approved difference can be accepted
+instead of deleted. **Accept…** in an open row of `<sheetpane-errors>` asks
+for a reason (required) and records it with who (the element's `author`) and
+when: `status: 'accepted'`, `acceptedBy`, `acceptedAt`, `reason`. Accepted
+errors stay in the review and the download but are not counted — not in
+"n open", the severity chips or the sheet's counts — and the **Accepted n**
+chip lists them. Reopen takes an acceptance back; so does undo. From code:
+
+```js
+workbook.acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' });
+```
+
+A blank reason is refused (SP-3018). Count open errors with
+`status === 'open'`. With `@sheetpane/comments`, the export adds a reply
+*Accepted: <reason>* to the error's comment thread.
 
 ## Plugins
 

@@ -95,9 +95,9 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
 export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErrorsProperties & {
   /** The pane id shared with the sheet; none gives the element its own store. */
   'attr:pane'?: string | undefined;
-  /** Hides the form, Resolve, Delete, Undo and Redo (a sign-off screen). */
+  /** Hides the form, Resolve, Accept…, Delete, Undo and Redo (a sign-off screen). */
   'attr:readonly'?: boolean | undefined;
-  /** Written into the errors this element's user adds. */
+  /** Written into the errors this element's user adds, and as who accepted one (W-69). */
   'attr:author'?: string | undefined;
   /** Space-separated registered plugin ids; fixed per pane. */
   'attr:plugins'?: string | undefined;

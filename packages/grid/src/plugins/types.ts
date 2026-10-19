@@ -55,7 +55,7 @@ export interface DerivedChange { sheet: string; ref: string; value: Cell; text: 
 
 /** What `validate` returns: an error without the fields the store owns. */
 /** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. */
-export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
+export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged' | 'acceptedBy' | 'acceptedAt' | 'reason'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
 
 /** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */
 export interface ExportOption { key: string; label: string; default: boolean }

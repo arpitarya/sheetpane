@@ -26,7 +26,8 @@ export interface SheetpaneError {
   message: string;
   /** "Also change the cell" was ticked. */
   cellChanged: boolean;
-  status: 'open' | 'resolved';
+  /** `accepted` (W-69): a known deviation someone approved — kept, never counted as open; it carries `acceptedBy`, `acceptedAt` and a `reason`. */
+  status: ErrorStatus;
   /** Computed: the cell now shows `expected` (B-022 — it does not resolve the error). */
   matchesExpected: boolean;
   /** The element's `author`, `"workbook"` (validation) or `"file"` (comments), or `""`. */
@@ -42,7 +43,19 @@ export interface SheetpaneError {
    * stays valid without it.
    */
   meta?: ErrorMeta;
+  /** Who accepted the deviation (W-69): the element's `author`, or what the host passed; `""` when nobody was named. Only while `status` is `accepted`. */
+  acceptedBy?: string;
+  /** When it was accepted, ISO 8601 (W-69). Only while `status` is `accepted`. */
+  acceptedAt?: string;
+  /** Why it was accepted (W-69) — required, never blank, while `status` is `accepted`; written into the export as *Accepted: <reason>*. */
+  reason?: string;
 }
+
+/**
+ * Where an error stands: `open` counts as a problem; `resolved` is fixed; `accepted` (W-69) is a known deviation someone
+ * approved with a reason — kept in the review and the download, never counted as open.
+ */
+export type ErrorStatus = 'open' | 'resolved' | 'accepted';
 
 /** A JSON value: what `SheetpaneError.meta` holds (W-68). */
 export type ErrorMeta = null | boolean | number | string | ErrorMeta[] | { [key: string]: ErrorMeta };

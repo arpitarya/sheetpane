@@ -24,6 +24,24 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-69 closed: accepted deviations  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-69 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** an error's `status` may be `accepted` (`ErrorStatus`), with `acceptedBy`, `acceptedAt` and a required `reason`. `acceptError(id, reason, { by })` and `updateError(…, { status: 'accepted', reason })` set it as one undo step; any other status drops the three fields. A blank reason, or an error authored `workbook` or `file`, is refused with the new SP-3018. `setErrors` keeps an older envelope as it was; an accepted error without a reason comes back `open`.
+  - `<sheetpane-errors>`: *Accept…* in an open row asks *Why is this accepted?* (Accept disabled while blank; Esc, Cancel, ⌘↵) and writes the element's `author` as who. Accepted errors leave "n open", the severity chips and the sheet's counts; an *Accepted n* chip lists them. The pin and the badge read **A**; the row and the sheet's card show who, when and why, with Reopen.
+  - `@sheetpane/comments` writes a reply *Accepted: <reason>* by who accepted it, at that time, and marks the thread done.
+  - Records changed: SR-GRID 5c, 13 and the codes line; SR-ERRORS §1, 3, 7, 14 and Consequences; SR-COMMENTS 3, 5 and Consequences; SR-CODES. The skill, the grid README, `docs/ERRORS.md` and the CHANGELOG are updated; `llms-full.txt`, the plugin copy of the skill, `custom-elements.json` and the framework typings are regenerated.
+  - Handed on: the review sheet's half of DoD 3 is W-59 DoD 5 (added); opening an export with an accepted reply in Excel joins W-30 DoD 3.
+- **Decided / left open:**
+  - *Accept…* is offered only where Resolve is: not on rule or file-comment rows, and not in the sheet's card (which shows the acceptance and Reopen). A `host` rule's error can still be accepted from code. It stays accepted while the cell fails the same way; a different finding reopens it, and a pass resolves it. The decider may want *Accept…* on rule rows or in the card.
+  - Accepted errors are left out of the severity counts too, and the chip shows only them; the severity filter still applies inside.
+  - The glyph is **A**, not ≈: ≈ already marks a stale cell.
+  - A `validate` provider cannot accept (`ErrorDraft` has no acceptance fields).
+- **Mistakes:** two of the new UI tests were wrong at first: one picked an already-open row again, which closed it, and one pressed a key after the filters had been redrawn, so the button that had focus was gone. Both tests were fixed; the code was not at fault.
+- **Next:** the orchestrator merges lane a.
+
+---
+
 ## 2026-10-19 — W-68 closed: `meta` on an error and a `renderDetail` hook  ·  Claude Code (claude-opus-5-5, lane a)
 
 - **Asked:** *build W-68 in the lane-a worktree and close it* (the orchestrator's brief).

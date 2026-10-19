@@ -399,3 +399,161 @@ describe('the host’s detail in the card and the list row (W-68)', () => {
     expect([...r1.violations, ...r2.violations].map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   });
 });
+
+describe('accepted deviations (W-69)', () => {
+  async function two(attrs: Record<string, string> = { author: 'Ravi' }) {
+    const p = await pair('excel-first', attrs);
+    const s = p.excel.workbook!;
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'out-of-range', severity: 'error', message: 'Width 6.63 in, spec 6.50 in ± 0.06 in', author: 'Asha' });
+    const w = s.addError({ sheet: 'Holdings', range: 'A8', type: 'wrong-format', severity: 'warning' });
+    await frame();
+    return { ...p, s, e, w };
+  }
+  const open = async (errors: SheetpaneErrors, id: string) => { ($(errors, `[data-id="${id}"] .issue`) as HTMLButtonElement).click(); await frame(); };
+  const filters = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll('.filters button')].map((b) => b.textContent);
+  const rows = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll<HTMLElement>('.item')].map((r) => r.dataset.id);
+  async function accept(errors: SheetpaneErrors, id: string, reason: string) {
+    await open(errors, id);
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.fill($(errors, '[data-field=reason]') as HTMLTextAreaElement, reason);
+    ($(errors, '[data-act=accept-ok]') as HTMLButtonElement).click();
+    await frame();
+  }
+
+  it('Accept… asks for a reason, required; Accept records who, when and why — the error stops counting as open, here and in the sheet', async () => {
+    const { excel, errors, e, w } = await two();
+    await open(errors, e.id);
+    const btn = $(errors, '[data-act=accept]') as HTMLButtonElement;
+    expect(btn.textContent).toBe('Accept…');
+    btn.click();
+    await frame();
+    const form = $(errors, '.accept');
+    expect(form.getAttribute('role')).toBe('group');
+    const reason = $(errors, '[data-field=reason]') as HTMLTextAreaElement;
+    expect(shadow(errors).activeElement).toBe(reason);
+    expect(reason.required).toBe(true);
+    const ok = $(errors, '[data-act=accept-ok]') as HTMLButtonElement;
+    expect(ok.disabled).toBe(true);
+    await userEvent.fill(reason, '   ');
+    expect(ok.disabled).toBe(true); // blank is no reason
+    await userEvent.fill(reason, 'Approved by the customer on 18 Oct');
+    expect(ok.disabled).toBe(false);
+    ok.click();
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toMatchObject({ status: 'accepted', acceptedBy: 'Ravi', reason: 'Approved by the customer on 18 Oct', author: 'Asha' });
+    expect($(errors, '.opencount').textContent).toBe('1 open');
+    expect(filters(errors)).toEqual(['All 1', '✕ 0', '! 1', 'i 0', 'Accepted 1']);
+    expect(rows(errors)).toEqual([w.id]); // accepted items stop shouting
+    expect($(excel, '.counts').textContent).toContain('✕ 0');
+    const pin = shadow(excel).querySelector<HTMLElement>(`[data-pin="${e.id}"]`)!;
+    expect(pin.textContent).toBe('A');
+    expect(pin.getAttribute('aria-label')).toMatch(/, accepted$/);
+  });
+  it('the Accepted chip shows them, with who, when and why; Reopen takes one back', async () => {
+    const { excel, errors, e, w } = await two();
+    await accept(errors, e.id, 'Within the customer’s tolerance');
+    const chip = $(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement;
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+    expect(chip.textContent).toBe('Accepted 1');
+    chip.click();
+    await frame();
+    expect(chip.isConnected ? chip.getAttribute('aria-pressed') : $(errors, '[data-act=status][data-v=accepted]').getAttribute('aria-pressed')).toBe('true');
+    expect(rows(errors)).toEqual([e.id]);
+    const row = $(errors, `[data-id="${e.id}"]`);
+    expect(row.querySelector('.n')!.textContent).toBe('A');
+    expect(row.querySelector('.issue')!.getAttribute('aria-label')).toMatch(/, accepted$/);
+    expect(row.querySelector('.issue')!.getAttribute('aria-expanded')).toBe('true'); // still the open row
+    const said = $(errors, '.acceptance');
+    expect(said.textContent).toMatch(/^Accepted by Ravi · .+Within the customer’s tolerance$/);
+    expect($(errors, '[data-act=accept]')).toBeNull(); // already accepted
+    expect(($(errors, '[data-act=resolve]') as HTMLButtonElement).textContent).toBe('Reopen');
+    ($(errors, '[data-act=resolve]') as HTMLButtonElement).click();
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)!.status).toBe('open');
+    expect(['acceptedBy', 'acceptedAt', 'reason'].some((k) => k in excel.getErrors().find((x) => x.id === e.id)!)).toBe(false);
+    // nothing accepted left: the chip goes, and the list shows everything again
+    expect(shadow(errors).querySelector('[data-act=status]')).toBeNull();
+    expect(rows(errors)).toEqual([e.id, w.id]);
+  });
+  it('Esc and Cancel close the form without accepting; ⌘↵ accepts only with a reason', async () => {
+    const { excel, errors, e } = await two();
+    await open(errors, e.id);
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.keyboard('{Escape}');
+    await frame();
+    expect($(errors, '.accept')).toBeNull();
+    expect(shadow(errors).activeElement).toBe($(errors, '[data-act=accept]'));
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.keyboard('{Meta>}{Enter}{/Meta}'); // empty: nothing happens
+    await frame();
+    expect($(errors, '.accept')).not.toBeNull();
+    ($(errors, '[data-act=accept-cancel]') as HTMLButtonElement).click();
+    await frame();
+    expect($(errors, '.accept')).toBeNull();
+    expect(excel.getErrors().find((x) => x.id === e.id)!.status).toBe('open');
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.keyboard('Known deviation{Meta>}{Enter}{/Meta}');
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toMatchObject({ status: 'accepted', reason: 'Known deviation' });
+  });
+  it('one undo step: Ctrl+Z in the panel takes the acceptance back, Ctrl+Shift+Z gives it again', async () => {
+    const { excel, errors, e } = await two();
+    await accept(errors, e.id, 'Approved');
+    const accepted = excel.getErrors().find((x) => x.id === e.id)!;
+    $(errors, '.filters button').focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toEqual(e);
+    expect($(errors, '.opencount').textContent).toBe('2 open');
+    $(errors, '.filters button').focus(); // the filters were re-drawn: the Accepted chip went
+    await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toEqual(accepted);
+  });
+  it('readonly and read-only rows offer no Accept…; an accepted row still says who and why', async () => {
+    const { excel, errors, e } = await two({ readonly: '' });
+    const s = excel.workbook!;
+    s.acceptError(e.id, 'Signed off', { by: 'Ravi' });
+    s.setErrors([...s.getErrors(), { ...e, id: 'ERR-0010', range: 'B3', author: 'host', status: 'open' }]);
+    await frame();
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    await open(errors, e.id);
+    expect($(errors, '.acceptance').textContent).toContain('Signed off');
+    expect($(errors, '[data-act=accept]')).toBeNull();
+    expect($(errors, '[data-act=resolve]')).toBeNull();
+    errors.readOnly = false;
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    await open(errors, 'ERR-0010');
+    expect($(errors, '[data-act=accept]')).toBeNull(); // a rule's error: read-only, as Resolve is
+  });
+  it('the sheet’s card shows the acceptance and offers Reopen (L7); no axe violations with the form open and the chip on', async () => {
+    const { excel, errors, e } = await two();
+    await accept(errors, e.id, 'Approved by the customer');
+    excel.select('Holdings', 'G7');
+    await frame();
+    const c = $(excel, '.callout');
+    expect(c.querySelector('.hd .g')!.textContent).toBe('A');
+    expect(c.querySelector('.acceptance')!.textContent).toMatch(/^Accepted by Ravi · .+Approved by the customer$/);
+    expect((c.querySelector('[data-act=resolve]') as HTMLButtonElement).textContent).toBe('Reopen');
+    expect(cellEl(excel, 6, 6)!.className).toContain('m-accepted');
+    const r0 = await axe.run(c);
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    await open(errors, e.id);
+    const r1 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } }); // the known gap (SR-ERRORS Consequences)
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    const other = excel.getErrors().find((x) => x.status === 'open')!;
+    await open(errors, other.id);
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    const r2 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
+    expect([...r0.violations, ...r1.violations, ...r2.violations].map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});

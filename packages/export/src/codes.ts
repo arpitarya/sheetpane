@@ -72,6 +72,7 @@ const TABLE = {
   'SP-3015': { title: 'Source could not be read', severity: 'error' },
   'SP-3016': { title: 'Error meta dropped', severity: 'warning' },
   'SP-3017': { title: 'renderDetail failed', severity: 'error' },
+  'SP-3018': { title: 'Error not accepted', severity: 'warning' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

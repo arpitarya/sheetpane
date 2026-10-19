@@ -23,8 +23,8 @@ decision 5.
 | kind | name | what |
 |---|---|---|
 | attribute | `pane` | the same id as the sheet's |
-| attribute | `author` | written on errors added here |
-| attribute | `readonly` | a sign-off screen: no form, Resolve, Delete, Undo or Redo (SR-ERRORS decision 7) |
+| attribute | `author` | written on errors added here, and as who accepted one (W-69) |
+| attribute | `readonly` | a sign-off screen: no form, Resolve, Accept…, Delete, Undo or Redo (SR-ERRORS decision 7) |
 | attribute | `plugins`, `theme` | as on the sheet |
 | property | `errors`, `errorTypes`, `readOnly`, `workbook` | |
 | property | `renderDetail` | the host's extra detail in an open row (W-68) — see below |
@@ -92,6 +92,28 @@ panel.renderDetail = detail; // or return a Node: an <img> of the crop, a link
 - A `meta` over the cap or not JSON is dropped (SP-3016); a throwing hook
   shows nothing (SP-3017).
 - Keep a reference in `meta` (a page, a box), not the picture's pixels.
+
+### Accepted deviations (W-69)
+
+A known, approved difference should stop counting as a problem without being
+deleted. `status` is `open` · `resolved` · `accepted`; an accepted error
+carries `acceptedBy`, `acceptedAt` and a **required** `reason`:
+
+```js
+excel.workbook.acceptError(e.id, 'Approved by the customer on 18 Oct', { by: 'Ravi' }); // true; one undo step
+excel.workbook.updateError(e.id, { status: 'open' }); // Reopen: who, when and why are dropped
+```
+
+- In the panel, **Accept…** in an open row asks *Why is this accepted?* and
+  writes the element's `author` as who. Not in `readonly`, not on rule or
+  file-comment rows.
+- Not counted: "n open", the severity chips, the sheet's counts and tab
+  counts leave accepted errors out. The **Accepted n** chip lists them.
+- **Count open errors with `status === 'open'`**, not `!== 'resolved'`.
+- `@sheetpane/comments` writes a reply *Accepted: <reason>* by who accepted
+  it, and marks the thread done.
+- A blank reason, or a `workbook` / `file` error, is refused (SP-3018).
+  `setErrors` brings an accepted error without a reason back as `open`.
 
 ## Saving and restoring a review
 

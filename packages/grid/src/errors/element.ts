@@ -8,7 +8,7 @@ import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/reg
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
 import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type RenderDetail, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
-import { DETAIL_CSS, DetailRegion, inDetail } from '../shared/detail.js';
+import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 
 const CSS = `.grp{padding:8px 12px 2px;font-size:11px;font-weight:600;color:var(--sp-ink-3);text-transform:uppercase;letter-spacing:.04em}
@@ -28,7 +28,7 @@ ${BASE_CSS}
 .issue:hover{background:var(--sp-ground)}
 .item.on .issue{background:var(--sp-accent-soft)}
 .issue .n{font-size:11px;font-weight:700;min-width:22px;height:20px;border-radius:10px;color:var(--sp-on-solid);display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;flex:none}
-.n.error{background:var(--sp-fail)}.n.warning{background:var(--sp-warn)}.n.note{background:var(--sp-accent)}.n.resolved{background:var(--sp-pass)}
+.n.error{background:var(--sp-fail)}.n.warning{background:var(--sp-warn)}.n.note{background:var(--sp-accent)}.n.resolved{background:var(--sp-pass)}.n.accepted{background:var(--sp-surface);color:var(--sp-ink-2);box-shadow:inset 0 0 0 1.5px var(--sp-ink-3)}
 .issue .bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .issue .ty{font-weight:600;font-size:13px}
 .item.done .ty{color:var(--sp-ink-3);text-decoration:line-through}
@@ -39,6 +39,8 @@ ${BASE_CSS}
 .detail{padding:4px 12px 12px 44px;display:flex;flex-direction:column;gap:8px;background:var(--sp-accent-soft)}
 .detail .why{font-size:13px;margin:0}
 .detail .acts{display:flex;gap:6px;flex-wrap:wrap}
+.accept{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--sp-line);border-radius:var(--sp-r);background:var(--sp-surface)}
+.accept .acts{justify-content:flex-end}
 .form{border-bottom:1px solid var(--sp-line);display:flex;flex-direction:column;background:var(--sp-surface)}
 .form .fhd{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--sp-line)}
 .form .fbd{padding:12px;display:flex;flex-direction:column;gap:10px}
@@ -68,8 +70,8 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  *
  * Attributes:
  * - `pane` — the pane id shared with the sheet; none gives the element its own store.
- * - `readonly` — hides the form, Resolve, Delete, Undo and Redo (a sign-off screen).
- * - `author` — written into the errors this element's user adds.
+ * - `readonly` — hides the form, Resolve, Accept…, Delete, Undo and Redo (a sign-off screen).
+ * - `author` — written into the errors this element's user adds, and as who accepted one (W-69).
  * - `plugins` — space-separated registered plugin ids; fixed per pane.
  * - `theme` — `light` (the default), `dark` or `auto`.
  *
@@ -121,6 +123,11 @@ export class SheetpaneErrors extends ElementBase {
   private formKey = '';
   private savedPlugins: string[] | undefined;
   private detailRegion = new DetailRegion();
+  /** W-69: the Accepted chip is on (only accepted errors listed); the error whose Accept form is open, and its reason so far. */
+  private showAccepted = false;
+  private accepting: string | undefined;
+  private reasonDraft = '';
+  private focusNext: 'reason' | 'accept' | 'chip' | undefined;
 
   // ── properties ───────────────────────────────────────────────────────────
   /** The pane's store; assigning one replaces the `pane` lookup. */
@@ -226,6 +233,7 @@ export class SheetpaneErrors extends ElementBase {
     switch (el.dataset.act) {
       case 'filter': this.filter = el.dataset.v as Filter; this.schedule(); break;
       case 'author': this.authorFilter = el.dataset.v as AuthorFilter; this.schedule(); break;
+      case 'status': this.showAccepted = !this.showAccepted; this.schedule(); break;
       case 'pick':
         if (!err) return;
         this.expanded = this.expanded === err.id ? undefined : err.id;
@@ -237,7 +245,16 @@ export class SheetpaneErrors extends ElementBase {
         this.showPlace(err);
         fire(this, 'sheetpane-reveal', { error: { ...err } });
         break;
-      case 'resolve': if (err && !this.readOnly) s.updateError(err.id, { status: err.status === 'open' ? 'resolved' : 'open' }, this); break;
+      case 'resolve': if (err && !this.readOnly) s.updateError(err.id, { status: err.status === 'open' ? 'resolved' : 'open' }, this); break; // Reopen also takes back an acceptance (W-69)
+      case 'accept': // W-69: the reason form, in the open row
+        if (!err || err.status !== 'open' || this.readOnly || machineAuthored(err.author)) return;
+        this.accepting = this.accepting === err.id ? undefined : err.id;
+        this.reasonDraft = '';
+        this.focusNext = this.accepting ? 'reason' : undefined;
+        this.schedule();
+        break;
+      case 'accept-cancel': this.closeAccept(); break;
+      case 'accept-ok': this.acceptNow(); break;
       case 'delete': if (err && !this.readOnly) { s.deleteError(err.id, this); if (this.expanded === err.id) this.expanded = undefined; } break;
       case 'type': {
         const ty = this._errorTypes.find((x) => x.id === el.dataset.v);
@@ -258,11 +275,16 @@ export class SheetpaneErrors extends ElementBase {
     if (f === 'message') this.draft.message = t.value;
     else if (f === 'expected') this.draft.expected = t.value;
     else if (f === 'change') this.draft.change = t.checked;
+    else if (f === 'reason') { this.reasonDraft = t.value; const ok = this.shadow.querySelector<HTMLButtonElement>('[data-act=accept-ok]'); if (ok) ok.disabled = !t.value.trim(); }
   }
 
   private onKey(e: KeyboardEvent): void {
     if (inDetail(e.composedPath()[0] ?? null)) return; // the host's keys in its region (W-68)
     const typing = (e.composedPath()[0] as HTMLElement | undefined)?.matches?.('input, textarea');
+    if (this.accepting && (e.composedPath()[0] as HTMLElement | undefined)?.dataset?.field === 'reason') { // W-69: the reason form
+      if (e.key === 'Escape') { e.preventDefault(); this.closeAccept(); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.acceptNow(); return; }
+    }
     if (!typing && (e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) this._store!.redo(this); else this._store!.undo(this); return; }
     if (!typing && e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this._store!.redo(this); return; }
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && this.shadow.querySelector('.form')) { e.preventDefault(); this.add(); }
@@ -274,6 +296,18 @@ export class SheetpaneErrors extends ElementBase {
     const s = this._store!, scope = errorScope(err);
     if (scope === 'cell') { const r = parseRange(err.range); if (r) s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); }
     else if (scope === 'sheet' && s.getSnapshot().selection.sheet !== err.sheet && s.sheet(err.sheet)) s.select({ sheet: err.sheet, ref: 'A1' }, this); // as a tab click does
+  }
+
+  /** Closes the reason form; focus goes back to Accept…. */
+  private closeAccept(): void { this.accepting = undefined; this.reasonDraft = ''; this.focusNext = 'accept'; this.schedule(); }
+
+  /** Accepts the error whose form is open (W-69): only with a reason; who is this element's `author`. The row moves under the Accepted chip, which takes focus. */
+  private acceptNow(): void {
+    const id = this.accepting;
+    if (!id || this.readOnly || !this.reasonDraft.trim()) return;
+    if (!this._store!.acceptError(id, this.reasonDraft, { by: this.getAttribute('author') ?? '' }, this)) return;
+    this.accepting = undefined; this.reasonDraft = ''; this.focusNext = 'chip';
+    this.schedule();
   }
 
   private add(): void {
@@ -309,14 +343,21 @@ export class SheetpaneErrors extends ElementBase {
     const differ = this.savedPlugins !== undefined && this.savedPlugins.join(' ') !== s.pluginIds.join(' ');
     q('.noticebox').innerHTML = differ ? `<div class="notice" role="status">This review was saved with ${this.savedPlugins!.length ? esc(this.savedPlugins!.join(', ')) : 'no plugins'}; this pane runs ${s.pluginIds.length ? esc(s.pluginIds.join(', ')) : 'none'} — cells may be formatted differently.</div>` : '';
     // filters: severity, and author once more than people write errors (W-18 DoD 5)
-    const counts = { all: errors.length, error: errors.filter((e) => e.severity === 'error').length, warning: errors.filter((e) => e.severity === 'warning').length, note: errors.filter((e) => e.severity === 'note').length };
+    // W-69: accepted errors are not counted; the Accepted chip lists them instead of the rest
+    const accepted = errors.filter((e) => e.status === 'accepted');
+    if (!accepted.length) this.showAccepted = false;
+    const counted = errors.filter((e) => e.status !== 'accepted');
+    const counts = { all: counted.length, error: counted.filter((e) => e.severity === 'error').length, warning: counted.filter((e) => e.severity === 'warning').length, note: counted.filter((e) => e.severity === 'note').length };
     const authors = new Set(errors.map((e) => this.authorKind(e)));
     const sevBtns = ([['all', `All ${counts.all}`, 'All severities'], ['error', `✕ ${counts.error}`, 'Errors'], ['warning', `! ${counts.warning}`, 'Warnings'], ['note', `i ${counts.note}`, 'Notes']] as const)
       .map(([v, label, name]) => `<button type="button" data-act="filter" data-v="${v}" aria-pressed="${this.filter === v}" aria-label="${name}: ${counts[v]}">${label}</button>`).join('');
     const authorBtns = authors.size > 1 || (authors.size === 1 && !authors.has('person'))
       ? `<span class="sep" aria-hidden="true"></span>${(['all', 'person', 'workbook', 'host', 'file'] as const).filter((a) => a === 'all' || authors.has(a)).map((a) => `<button type="button" data-act="author" data-v="${a}" aria-pressed="${this.authorFilter === a}">${a === 'all' ? 'Anyone' : a === 'person' ? 'People' : a === 'workbook' ? 'Workbook rules' : a === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rules') : 'File comments'}</button>`).join('')}`
       : '';
-    q('.filters').innerHTML = sevBtns + authorBtns;
+    const acceptedBtn = accepted.length ? `<span class="sep" aria-hidden="true"></span><button type="button" data-act="status" data-v="accepted" aria-pressed="${this.showAccepted}">Accepted ${accepted.length}</button>` : '';
+    const filtersHtml = sevBtns + acceptedBtn + authorBtns;
+    const fl = q('.filters');
+    if (fl.dataset.html !== filtersHtml) { fl.innerHTML = filtersHtml; fl.dataset.html = filtersHtml; }
     // the form (contract decision 4: this element shows it whenever it is connected to the pane)
     const formbox = q('.formbox');
     const c = snap.composing;
@@ -326,8 +367,9 @@ export class SheetpaneErrors extends ElementBase {
     } else if (formbox.innerHTML) { formbox.innerHTML = ''; this.formKey = ''; }
     // the list
     const list = errors
-      .filter((e) => (this.filter === 'all' || e.severity === this.filter) && (this.authorFilter === 'all' || this.authorKind(e) === this.authorFilter))
-      .sort((a, b) => (a.status === b.status ? errNum(a) - errNum(b) : a.status === 'open' ? -1 : 1));
+      .filter((e) => (this.showAccepted ? e.status === 'accepted' : e.status !== 'accepted') && (this.filter === 'all' || e.severity === this.filter) && (this.authorFilter === 'all' || this.authorKind(e) === this.authorFilter))
+      .sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1) || errNum(a) - errNum(b));
+    if (this.accepting && !list.some((e) => e.id === this.accepting && e.id === this.expanded && e.status === 'open')) { this.accepting = undefined; this.reasonDraft = ''; }
     // W-55: errors with no cell come first — the Workbook group, then each sheet's whole-sheet errors in sheet order
     const order = (snap.book?.sheets ?? []).map((x) => x.name);
     const rank = (e: SheetpaneError) => { const sc = errorScope(e); return sc === 'workbook' ? 0 : sc === 'sheet' ? 1 : 2; };
@@ -347,16 +389,28 @@ export class SheetpaneErrors extends ElementBase {
       const place = scope === 'workbook' ? 'workbook' : scope === 'sheet' ? 'whole sheet' : e.range;
       const r = parseRange(e.range);
       const on = this.expanded === e.id || (!!r && e.sheet === sel.sheet && parseRef(sel.ref) && r.top === parseRef(sel.ref)!.row && r.left <= parseRef(sel.ref)!.col && r.right >= parseRef(sel.ref)!.col);
-      const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : '', ...hiddenTags(s, e)].filter(Boolean);
+      const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : e.status === 'accepted' ? 'accepted' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : '', ...hiddenTags(s, e)].filter(Boolean);
       const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
-      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}${this.detailRegion.html()}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, e.code, time].filter(Boolean).join(' · '))}</span><div class="acts">${scope === 'workbook' ? '<button type="button" class="btn" data-act="reveal" disabled aria-describedby="nowhere">Show in sheet</button><span class="xs faint" id="nowhere">About the whole workbook — no sheet to show</span>' : `<button type="button" class="btn" data-act="reveal">Show in sheet</button>`}${ro ? '' : `<button type="button" class="btn" data-act="resolve" data-sp="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
-      return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${scope === 'workbook' ? 'whole workbook' : `${esc(e.sheet)} ${esc(place)}`}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span>${scope !== 'cell' && !e.found && !e.expected ? '' : `<span class="ba"><span class="found">${esc(scope === 'cell' ? e.found : e.found || '—')}</span> → <span class="want">${esc(e.expected || '—')}</span></span>`}<span class="m">${esc(place)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
+      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}${this.detailRegion.html()}${acceptedHtml(e)}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, e.code, time].filter(Boolean).join(' · '))}</span><div class="acts">${scope === 'workbook' ? '<button type="button" class="btn" data-act="reveal" disabled aria-describedby="nowhere">Show in sheet</button><span class="xs faint" id="nowhere">About the whole workbook — no sheet to show</span>' : `<button type="button" class="btn" data-act="reveal">Show in sheet</button>`}${ro ? '' : `<button type="button" class="btn" data-act="resolve" data-sp="resolve">${e.status === 'open' ? '✓ Resolve' : 'Reopen'}</button>${e.status === 'open' ? `<button type="button" class="btn" data-act="accept" data-sp="accept-open" aria-expanded="${this.accepting === e.id}">Accept…</button>` : ''}<span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div>${this.accepting === e.id && !ro ? ACCEPT_FORM : ''}</div>` : '';
+      return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${scope === 'workbook' ? 'whole workbook' : `${esc(e.sheet)} ${esc(place)}`}, ${sv.name}${e.status === 'open' ? '' : `, ${e.status}`}"><span class="n ${e.status === 'open' ? e.severity : e.status}" aria-hidden="true">${e.status === 'resolved' ? '✓' : e.status === 'accepted' ? 'A' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span>${scope !== 'cell' && !e.found && !e.expected ? '' : `<span class="ba"><span class="found">${esc(scope === 'cell' ? e.found : e.found || '—')}</span> → <span class="want">${esc(e.expected || '—')}</span></span>`}<span class="m">${esc(place)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
-    if (listEl.dataset.html !== html) { listEl.innerHTML = html; listEl.dataset.html = html; }
+    const hadReason = this.shadow.activeElement?.matches('[data-field=reason]') ?? false;
+    const rebuilt = listEl.dataset.html !== html;
+    if (rebuilt) { listEl.innerHTML = html; listEl.dataset.html = html; }
     this.detailRegion.sync(listEl, list.find((e) => e.id === this.expanded)); // the host's region, after the message (W-68)
+    // W-69: the reason lives outside the markup, so typing never re-draws the list; focus follows the form
+    const reason = listEl.querySelector<HTMLTextAreaElement>('[data-field=reason]');
+    if (reason) {
+      if (reason.value !== this.reasonDraft) reason.value = this.reasonDraft;
+      listEl.querySelector<HTMLButtonElement>('[data-act=accept-ok]')!.disabled = !this.reasonDraft.trim();
+      if (this.focusNext === 'reason' || (rebuilt && hadReason)) reason.focus();
+    }
+    if (this.focusNext === 'accept') listEl.querySelector<HTMLElement>('[data-act=accept]')?.focus();
+    else if (this.focusNext === 'chip') q('.filters').querySelector<HTMLElement>('[data-act=status]')?.focus();
+    this.focusNext = undefined;
   }
 
   private formHtml(): string {
@@ -381,6 +435,9 @@ export class SheetpaneErrors extends ElementBase {
 <div class="fft"><span class="xs faint">⌘ ↵</span><span class="spacer" style="flex:1"></span><button type="button" class="btn" data-act="cancel">Cancel</button><button type="button" class="btn btn-p" data-act="add" data-sp="add-error">Add error</button></div></div>`;
   }
 }
+
+/** The reason form in an open row (W-69): a reason is required — Accept stays disabled until one is typed. */
+const ACCEPT_FORM = `<div class="accept" role="group" aria-label="Accept this deviation"><label class="field"><span>Why is this accepted?</span><textarea class="input" rows="2" data-field="reason" required aria-required="true" aria-describedby="sp-accept-help"></textarea></label><span class="xs faint" id="sp-accept-help">Required. Saved with your name and the time; the error stays in the review and the download, and no longer counts as open.</span><div class="acts"><button type="button" class="btn" data-act="accept-cancel">Cancel</button><button type="button" class="btn btn-p" data-act="accept-ok" data-sp="accept" disabled>Accept</button></div></div>`;
 
 /** The column's header text: the nearest row above with two or more text cells. */
 export function headerFor(text: string[][], row: number, col: number): string {

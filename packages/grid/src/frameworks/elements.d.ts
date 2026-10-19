@@ -113,9 +113,9 @@ export interface SheetpaneErrorsEventMap {
 export interface SheetpaneErrorsAttributes {
   /** The pane id shared with the sheet; none gives the element its own store. */
   pane?: string | undefined;
-  /** Hides the form, Resolve, Delete, Undo and Redo (a sign-off screen). */
+  /** Hides the form, Resolve, Accept…, Delete, Undo and Redo (a sign-off screen). */
   readonly?: boolean | undefined;
-  /** Written into the errors this element's user adds. */
+  /** Written into the errors this element's user adds, and as who accepted one (W-69). */
   author?: string | undefined;
   /** Space-separated registered plugin ids; fixed per pane. */
   plugins?: string | undefined;

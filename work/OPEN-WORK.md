@@ -64,8 +64,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
 
-- 🟢 **W-69** `agent` · **G3** · Accepted deviations: an error accepted with a reason, kept in the review and the download. Filed by Arpit (Cowork). [detail](open/W-69-accepted-deviations.md)
-
 ### testing
 
 - 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)

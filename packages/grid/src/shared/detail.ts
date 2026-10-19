@@ -2,8 +2,10 @@
 // fills a `part="detail"` box after the message. A string is text, never HTML; a
 // Node is the host's own. The hook runs again only when the error changes or the
 // hook is replaced — a list re-drawn for another error reuses what it returned.
+// Beside it, who accepted an error, when and why (W-69), drawn the same in both.
 import { spMessage } from '@sheetpane/export';
 import { copyError, type RenderDetail, type SheetpaneError } from '../pane/types.js';
+import { esc } from './dom.js';
 
 /** The region's class; `part="detail"` names it to the host. */
 export const DETAIL_CLASS = 'xdetail';
@@ -53,3 +55,11 @@ export class DetailRegion {
 
 /** Whether an event started inside the host's region — its clicks and keys are the host's, not the element's. */
 export const inDetail = (t: EventTarget | null): boolean => !!(t as Element | null)?.closest?.(`.${DETAIL_CLASS}`);
+
+/** Who accepted an error, when, and why (W-69) — in the list's open row and the sheet's error card; nothing for any other status. */
+export function acceptedHtml(e: SheetpaneError): string {
+  if (e.status !== 'accepted') return '';
+  const at = e.acceptedAt ? new Date(e.acceptedAt) : undefined;
+  const when = at && !Number.isNaN(at.getTime()) ? at.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="acceptance"><span class="xs faint">${esc(['Accepted' + (e.acceptedBy ? ` by ${e.acceptedBy}` : ''), when].filter(Boolean).join(' · '))}</span><span>${esc(e.reason ?? '')}</span></div>`;
+}

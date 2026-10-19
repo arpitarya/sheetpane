@@ -79,11 +79,15 @@ function rootText(e: SheetpaneError, o: WriteOptions): string {
   return nl(e.message ? `${head}\n${e.message}` : head);
 }
 
-/** The thread entries one error becomes: its comment, then `expected` as a reply. */
+/** Who accepted an error (W-69): the name given, else the error's own author. */
+const acceptorOf = (e: SheetpaneError) => e.acceptedBy?.trim() || authorOf(e);
+
+/** The thread entries one error becomes: its comment, then `expected` as a reply, then — when accepted (W-69) — `Accepted: <reason>`, by who accepted it, when. */
 function entriesOf(e: SheetpaneError, ref: string, o: WriteOptions): Entry[] {
   const g = errorGuids(e), personId = personGuid(authorOf(e)), dT = excelDate(e.createdAt);
   const out: Entry[] = [{ id: g.comment, ref, parentId: undefined, text: rootText(e, o), xml: undefined, personId, dT, done: false }];
   if (e.expected) out.push({ id: g.expected, ref, parentId: undefined, text: nl(`Should be: ${e.expected}`), xml: undefined, personId, dT, done: false });
+  if (e.status === 'accepted') out.push({ id: g.accepted, ref, parentId: undefined, text: nl(`Accepted: ${e.reason ?? ''}`), xml: undefined, personId: personGuid(acceptorOf(e)), dT: excelDate(e.acceptedAt || e.createdAt), done: false });
   return out;
 }
 
@@ -303,7 +307,7 @@ export async function writeReview(patch: PatchContext, errors: readonly Sheetpan
       const root = foreignRoot.get(anchor);
       if (!root && noteRefs.has(anchor)) { for (const e of errs) report.skipped.push({ id: e.id, reason: 'note-at-cell' }); continue; }
       const mine = errs.flatMap((e) => entriesOf(e, anchor, o));
-      for (const e of errs) { report.written.push(e.id); people.add(authorOf(e)); }
+      for (const e of errs) { report.written.push(e.id); people.add(authorOf(e)); if (e.status === 'accepted') people.add(acceptorOf(e)); }
       touched.add(anchor);
       if (root) {
         // the cell already holds someone's thread: the review joins it as replies
@@ -311,7 +315,7 @@ export async function writeReview(patch: PatchContext, errors: readonly Sheetpan
         threads.get(root.id)!.push(...mine);
       } else {
         const [first, ...rest] = mine;
-        first!.done = errs.every((e) => e.status === 'resolved');
+        first!.done = errs.every((e) => e.status === 'resolved' || e.status === 'accepted'); // an accepted deviation is not a problem (W-69)
         for (const m of rest) m.parentId = first!.id;
         threads.set(first!.id, [first!, ...rest]);
       }

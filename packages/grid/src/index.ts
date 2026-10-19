@@ -17,7 +17,7 @@ export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, ERROR_META_MAX, SEVERITY, erro
 export { shiftFormula } from '@sheetpane/export';
 // Stable error codes (W-40), re-exported for plugins that do not depend on @sheetpane/export.
 export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, type CodeInfo, type SpCode, type SpCoded, type SpError } from '@sheetpane/export';
-export type { SheetpaneError, Severity, Mode, ChangeKind, ChangeEntry, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType, ErrorScope, ErrorMeta, RenderDetail } from './pane/types.js';
+export type { SheetpaneError, Severity, Mode, ChangeKind, ChangeEntry, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType, ErrorScope, ErrorMeta, ErrorStatus, RenderDetail } from './pane/types.js';
 export { registerPlugin, registeredPluginIds, pluginsFromIds, checkPlugins, mergeDecorations, controlsFor, type PluginFactory } from './plugins/host.js';
 export { HOOKS, SLOTS, SINGLE_PROVIDER, STYLE_PROPS } from './plugins/types.js';
 export type { Plugin, HookName, SlotName, ControlDescriptor, CellContext, PluginContext, DeriveInput, DerivedChange, ErrorDraft, OverlayItem, Geometry, StyleSubset, StyleProp } from './plugins/types.js';

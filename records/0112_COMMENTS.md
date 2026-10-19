@@ -76,7 +76,10 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
-   resolved. On a cell with someone's thread the errors join it as replies; on
+   resolved or accepted. **An accepted error (W-69, SR-GRID 5c)** gets one
+   more reply, `Accepted: <reason>`, written by who accepted it (`acceptedBy`,
+   else the error's author) at `acceptedAt`; reopened, the next export drops
+   it. On a cell with someone's thread the errors join it as replies; on
    a cell holding a legacy note nothing is written and the error is reported
    `note-at-cell` in `lastExport.skipped` (the file author's note is never
    rewritten).
@@ -88,7 +91,8 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    parts are **extended, never replaced**; a sheet whose parts cannot be
    parsed is left as is (`unreadable-part`).
 5. **Ids:** a thread entry's id is the version-5 UUID of
-   `sheetpane:<id>:<createdAt>` (`…#expected` for the reply); a person's, of
+   `sheetpane:<id>:<createdAt>` (`…#expected` and `…#accepted` for the
+   replies); a person's, of
    `sheetpane-person:<name>`. A second export of the same review replaces its
    own entries in place; replies added in Excel are kept and re-pointed.
 6. **Switches:** `write: false` for good; `ctx.exportOptions.comments ===
@@ -102,16 +106,18 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
-- **Enforced today:** `just test-pkg comments` — 28 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 30 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
   an error's `meta` (W-68, SR-GRID 5b) found in no written part;
+  an accepted error's *Accepted* reply, its person and time, the thread
+  done, the reply dropped once reopened and skipped when read back (W-69);
   both switches byte-identical; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).
 - **Owed:** opening the exported fixture in Excel 365, Excel 2019 and
-  LibreOffice (DoD 4) and fixtures saved by Excel with notes, threads and
+  LibreOffice (DoD 4; an accepted error's reply included — W-69) and fixtures saved by Excel with notes, threads and
   both — W-30, the decider's; validating the parts against the OOXML schema
   (backlog B-033). Unverified until then: whether Excel links the note to its
   thread by the `tc=` author alone (no `xr:uid` is written), the `dT` format
