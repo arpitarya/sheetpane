@@ -17,6 +17,8 @@ import type { ColumnRules, ColumnRulesConfig, OnInvalid, RuleOutcome, ValidateFn
 import { COL_MAX, COL_MIN, COL_VIRTUAL_AFTER, DEFAULT_COL_PX, HEAD_H, ROWHEAD_W, ROW_H, ROW_MAX, ROW_MIN, colAt, colWidth, hiddenSpans, isHiddenAt, mergeAt, rowAt, rowHeight, rowTop, sheetGeometry, visibleWindow, type SheetGeometry, type SheetSizes } from './geometry.js';
 import { cellCount, clipOf, dataEdge, growForMerges, rangeText, refLabel, spanOf, splitByPanes, totalsOf, usedRange, type Pos } from './selection.js';
 import { EXCEL_CSS } from './styles.js';
+import { fillDownTo, fillSeries } from './fill.js';
+import { floatAll } from './float.js';
 import { parseTarget, readLink, splitSheetRef, writeLink } from './link.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
@@ -173,6 +175,18 @@ export class SheetpaneExcel extends ElementBase {
   /** A drag in progress (W-46): drawn by the selection layer each frame; the store hears of it on release. */
   private drag: Drag | undefined;
   private dragRaf = 0;
+  /** The fill handle's drag: the source, the range it now reaches, the pointer, the last cell's value. */
+  private fill: { id: number; src: RangePos; to: RangePos; x: number; y: number; tip: string } | undefined;
+  private fillRaf = 0;
+  /** The in-cell editor (as in Excel): it sits on the active cell; the cell bar's input holds the same draft. */
+  private ice!: HTMLInputElement;
+  /** `enter`: started by typing — an arrow commits and moves; `edit`: Enter, F2 or a double-click — arrows move the caret. */
+  private iceMode: 'enter' | 'edit' | undefined;
+  /** Where a run of Tabs began: Enter then returns to this column, a row down (Excel). */
+  private tabCol: number | undefined;
+  private dropDepth = 0;
+  /** The last mouse press on a cell, to tell a double press (edit in place) from two clicks. */
+  private lastDown: { row: number; col: number; t: number } | undefined;
   /** The last pointer was a finger: a range shows its two handles. */
   private touchUi = false;
   /** The range Ctrl/⌘+C copied, outlined until Esc, an edit or the next copy. */
@@ -183,6 +197,8 @@ export class SheetpaneExcel extends ElementBase {
   private totalsKey: unknown[] = [];
   /** Column widths and row heights the user set, per sheet, px at 100 % — a view setting, never a change (W-47). */
   private _sizes: Record<string, { cols: Record<number, number>; rows: Record<number, number> }> = {};
+  /** Per sheet, the least the grid shows after inserts and deletes (SR-GRID 11e): an insert always adds what it says it does. */
+  private extent: Record<string, { rows: number; cols: number }> = {};
   private sizesVer = 0;
   /** A header-edge drag in progress (W-47). */
   private rz: { id: number; axis: 'col' | 'row'; indexes: number[]; start: number; from: number; px: number; moved: boolean; before: { cols: Record<number, number>; rows: Record<number, number> } | undefined } | undefined;
@@ -484,15 +500,20 @@ export class SheetpaneExcel extends ElementBase {
     const rsrc = this.getAttribute('rules-src');
     if (rsrc && this.rules === undefined) void this.loadRules(rsrc);
     addEventListener('beforeunload', this.onUnload);
+    addEventListener('scroll', this.onViewport, true); addEventListener('resize', this.onViewport);
     addEventListener('hashchange', this.onHash); addEventListener('popstate', this.onHash);
     this.seenHash = location.hash;
     this.place();
     this.schedule();
   }
 
+  /** The page scrolled or resized: the cards in the top layer follow their anchors (SR-LAW-13). */
+  private onViewport = (): void => { if (this.shadowRoot?.querySelector('.sp-float')) floatAll(this.shadowRoot); };
+
   /** Releases the pane's store. */
   disconnectedCallback(): void {
     removeEventListener('beforeunload', this.onUnload);
+    removeEventListener('scroll', this.onViewport, true); removeEventListener('resize', this.onViewport);
     removeEventListener('hashchange', this.onHash); removeEventListener('popstate', this.onHash);
     clearTimeout(this.linkTimer); this.linkTimer = undefined;
     this.unbind();
@@ -579,7 +600,7 @@ export class SheetpaneExcel extends ElementBase {
         if (first) st.select({ sheet: first.name, ref: 'A1' });
       });
     }
-    if (e.type === 'load') { this._sizes = {}; this.sizesVer++; this.rz = undefined; this.hdrMenu = undefined; this.geom = undefined; this.findHits = []; this.findVersion = -1; for (const el of this.overlayCache.values()) el.remove(); this.overlayCache.clear(); }
+    if (e.type === 'load') { this._sizes = {}; this.extent = {}; this.sizesVer++; this.rz = undefined; this.hdrMenu = undefined; this.geom = undefined; this.findHits = []; this.findVersion = -1; for (const el of this.overlayCache.values()) el.remove(); this.overlayCache.clear(); }
     if (e.type === 'change' && e.kind === 'structure') this.followStructure(e);
     const mine = e.origin === this || (e.origin === undefined && isPrimary(this._store!, this));
     if (!mine) return;
@@ -730,42 +751,65 @@ export class SheetpaneExcel extends ElementBase {
     q.dock.addEventListener('click', (e) => this.onDockClick(e));
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.fitDock()).observe(q.dock.parentElement!);
     // the grid's focus ring shows for keyboard use only
-    q.root.addEventListener('keydown', () => q.root.setAttribute('data-kbd', ''), true);
+    q.root.addEventListener('keydown', (e) => { if (e.key === 'Tab') q.root.setAttribute('data-kbd', ''); else if (e.key.length === 1 || e.key === 'Enter' || e.key === 'Escape') q.root.removeAttribute('data-kbd'); }, true);
     q.root.addEventListener('pointerdown', () => q.root.removeAttribute('data-kbd'), true);
     q.dock.addEventListener('keydown', (e) => this.onMenuKey(e, '.moremenu'));
     q.help.addEventListener('click', () => { this.helpOpen = !this.helpOpen; q.help.setAttribute('aria-expanded', String(this.helpOpen)); this.schedule(); });
+    // Esc closes the keyboard help from its button or inside it; the grid's own Esc handles the grid
+    q.root.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !this.helpOpen || (e.target as Element).closest?.('.grid, .ice')) return;
+      this.helpOpen = false; q.help.setAttribute('aria-expanded', 'false'); q.help.focus(); this.schedule();
+    });
     q.revert.addEventListener('click', () => { const sel = s().getSnapshot().selection; s().revert(sel.sheet, sel.ref, this); });
     // The cell bar edits a draft; Enter, Tab and blur commit it (W-26, events verdict decisions 1–3).
     const cell = q.cell as HTMLInputElement;
-    cell.addEventListener('focus', () => {
-      const sel = s().getSnapshot().selection;
-      const rich = !!s().runs(sel.sheet, sel.ref); // W-53: the edit writes plain text, the runs' formatting goes
-      const allowed = fire(this, 'sheetpane-editstart', { sheet: sel.sheet, ref: sel.ref, column: this.column(sel.sheet, sel.ref), value: s().value(sel.sheet, sel.ref), ...(rich ? { richText: true } : {}) }, true);
-      if (!allowed) { cell.readOnly = true; this.editing = undefined; queueMicrotask(() => q.grid.focus({ preventScroll: true })); return; }
-      cell.readOnly = false;
-      this.editing = { sheet: sel.sheet, ref: sel.ref, start: cell.value };
-      this.schedule(); // the docked actions step aside while the draft is edited
-    });
+    cell.addEventListener('focus', () => { if (!this.beginEdit()) queueMicrotask(() => q.grid.focus({ preventScroll: true })); });
     cell.addEventListener('input', () => {
+      if (this.iceOpen() && this.shadow.activeElement === cell) this.ice.value = cell.value; // typed in the bar: the cell's editor follows
       const ed = this.editing;
       if (!ed) return;
       fire(this, 'sheetpane-input', { sheet: ed.sheet, ref: ed.ref, column: this.column(ed.sheet, ed.ref), draft: cell.value, was: s().value(ed.sheet, ed.ref) });
       this.checkDraft(ed.sheet, ed.ref, cell.value);
     });
     cell.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        this.commitDraft();
-        this.move(e.key === 'Tab' ? 0 : e.shiftKey ? -1 : 1, e.key === 'Tab' ? (e.shiftKey ? -1 : 1) : 0, false);
-        q.grid.focus({ preventScroll: true });
-      } else if (e.key === 'Escape') {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.fillRangeWithDraft(); }
+      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); this.finishEdit(e.key === 'Tab' ? 'tab' : 'enter', e.shiftKey); }
+      else if (e.key === 'Escape') {
         e.preventDefault(); e.stopPropagation();
-        const ed = this.editing;
-        if (ed) { cell.value = ed.start; this.editing = undefined; this.clearRuleMsg(); fire(this, 'sheetpane-editcancel', { sheet: ed.sheet, ref: ed.ref }); }
+        if (this.iceOpen()) this.ice.hidden = true;
+        this.cancelDraft();
         q.grid.focus({ preventScroll: true });
       }
     });
-    cell.addEventListener('blur', () => { this.commitDraft(); this.schedule(); });
+    cell.addEventListener('blur', (e) => {
+      if (e.relatedTarget === this.ice && this.iceOpen()) return; // the draft moves back into the cell's editor
+      if (this.iceOpen()) { this.ice.hidden = true; this.iceMode = undefined; }
+      this.commitDraft(); this.schedule();
+    });
+    // the in-cell editor: one draft with the cell bar; typing, Enter, F2 or a double-click open it
+    const ice = this.ice = document.createElement('input');
+    ice.className = 'ice'; ice.hidden = true; ice.autocomplete = 'off'; ice.spellcheck = false;
+    ice.setAttribute('aria-label', 'Cell value'); ice.dataset.sp = 'cell-editor';
+    q.sheet.append(ice);
+    for (const ev of ['pointerdown', 'mousedown', 'dblclick', 'click', 'contextmenu'] as const) ice.addEventListener(ev, (e) => e.stopPropagation()); // inside the editor a click moves the caret, never the selection
+    ice.addEventListener('input', () => { cell.value = ice.value; cell.dispatchEvent(new Event('input')); });
+    ice.addEventListener('keydown', (e) => this.onIceKey(e));
+    ice.addEventListener('blur', (e) => {
+      if (ice.hidden || e.relatedTarget === cell) return; // into the cell bar: the same draft carries on there
+      ice.hidden = true; this.iceMode = undefined;
+      this.commitDraft(); this.schedule();
+    });
+    // a file dropped anywhere on a loaded sheet opens it — the empty state has its own drop zone
+    const files = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files') && !q.scroller.hidden;
+    q.root.addEventListener('dragenter', (e) => { if (!files(e)) return; e.preventDefault(); this.dropDepth++; this.showDrop(true); });
+    q.root.addEventListener('dragover', (e) => { if (!files(e)) return; e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; });
+    q.root.addEventListener('dragleave', (e) => { if (!files(e)) return; this.dropDepth = Math.max(0, this.dropDepth - 1); if (!this.dropDepth) this.showDrop(false); });
+    q.root.addEventListener('drop', (e) => {
+      if (!files(e)) return;
+      e.preventDefault(); this.dropDepth = 0; this.showDrop(false);
+      const f = e.dataTransfer?.files?.[0];
+      if (f) void this.load(f);
+    });
     q.grid.addEventListener('paste', (e) => this.onPaste(e as ClipboardEvent));
     q.tabs.addEventListener('click', (e) => {
       const t = e.target as Element;
@@ -805,10 +849,10 @@ export class SheetpaneExcel extends ElementBase {
     // W-46: mouse and pen drag with Pointer Events (captured, so the drag outlives the grid); a finger
     // pans, and its tap arrives as the compatibility mousedown — as do synthetic clicks
     q.scroller.addEventListener('pointerdown', (e) => this.onPointerDown(e));
-    q.scroller.addEventListener('pointermove', (e) => { if (this.rz) { this.moveResize(e); return; } if (this.drag && e.pointerId === this.drag.id) { this.drag.x = e.clientX; this.drag.y = e.clientY; this.queueDrag(); } });
-    q.scroller.addEventListener('pointerup', (e) => { if (this.rz && e.pointerId === this.rz.id) { this.endResize(true); return; } if (this.drag && e.pointerId === this.drag.id) this.endDrag(true); });
-    q.scroller.addEventListener('pointercancel', (e) => { if (this.rz && e.pointerId === this.rz.id) { this.endResize(false); return; } if (this.drag && e.pointerId === this.drag.id) this.endDrag(false); });
-    q.scroller.addEventListener('lostpointercapture', (e) => { if (this.rz && e.pointerId === this.rz.id) { this.endResize(true); return; } if (this.drag && e.pointerId === this.drag.id) this.endDrag(true); });
+    q.scroller.addEventListener('pointermove', (e) => { if (this.fill && e.pointerId === this.fill.id) { this.fill.x = e.clientX; this.fill.y = e.clientY; this.queueFill(); return; } if (this.rz) { this.moveResize(e); return; } if (this.drag && e.pointerId === this.drag.id) { this.drag.x = e.clientX; this.drag.y = e.clientY; this.queueDrag(); } });
+    q.scroller.addEventListener('pointerup', (e) => { if (this.fill && e.pointerId === this.fill.id) { this.endFill(true, e.ctrlKey || e.metaKey); return; } if (this.rz && e.pointerId === this.rz.id) { this.endResize(true); return; } if (this.drag && e.pointerId === this.drag.id) this.endDrag(true); });
+    q.scroller.addEventListener('pointercancel', (e) => { if (this.fill && e.pointerId === this.fill.id) { this.endFill(false, false); return; } if (this.rz && e.pointerId === this.rz.id) { this.endResize(false); return; } if (this.drag && e.pointerId === this.drag.id) this.endDrag(false); });
+    q.scroller.addEventListener('lostpointercapture', (e) => { if (this.fill && e.pointerId === this.fill.id) { this.endFill(true, false); return; } if (this.rz && e.pointerId === this.rz.id) { this.endResize(true); return; } if (this.drag && e.pointerId === this.drag.id) this.endDrag(true); });
     q.scroller.addEventListener('mousedown', (e) => this.onPointer(e));
     q.scroller.addEventListener('click', (e) => {
       const t = e.target as Element;
@@ -840,10 +884,13 @@ export class SheetpaneExcel extends ElementBase {
       const c = (e.target as Element).closest<HTMLElement>('.c');
       if (!c || c.dataset.r === undefined) return;
       e.preventDefault();
-      this.selectCell(Number(c.dataset.r), Number(c.dataset.c), false);
+      // a right-click inside the range keeps it (Copy values, Clear act on all of it), as in Excel
+      const rr = Number(c.dataset.r), cc = Number(c.dataset.c), cur = s().getSnapshot().selection.range, inR = cur ? parseRange(cur) : undefined;
+      if (!(inR && rr >= inR.top && rr <= inR.bottom && cc >= inR.left && cc <= inR.right)) this.selectCell(rr, cc, false);
       this.openContextMenu();
     });
     q.scroller.addEventListener('dblclick', (e) => {
+      if ((e.target as Element).closest('.fh')) { this.autoFill(); return; } // W: fill down beside the data, as Excel
       const edge = (e.target as Element).closest<HTMLElement>('[data-rz-c], [data-rz-r]');
       if (edge) { const axis = edge.dataset.rzC !== undefined ? 'col' : 'row'; this.fit(axis, this.sizeTargets(axis, Number(axis === 'col' ? edge.dataset.rzC : edge.dataset.rzR))); return; }
       if ((e.target as Element).closest('.c') && this.mode === 'edit') this.editCell();
@@ -1073,8 +1120,8 @@ export class SheetpaneExcel extends ElementBase {
     return out.join('');
   }
 
-  private contextMenuHtml(x: number, y: number, edit: boolean, err: SheetpaneError | undefined): string {
-    return `<div class="card ctxmenu" role="menu" aria-label="Selection actions" data-sp="menu" style="top:${y}px;left:${x}px">${this.actionItems(edit, err, { flag: true, plugins: true })}</div>`;
+  private contextMenuHtml(x: number, y: number, edit: boolean, err: SheetpaneError | undefined, anchor = 0): string {
+    return `<div class="card ctxmenu" role="menu" aria-label="Selection actions" data-sp="menu" data-anchor-h="${anchor}" style="top:${y}px;left:${x}px">${this.actionItems(edit, err, { flag: true, plugins: true })}</div>`;
   }
 
   /** Arrow keys move through a menu's items; Esc closes it and returns focus. True when handled. */
@@ -1171,7 +1218,10 @@ export class SheetpaneExcel extends ElementBase {
       ['Enter / Tab in a range', 'Next cell of the range (Shift: back)'], ['Drag, Shift + click', 'Select a range'], ['Click a header', 'Select a column, a row or the sheet'],
       ['Drag a header edge', 'Resize the column or row'], ['Double-click a header edge', 'Fit it to the text'], ['Shift + F10 on a whole column or row', 'Fit · width… · reset to the file’s size'],
       ['Home / End', 'Row start / end'], ['Ctrl + Home / End', 'First / last cell'],
-      ['Page Up / Down', 'Move a screen'], ['Enter or F2', 'Edit the cell (Edit)'], ['Type', 'Replace the cell (Edit)'], ['Delete', 'Clear the cell or range (Edit)'],
+      ['Page Up / Down', 'Move a screen'], ['Enter, F2 or double-click', 'Edit in the cell (Edit)'], ['Type', 'Replace the cell, in place (Edit)'], ['Delete', 'Clear the cell or range (Edit)'],
+      ['Arrows while typing', 'Commit and move (F2: move the caret instead)'], ['Tab … Enter', 'Across, then back to the first column, a row down'], ['Ctrl/⌘ + Enter', 'Put the entry in every cell of the range (Edit)'],
+      ['Drag the corner square', 'Fill: a series from numbers, copies otherwise; Ctrl/⌘ swaps (Edit)'], ['Double-click the corner square', 'Fill down beside the data (Edit)'], ['Ctrl + D / Ctrl + R', 'Copy down / right (Edit)'],
+      ['Drop a file on the sheet', 'Open it'],
       ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel a drag or copy · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value or the range'], ['Shift + F10 or Menu', 'Selection actions'],
       ['Ctrl/⌘ + Shift + =', 'Insert rows above (whole columns: columns left) (Edit)'], ['Ctrl/⌘ + −', 'Delete the selected rows or columns (Edit)'],
     ].map(([keys, what]) => ({ keys: keys!, what: what! }));
@@ -1221,6 +1271,8 @@ export class SheetpaneExcel extends ElementBase {
     const edge = t.closest<HTMLElement>('[data-rz-c], [data-rz-r]');
     if (edge) { if (e.button === 0) this.startResize(e, edge); return; } // W-47: a header edge resizes, never selects
     if (t.closest('[data-hid], [data-og], [data-olvl]')) return; // W-49: markers and outline buttons act on click
+    if (t.closest('.fh') && e.button === 0 && e.pointerType !== 'touch') { this.startFill(e); return; }
+    this.tabCol = undefined;
     const handle = t.closest<HTMLElement>('.sh');
     if (handle && e.button === 0) { this.startHandleDrag(e, handle.dataset.end === 'start'); return; }
     if (e.pointerType === 'touch') { this.touchUi = true; return; } // a pan scrolls; the tap selects through mousedown
@@ -1236,6 +1288,12 @@ export class SheetpaneExcel extends ElementBase {
     if (head?.kind === 'all') { this.selectHeader(head, false); return; }
     if (e.shiftKey) { if (head) this.selectHeader(head, true); else this.selectCell(Number(c!.dataset.r), Number(c!.dataset.c), true); return; }
     const snap = s.getSnapshot(), before = { ...snap.selection };
+    if (!head) {
+      // a second press on the same cell within 400 ms edits it in place — Pointer Events do not always raise dblclick here
+      const r0 = Number(c!.dataset.r), c0 = Number(c!.dataset.c), now = performance.now(), last = this.lastDown;
+      this.lastDown = { row: r0, col: c0, t: now };
+      if (last && last.row === r0 && last.col === c0 && now - last.t < 400 && snap.mode === 'edit') { this.lastDown = undefined; this.editCell(); return; }
+    }
     if (head) this.selectHeader(head, false);
     else this.selectCell(Number(c!.dataset.r), Number(c!.dataset.c), false);
     const at: Pos = head ? (head.kind === 'col' ? { row: 0, col: head.index } : { row: head.index, col: 0 }) : { row: Number(c!.dataset.r), col: Number(c!.dataset.c) };
@@ -1331,6 +1389,7 @@ export class SheetpaneExcel extends ElementBase {
     s.select(one ? { sheet, ref: cellRef(active.row, active.col) } : { sheet, ref: cellRef(active.row, active.col), range: rangeText(r) }, this);
     if (!one) this.say(r);
     this.drawSelection();
+    this.schedule(); // the name box drops the drag's "1R × 1C" even when the selection did not change
   }
 
   /** The range a drag spans: corners for cells (grown over merges), whole columns or rows for headers. */
@@ -1856,6 +1915,12 @@ export class SheetpaneExcel extends ElementBase {
     const o: StructureOp = { sheet: e.sheet, op: e.op!, at: e.at!, count: e.count! };
     const rows = o.op.endsWith('Rows');
     const move = (rec: Record<number, number>) => { const out: Record<number, number> = {}; for (const [k, v] of Object.entries(rec)) { const j = shiftIndex(Number(k), o); if (j !== undefined) out[j] = v; } return out; };
+    // the grid grows (or shrinks) by what was inserted (deleted), even at the edge where the data alone stays the same
+    const was = this.geom?.sheet.name === e.sheet ? this.geom.g : undefined, ext = this.extent[e.sheet] ?? { rows: 0, cols: 0 };
+    if (was) {
+      const n = (rows ? was.rows : was.cols) + (o.op.startsWith('insert') ? o.count : -o.count);
+      this.extent[e.sheet] = rows ? { ...ext, rows: Math.max(0, n) } : { ...ext, cols: Math.max(0, n) };
+    }
     const z = this._sizes[e.sheet];
     if (z) this._sizes[e.sheet] = rows ? { ...z, rows: move(z.rows) } : { ...z, cols: move(z.cols) };
     const rv = this.revealed[e.sheet];
@@ -1978,6 +2043,7 @@ export class SheetpaneExcel extends ElementBase {
       if (mc && ctx) { this.menu = { control: mc.id, sheet: snap.selection.sheet, ref: snap.selection.ref, options: mc.cellOptions!(ctx) }; this.focusMenu = true; this.schedule(); e.preventDefault(); return; }
     }
     if (this.drag && k === 'Escape') { this.endDrag(false); e.preventDefault(); e.stopPropagation(); return; }
+    if (this.fill && k === 'Escape') { this.endFill(false, false); e.preventDefault(); e.stopPropagation(); return; }
     if (this.rz && k === 'Escape') { this.endResize(false); e.preventDefault(); e.stopPropagation(); return; }
     const range = snap.selection.range ? parseRange(snap.selection.range) : undefined;
     const arrow = k === 'ArrowDown' ? [1, 0] : k === 'ArrowUp' ? [-1, 0] : k === 'ArrowRight' ? [0, 1] : k === 'ArrowLeft' ? [0, -1] : undefined;
@@ -2009,6 +2075,7 @@ export class SheetpaneExcel extends ElementBase {
     else if (mod && (k === 'z' || k === 'Z')) { if (e.shiftKey) s.redo(this); else s.undo(this); }
     else if (mod && (k === 'y' || k === 'Y')) s.redo(this);
     else if (mod && (k === 'c' || k === 'C')) this.copySelection();
+    else if (edit && mod && !e.shiftKey && !e.altKey && (k === 'd' || k === 'D' || k === 'r' || k === 'R')) this.fillKey(k === 'd' || k === 'D');
     else if (edit && mod && !e.altKey && (k === '+' || (e.shiftKey && k === '='))) this.structureKey('insert');
     else if (edit && mod && !e.altKey && !e.shiftKey && (k === '-' || k === '_')) this.structureKey('delete');
     else if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') {
@@ -2130,8 +2197,234 @@ export class SheetpaneExcel extends ElementBase {
     const sel = this._store?.getSnapshot().selection;
     if (sel && this._store!.isLocked(sel.sheet, sel.ref)) { this.refuseLocked(sel.sheet, sel.ref); return; } // W-62: the cell bar's chip says why
     if (cell.hidden) return;
+    if (sel && !this.editing) cell.value = this._store!.input(sel.sheet, sel.ref); // the draft starts from the cell's own text, even before the next frame
+    if (this.openIce(first)) return;
     cell.focus();
     if (first !== undefined) { cell.value = first; cell.dispatchEvent(new Event('input')); } else cell.select();
+  }
+
+  /** Starts a draft on the active cell (the cell's editor or the cell bar): `sheetpane-editstart` may refuse. */
+  private beginEdit(): boolean {
+    const s = this._store!, cell = this.q.cell as HTMLInputElement, sel = s.getSnapshot().selection;
+    if (this.editing && this.editing.sheet === sel.sheet && this.editing.ref === sel.ref) return true; // the same draft, between the cell and the bar
+    const rich = !!s.runs(sel.sheet, sel.ref); // W-53: the edit writes plain text, the runs' formatting goes
+    const allowed = fire(this, 'sheetpane-editstart', { sheet: sel.sheet, ref: sel.ref, column: this.column(sel.sheet, sel.ref), value: s.value(sel.sheet, sel.ref), ...(rich ? { richText: true } : {}) }, true);
+    if (!allowed) { cell.readOnly = true; this.editing = undefined; return false; }
+    cell.readOnly = false;
+    this.editing = { sheet: sel.sheet, ref: sel.ref, start: cell.value };
+    this.schedule(); // the docked actions step aside while the draft is edited
+    return true;
+  }
+
+  /** Esc: the draft goes, the cell keeps its value. */
+  private cancelDraft(): void {
+    const ed = this.editing, cell = this.q.cell as HTMLInputElement;
+    if (!ed) return;
+    cell.value = ed.start; this.editing = undefined; this.clearRuleMsg();
+    fire(this, 'sheetpane-editcancel', { sheet: ed.sheet, ref: ed.ref });
+  }
+
+  private iceOpen(): boolean { return !!this.ice && !this.ice.hidden; }
+
+  /** Opens the editor on the active cell: typing replaces the value (`first`); Enter, F2 and a double-click keep it, caret at the end. */
+  private openIce(first?: string): boolean {
+    const q = this.q, cell = q.cell as HTMLInputElement, p = parseRef(this._store!.getSnapshot().selection.ref);
+    if (!p || !this.ice || !q.grid.querySelector(`.c[data-r="${p.row}"][data-c="${p.col}"]`)) return false;
+    if (!this.beginEdit()) return true; // refused: nothing opens
+    const ice = this.ice;
+    ice.value = first ?? cell.value;
+    this.iceMode = first !== undefined ? 'enter' : 'edit';
+    ice.hidden = false;
+    this.placeIce();
+    ice.focus({ preventScroll: true });
+    ice.setSelectionRange(ice.value.length, ice.value.length);
+    if (first !== undefined) { cell.value = first; cell.dispatchEvent(new Event('input')); }
+    this.schedule();
+    return true;
+  }
+
+  /** Keeps the editor on its cell through scrolling and zoom; a selection moved elsewhere (another pane, the errors list) commits it. */
+  private placeIce(): void {
+    const ice = this.ice;
+    if (!ice || ice.hidden) return;
+    const ed = this.editing, sel = this._store?.getSnapshot().selection;
+    if (!ed || !sel || sel.sheet !== ed.sheet || sel.ref !== ed.ref) { ice.hidden = true; this.iceMode = undefined; if (ed) this.commitDraft(); return; }
+    const p = parseRef(ed.ref)!;
+    const el = this.q.grid.querySelector<HTMLElement>(`.c[data-r="${p.row}"][data-c="${p.col}"]`);
+    if (!el) { ice.style.visibility = 'hidden'; return; } // scrolled out of the rendered window: the bar still holds the draft
+    const host = this.q.sheet.getBoundingClientRect(), r = el.getBoundingClientRect(), sc = this.q.scroller.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    ice.style.cssText = `left:${r.left - host.left}px;top:${r.top - host.top}px;min-width:${r.width}px;height:${r.height}px;max-width:${Math.max(r.width, sc.right - r.left - 12)}px;font-size:${cs.fontSize};font-weight:${cs.fontWeight};font-style:${cs.fontStyle}`;
+  }
+
+  /** The cell's editor: Enter and Tab commit and move, Esc cancels, an arrow commits when the draft was started by typing. */
+  private onIceKey(e: KeyboardEvent): void {
+    const k = e.key, q = this.q;
+    e.stopPropagation();
+    if (k === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); this.fillRangeWithDraft(); return; }
+    if (k === 'Enter' || k === 'Tab') { e.preventDefault(); this.finishEdit(k === 'Tab' ? 'tab' : 'enter', e.shiftKey); return; }
+    if (k === 'Escape') { e.preventDefault(); this.ice.hidden = true; this.iceMode = undefined; this.cancelDraft(); q.grid.focus({ preventScroll: true }); this.schedule(); return; }
+    if (k === 'F2') { e.preventDefault(); this.iceMode = this.iceMode === 'enter' ? 'edit' : 'enter'; return; }
+    const arrow = k === 'ArrowDown' ? [1, 0] : k === 'ArrowUp' ? [-1, 0] : k === 'ArrowRight' ? [0, 1] : k === 'ArrowLeft' ? [0, -1] : undefined;
+    if (arrow && this.iceMode === 'enter' && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      this.ice.hidden = true; this.iceMode = undefined; this.tabCol = undefined;
+      this.commitDraft();
+      this.move(arrow[0]!, arrow[1]!, false);
+      q.grid.focus({ preventScroll: true });
+    }
+  }
+
+  /** Commit the draft, then move: Enter down (back to where a run of Tabs began), Tab across; inside a range, within it. */
+  private finishEdit(how: 'enter' | 'tab', back: boolean): void {
+    const s = this._store!, g = this.geometry();
+    if (this.iceOpen()) { this.ice.hidden = true; this.iceMode = undefined; }
+    this.commitDraft();
+    const sel = s.getSnapshot().selection, p = parseRef(sel.ref)!, range = sel.range ? parseRange(sel.range) : undefined;
+    if (range) this.stepInRange(range, how === 'tab', back);
+    else if (how === 'tab') { if (this.tabCol === undefined && !back) this.tabCol = p.col; this.move(0, back ? -1 : 1, false); }
+    else if (this.tabCol !== undefined && !back && g) { const col = this.tabCol; this.tabCol = undefined; this.selectCell(Math.min(g.g.rows - 1, p.row + 1), col, false); }
+    else { this.tabCol = undefined; this.move(back ? -1 : 1, 0, false); }
+    this.q.grid.focus({ preventScroll: true });
+  }
+
+  /** Ctrl/⌘+Enter: the draft goes into every shown cell of the range, one undo step; the selection stays. */
+  private fillRangeWithDraft(): void {
+    const s = this._store!, snap = s.getSnapshot(), sel = snap.selection, ed = this.editing;
+    const range = sel.range ? parseRange(sel.range) : undefined;
+    if (this.iceOpen()) { this.ice.hidden = true; this.iceMode = undefined; }
+    if (!range || !ed) { this.commitDraft(); this.q.grid.focus({ preventScroll: true }); this.schedule(); return; }
+    const v = (this.q.cell as HTMLInputElement).value, book = s.book!, g = this.geometry()!.g;
+    this.editing = undefined; this.clearRuleMsg();
+    if (cellCount(range) > 1_000_000) { this.say0('Nothing filled — the range is over 1,000,000 cells'); return; }
+    this.lockedRefused = 0;
+    const cells: { sheet: string; ref: string; input: string }[] = [];
+    for (let row = range.top; row <= range.bottom; row++) for (let col = range.left; col <= range.right; col++) {
+      if (!this.shownRow(g, row) || !this.shownCol(g, col)) continue;
+      const ref = cellRef(row, col);
+      if (this.allowChange(sel.sheet, ref, parseInput(v, s.original(sel.sheet, ref).value, book.source), v)) cells.push({ sheet: sel.sheet, ref, input: v });
+    }
+    if (cells.length) s.setCells(cells, { origin: this });
+    this.sayLocked();
+    this.q.grid.focus({ preventScroll: true });
+    this.schedule();
+  }
+
+  // ── the fill handle (Excel's AutoFill): drag the selection's corner to continue it ──
+  private startFill(e: PointerEvent): void {
+    const s = this._store!, sel = s.getSnapshot().selection, g = this.geometry();
+    if (!g || s.getSnapshot().mode !== 'edit') return;
+    const p = parseRef(sel.ref)!;
+    const src = sel.range ? parseRange(sel.range)! : (mergeAt(g.g, p.row, p.col) ?? { top: p.row, left: p.col, bottom: p.row, right: p.col });
+    e.preventDefault(); e.stopPropagation();
+    this.q.grid.focus({ preventScroll: true });
+    this.fill = { id: e.pointerId, src, to: src, x: e.clientX, y: e.clientY, tip: '' };
+    try { this.q.scroller.setPointerCapture(e.pointerId); } catch { /* synthetic */ }
+  }
+  private queueFill(): void {
+    if (!this.fillRaf) this.fillRaf = requestAnimationFrame(() => { this.fillRaf = 0; this.fillStep(); });
+  }
+  /** One frame of a fill drag: autoscroll, the axis the pointer has gone furthest along, the preview and the last value. */
+  private fillStep(): void {
+    const f = this.fill, g = this.geometry(), s = this._store;
+    if (!f || !g || !s) return;
+    const sc = this.q.scroller, z = this.zoom, HH = this.headH() * z, RW = this.rowHeadW() * z, rect = sc.getBoundingClientRect();
+    const vx = f.x - rect.left - sc.clientLeft, vy = f.y - rect.top - sc.clientTop;
+    const speed = (into: number) => Math.min(80, 4 + into * 0.8);
+    let dy = 0, dx = 0;
+    if (vy > sc.clientHeight - 24) dy = speed(vy - (sc.clientHeight - 24)); else if (vy < HH + 24 && sc.scrollTop > 0) dy = -speed(HH + 24 - vy);
+    if (vx > sc.clientWidth - 24) dx = speed(vx - (sc.clientWidth - 24)); else if (vx < RW + 24 && sc.scrollLeft > 0) dx = -speed(RW + 24 - vx);
+    if (dy) sc.scrollTop += dy;
+    if (dx) sc.scrollLeft += dx;
+    const row = Math.max(0, Math.min(g.g.rows - 1, rowAt(g.g, Math.max(0, (vy + sc.scrollTop - HH) / z))));
+    const col = Math.max(0, Math.min(g.g.cols - 1, colAt(g.g, Math.max(0, (vx + sc.scrollLeft - RW) / z))));
+    const r = f.src;
+    const outV = row > r.bottom ? row - r.bottom : row < r.top ? r.top - row : 0;
+    const outH = col > r.right ? col - r.right : col < r.left ? r.left - col : 0;
+    let to = r;
+    if (outV >= outH && outV > 0) to = row > r.bottom ? { ...r, bottom: row } : { ...r, top: row };
+    else if (outH > 0) to = col > r.right ? { ...r, right: col } : { ...r, left: col };
+    f.to = to;
+    // the value the last cell will hold, shown beside the handle (Excel's fill tooltip)
+    const vertical = to.top !== r.top || to.bottom !== r.bottom, back = vertical ? to.top < r.top : to.left < r.left;
+    const dist = vertical ? (back ? r.top - to.top : to.bottom - r.bottom) : (back ? r.left - to.left : to.right - r.right);
+    const lane = vertical ? r.left : r.top, sheet = s.getSnapshot().selection.sheet;
+    const src: string[] = [];
+    if (vertical) for (let rr = r.top; rr <= r.bottom; rr++) src.push(s.input(sheet, cellRef(rr, lane))); else for (let cc = r.left; cc <= r.right; cc++) src.push(s.input(sheet, cellRef(lane, cc)));
+    f.tip = dist > 0 ? (fillSeries(src, dist, { back, unit: vertical ? { dr: 1, dc: 0 } : { dr: 0, dc: 1 } }).at(-1) ?? '') : '';
+    this.selKey = '';
+    this.drawSelection();
+    if (dy || dx) this.queueFill();
+  }
+  private endFill(commit: boolean, invert: boolean): void {
+    const f = this.fill;
+    if (!f) return;
+    if (this.fillRaf) { cancelAnimationFrame(this.fillRaf); this.fillRaf = 0; }
+    this.fill = undefined;
+    try { if (this.q.scroller.hasPointerCapture(f.id)) this.q.scroller.releasePointerCapture(f.id); } catch { /* synthetic */ }
+    this.selKey = '';
+    if (commit && rangeText(f.to) !== rangeText(f.src)) this.applyFill(f.src, f.to, { invert });
+    else this.drawSelection();
+  }
+  /** Writes a fill: per column (or row) of the source, the series beyond it — `beforechange` per cell, hidden cells left alone, one undo step. */
+  private applyFill(src: RangePos, to: RangePos, o: { invert?: boolean; copy?: boolean; keep?: boolean } = {}): void {
+    const s = this._store!, snap = s.getSnapshot(), sheet = snap.selection.sheet, book = s.book!, g = this.geometry()!.g;
+    const vertical = to.top !== src.top || to.bottom !== src.bottom;
+    const back = vertical ? to.top < src.top : to.left < src.left;
+    const cells: { sheet: string; ref: string; input: string }[] = [];
+    this.lockedRefused = 0;
+    const [l0, l1] = vertical ? [src.left, src.right] : [src.top, src.bottom];
+    for (let lane = l0; lane <= l1; lane++) {
+      const inputs: string[] = [];
+      if (vertical) for (let r = src.top; r <= src.bottom; r++) inputs.push(s.input(sheet, cellRef(r, lane))); else for (let c = src.left; c <= src.right; c++) inputs.push(s.input(sheet, cellRef(lane, c)));
+      const targets: number[] = [];
+      if (vertical) { if (back) for (let r = src.top - 1; r >= to.top; r--) targets.push(r); else for (let r = src.bottom + 1; r <= to.bottom; r++) targets.push(r); }
+      else { if (back) for (let c = src.left - 1; c >= to.left; c--) targets.push(c); else for (let c = src.right + 1; c <= to.right; c++) targets.push(c); }
+      const vals = fillSeries(inputs, targets.length, { back, invert: !!o.invert, copy: !!o.copy, unit: vertical ? { dr: 1, dc: 0 } : { dr: 0, dc: 1 } });
+      targets.forEach((t, i) => {
+        const row = vertical ? t : lane, col = vertical ? lane : t;
+        if (!this.shownRow(g, row) || !this.shownCol(g, col)) return; // hidden cells are left alone (W-49)
+        const ref = cellRef(row, col), v = vals[i]!;
+        if (this.allowChange(sheet, ref, parseInput(v, s.original(sheet, ref).value, book.source), v)) cells.push({ sheet, ref, input: v });
+      });
+    }
+    if (cells.length) s.setCells(cells, { origin: this });
+    this.sayLocked();
+    if (!o.keep) {
+      const all: RangePos = { top: Math.min(src.top, to.top), left: Math.min(src.left, to.left), bottom: Math.max(src.bottom, to.bottom), right: Math.max(src.right, to.right) };
+      s.select({ sheet, ref: snap.selection.ref, range: rangeText(all) }, this);
+      this.say(all);
+    }
+    this.selKey = ''; this.schedule();
+  }
+  /** Double-click on the handle: fill down as far as the column beside the source has data. */
+  private autoFill(): void {
+    const s = this._store!, snap = s.getSnapshot(), g = this.geometry();
+    if (!g || snap.mode !== 'edit') return;
+    const sel = snap.selection, p = parseRef(sel.ref)!;
+    const src = sel.range ? parseRange(sel.range)! : { top: p.row, left: p.col, bottom: p.row, right: p.col };
+    const has = (r: number, c: number) => { const v = s.value(sel.sheet, cellRef(r, c)); return v !== null && v !== undefined && v !== ''; };
+    const last = fillDownTo(has, src.bottom, src.left, src.right, g.g.rows);
+    if (last > src.bottom) this.applyFill(src, { ...src, bottom: last });
+  }
+  /** Ctrl+D / Ctrl+R: copy the top row (left column) of the range over the rest — one cell copies from above (left). Formulas move. */
+  private fillKey(down: boolean): void {
+    const s = this._store!, sel = s.getSnapshot().selection, p = parseRef(sel.ref)!;
+    const r = sel.range ? parseRange(sel.range)! : { top: p.row, left: p.col, bottom: p.row, right: p.col };
+    if (down) {
+      if (r.top === r.bottom) { if (r.top > 0) this.applyFill({ ...r, top: r.top - 1, bottom: r.top - 1 }, { ...r, top: r.top - 1 }, { copy: true, keep: true }); }
+      else this.applyFill({ ...r, bottom: r.top }, r, { copy: true, keep: true });
+    } else if (r.left === r.right) { if (r.left > 0) this.applyFill({ ...r, left: r.left - 1, right: r.left - 1 }, { ...r, left: r.left - 1 }, { copy: true, keep: true }); }
+    else this.applyFill({ ...r, right: r.left }, r, { copy: true, keep: true });
+  }
+
+  /** A file dragged over the loaded sheet: what dropping it does. */
+  private showDrop(on: boolean): void {
+    let ov = this.q.body.querySelector<HTMLElement>('.dropov');
+    if (!on) { ov?.remove(); return; }
+    if (!ov) { ov = document.createElement('div'); ov.className = 'dropov'; ov.setAttribute('role', 'status'); this.q.body.append(ov); }
+    const n = this._store?.getSnapshot().changes.size ?? 0;
+    ov.innerHTML = `${ICON.upload}<span>Drop to open the file here</span><small>.xlsx or .csv — read in this tab, nothing is uploaded${n ? ` · it replaces this workbook and its ${n} change${n === 1 ? '' : 's'} not yet downloaded` : ''}</small>`;
   }
 
   /** Flag issue (`F`): the store decides which form opens (contract decision 4). */
@@ -2337,7 +2630,7 @@ export class SheetpaneExcel extends ElementBase {
       // the file's hiding, less what this element reveals for viewing (W-49)
       const vh = this.viewHidden[sheet.name];
       const keep = (list: number[], shown: Set<number> | undefined, view: Set<number> | undefined) => new Set([...(rev?.all ? [] : list.filter((i) => !shown?.has(i))), ...(view ?? [])]);
-      this.geom = { sheet, g: sheetGeometry(sheet, merges, this._sizes[sheet.name] as SheetSizes | undefined, { rows: keep(hid.rows, rev?.rows, vh?.rows), cols: keep(hid.cols, rev?.cols, vh?.cols) }) };
+      this.geom = { sheet, g: sheetGeometry(sheet, merges, this._sizes[sheet.name] as SheetSizes | undefined, { rows: keep(hid.rows, rev?.rows, vh?.rows), cols: keep(hid.cols, rev?.cols, vh?.cols) }, this.extent[sheet.name]) };
       this.geomMerges = mk;
     }
     return this.geom;
@@ -2407,7 +2700,7 @@ export class SheetpaneExcel extends ElementBase {
     q.val.hidden = editable;
     q.cellname.textContent = `Value of ${sel.ref}`;
     const curText = s.input(sel.sheet, sel.ref);
-    if (this.shadow.activeElement !== cell) cell.value = curText;
+    if (this.shadow.activeElement !== cell && !this.iceOpen()) cell.value = curText;
     q.val.textContent = s.text(sel.sheet, sel.ref) || '(empty)';
     q.merge.hidden = !merge;
     if (merge) q.merge.textContent = `Merged ${cellRef(merge.top, merge.left)}:${cellRef(merge.bottom, merge.right)} · centred`;
@@ -2443,7 +2736,7 @@ export class SheetpaneExcel extends ElementBase {
     if (locked) q.lockmsg.textContent = `🔒 ${LOCKED_MESSAGE}`;
     q.plugCellbar.innerHTML = this.controlsHtml(controlsFor(s.plugins, 'cellbar', snap.mode), 'btn btn-g');
     // docked selection actions (W-31): Flag issue · selbar plugin controls · ⋯ — hidden while typing or composing
-    const typing = !!this.editing && this.shadow.activeElement === cell;
+    const typing = !!this.editing && (this.shadow.activeElement === cell || this.iceOpen());
     q.dock.hidden = typing || composing;
     if (!q.dock.hidden) {
       const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" data-sp="flag" title="Flag issue (F)" aria-keyshortcuts="F">${ICON.flag}Flag issue<span class="kbd" aria-hidden="true">F</span></button>` : '';
@@ -2523,6 +2816,7 @@ export class SheetpaneExcel extends ElementBase {
     ].join('');
     if (q.status.dataset.html !== statusHtml) { q.status.innerHTML = statusHtml; q.status.dataset.html = statusHtml; }
     this.renderGrid(g.g, sheet, snap.mode);
+    floatAll(this.shadowRoot!); // every menu and card on top, inside the viewport (SR-LAW-13)
   }
 
   /** Count · Sum · Average of a range of two or more cells (W-46 DoD 8), cached until the range or the cells change. */
@@ -2710,6 +3004,7 @@ export class SheetpaneExcel extends ElementBase {
       this.selKey = ''; this.ariaOn.clear(); // new nodes: the layer's bands and aria-selected go on again
     }
     grid.setAttribute('aria-activedescendant', `c${selP.row}_${selP.col}`);
+    this.placeIce();
     this.drawSelection();
     this.renderOverlay(g, sheet, z, RW, HH, Y, H, X, W, win);
   }
@@ -2735,7 +3030,8 @@ export class SheetpaneExcel extends ElementBase {
     const multi = !(range.top === am.top && range.left === am.left && range.bottom === am.bottom && range.right === am.right);
     const copied = this.copied && this.copied.sheet === g.sheet.name ? this.copied.range : undefined;
     if (d) q.ref.textContent = `${range.bottom - range.top + 1}R × ${range.right - range.left + 1}C`;
-    const key = [g.sheet.name, z, fr, fc, gg.rows, gg.cols, rangeText(range), rangeText(am), copied ? rangeText(copied) : '', this.touchUi && !d && multi ? 1 : 0].join('|');
+    const f = this.fill, handle = snap.mode === 'edit' && !d && !this.touchUi && !this.iceOpen() && !snap.composing;
+    const key = [g.sheet.name, z, fr, fc, gg.rows, gg.cols, rangeText(range), rangeText(am), copied ? rangeText(copied) : '', this.touchUi && !d && multi ? 1 : 0, handle ? 1 : 0, f ? `${rangeText(f.to)}~${f.tip}` : ''].join('|');
     if (key === this.selKey) return;
     this.selKey = key;
     let layer = '';
@@ -2776,6 +3072,13 @@ export class SheetpaneExcel extends ElementBase {
       for (const [end, row, col] of [['start', range.top, range.left], ['end', range.bottom + 1, range.right + 1]] as const) {
         layer += `<div class="sh" data-end="${end}" style="position:relative;z-index:3;margin:${HH + Y(row) - 12}px 0 0 ${RW + X(col) - 12}px"></div>`;
       }
+    }
+    // the fill handle at the corner (Edit), and while it is dragged, the dashed reach and the last cell's value
+    if (f && rangeText(f.to) !== rangeText(f.src)) for (const p of splitByPanes(f.to, fr, fc)) put(p.pane, p.top, p.bottom, p.left, p.right, 'sfp', (row) => borders(row === undefined ? p.edges : { ...p.edges, top: p.edges.top && row === p.top, bottom: p.edges.bottom && row === p.bottom }));
+    const reach = f ? f.to : range;
+    if (handle && reach.bottom >= fr && reach.right >= fc) {
+      layer += `<div class="fh" title="Drag to fill — double-click to fill down, Ctrl/⌘ to copy instead" style="position:relative;z-index:4;margin:${HH + Y(reach.bottom + 1) - 4}px 0 0 ${RW + X(reach.right + 1) - 4}px"></div>`;
+      if (f?.tip) layer += `<div class="ftip" style="position:relative;z-index:5;margin:${HH + Y(reach.bottom + 1) + 6}px 0 0 ${RW + X(reach.right + 1) + 6}px">${esc(f.tip)}</div>`;
     }
     q.sellayer.innerHTML = layer;
     for (const b of Array.from(q.frozen.querySelectorAll('.sband'))) b.remove();
@@ -2852,7 +3155,7 @@ export class SheetpaneExcel extends ElementBase {
       if (!s.hasErrorsView) card = this.composerHtml(sideLeft(330), sideTop(380), sel.ref);
     } else if (this.menu && this.menu.sheet === sheet.name && this.menu.ref === sel.ref) {
       const m = this.menu;
-      card = `<div class="card menu" role="listbox" aria-label="Choices" style="top:${p.y + H(selP.row)}px;left:${p.x}px;min-width:${Math.max(cw, 140)}px;max-height:260px;overflow:auto">${m.options.map((o) => `<button type="button" role="option" class="btn btn-g" style="justify-content:flex-start;width:100%;border-radius:0" data-act="pick-option" data-v="${esc(o)}">${esc(o) || '(empty)'}</button>`).join('')}</div>`;
+      card = `<div class="card menu" role="listbox" aria-label="Choices" data-anchor-h="${H(selP.row)}" style="top:${p.y + H(selP.row)}px;left:${p.x}px;min-width:${Math.max(cw, 140)}px;max-height:260px;overflow:auto">${m.options.map((o) => `<button type="button" role="option" class="btn btn-g" style="justify-content:flex-start;width:100%;border-radius:0" data-act="pick-option" data-v="${esc(o)}">${esc(o) || '(empty)'}</button>`).join('')}</div>`;
     } else if (err && s.flagging) {
       card = this.calloutHtml(err, sideLeft(300), sideTop(260));
     }
@@ -2869,7 +3172,7 @@ export class SheetpaneExcel extends ElementBase {
     }
     if (this.hdrMenu) card = this.headerMenuHtml(g, z);
     // the context menu (right-click, Shift+F10, the Menu key) sits just under the cell, above any card
-    if (this.ctxOpen && sel.sheet === sheet.name) { const mg = mergeAt(g, selP.row, selP.col); card = this.contextMenuHtml(p.x, (mg ? HH + Y(mg.bottom + 1) : p.y + H(selP.row)) + 2, edit, err); }
+    if (this.ctxOpen && sel.sheet === sheet.name) { const mg = mergeAt(g, selP.row, selP.col); card = this.contextMenuHtml(p.x, (mg ? HH + Y(mg.bottom + 1) : p.y + H(selP.row)) + 2, edit, err, (mg ? Y(mg.bottom + 1) - Y(mg.top) : H(selP.row)) + 4); }
     if (!card && this.helpOpen) {
       const sc = this.q.scroller;
       card = `<div class="card help" role="dialog" aria-label="Keyboard shortcuts" style="top:${sc.scrollTop + 8}px;left:${sc.scrollLeft + sc.clientWidth - 300}px;width:290px"><div class="hd"><span class="t">Keyboard</span></div><div class="bd"><dl class="fe" style="grid-template-columns:120px 1fr">${this.shortcuts().map((x) => `<dt>${esc(x.keys)}</dt><dd>${esc(x.what)}</dd>`).join('')}</dl></div></div>`;
@@ -2892,6 +3195,7 @@ export class SheetpaneExcel extends ElementBase {
     this.detailRegion.sync(cardEl, card.startsWith('<div class="card callout"') ? err : undefined); // the host's region in the card (W-68)
     this.renderHighlight(g, sheet, RW, HH, Y, X, ov, fixed);
     this.renderPluginOverlays(sheet, z, RW, HH, ov);
+    floatAll(this.shadowRoot!);
   }
 
   /**

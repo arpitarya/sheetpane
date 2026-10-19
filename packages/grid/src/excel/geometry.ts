@@ -35,6 +35,9 @@ export interface SheetHidden { rows?: ReadonlySet<number>; cols?: ReadonlySet<nu
 /** The user's sizes for one sheet, px at 100 %: column and row indexes (0-based) to a size (W-47). */
 export interface SheetSizes { cols?: Readonly<Record<number, number>>; rows?: Readonly<Record<number, number>> }
 
+/** The least the grid shows of a sheet: an insert at its edge adds empty rows or columns the data alone would not reach. */
+export interface SheetExtent { rows?: number; cols?: number }
+
 /** Points (the file's row heights) to pixels at 100 %. */
 export const ptToPx = (pt: number) => Math.round((pt * 96) / 72);
 
@@ -46,9 +49,10 @@ export const ptToPx = (pt: number) => Math.round((pt * 96) / 72);
  * @param mergeList - The merged ranges to draw; the file's by default.
  * @param sizes - The user's column widths and row heights, px at 100 % (W-47); they win over the file's.
  * @param hidden - Rows and columns drawn at 0 px (W-49); a size set on one is kept for when it shows again.
+ * @param extent - The least the grid shows, after an insert at the data's edge (SR-GRID 11e).
  * @returns The row and column counts, the column and row edges and the merges.
  */
-export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? [], sizes: SheetSizes = {}, hidden: SheetHidden = {}): SheetGeometry {
+export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s.merges ?? [], sizes: SheetSizes = {}, hidden: SheetHidden = {}, extent: SheetExtent = {}): SheetGeometry {
   const dataCols = s.rows.reduce((m, r) => Math.max(m, r.length), 0);
   const merges = mergeList.map((m) => parseRange(m)).filter((m): m is RangePos => !!m);
   const ruled = [...(s.dataValidations ?? []).flatMap((v) => v.sqref), ...(s.conditionalFormats ?? []).flatMap((f) => f.sqref)]
@@ -59,8 +63,8 @@ export function sheetGeometry(s: ImportedSheet, mergeList: readonly string[] = s
     .filter((n): n is { col: number; row: number } => !!n);
   const drawnCols = drawn.map((n) => n.col).filter((n) => n <= dataCols + 26);
   const drawnRows = drawn.map((n) => n.row).filter((n) => n <= s.rows.length + 200);
-  const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1), ...ruled.map((c) => c + 1), ...drawnCols);
-  const rows = Math.max(s.rows.length + 3, 20, ...merges.map((m) => m.bottom + 1), ...drawnRows);
+  const cols = Math.max(1, dataCols, ...merges.map((m) => m.right + 1), ...ruled.map((c) => c + 1), ...drawnCols, extent.cols ?? 0);
+  const rows = Math.max(s.rows.length + 3, 20, ...merges.map((m) => m.bottom + 1), ...drawnRows, extent.rows ?? 0);
   const dflt = s.defaultColWidth !== undefined ? charsToPx(s.defaultColWidth) : DEFAULT_COL_PX;
   const fileWidths = s.columnWidths ?? [];
   const guess = fileWidths.length === 0 && !s.path;

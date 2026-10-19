@@ -189,7 +189,8 @@ describe('keyboard (W-01 DoD 12; APG grid)', () => {
     expect(grid.getAttribute('role')).toBe('grid');
     expect(grid.getAttribute('aria-activedescendant')).toBe('c0_0');
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Enter}');
-    expect(shadow(el).activeElement).toBe($(el, '.cell'));
+    expect(shadow(el).activeElement).toBe($(el, '.ice')); // Enter edits in the cell; the bar holds the same draft
+    expect(($(el, '.ice') as HTMLInputElement).value).toBe(($(el, '.cell') as HTMLInputElement).value);
     await userEvent.keyboard('{Escape}');
     expect(shadow(el).activeElement).toBe(grid);
   });

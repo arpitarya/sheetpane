@@ -8,6 +8,22 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+### Added
+
+- `@sheetpane/grid`: **editing in the cell**. Typing, Enter, F2 or a double press opens an editor on the cell that grows with its text, and the cell bar keeps the same draft. Enter after a run of Tabs returns to the first column. Arrows commit when you started by typing. Ctrl/⌘+Enter fills the whole range.
+- `@sheetpane/grid`: **the fill handle**. Drag the selection's corner to continue a series (numbers, text ending in a number, formulas with shifted references), with the last value shown while dragging; Ctrl/⌘ swaps series and copy. Double-click it to fill down beside the data. **Ctrl+D / Ctrl+R** copy down and right. Each fill is one undo step through `sheetpane-beforechange`.
+- `@sheetpane/grid`: **drop a file on the sheet** to open it, with an overlay that names the changes it would replace.
+
+### Fixed
+
+- `@sheetpane/grid`: **menus and pop-up cards are never cut off or covered** (law L13). Every one is shown on top of the page (a popover), inside the viewport. It moves in from the edges, opens above its cell near the bottom, and scrolls inside when it is too tall. Esc now closes the keyboard help.
+- The demos: **All plugins** now turns on every plugin (law L12), including visibility, tables, compare and review. A test fails when a new plugin is missing from either demo.
+- `@sheetpane/grid`: **an insert right of the last column or below the last row did nothing visible**. The grid now grows by what was inserted, so the new column appears and you can type in it.
+
+### Changed
+
+- `@sheetpane/grid`: Enter, F2 and typing now edit in the cell instead of moving focus to the cell bar. A test that expected the cell bar's input to take focus should look for `[data-sp="cell-editor"]`; the bar's value is the same draft. A right-click inside a range keeps it. The grid's focus ring shows after Tab only.
+
 ## 0.4.2 — every package published by CI with provenance; no change to the packages (2026-10-19)
 
 The package code is the same as 0.4.0 and 0.4.1. All 20 packages now trust

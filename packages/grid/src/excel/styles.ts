@@ -110,6 +110,19 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .sf{background:var(--sp-accent-soft);opacity:.6}
 .sb,.sa,.sc{border:0 solid var(--sp-accent)}
 .sc{border-style:dashed}
+/* the fill handle (Edit): a square at the selection's corner; dragged, a dashed reach and the last value */
+.sellayer>.fh{width:8px;height:8px;background:var(--sp-accent);box-shadow:0 0 0 1.5px var(--sp-cell);pointer-events:auto!important;cursor:crosshair;touch-action:none}
+.sellayer>.fh:hover{transform:scale(1.25)}
+.sfp{border:0 dashed var(--sp-ink-2)}
+.sellayer>.ftip{padding:3px 7px;border-radius:4px;background:var(--sp-ink);color:var(--sp-surface);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--sp-shadow)}
+/* the in-cell editor: on the cell, as wide as the text needs (to the sheet's edge) */
+.ice{position:absolute;z-index:7;box-sizing:border-box;margin:0;padding:0 calc(.6em - 2px);border:2px solid var(--sp-accent);border-radius:0;background:var(--sp-cell);color:var(--sp-ink);font:inherit;line-height:normal;outline:none;box-shadow:0 2px 10px rgba(22,23,26,.18);field-sizing:content;text-align:left}
+/* a file dragged over a loaded sheet */
+.dropov{position:absolute;inset:8px;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--sp-accent);border-radius:var(--sp-r-lg);background:color-mix(in srgb,var(--sp-accent-soft) 94%,transparent);color:var(--sp-accent-ink);font-weight:600;pointer-events:none;text-align:center;padding:16px}
+.dropov svg{width:28px;height:28px}
+.dropov small{font-weight:400;color:var(--sp-ink-2);max-width:46ch}
+/* headers answer the pointer */
+.hrow [data-hc]:hover,.rh[data-hr]:hover{background:color-mix(in srgb,var(--sp-accent-soft) 45%,var(--sp-head))}
 .sband{box-sizing:border-box;pointer-events:none}
 .sh{width:24px;height:24px;display:grid;place-items:center;pointer-events:auto!important;touch-action:none;cursor:grab}
 .sh::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--sp-cell);border:2px solid var(--sp-accent);box-sizing:border-box}
@@ -182,6 +195,9 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .msep{height:1px;margin:4px 6px;background:var(--sp-line)}
 .export .badge-n[hidden]{display:none}
 .kbd{display:inline-block;font-size:11px;padding:2px 5px;border:1px solid rgba(255,255,255,.35);border-radius:4px}
+/* SR-LAW-13: a card in the top layer — the popover's own margin, inset and padding undone; placed by float.ts */
+.sp-float[popover]{position:fixed;margin:0;inset:auto;max-width:calc(100vw - 16px);overflow:auto}
+:where(.sp-float[popover]){padding:0}
 .card{position:absolute;background:var(--sp-surface);border:1px solid var(--sp-line);border-radius:var(--sp-r-lg);box-shadow:var(--sp-shadow);z-index:8;overflow:hidden;display:flex;flex-direction:column}
 .card .hd{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--sp-line)}
 .card .hd .t{font-weight:600;font-size:13px}

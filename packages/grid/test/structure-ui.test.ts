@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import axe from 'axe-core';
 import type { SheetpaneExcel } from '../src/index.js';
+import { toXlsx } from '@sheetpane/export';
 import { structureBook } from '../../export/test/fixtures/structure.js';
 import { cellEl, cleanup, frame, mountExcel, shadow, until } from './helpers.js';
 
@@ -62,6 +63,34 @@ describe('the menus (W-52 DoD 5)', () => {
     expect(el.workbook!.value('Data', 'F1')).toBeNull();
     expect(el.workbook!.value('Data', 'D1')).toBe('Total');
     expect(el.workbook!.sheet('Data')!.rows[0]).toEqual(['Name', 'Rate', 'Qty', 'Total']);
+  });
+});
+
+describe('an insert at the edge of the data (SR-GRID 11e)', () => {
+  // aria-colcount / aria-rowcount count the header too
+  const cols = (el: Element) => Number(shadow(el).querySelector('[role=grid]')!.getAttribute('aria-colcount')) - 1;
+  const rows = (el: Element) => Number(shadow(el).querySelector('[role=grid]')!.getAttribute('aria-rowcount')) - 1;
+  it('a column inserted right of the last one shows and takes typing; undo takes it away', async () => {
+    const el = await mountExcel({ mode: 'edit' }, await toXlsx({ sheets: [{ name: 'Data', rows: [['a', 'b', 'c'], [1, 2, 3]] }] }), 'plain.xlsx');
+    const n = cols(el), last = String.fromCharCode(64 + n);
+    el.workbook!.select({ sheet: 'Data', ref: `${last}2` }); await frame();
+    const menu = await openMenu(el, 1, n - 1);
+    menu.querySelector<HTMLElement>('[data-act=ins-right]')!.click();
+    await frame();
+    expect(cols(el)).toBe(n + 1);
+    const added = String.fromCharCode(65 + n);
+    expect(shadow(el).querySelector(`[data-hc="${n}"]`)!.textContent).toContain(added);
+    el.workbook!.setCells([{ sheet: 'Data', ref: `${added}2`, input: 'new' }]);
+    expect(el.workbook!.value('Data', `${added}2`)).toBe('new');
+    el.undo(); el.undo(); await frame();
+    expect(cols(el)).toBe(n);
+  });
+  it('rows inserted at the last row add as many rows to the grid', async () => {
+    const el = await mount();
+    const n = rows(el);
+    el.workbook!.select({ sheet: 'Data', ref: `A${n - 1}`, range: `A${n - 1}:A${n}` }); await frame();
+    key(el, '=', { ctrlKey: true, shiftKey: true }); await frame();
+    expect(rows(el)).toBe(n + 2);
   });
 });
 
