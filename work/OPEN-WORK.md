@@ -22,16 +22,13 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| 🔴 **W-44** — **no `NPM_TOKEN`** (the decider, 2026-10-19). Publishing is a GitHub Release → `publish.yml` over npm trusted publishing (OIDC); the steps are [`RELEASING.md`](../RELEASING.md) §One time: publish `0.1.0` **once** by hand (npm asks the authenticator code on every write — the account's 2FA is *auth-and-writes*), a trusted publisher per package (`publish.yml` · environment `npm` · *Allow npm publish*), and the `npm` environment in GitHub. 0.1.0 is on npm (published by hand), so every package exists. `v0.2.0` is released on `a5035db`; its publish run 39204213740 checked all 17 packages before publishing and npm refused every one: *OIDC token exchange error - package not found* — **no trusted publisher matches** on any package. Left for the decider: on npmjs.com, each package → Settings → Trusted Publisher → GitHub Actions `arpitarya` / `sheetpane` / `publish.yml` / environment `npm`, **Allow npm publish** (or `npm login` then `scripts/npm-trust.sh`); then *Re-run failed jobs* on 39204213740 publishes 0.2.0. An agent then checks npm, the playground and the starters load and closes W-44 | 2026-10-18 | 1 d |
-| ↳ **blocks:** W-44 (closing only — everything is built) | | |
+*Empty since 2026-10-19 — W-44 closed: 0.3.0 published from CI. Next gate: W-30 and W-48, the decider's own hands-on runs (testing).*
 
 ---
 
 ## Open items
 
 ### build
-
-- 🟡 **W-44** `agent` · Deploy the demo gallery to GitHub Pages on every release; an Open-in-StackBlitz link per starter template; linked from every README. Built: the Pages job, the starters with their StackBlitz links, the links in every README, `llms.txt` and the setup skill (SR-BUILD 8, 8b). — and the release pipeline (`publish.yml` on a GitHub Release, OIDC; `ci.yml` on three OSes; SR-BUILD 8, 9, 9b; `RELEASING.md`); `v0.1.0` tagged. Waiting on the decider: the `NPM_TOKEN` secret and Pages enabled, the tag's runs re-run, then an agent checks npm, the playground and the starters load. Filed by Arpit (Cowork). [detail](open/W-44-live-playground.md)
 
 - 🟢 **W-50** `agent` · **G1** · Pass and not-checked marks: show what is right, not only what is wrong. Filed by Arpit (Cowork). [detail](open/W-50-pass-and-not-checked.md)
 
