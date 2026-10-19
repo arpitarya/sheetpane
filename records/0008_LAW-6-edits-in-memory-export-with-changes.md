@@ -82,8 +82,8 @@ loaded, every change is kept in memory and an export carries every change.
   component decision, owed by the record that owns export.
 - **Checked today:** an edited workbook exported and loaded again carries
   every change (SR-GRID round-trip property); the upload's bytes are compared
-  unchanged after export. The veto command's `fetch(` hit is the `src` loader's
-  read — backlog B-030.
+  unchanged after export. The veto command's `fetch(` hits are the reads
+  [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) decision 4 allows; that law's test pins them.
 
 ### Alternatives considered
 
@@ -103,7 +103,7 @@ loaded, every change is kept in memory and an export carries every change.
 differs from the in-memory workbook in any changed cell — or sheetpane writes
 workbook data to storage or the network.
 
-**How to check it:** `grep -rnE "localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon" --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=records --exclude-dir=work --exclude-dir=docs . || echo clean` (one known hit: the `src` loader's read, B-030) — plus the round-trip test: `just test-pkg grid -t 'round-trips'`.
+**How to check it:** `grep -rnE "localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon" --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=records --exclude-dir=work --exclude-dir=docs . || echo clean` (its hits are the reads SR-LAW-11 decision 4 allows) — plus the round-trip test: `just test-pkg grid -t 'round-trips'`.
 
 ---
 
@@ -112,7 +112,7 @@ workbook data to storage or the network.
 *Every source this record cites, gathered in one place. An archived document
 is never listed here.*
 
-**Records** — [SR-LAWS](0001_LAWS.md) · [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md)
+**Records** — [SR-LAWS](0001_LAWS.md) · [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) · [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md)
 
 **Project docs**
 

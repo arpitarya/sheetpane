@@ -13,6 +13,11 @@ The workbook lives in the page's memory
 survives a reload unless the host saves it. Two things to save: **the file**
 and **the review**.
 
+**sheetpane itself never sends anything to a server**
+([SR-LAW-11](https://github.com/arpitarya/sheetpane/blob/main/records/0013_LAW-11-workbook-stays-in-the-browser.md)). The
+`fetch` calls below are your app's code — saving is your choice, not
+sheetpane's.
+
 ## Save
 
 ```js

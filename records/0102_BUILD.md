@@ -120,7 +120,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    `workspace:*` for `@sheetpane/*`; no UI framework as a dependency or peer;
    no third-party runtime dependency except `numfmt` and `@ironcalc/wasm`,
    each pinned exactly; no font file, `@font-face`, web-font URL or named
-   `font-family` in any package source. Each package ships `dist` only —
+   `font-family` in any package source; no network call in any package's
+   shipped code but the three reads [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) decision 4 allows. Each package ships `dist` only —
    except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
    reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
    which ships `skills/`, `entry/` and `bin/`, has no build and is a

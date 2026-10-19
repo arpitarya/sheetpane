@@ -1,6 +1,7 @@
 // Package-level checks the laws owe (testing verdict decision 10):
 // B-023 publishable + lockstep (SR-LAW-8), B-012 no framework peer (SR-LAW-4),
-// B-015 no font shipped (SR-LAW-5), and the runtime-dependency allow-list (SR-LAW-2).
+// B-015 no font shipped (SR-LAW-5), the runtime-dependency allow-list (SR-LAW-2),
+// and no network call but the three reads (SR-LAW-11).
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -95,6 +96,33 @@ describe('SR-LAW-5 — no font ships (B-015)', () => {
       const s = readFileSync(f, 'utf8');
       if (/@font-face|fonts\.(googleapis|gstatic)/.test(s)) bad.push(f);
       for (const m of s.matchAll(/font-family\s*:\s*([^;}"'`]*)/g)) if (!/^\s*inherit\s*$/.test(m[1]!)) bad.push(`${f}: ${m[0]}`);
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+describe('SR-LAW-11 — the workbook never leaves the browser', () => {
+  // the code each package ships: src/ (tests excluded), the CLIs, create-sheetpane's templates;
+  // the skills' Markdown is excluded — it shows host code, which is the host's (SR-LAW-11 decision 6)
+  const code = (d: string) => (d === 'skills' ? ['entry', 'bin'] : d === 'create-sheetpane' ? ['bin', 'templates'] : ['src']).map((x) => join(root, 'packages', d, x)).filter((x) => existsSync(x));
+  const files = dirs.flatMap((d) => code(d).flatMap((x) => walk(x))).filter((f) => /\.(m?[jt]sx?|vue|svelte|html)$/.test(f) && !/\.test\./.test(f));
+  const NET = /\bfetch\(|XMLHttpRequest|sendBeacon|\bWebSocket\b|\bEventSource\b|RTCPeerConnection|importScripts|\.submit\s*\(|['"]node:(https?|http2|net|tls|dgram)['"]|['"](undici|axios|node-fetch|got|ky)['"]/g;
+  // decision 4: the only reads — the grid's `src` and `rules-src`, and fixtures reading its own files
+  const ALLOWED = [
+    'packages/fixtures/src/index.ts: fetch(',
+    'packages/grid/src/excel/element.ts: fetch(',
+    'packages/grid/src/excel/element.ts: fetch(',
+  ];
+  it('no network call in any package source but the three reads in decision 4', () => {
+    const hits: string[] = [];
+    for (const f of files) for (const m of readFileSync(f, 'utf8').matchAll(NET)) hits.push(`${f.slice(root.length + 1).split('\\').join('/')}: ${m[0].replace(/\s+/g, '')}`);
+    expect(hits.sort()).toEqual(ALLOWED);
+  });
+  it('the reads send nothing: no method but GET, no body', () => {
+    const bad: string[] = [];
+    for (const f of files) {
+      const s = readFileSync(f, 'utf8');
+      for (const m of s.matchAll(/\bfetch\s*\(([^;]*)/g)) if (/method\s*:|body\s*:/.test(m[1]!)) bad.push(`${f}: ${m[0]}`);
     }
     expect(bad).toEqual([]);
   });

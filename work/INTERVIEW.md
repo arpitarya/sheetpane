@@ -24,7 +24,7 @@ entry.**
 
 ## 1 · State of play
 
-*Updated 2026-10-18.* Laws L2–L10 are filed (see §3). sheetpane is an
+*Updated 2026-10-19.* Laws L2–L11 are filed (see §3). sheetpane is an
 **pnpm-workspace monorepo** (W-10; `just` runs it) with these packages:
 
 - **`@sheetpane/export`** (`packages/export`) — a JavaScript object in, `.xlsx`
@@ -92,8 +92,7 @@ W-44 is built and waits on the decider (enable Pages, first release).
   validation (B-033); plugin-contract gaps (B-034); plugin detail in core
   events (B-032).
 - **Owed by the decider:** W-30 (files from Excel, Google Sheets, LibreOffice,
-  Numbers, when convenient); B-030 (SR-LAW-6's
-  veto command flags the `src` loader's GET); the `@sheetpane` npm org before
+  Numbers, when convenient); the `@sheetpane` npm org before
   `just release`. **Ruled 2026-10-18:** W-29 dark values accepted, `theme`
   defaults to `light`; W-22 has no Export-menu line, the host decides
   (`comments({ write })` on by default, `export({ comments: false })`);
@@ -115,7 +114,8 @@ W-44 is built and waits on the decider (enable Pages, first release).
   font unless the host sets one), L6 (changes held in memory; export carries
   them), L7 (view, edit and error components always in sync), L8 (an npm
   package), L9 (memory = a JavaScript object, for now), L10 (examples
-  maintained with every package change). See `records/0001_LAWS.md`.
+  maintained with every package change), L11 (the workbook never leaves the
+  browser: sheetpane sends nothing, reads only `src`/`rules-src`). See `records/0001_LAWS.md`.
 - The queue is the list; a blocker is a file; nothing closed is deleted.
 - Tests are not yet in place (`BACKLOG.md` B-001–B-005); the hooks and the
   commit guard are the only mechanical enforcement.

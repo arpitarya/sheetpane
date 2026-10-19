@@ -229,4 +229,4 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 - **The mechanical check still owed:** B-008 (licences over the whole tree). The
   font, framework-peer, publishable, refusal, round-trip and sync checks run
   today ([SR-BUILD](../records/0102_BUILD.md), [SR-GRID](../records/0105_GRID.md)).
-- **SR-LAW-6's veto command flags the `src` loader's read** (B-030) — the decider's ruling.
+- **The workbook never leaves the browser** ([SR-LAW-11](../records/0013_LAW-11-workbook-stays-in-the-browser.md)): the only network calls are the `src` and `rules-src` reads, pinned by `test/packages.test.ts`.

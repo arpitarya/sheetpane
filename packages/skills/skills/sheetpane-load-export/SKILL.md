@@ -56,6 +56,9 @@ export switches (SR-GRID decision 10).
 
 ### Example — send the file to your server instead of the disk
 
+sheetpane never uploads ([SR-LAW-11](https://github.com/arpitarya/sheetpane/blob/main/records/0013_LAW-11-workbook-stays-in-the-browser.md)); this listener is
+your app's code, and sending is your choice.
+
 ```js
 excel.addEventListener('sheetpane-export', async (e) => {
   e.preventDefault();                       // no browser download

@@ -49,7 +49,7 @@ the shared `pane` id — put them side by side, in tabs, or in a dialog.
 
 |  |  |
 |---|---|
-| 🔒 **Private by construction** | The file is read in the browser tab. There is no server to send it to. |
+| 🔒 **Private by construction** | The file is read, edited and checked in the browser tab. sheetpane sends nothing to any server — no file, cell, edit or telemetry ([law L11](records/0013_LAW-11-workbook-stays-in-the-browser.md), checked by a test). |
 | 📄 **The file survives the round trip** | Untouched → back **byte for byte**. Edited → the original with only the changed cells patched in. |
 | ✅ **Review built in** | Errors are flagged on the cell *and* listed beside the sheet — from a JSON rules file, your own column rules, or the workbook's own validation. |
 | ⚡ **Big files stay smooth** | A 250,000-row CSV scrolls with **0 dropped frames** (measured in headless Chromium on a MacBook — not a promise for your hardware). |
@@ -156,6 +156,7 @@ Anything else is refused with a clear message — never half-read.
 |---|---|
 | `.xls`, `.xlsm`, `.xlsb`, `.ods`, `.numbers` | refused, with the reason |
 | macros, password-protected files | detected and refused |
+| sending your file anywhere | never — sheetpane makes no upload, beacon or telemetry call ([law L11](records/0013_LAW-11-workbook-stays-in-the-browser.md)); its only requests are the GETs for the `src` and `rules-src` you set |
 | real-time collaboration, storage | the workbook lives in memory; saving it is your app's job |
 | pivot tables | shown as their values, with a badge — not recalculated |
 

@@ -24,6 +24,20 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — law L11 filed: the workbook never leaves the browser  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Create a law. Everything should be within the browser. Nothing go back to the server. Meaning when you upload a CSV or when you upload an Excel file, it does not go to the server. It just stays within the browser."*
+- **Done:** filed [SR-LAW-11](../records/0013_LAW-11-workbook-stays-in-the-browser.md) (0013). Added its row to SR-LAWS, the register (range note and row) and **`CLAUDE.md` §The laws (one line, added under SR-WORK-DOCS decision 7a)**.
+  - **Enforced:** a new `SR-LAW-11` block in `test/packages.test.ts` fails on any network API in a package's shipped code except the three reads. A second test fails on any `fetch` with a method or body. SR-BUILD decision 7 names it.
+  - **Verified:** vitest won't start in the Cowork Linux shell (macOS-only `rolldown` binding in `node_modules`). The same scan, run as a plain Node script over 131 files, finds exactly the three allowed reads and catches a planted `POST`.
+  - **B-030 closed** (SR-WORK-BACKLOG rule 26): the law rules on the `src` read. Its citations were rewritten in SR-LAW-6, SR-GRID, `docs/ARCHITECTURE.md`, `INTERVIEW.md` and the `sheetpane-security` skill.
+  - **Public docs:** the `sheetpane-backend` and `sheetpane-load-export` skills now say that a server save is the host's own code. README (Why sheetpane, What it does not do) and the CHANGELOG (Unreleased → Added) are updated. `llms-full.txt` and `plugins/sheetpane/` are regenerated.
+- **Decided / left open:** the decider ruled (1) sheetpane never sends anything, while a host's own code may save to its server; (2) the `src`/`rules-src` GETs stay, because they send nothing. `NOW.md` was left alone: a concurrent Claude Code session owns it (lanes W-50–W-69). **Not committed**, at the decider's word.
+- **Mistakes:** the first regex matched `fetch (` inside a doc comment; it was tightened to `fetch(`.
+- **Next:** run `pnpm vitest run test/packages.test.ts -t 'SR-LAW-11'` on the Mac, then commit with explicit pathspecs.
+
+---
+
 ## 2026-10-19 — the HTML and React demos redesigned; demo-check 51/51  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"improve the ui for example html and react it will be used for demo purpose and for test. recreate them if that will be faster"*

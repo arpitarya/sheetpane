@@ -58,7 +58,7 @@ the shared `pane` id — put them side by side, in tabs, or in a dialog.
 
 |  |  |
 |---|---|
-| 🔒 **Private by construction** | The file is read in the browser tab. There is no server to send it to. |
+| 🔒 **Private by construction** | The file is read, edited and checked in the browser tab. sheetpane sends nothing to any server — no file, cell, edit or telemetry ([law L11](records/0013_LAW-11-workbook-stays-in-the-browser.md), checked by a test). |
 | 📄 **The file survives the round trip** | Untouched → back **byte for byte**. Edited → the original with only the changed cells patched in. |
 | ✅ **Review built in** | Errors are flagged on the cell *and* listed beside the sheet — from a JSON rules file, your own column rules, or the workbook's own validation. |
 | ⚡ **Big files stay smooth** | A 250,000-row CSV scrolls with **0 dropped frames** (measured in headless Chromium on a MacBook — not a promise for your hardware). |
@@ -165,6 +165,7 @@ Anything else is refused with a clear message — never half-read.
 |---|---|
 | `.xls`, `.xlsm`, `.xlsb`, `.ods`, `.numbers` | refused, with the reason |
 | macros, password-protected files | detected and refused |
+| sending your file anywhere | never — sheetpane makes no upload, beacon or telemetry call ([law L11](records/0013_LAW-11-workbook-stays-in-the-browser.md)); its only requests are the GETs for the `src` and `rules-src` you set |
 | real-time collaboration, storage | the workbook lives in memory; saving it is your app's job |
 | pivot tables | shown as their values, with a badge — not recalculated |
 
@@ -2328,7 +2329,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 - **The mechanical check still owed:** B-008 (licences over the whole tree). The
   font, framework-peer, publishable, refusal, round-trip and sync checks run
   today ([SR-BUILD](../records/0102_BUILD.md), [SR-GRID](../records/0105_GRID.md)).
-- **SR-LAW-6's veto command flags the `src` loader's read** (B-030) — the decider's ruling.
+- **The workbook never leaves the browser** ([SR-LAW-11](../records/0013_LAW-11-workbook-stays-in-the-browser.md)): the only network calls are the `src` and `rules-src` reads, pinned by `test/packages.test.ts`.
 
 
 ---
@@ -3230,6 +3231,7 @@ A law restated in two places is two laws the moment one is edited.
    | **L8** | [SR-LAW-8](0010_LAW-8-npm-package.md) | sheetpane is consumed as an npm package |
    | **L9** | [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) | memory means a JavaScript object, for now |
    | **L10** | [SR-LAW-10](0012_LAW-10-examples-maintained.md) | the examples are maintained with every package change |
+   | **L11** | [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) | the workbook never leaves the browser |
 
 2. **A new law** takes the next handle and the next free number in the law
    range, on the decider's ruling named in its record; this table gains its row and
@@ -3256,13 +3258,13 @@ Precedence is judgment, never a gate: no parser reads *does this contradict L0*.
 **Reopen this decision if:** any live document other than a law's own record
 carries a law's normative text.
 
-**How to check it:** `grep -rn "L0 ·\|L1 ·\|L2 ·\|L3 ·\|L4 ·\|L5 ·\|L6 ·\|L7 ·\|L8 ·\|L9 ·\|L10 ·" --include=*.md . | grep -v "records/00[0-4]"`
+**How to check it:** `grep -rn "L0 ·\|L1 ·\|L2 ·\|L3 ·\|L4 ·\|L5 ·\|L6 ·\|L7 ·\|L8 ·\|L9 ·\|L10 ·\|L11 ·" --include=*.md . | grep -v "records/00[0-4]"`
 
 ---
 
 ## References
 
-**Records** — [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-1](0003_LAW-1-retired-records-archived.md) · [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-6](0008_LAW-6-edits-in-memory-export-with-changes.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-8](0010_LAW-8-npm-package.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) · [SR-LAW-10](0012_LAW-10-examples-maintained.md)
+**Records** — [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-1](0003_LAW-1-retired-records-archived.md) · [SR-LAW-2](0004_LAW-2-foss-dependencies.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-4](0006_LAW-4-web-component.md) · [SR-LAW-5](0007_LAW-5-host-font.md) · [SR-LAW-6](0008_LAW-6-edits-in-memory-export-with-changes.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-8](0010_LAW-8-npm-package.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) · [SR-LAW-10](0012_LAW-10-examples-maintained.md) · [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md)
 
 
 ---
@@ -4008,8 +4010,8 @@ loaded, every change is kept in memory and an export carries every change.
   component decision, owed by the record that owns export.
 - **Checked today:** an edited workbook exported and loaded again carries
   every change (SR-GRID round-trip property); the upload's bytes are compared
-  unchanged after export. The veto command's `fetch(` hit is the `src` loader's
-  read — backlog B-030.
+  unchanged after export. The veto command's `fetch(` hits are the reads
+  [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) decision 4 allows; that law's test pins them.
 
 ### Alternatives considered
 
@@ -4029,7 +4031,7 @@ loaded, every change is kept in memory and an export carries every change.
 differs from the in-memory workbook in any changed cell — or sheetpane writes
 workbook data to storage or the network.
 
-**How to check it:** `grep -rnE "localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon" --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=records --exclude-dir=work --exclude-dir=docs . || echo clean` (one known hit: the `src` loader's read, B-030) — plus the round-trip test: `just test-pkg grid -t 'round-trips'`.
+**How to check it:** `grep -rnE "localStorage|sessionStorage|indexedDB|fetch\(|XMLHttpRequest|sendBeacon" --exclude-dir=node_modules --exclude-dir=archive --exclude-dir=records --exclude-dir=work --exclude-dir=docs . || echo clean` (its hits are the reads SR-LAW-11 decision 4 allows) — plus the round-trip test: `just test-pkg grid -t 'round-trips'`.
 
 ---
 
@@ -4038,7 +4040,7 @@ workbook data to storage or the network.
 *Every source this record cites, gathered in one place. An archived document
 is never listed here.*
 
-**Records** — [SR-LAWS](0001_LAWS.md) · [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md)
+**Records** — [SR-LAWS](0001_LAWS.md) · [SR-LAW-0](0002_LAW-0-authority.md) · [SR-LAW-3](0005_LAW-3-xlsx-and-csv-only.md) · [SR-LAW-7](0009_LAW-7-surfaces-always-in-sync.md) · [SR-LAW-9](0011_LAW-9-memory-is-a-javascript-object.md) · [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md)
 
 **Project docs**
 
@@ -4718,7 +4720,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    `workspace:*` for `@sheetpane/*`; no UI framework as a dependency or peer;
    no third-party runtime dependency except `numfmt` and `@ironcalc/wasm`,
    each pinned exactly; no font file, `@font-face`, web-font URL or named
-   `font-family` in any package source. Each package ships `dist` only —
+   `font-family` in any package source; no network call in any package's
+   shipped code but the three reads [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) decision 4 allows. Each package ships `dist` only —
    except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
    reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
@@ -4838,7 +4841,11 @@ pnpm and a justfile; the testing verdict chose the runner.
     `just demo-check`, on every push; `scripts/demo-packed.mjs`
     installs both from `pnpm pack` tarballs (every package, the eight plugins
     included) outside the workspace and runs the same check — `just
-    demo-packed`, nightly.
+    demo-packed`, nightly. Both share one look (2026-10-19): a host bar
+    (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
+    dark · auto, set on every component), the components filling the window,
+    and a footer of host events; `examples/react/src/demo.css` is the
+    stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
@@ -5483,7 +5490,15 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `menuitemcheckbox`es; Esc returns focus to ▾ — keyboard help, close in a pop-up), cell bar (ending in the
     docked selection actions, decision 13), the format row, the grid,
     sheet tabs (`.xlsx` only; a sheet the file hides is not a tab — decision
-    21c), status line. States: the
+    21c), status line. **One toolbar row** (design, 2026-10-19): as the
+    element narrows it sheds the change-count label (≤ 1240 px; the Download
+    badge keeps the count), find's width (≤ 1140 px), the open counts
+    (≤ 1040 px; the errors panel and tab counts keep them) and the
+    kind-and-size chip (≤ 960 px; kept in the file name's tooltip); only below
+    860 px may it wrap. **The format row is one row too:** groups
+    that do not fit move, from the right, into a **More ▾** at its end; Number
+    format and Text never move (W-14). The grid's focus ring is drawn over the
+    cells, for keyboard use only. States: the
     upload drop zone (file, link, base64), reading, "Can’t open this file",
     "Password protected" (no unlocking — the reader cannot decrypt).
 11. **The grid:** DOM cells, rows absolutely placed, only the visible rows
@@ -5582,8 +5597,12 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     copied); Copy ref gives `B3`, `B3:D8`, `B:D`, `4:12` or the sheet's name
     (W-46); the group
     hides while the cell-bar draft is edited and while composing, and at a
-    narrow cell bar (≤ 720 px) the plugin buttons fold into ⋯ before Flag
-    issue moves. **Right-click, Shift+F10 and the Menu key** on a cell select
+    narrow cell bar (≤ 720 px), or whenever they would squeeze the value
+    field below 200 px, the plugin buttons fold into ⋯ before Flag issue
+    moves. The bar holds the cell's quick actions (Bold · Fill · Merge,
+    greyed when they do not apply); a control with `menus` (W-49) is docked
+    only when it joins the cell menu and applies now. In the menus, Flag
+    issue and the plugin items each sit under a separator. **Right-click, Shift+F10 and the Menu key** on a cell select
     it and open the same actions as a `role="menu"` just under it (Flag
     issue · Copy ref · Copy value · the `selbar` controls); arrows move, Enter
     runs, Esc closes and returns focus to the grid; the browser's menu is
@@ -5721,8 +5740,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     every sheet, a named sheet's rule for the same title winning, `cells` by A1
     cell or range (`type: 'cell-rule'`, a cell rule over more than 10,000
     cells checked only where the sheet has data). Given as the `rules`
-    property or read from `rules-src` (a GET, like `src` — B-030 applies
-    alike); setting either re-checks every row. It compiles into the same
+    property or read from `rules-src` (a GET, like `src` — a read
+    [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) decision 4 allows); setting either re-checks every row. It compiles into the same
     `host-rules` provider (no second checker): merged over the element's
     `columns` (the file's rule wins for a title, with a note). Checked by hand,
     no schema library: an unknown key, word, type or version, a sheet, title or
@@ -5890,9 +5909,9 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   in both.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers, opened
   by the grid and read with their frozen panes — W-30 (the decider's files).
-- **SR-LAW-6's veto command lists one hit:** the `src` loader's `fetch(` in
-  `packages/grid/src/excel/element.ts` — a read, with nothing sent (backlog
-  B-030).
+- **The grid's only network calls** are the `src` and `rules-src` reads in
+  `packages/grid/src/excel/element.ts` — GETs, nothing sent — the reads
+  [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md) decision 4 allows.
 
 ### Alternatives considered
 

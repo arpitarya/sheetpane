@@ -12,8 +12,8 @@ metadata:
 
 - It is read **in the browser tab**; nothing is uploaded. The only network
   request the grid makes is the GET for `src` (and `rules-src`) the host
-  wrote ([SR-LAW-6](https://github.com/arpitarya/sheetpane/blob/main/records/0008_LAW-6-edits-in-memory-export-with-changes.md);
-  backlog B-030 records the GET).
+  wrote, and it sends nothing — no file, cell, edit, error or telemetry
+  ([SR-LAW-11](https://github.com/arpitarya/sheetpane/blob/main/records/0013_LAW-11-workbook-stays-in-the-browser.md)).
 - Only `.xlsx` and `.csv` are read ([SR-LAW-3](https://github.com/arpitarya/sheetpane/blob/main/records/0005_LAW-3-xlsx-and-csv-only.md));
   macros, external links and legacy `.xls` are never run or read;
   password-protected files are refused, not decrypted.
