@@ -581,8 +581,9 @@ export class WorkbookStore {
     });
   }
 
-  /** The uploaded display text of a range's first cell, as `found` freezes it. */
+  /** The uploaded display text of a range's first cell, as `found` freezes it; `""` for a sheet- or workbook-level error (no cell, W-55). */
   foundFor(sheet: string, range: string): string {
+    if (range === '') return '';
     const r = parseRange(range);
     if (!r) return BLANK;
     if (r.top === r.bottom && r.left !== r.right) return `row ${r.top + 1}`;
@@ -597,7 +598,7 @@ export class WorkbookStore {
     return (this.original(e.sheet, cellRef(r.top, r.left)).text || BLANK) !== e.found;
   }
 
-  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. */
+  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. `range: ''` is the whole sheet, and with `sheet: ''` the workbook (W-55): no cell, so `found` is `''` and nothing is written. */
   addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string }, origin?: Origin): SheetpaneError {
     const e: SheetpaneError = {
       v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity,

@@ -69,7 +69,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file`, at the top-left cell of its
-   range. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   range. An error with no cell, about a whole sheet or the workbook (W-55,
+   SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
+   never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
+   reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
+   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved. On a cell with someone's thread the errors join it as replies; on
@@ -97,11 +101,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 
 ### Consequences
 
-- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet).
-- **Enforced today:** `just test-pkg comments` — 26 tests (notes and threads
+- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
+- **Enforced today:** `just test-pkg comments` — 27 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
-  order; extending existing parts; joining a thread; the note-at-cell skip;
+  order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
   both switches byte-identical; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).

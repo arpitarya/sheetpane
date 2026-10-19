@@ -7,7 +7,7 @@ import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
@@ -1894,7 +1894,7 @@ export class SheetpaneExcel extends ElementBase {
 
   private stepError(dir: 1 | -1): void {
     const s = this._store!, snap = s.getSnapshot();
-    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet);
+    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet && errorScope(e) === 'cell'); // a sheet-level error has no cell to step to (W-55)
     if (!list.length) return;
     const cur = this.errorAt(snap.selection.sheet, snap.selection.ref);
     const i = cur ? list.indexOf(cur) : -1;
@@ -2088,9 +2088,10 @@ export class SheetpaneExcel extends ElementBase {
     q.tabs.hidden = src.kind === 'csv';
     // W-49: hidden sheets are not tabs — one ⊘ button lists them; one opened for viewing shows dashed
     const tabsHtml = book.sheets.filter((sh) => s.hidden(sh.name).state === 'visible' || this.openedSheets.has(sh.name) || sh.name === sheet.name).map((sh) => {
-      const cnt = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open').length : 0;
+      const mine = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open') : [];
+      const cnt = mine.length, whole = mine.filter((e) => e.range === '').length; // W-55: a whole-sheet error is counted on its tab
       const hid = s.hidden(sh.name).state !== 'visible';
-      return `<button type="button" role="tab" class="tab${hid ? ' hid' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${hid ? ' title="Hidden in the file — shown for viewing"' : ''}>${hid ? '⊘ ' : ''}${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open">${cnt}</span>` : ''}</button>`;
+      return `<button type="button" role="tab" class="tab${hid ? ' hid' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${hid ? ' title="Hidden in the file — shown for viewing"' : ''}>${hid ? '⊘ ' : ''}${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open${whole ? `, ${whole} about the whole sheet` : ''}">${cnt}</span>` : ''}</button>`;
     }).join('');
     const tabsHtml2 = `<div class="tablist" role="tablist" aria-label="Sheets">${tabsHtml}</div>${this.hiddenSheetsHtml()}`;
     if (q.tabs.dataset.html !== tabsHtml2) { q.tabs.innerHTML = tabsHtml2; q.tabs.dataset.html = tabsHtml2; }

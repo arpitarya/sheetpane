@@ -103,7 +103,7 @@ export interface SheetpaneErrorsEventMap {
   'sheetpane-select': CustomEvent<{ sheet: string; ref: string }>;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'sheetpane-history': CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55). */
   'sheetpane-reveal': CustomEvent<{ error: SheetpaneError }>;
 }
 

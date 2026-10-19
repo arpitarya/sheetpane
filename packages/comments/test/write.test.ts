@@ -307,3 +307,18 @@ describe('switching it off (DoD 3a)', () => {
     expect([...parts.keys()]).toEqual([...(await unzip(src)).keys()]);
   });
 });
+
+describe('errors with no cell (W-55)', () => {
+  it('a whole-sheet or workbook-level error is skipped with SP-5804, never written at A1; the cell errors are written', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const cell = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    const sheet = s.addError({ sheet: 'Other', range: '', type: 'other', severity: 'error', message: 'No Pages List', author: 'Arpit' });
+    const book = s.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet', author: 'Arpit' });
+    const parts = await unzip(await exported(s));
+    expect(plugin.lastExport).toEqual({ written: [cell.id], skipped: [{ id: sheet.id, reason: 'no-cell', code: 'SP-5804' }, { id: book.id, reason: 'no-cell', code: 'SP-5804' }] });
+    const refs = [...parts].filter(([n]) => /threadedComment\d+\.xml$/.test(n)).flatMap(([, xml]) => [...parseXml(xml).getElementsByTagName('threadedComment')].map((t) => t.getAttribute('ref')));
+    expect(refs).toEqual(['I6', 'I6']);
+    expect([...parts.keys()].filter((n) => /threadedComment\d+\.xml$/.test(n))).toHaveLength(1); // nothing on the sheet "Other"
+  });
+});

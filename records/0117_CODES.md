@@ -80,7 +80,8 @@ flowchart LR
   for a throw (outside a three-line, reasoned allow-list), a console line not
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
-  W-40.
+  W-40. Later codes are appended to the lock in the order they were issued,
+  not by number. Example: SP-5804, from W-55, comes after SP-7007.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

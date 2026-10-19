@@ -99,6 +99,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5801](#sp-5801) | Comment part has no container | error |
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
+| [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -590,6 +591,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** writing one sheet's comments failed; the export goes on without them.
 - **Likely cause:** SP-5801 or SP-5802 on that sheet, or an unexpected part.
 - **Fix:** read the error logged after this line; the export report lists the skipped ids.
+
+### SP-5804
+
+**Error with no cell not written as a comment** · note · [SR-COMMENTS](../records/0112_COMMENTS.md) decision 3
+
+- **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
+- **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
+- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
 
 ---
 

@@ -668,6 +668,16 @@ excel.addEventListener('sheetpane-load', () => errors.setErrors(saved.errors, { 
 An error whose cell no longer shows what was found is tagged *stale*, never
 moved.
 
+**An error with no cell** (W-55): `range: ""` is about the whole sheet, and
+`sheet: ""` with `range: ""` about the whole workbook — "no Pages List", "a
+listed tab has no sheet". Add one with `setErrors()`, `workbook.addError()` or
+a `validate` hook (a whole-sheet draft only). The list shows them first — a
+*Workbook* group, then each sheet's — above the cell errors; a whole-sheet
+error is counted on its tab and **Show in sheet** opens the tab; for a
+workbook-level one it is disabled. They are never placed on A1; no pin, no
+cell mark, no `found`. `errorScope(e)` says which (`cell` · `sheet` ·
+`workbook`). **If your code reads `range` as an A1 reference, handle `""`.**
+
 ## Plugins
 
 Features beyond review — every Excel number format, live formulas, cell
@@ -2468,6 +2478,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5801](#sp-5801) | Comment part has no container | error |
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
+| [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -2959,6 +2970,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** writing one sheet's comments failed; the export goes on without them.
 - **Likely cause:** SP-5801 or SP-5802 on that sheet, or an unexpected part.
 - **Fix:** read the error logged after this line; the export report lists the skipped ids.
+
+### SP-5804
+
+**Error with no cell not written as a comment** · note · [SR-COMMENTS](../records/0112_COMMENTS.md) decision 3
+
+- **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
+- **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
+- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
 
 ---
 
@@ -4838,7 +4857,11 @@ pnpm and a justfile; the testing verdict chose the runner.
     `just demo-check`, on every push; `scripts/demo-packed.mjs`
     installs both from `pnpm pack` tarballs (every package, the eight plugins
     included) outside the workspace and runs the same check — `just
-    demo-packed`, nightly.
+    demo-packed`, nightly. Both share one look (2026-10-19): a host bar
+    (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
+    dark · auto, set on every component), the components filling the window,
+    and a footer of host events; `examples/react/src/demo.css` is the
+    stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
@@ -5402,6 +5425,17 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    `matchesExpected`, never resolves; deleting an error keeps a cell change it
    made; "Also change the cell" writes `expected` in as a change in the same
    undo step; `isStale` flags a saved error whose cell no longer shows `found`.
+   **5a. An error with no cell (W-55):** `range: ""` is about the whole
+   sheet; `sheet: ""` with `range: ""` about the whole workbook
+   (`errorScope(e)` → `cell` · `sheet` · `workbook`, exported with the
+   `ErrorScope` type). It is never placed on A1: `found` is `""`, it is never
+   stale and never matches, "Also change the cell" writes nothing, and the
+   sheet draws no pin or mark for it and skips it when stepping errors. A
+   whole-sheet error counts on its tab (the count's label says how many are
+   about the whole sheet). A `validate` draft may be about the whole sheet it
+   is called for, and resolves itself like any other. A workbook-level error
+   comes from the host (`setErrors`, `addError`), not from a provider, because
+   `validate` runs once per sheet.
 6. **Export:** `exportFile({ options })` — `options` (from the element's
    `export(options)`, e.g. `{ comments: false }`) reach every `exportPatch`
    hook as `ctx.exportOptions`; `.xlsx`: `patchXlsx(upload, value changes,
@@ -5483,7 +5517,15 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `menuitemcheckbox`es; Esc returns focus to ▾ — keyboard help, close in a pop-up), cell bar (ending in the
     docked selection actions, decision 13), the format row, the grid,
     sheet tabs (`.xlsx` only; a sheet the file hides is not a tab — decision
-    21c), status line. States: the
+    21c), status line. **One toolbar row** (design, 2026-10-19): as the
+    element narrows it sheds the change-count label (≤ 1240 px; the Download
+    badge keeps the count), find's width (≤ 1140 px), the open counts
+    (≤ 1040 px; the errors panel and tab counts keep them) and the
+    kind-and-size chip (≤ 960 px; kept in the file name's tooltip); only below
+    860 px may it wrap. **The format row is one row too:** groups
+    that do not fit move, from the right, into a **More ▾** at its end; Number
+    format and Text never move (W-14). The grid's focus ring is drawn over the
+    cells, for keyboard use only. States: the
     upload drop zone (file, link, base64), reading, "Can’t open this file",
     "Password protected" (no unlocking — the reader cannot decrypt).
 11. **The grid:** DOM cells, rows absolutely placed, only the visible rows
@@ -5582,8 +5624,12 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     copied); Copy ref gives `B3`, `B3:D8`, `B:D`, `4:12` or the sheet's name
     (W-46); the group
     hides while the cell-bar draft is edited and while composing, and at a
-    narrow cell bar (≤ 720 px) the plugin buttons fold into ⋯ before Flag
-    issue moves. **Right-click, Shift+F10 and the Menu key** on a cell select
+    narrow cell bar (≤ 720 px), or whenever they would squeeze the value
+    field below 200 px, the plugin buttons fold into ⋯ before Flag issue
+    moves. The bar holds the cell's quick actions (Bold · Fill · Merge,
+    greyed when they do not apply); a control with `menus` (W-49) is docked
+    only when it joins the cell menu and applies now. In the menus, Flag
+    issue and the plugin items each sit under a separator. **Right-click, Shift+F10 and the Menu key** on a cell select
     it and open the same actions as a `role="menu"` just under it (Flag
     issue · Copy ref · Copy value · the `selbar` controls); arrows move, Enter
     runs, Esc closes and returns focus to the grid; the browser's menu is
@@ -6004,11 +6050,21 @@ the store and the contract are the contract verdict's and
    Found → Should be, the range and severity, and tags (cell changed ·
    resolved · matches suggestion · stale · hidden row · hidden column ·
    hidden sheet — W-49: picking such a row shows the place in the sheet,
-   SR-GRID 21c). Picking a row selects its cell
+   SR-GRID 21c). **Errors with no cell come first (W-55, SR-GRID 5a):** a
+   *Workbook* group, then one group per sheet for its whole-sheet errors
+   (*Holdings · whole sheet*) in the workbook's sheet order, then the cell
+   errors under *Cells*. The filters apply within each group, and keyboard
+   order follows the groups. Such a row reads *whole sheet* or *workbook* where a
+   range would be, and has no Found → Should be line when both are empty.
+   Picking a row selects its cell
    (selection syncs) and expands it: the message, author and time, **Show in
    sheet**, Resolve / Reopen, Delete.
 4. **Show in sheet** selects the cell and dispatches `sheetpane-reveal
-   {error}`, so the host can switch tab or open the pop-up.
+   {error}`, so the host can switch tab or open the pop-up. For a whole-sheet
+   error it opens the sheet's tab, as a tab click does, and keeps the
+   selection if it is already on that sheet. For a workbook-level error it is
+   disabled, with *About the whole workbook — no sheet to show* beside it, and
+   nothing is dispatched (W-55).
 5. **The form** (while the pane is composing, in Edit, and never when the
    pane is `flagging="off"` — SR-GRID 22e): the cell, Found (the
    uploaded text), Column (the header text found above, and the letter), Row
@@ -6039,9 +6095,17 @@ the store and the contract are the contract verdict's and
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
-  filters, reveal, readonly, `errorTypes`, events, notice, font, axe) and the
+  filters, reveal, readonly, `errorTypes`, events, notice, font, axe; W-55:
+  the groups and their order, keyboard order, the tab count, Show in sheet
+  for a sheet and disabled for the workbook, restore, axe) and the
   L7 sync test in both mount orders with the errors element inside a
   `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
+
+- **Known gap (found by W-55):** axe's label-in-name rule (WCAG 2.5.3) fails
+  on every row and filter in the browser's default font. For example,
+  *All 4* is named *All severities: 4*. The host-font axe test passes only
+  because of the font, and the W-55 axe test turns that one rule off and
+  says why. Not fixed yet.
 
 ### Alternatives considered
 
@@ -6845,7 +6909,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file`, at the top-left cell of its
-   range. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   range. An error with no cell, about a whole sheet or the workbook (W-55,
+   SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
+   never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
+   reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
+   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved. On a cell with someone's thread the errors join it as replies; on
@@ -6873,11 +6941,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 
 ### Consequences
 
-- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet).
-- **Enforced today:** `just test-pkg comments` — 26 tests (notes and threads
+- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
+- **Enforced today:** `just test-pkg comments` — 27 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
-  order; extending existing parts; joining a thread; the note-at-cell skip;
+  order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
   both switches byte-identical; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).
@@ -7574,7 +7642,8 @@ flowchart LR
   for a throw (outside a three-line, reasoned allow-list), a console line not
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
-  W-40.
+  W-40. Later codes are appended to the lock in the order they were issued,
+  not by number. Example: SP-5804, from W-55, comes after SP-7007.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

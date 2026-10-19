@@ -24,6 +24,24 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-55 closed: errors with no cell  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-55 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** `SheetpaneError` takes `range: ''` (the whole sheet) and `sheet: ''` with `range: ''` (the workbook). `errorScope` / `ErrorScope` are exported. The store gives such an error `found: ''`; it is never stale or matched, and "Also change the cell" writes nothing.
+  - `<sheetpane-errors>` lists a *Workbook* group, then *<sheet> · whole sheet* in sheet order, then *Cells*. Keyboard order follows the groups.
+  - In the sheet, a whole-sheet error is counted on its tab, and the count's label names it. It gets no pin or mark, and stepping skips it.
+  - Show in sheet opens the tab, or is disabled with a reason for a workbook-level error.
+  - `@sheetpane/comments` skips these errors as `no-cell` with the new SP-5804.
+  - Records changed: SR-GRID 5a, SR-ERRORS 3, 4 and Consequences, SR-COMMENTS 3 and Consequences, SR-CODES Consequences. The skill, the grid README, `docs/ERRORS.md` and the CHANGELOG are updated too, and `llms-full.txt` and the plugin copy of the skill are regenerated.
+- **Decided / left open:**
+  - The rules engine still anchors its workbook notes on A1: the rules file's own problems, and SP-6022 "no sheet named …". Moving them to `sheet: ''` changes the rules tests and `check_rules`, and a workbook-level draft does not resolve itself (because `validate` runs per sheet). Proposed as a follow-up, not done.
+  - A gap, not caused by W-55: axe's label-in-name rule (2.5.3) fails on every row and filter of `<sheetpane-errors>` in the default font. It is noted in SR-ERRORS Consequences, and the W-55 axe test turns that rule off and says why.
+  - The review-sheet half of DoD 3 belongs to W-59, whose DoD 3 already lists these errors.
+- **Mistakes:** none. Three repo tests timed out at load ~146 (other lanes building), then passed when run alone.
+- **Next:** the orchestrator merges lane a, then files the two follow-ups above if the decider wants them.
+
+---
+
 ## 2026-10-19 — the HTML and React demos redesigned; demo-check 51/51  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"improve the ui for example html and react it will be used for demo purpose and for test. recreate them if that will be faster"*

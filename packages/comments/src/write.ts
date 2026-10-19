@@ -5,7 +5,7 @@
 // workbook's person list — plus their rels and content types. A part the file
 // already has is extended, never replaced. String-level XML only: this runs in
 // browsers and in Node.
-import { spError, spMessage, type Plugin, type SheetpaneError } from '@sheetpane/grid';
+import { errorScope, spError, spMessage, type Plugin, type SheetpaneError, type SpCode } from '@sheetpane/grid';
 import { errorGuids, personGuid } from './guid.js';
 import {
   XML_DECL, anchorOf, attr, cleanXml, escAttr, escText, freeName, parseCellRef, parseRels, relativeTarget, resolveTarget, unesc, withAttr,
@@ -40,10 +40,11 @@ export interface WriteReport {
   written: string[];
   /**
    * Errors not written, and why: `note-at-cell` — the cell already carries a note, and a cell holds one
-   * comment; `no-sheet` / `bad-range` — nowhere to anchor it; `unreadable-part` — the sheet's comment parts
-   * could not be parsed, so that sheet's parts are left exactly as they were.
+   * comment; `no-cell` — the error is about a whole sheet or the workbook (W-55), and a comment needs a cell
+   * (`code` SP-5804); `no-sheet` / `bad-range` — nowhere to anchor it; `unreadable-part` — the sheet's comment
+   * parts could not be parsed, so that sheet's parts are left exactly as they were.
    */
-  skipped: { id: string; reason: 'note-at-cell' | 'no-sheet' | 'bad-range' | 'unreadable-part' }[];
+  skipped: { id: string; reason: 'note-at-cell' | 'no-cell' | 'no-sheet' | 'bad-range' | 'unreadable-part'; code?: SpCode }[];
 }
 
 export interface WriteOptions {
@@ -245,6 +246,7 @@ export async function writeReview(patch: PatchContext, errors: readonly Sheetpan
   const report: WriteReport = { written: [], skipped: [] };
   const bySheet = new Map<string, { anchor: string; e: SheetpaneError }[]>();
   for (const e of errors) {
+    if (errorScope(e) !== 'cell') { report.skipped.push({ id: e.id, reason: 'no-cell', code: 'SP-5804' }); continue; } // never forced onto A1
     const anchor = anchorOf(e.range);
     if (!patch.sheetPath(e.sheet)) { report.skipped.push({ id: e.id, reason: 'no-sheet' }); continue; }
     if (!anchor) { report.skipped.push({ id: e.id, reason: 'bad-range' }); continue; }

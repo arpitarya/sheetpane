@@ -89,6 +89,7 @@ const TABLE = {
   'SP-5801': { title: 'Comment part has no container', severity: 'error' },
   'SP-5802': { title: 'Not a worksheet', severity: 'error' },
   'SP-5803': { title: 'Comments not written for a sheet', severity: 'error' },
+  'SP-5804': { title: 'Error with no cell not written as a comment', severity: 'note' },
 
   // ── 6xxx · column rules and the rules file ──────────────────────────────
   'SP-6001': { title: 'Column rule pattern is not a regular expression', severity: 'error' },

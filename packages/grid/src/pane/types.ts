@@ -13,8 +13,9 @@ export interface SheetpaneError {
   v: 1;
   /** `"ERR-0003"` — stable, never reused in a session. */
   id: string;
+  /** The sheet's name; `""` (with `range: ""`) for an error about the whole workbook (W-55). */
   sheet: string;
-  /** A1 cell `"I6"` or a whole row `"A14:J14"`. */
+  /** A1 cell `"I6"` or a whole row `"A14:J14"`; `""` for an error about the whole sheet, or the workbook (W-55) — see {@link errorScope}. */
   range: string;
   /** An id from `errorTypes`, e.g. `"wrong-value"`. */
   type: string;
@@ -120,6 +121,24 @@ export const DEFAULT_ERROR_TYPES: readonly ErrorType[] = [
 
 /** Names for the types plugins and the core write, shown when the host's `errorTypes` does not name them. */
 export const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = { validation: 'Workbook rule', comment: 'Comment', 'column-rule': 'Column rule', 'cell-rule': 'Cell rule' };
+
+/** Where an error belongs (W-55). */
+export type ErrorScope = 'cell' | 'sheet' | 'workbook';
+
+/**
+ * Where an error belongs: `workbook` when `sheet` is `""`, `sheet` when `range` is `""`, else `cell`.
+ * A sheet- or workbook-level error has no cell — it is listed above the cell errors, never placed on A1.
+ *
+ * @param e - The error, or just its `sheet` and `range`.
+ * @returns `cell`, `sheet` or `workbook`.
+ * @example
+ * ```ts
+ * import { errorScope } from '@sheetpane/grid';
+ * errorScope({ sheet: 'Pages', range: '' }); // 'sheet'
+ * errorScope({ sheet: '', range: '' }); // 'workbook'
+ * ```
+ */
+export const errorScope = (e: Pick<SheetpaneError, 'sheet' | 'range'>): ErrorScope => (e.sheet === '' ? 'workbook' : e.range === '' ? 'sheet' : 'cell');
 
 /** Errors the workbook, the file or a host rule wrote: shown, never resolved or deleted by hand. */
 export const machineAuthored = (author: string) => author === 'workbook' || author === 'file' || author === 'host';

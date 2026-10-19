@@ -119,7 +119,7 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'on:sheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select']) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history']) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55). */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal']) => void) | undefined;
 };
 

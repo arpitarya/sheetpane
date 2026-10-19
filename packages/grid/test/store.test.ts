@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { toXlsx } from '@sheetpane/export';
 import { read } from '@sheetpane/import';
-import { createWorkbook, formulaRefs, parseInput, HISTORY_CAP } from '../src/index.js';
+import { createWorkbook, errorScope, formulaRefs, parseInput, HISTORY_CAP, type Plugin } from '../src/index.js';
 import { sampleCsv, sampleXlsx } from './helpers.js';
 import { minimalPackage } from '../../export/test/helpers.js';
 
@@ -211,5 +211,39 @@ describe('a CSV upload', () => {
     const s = await loaded(sampleCsv(), 'holdings.csv');
     s.setCell('holdings', 'F2', '1300');
     expect(s.value('holdings', 'F2')).toBe('1300');
+  });
+});
+
+describe('errors with no cell (W-55)', () => {
+  it('range "" is the whole sheet and sheet "" the workbook: found "", never stale, never matched, round-trips', async () => {
+    const s = await loaded();
+    const sh = s.addError({ sheet: 'Fee tiers', range: '', type: 'other', severity: 'error', expected: 'a Pages List sheet', message: 'No Pages List', cellChanged: true });
+    const wb = s.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet' });
+    const cell = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', expected: '268.4' });
+    expect([sh, wb, cell].map(errorScope)).toEqual(['sheet', 'workbook', 'cell']);
+    expect(sh).toMatchObject({ sheet: 'Fee tiers', range: '', found: '', cellChanged: true, matchesExpected: false });
+    expect(wb).toMatchObject({ sheet: '', range: '', found: '' });
+    expect(cell.found).toBe('286.4'); // existing errors unaffected
+    expect(s.exportChanges().length).toBe(0); // "Also change the cell" has no cell to change
+    expect(s.isStale(sh)).toBe(false);
+    expect(s.isStale(wb)).toBe(false);
+    s.undo();
+    s.undo();
+    expect(s.getErrors().map((e) => e.id)).toEqual([sh.id]);
+    s.redo(); s.redo();
+    const saved = s.getErrors();
+    const t = await loaded();
+    t.setErrors(saved);
+    expect(t.getErrors()).toEqual(saved);
+  });
+  it('a validate draft may be about a whole sheet; it resolves itself when it goes', async () => {
+    let missing = true;
+    const p: Plugin = { id: 'sheets', provides: ['validate'], validate: (sheet) => (missing && sheet === 'Fee tiers' ? [{ sheet, range: '', type: 'other', severity: 'error', found: '', expected: '', message: 'No Pages List', author: 'host' }] : []) };
+    const s = createWorkbook({ plugins: [p] });
+    await s.load(await sampleXlsx(), 'sample.xlsx');
+    expect(s.getErrors()).toMatchObject([{ sheet: 'Fee tiers', range: '', status: 'open', author: 'host' }]);
+    missing = false;
+    s.setCell('Fee tiers', 'A1', 'x');
+    expect(s.getErrors()).toMatchObject([{ sheet: 'Fee tiers', range: '', status: 'resolved' }]);
   });
 });

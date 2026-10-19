@@ -6,7 +6,7 @@ import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 
@@ -82,7 +82,7 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo).
  * @fires sheetpane-select `{ sheet, ref }` when picking a row selects its cell.
  * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
- * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up.
+ * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55).
  *
  * @csspart root - The panel's frame: the header, the form, the filters and the list.
  *
@@ -216,12 +216,12 @@ export class SheetpaneErrors extends ElementBase {
       case 'pick':
         if (!err) return;
         this.expanded = this.expanded === err.id ? undefined : err.id;
-        { const r = parseRange(err.range)!; s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); }
+        this.showPlace(err);
         this.schedule();
         break;
       case 'reveal':
-        if (!err) return;
-        { const r = parseRange(err.range)!; s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); }
+        if (!err || errorScope(err) === 'workbook') return; // a workbook-level error has no sheet to show (W-55)
+        this.showPlace(err);
         fire(this, 'sheetpane-reveal', { error: { ...err } });
         break;
       case 'resolve': if (err && !this.readOnly) s.updateError(err.id, { status: err.status === 'open' ? 'resolved' : 'open' }, this); break;
@@ -252,6 +252,13 @@ export class SheetpaneErrors extends ElementBase {
     if (!typing && e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this._store!.redo(this); return; }
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && this.shadow.querySelector('.form')) { e.preventDefault(); this.add(); }
     if (e.key === 'Escape' && this.shadow.querySelector('.form')) { e.preventDefault(); this._store!.compose(null); }
+  }
+
+  /** Selects an error's cell; a sheet-level error opens its tab (W-55), keeping the selection when it is already there; a workbook-level one has no place. */
+  private showPlace(err: SheetpaneError): void {
+    const s = this._store!, scope = errorScope(err);
+    if (scope === 'cell') { const r = parseRange(err.range); if (r) s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); }
+    else if (scope === 'sheet' && s.getSnapshot().selection.sheet !== err.sheet && s.sheet(err.sheet)) s.select({ sheet: err.sheet, ref: 'A1' }, this); // as a tab click does
   }
 
   private add(): void {
@@ -306,23 +313,31 @@ export class SheetpaneErrors extends ElementBase {
     const list = errors
       .filter((e) => (this.filter === 'all' || e.severity === this.filter) && (this.authorFilter === 'all' || this.authorKind(e) === this.authorFilter))
       .sort((a, b) => (a.status === b.status ? errNum(a) - errNum(b) : a.status === 'open' ? -1 : 1));
+    // W-55: errors with no cell come first — the Workbook group, then each sheet's whole-sheet errors in sheet order
+    const order = (snap.book?.sheets ?? []).map((x) => x.name);
+    const rank = (e: SheetpaneError) => { const sc = errorScope(e); return sc === 'workbook' ? 0 : sc === 'sheet' ? 1 : 2; };
+    const sheetAt = (n: string) => { const i = order.indexOf(n); return i < 0 ? order.length : i; };
+    const scoped = list.some((e) => rank(e) < 2);
     // rule rows are read by sheet (W-33): under the host filter, grouped by the workbook's sheet order
-    const grouped = this.authorFilter === 'host' && new Set(list.map((e) => e.sheet)).size > 1;
-    if (grouped) { const order = (snap.book?.sheets ?? []).map((x) => x.name); list.sort((a, b) => order.indexOf(a.sheet) - order.indexOf(b.sheet)); }
-    let lastSheet = '';
+    const grouped = this.authorFilter === 'host' && new Set(list.filter((e) => rank(e) === 2).map((e) => e.sheet)).size > 1;
+    list.sort((a, b) => rank(a) - rank(b) || (rank(a) === 1 || grouped ? sheetAt(a.sheet) - sheetAt(b.sheet) : 0)); // stable: open first, by number, within each
+    let lastHead = '';
     const types = new Map([...Object.entries(BUILTIN_TYPE_NAMES), ...this._errorTypes.map((t) => [t.id, t.name] as [string, string])]);
     const sel = snap.selection;
     const html = list.length ? list.map((e) => {
-      const head = grouped && e.sheet !== lastSheet ? `<div class="grp" role="presentation">${esc(e.sheet)}</div>` : '';
-      lastSheet = e.sheet;
+      const scope = errorScope(e);
+      const title = scope === 'workbook' ? 'Workbook' : scope === 'sheet' ? `${e.sheet} · whole sheet` : grouped ? e.sheet : scoped ? 'Cells' : '';
+      const head = title && title !== lastHead ? `<div class="grp" role="presentation">${esc(title)}</div>` : '';
+      lastHead = title;
+      const place = scope === 'workbook' ? 'workbook' : scope === 'sheet' ? 'whole sheet' : e.range;
       const r = parseRange(e.range);
       const on = this.expanded === e.id || (!!r && e.sheet === sel.sheet && parseRef(sel.ref) && r.top === parseRef(sel.ref)!.row && r.left <= parseRef(sel.ref)!.col && r.right >= parseRef(sel.ref)!.col);
       const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : '', ...hiddenTags(s, e)].filter(Boolean);
       const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
-      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, e.code, time].filter(Boolean).join(' · '))}</span><div class="acts"><button type="button" class="btn" data-act="reveal">Show in sheet</button>${ro ? '' : `<button type="button" class="btn" data-act="resolve" data-sp="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
-      return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${esc(e.sheet)} ${esc(e.range)}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span><span class="ba"><span class="found">${esc(e.found)}</span> → <span class="want">${esc(e.expected || '—')}</span></span><span class="m">${esc(e.range)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
+      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, e.code, time].filter(Boolean).join(' · '))}</span><div class="acts">${scope === 'workbook' ? '<button type="button" class="btn" data-act="reveal" disabled aria-describedby="nowhere">Show in sheet</button><span class="xs faint" id="nowhere">About the whole workbook — no sheet to show</span>' : `<button type="button" class="btn" data-act="reveal">Show in sheet</button>`}${ro ? '' : `<button type="button" class="btn" data-act="resolve" data-sp="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
+      return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${scope === 'workbook' ? 'whole workbook' : `${esc(e.sheet)} ${esc(place)}`}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span>${scope !== 'cell' && !e.found && !e.expected ? '' : `<span class="ba"><span class="found">${esc(scope === 'cell' ? e.found : e.found || '—')}</span> → <span class="want">${esc(e.expected || '—')}</span></span>`}<span class="m">${esc(place)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
     if (listEl.dataset.html !== html) { listEl.innerHTML = html; listEl.dataset.html = html; }

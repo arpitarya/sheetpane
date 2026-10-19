@@ -8,6 +8,15 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+### Added
+
+- `@sheetpane/grid`: errors with no cell (W-55). `range: ""` is an error about the whole sheet; `sheet: ""` with `range: ""`, about the whole workbook. `<sheetpane-errors>` lists them first, in a *Workbook* group and then one group per sheet, above the cell errors. A whole-sheet error counts on its tab, and **Show in sheet** opens that tab. For a workbook-level error the button is disabled and says why. Neither kind is placed on A1, gets a pin or marks a cell. New: `errorScope(e)` (`cell`, `sheet` or `workbook`) and the `ErrorScope` type.
+- `@sheetpane/comments`: an error with no cell is not written as an Excel comment, because a comment needs a cell. `lastExport.skipped` lists it with `reason: 'no-cell'` and the new code SP-5804.
+
+### Changed
+
+- **`SheetpaneError.range` may be `""`, and `sheet` may be `""` too** (W-55). If your code reads `range` as an A1 reference, handle `""` (use `errorScope(e)`). Existing errors are unaffected.
+
 ### Fixed
 
 - Demos (`examples/html`, `examples/react`): redesigned in the Proof look. A host bar with Views, Open file…, the CSV sample, the pop-up, Font and a new Theme switch (light, dark, auto, applied to every component). A *Demo* row of tabs, with Review, the plugins and the combinations set apart. Each demo's blurb shows the attribute that turns it on. Both components fill the window, and a footer shows the host events (change, errors, export). Every hook the demo check uses is kept; `demo-check` passes 51 of 51.

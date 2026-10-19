@@ -399,6 +399,16 @@ excel.addEventListener('sheetpane-load', () => errors.setErrors(saved.errors, { 
 An error whose cell no longer shows what was found is tagged *stale*, never
 moved.
 
+**An error with no cell** (W-55): `range: ""` is about the whole sheet, and
+`sheet: ""` with `range: ""` about the whole workbook — "no Pages List", "a
+listed tab has no sheet". Add one with `setErrors()`, `workbook.addError()` or
+a `validate` hook (a whole-sheet draft only). The list shows them first — a
+*Workbook* group, then each sheet's — above the cell errors; a whole-sheet
+error is counted on its tab and **Show in sheet** opens the tab; for a
+workbook-level one it is disabled. They are never placed on A1; no pin, no
+cell mark, no `found`. `errorScope(e)` says which (`cell` · `sheet` ·
+`workbook`). **If your code reads `range` as an A1 reference, handle `""`.**
+
 ## Plugins
 
 Features beyond review — every Excel number format, live formulas, cell

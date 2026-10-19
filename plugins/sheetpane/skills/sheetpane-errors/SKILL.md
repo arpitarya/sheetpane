@@ -51,6 +51,26 @@ Plain JSON, schema `v: 1` (`SheetpaneError`, exported as a type):
   themselves (SR-GRID decision 19b).
 - Ids are `ERR-0001…`, never reused in a session.
 
+### An error with no cell
+
+A finding about a whole sheet or the workbook has no cell, and is never put
+on A1 (W-55):
+
+```js
+excel.workbook.addError({ sheet: 'Pages', range: '', type: 'other', severity: 'error', message: 'No Pages List' }); // the whole sheet
+excel.workbook.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet' }); // the workbook
+```
+
+- The list shows a **Workbook** group, then each sheet's whole-sheet
+  errors, above the cell errors; a whole-sheet error counts on its tab.
+- **Show in sheet** opens the sheet's tab; for a workbook-level error it is
+  disabled (no `sheetpane-reveal`).
+- `found` is `""`; no pin, no cell mark; `errorScope(e)` → `cell` · `sheet`
+  · `workbook`.
+- **Code that parses `range` as A1 must handle `""`.**
+- `@sheetpane/comments` does not write them (a comment needs a cell):
+  `lastExport.skipped` lists each as `no-cell`, SP-5804.
+
 ## Saving and restoring a review
 
 ```js

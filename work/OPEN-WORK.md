@@ -40,8 +40,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
 
-- 🟢 **W-55** `agent` · **G1** · Errors that belong to a whole sheet or the whole workbook, not a cell. Filed by Arpit (Cowork). [detail](open/W-55-sheet-and-workbook-errors.md)
-
 - 🟢 **W-56** `agent` · **G1** · A hover event and a host highlight that does not move the selection. Filed by Arpit (Cowork). [detail](open/W-56-hover-and-highlight.md)
 
 - 🟢 **W-57** `agent` · **G2** · Export writes data validation and conditional formatting. Filed by Arpit (Cowork). [detail](open/W-57-export-writes-validation-and-conditional-formats.md)
