@@ -99,7 +99,7 @@ no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-
    100 deleted, 50 moved), and the same sheet with every row changed, each diff in under **500 ms**
    in Node. Recorded 2026-10-19 on an Apple M4 (10 cores, 16 GB, macOS) under a load average of
    14–17 from six other build lanes: unkeyed 120 ms, keyed 119 ms, every row changed 138 ms.
-   With `CI` set the time is reported, not asserted.
+   With `CI` set, or under `--coverage` (SR-BUILD decision 6), the time is reported, not asserted.
 8. **The comparison in a pane** is the file as loaded (`store.book`) against the base, never the
    pane's edits since; another file loaded into the pane is compared with the same base. The base
    comes from Compare… (a file picker; `.xlsx` or `.csv`) or from the host (`compareWith(store,

@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/import",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Read an .xlsx or .csv file into the plain JavaScript Workbook object @sheetpane/export writes — raw values, display text, merges, and everything the plugins read. No runtime dependency but @sheetpane/export.",
   "license": "MIT",
   "repository": {

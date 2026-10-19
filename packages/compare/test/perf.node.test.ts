@@ -1,8 +1,9 @@
 // W-63 DoD 3 (SR-COMPARE decision 7): the speed budget — two versions of a 50,000-row, 8-column
 // sheet (500 cells edited, 100 rows inserted, 100 deleted, 50 moved) diffed in under BUDGET_MS,
 // keyed and unkeyed, in Node. Recorded on an Apple M4 (10 cores, 16 GB); see the record for the
-// machine's load when it was measured. With `CI` set the time is reported, not asserted (a shared
-// runner is not a developer machine — the grid's timing budgets follow the same rule).
+// machine's load when it was measured. With `CI` set, or under `--coverage` (SP_NO_BUDGETS), the time
+// is reported, not asserted (a shared runner or instrumented code is not the developer machine's
+// code — the grid's timing budgets follow the same rule).
 import { describe, expect, it } from 'vitest';
 import type { Cell } from '@sheetpane/export';
 import { applyDiff, diffWorkbooks, type CompareWorkbook } from '../src/index.js';
@@ -10,6 +11,8 @@ import { applyDiff, diffWorkbooks, type CompareWorkbook } from '../src/index.js'
 const ROWS = 50_000, COLS = 8;
 /** The budget per diff, in ms. */
 const BUDGET_MS = 500;
+/** Asserted only on a developer machine, uninstrumented (vitest.config.ts). */
+const budgets = !process.env.CI && !process.env.SP_NO_BUDGETS;
 
 /** A deterministic pseudo-random sequence (mulberry32), so every run diffs the same files. */
 function rand(seed: number) {
@@ -44,7 +47,7 @@ describe(`speed budget (DoD 3): ${ROWS.toLocaleString('en-US')} rows × ${COLS} 
       expect(d.summary.cells).toBeGreaterThan(0);
       if (key) expect(d.sheets[0]!.counts.rowsMoved).toBeGreaterThan(0);
       else expect(d.sheets[0]!.counts.rowsMoved).toBe(0);
-      if (!process.env.CI) expect(best).toBeLessThan(BUDGET_MS);
+      if (budgets) expect(best).toBeLessThan(BUDGET_MS);
     }, 60_000);
   }
   it(`every row changed (no row in common, Myers capped) — under ${BUDGET_MS} ms`, () => {
@@ -53,6 +56,6 @@ describe(`speed budget (DoD 3): ${ROWS.toLocaleString('en-US')} rows × ${COLS} 
     const { ms, out } = timed(() => diffWorkbooks(a, all));
     console.log(`compare every row changed: ${ms.toFixed(0)} ms — ${JSON.stringify(out.summary)}`);
     expect(out.summary).toMatchObject({ rows: ROWS, cells: ROWS });
-    if (!process.env.CI) expect(ms).toBeLessThan(BUDGET_MS);
+    if (budgets) expect(ms).toBeLessThan(BUDGET_MS);
   }, 60_000);
 });

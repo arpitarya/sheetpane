@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/comments",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Comments and notes for sheetpane — the file's notes and threaded comments read into the error pane; every sheetpane error written back as a threaded comment on export.",
   "license": "MIT",
   "repository": {

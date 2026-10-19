@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/compare",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "What changed between two versions of a workbook, for sheetpane — a headless diffWorkbooks (sheets, rows by key or alignment, cells by value, text and formula) and a grid plugin that tints the changes, sums them up and steps through them.",
   "license": "MIT",
   "repository": {

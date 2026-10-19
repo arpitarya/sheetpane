@@ -12,7 +12,10 @@ import { armDownload, takeDownload } from './test/commands.ts';
 const browsers = (process.env.SP_BROWSERS ?? 'chromium').split(',') as ('chromium' | 'firefox' | 'webkit')[];
 // Wall-clock budgets (frame gaps, pixels scrolled in 5 s) hold on a developer machine; on a
 // shared CI runner (`CI` set) they are reported, not asserted — `budgets` in the grid's test helpers.
-const provide = { timingBudgets: !process.env.CI };
+// Nor under `--coverage` (`just check`): the instrumented code is not the code being timed. Node
+// tests read the same verdict from SP_NO_BUDGETS, which their workers inherit.
+if (process.argv.includes('--coverage')) process.env.SP_NO_BUDGETS = '1';
+const provide = { timingBudgets: !process.env.CI && !process.env.SP_NO_BUDGETS };
 
 // CI runs the suite in `--shard=k/n` jobs. Vitest's own shards split by path hash (one got 80 s,
 // another 9 s); these balance by measured time — the longest file first, each into the lightest

@@ -127,9 +127,12 @@ pnpm and a justfile; the testing verdict chose the runner.
    `test/durations.json` (`just test-durations` re-measures it; an unlisted
    file counts 1 s). A wall-clock budget (a frame gap,
    pixels scrolled in 5 s) is asserted on a developer machine and only
-   reported on a shared CI runner: `vitest.config.ts` provides
-   `timingBudgets` (off when `CI` is set), the grid's test helpers export it
-   as `budgets`, and the test logs its numbers either way. Every structural
+   reported on a shared CI runner or under `--coverage` (`just check`; the
+   instrumented code is not the code being timed): `vitest.config.ts`
+   provides `timingBudgets` (off when `CI` or `SP_NO_BUDGETS` is set — the
+   config sets the latter under `--coverage`, and Node tests read it), the
+   grid's test helpers export it as `budgets`, and the test logs its numbers
+   either way. Every structural
    assertion in the same test still holds everywhere.
 7. **Package checks** (`test/packages.test.ts`): each package is public,
    `@sheetpane/<dir>`, MIT, ESM with types; one version across all (lockstep);
