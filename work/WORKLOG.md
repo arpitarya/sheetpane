@@ -35,6 +35,54 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** the decider ruled (1) sheetpane never sends anything, while a host's own code may save to its server; (2) the `src`/`rules-src` GETs stay, because they send nothing. `NOW.md` was left alone: a concurrent Claude Code session owns it (lanes W-50–W-69). **Not committed**, at the decider's word.
 - **Mistakes:** the first regex matched `fetch (` inside a doc comment; it was tightened to `fetch(`.
 - **Next:** run `pnpm vitest run test/packages.test.ts -t 'SR-LAW-11'` on the Mac, then commit with explicit pathspecs.
+## 2026-10-19 — W-69 closed: accepted deviations  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-69 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** an error's `status` may be `accepted` (`ErrorStatus`), with `acceptedBy`, `acceptedAt` and a required `reason`. `acceptError(id, reason, { by })` and `updateError(…, { status: 'accepted', reason })` set it as one undo step; any other status drops the three fields. A blank reason, or an error authored `workbook` or `file`, is refused with the new SP-3018. `setErrors` keeps an older envelope as it was; an accepted error without a reason comes back `open`.
+  - `<sheetpane-errors>`: *Accept…* in an open row asks *Why is this accepted?* (Accept disabled while blank; Esc, Cancel, ⌘↵) and writes the element's `author` as who. Accepted errors leave "n open", the severity chips and the sheet's counts; an *Accepted n* chip lists them. The pin and the badge read **A**; the row and the sheet's card show who, when and why, with Reopen.
+  - `@sheetpane/comments` writes a reply *Accepted: <reason>* by who accepted it, at that time, and marks the thread done.
+  - Records changed: SR-GRID 5c, 13 and the codes line; SR-ERRORS §1, 3, 7, 14 and Consequences; SR-COMMENTS 3, 5 and Consequences; SR-CODES. The skill, the grid README, `docs/ERRORS.md` and the CHANGELOG are updated; `llms-full.txt`, the plugin copy of the skill, `custom-elements.json` and the framework typings are regenerated.
+  - Handed on: the review sheet's half of DoD 3 is W-59 DoD 5 (added); opening an export with an accepted reply in Excel joins W-30 DoD 3.
+- **Decided / left open:**
+  - *Accept…* is offered only where Resolve is: not on rule or file-comment rows, and not in the sheet's card (which shows the acceptance and Reopen). A `host` rule's error can still be accepted from code. It stays accepted while the cell fails the same way; a different finding reopens it, and a pass resolves it. The decider may want *Accept…* on rule rows or in the card.
+  - Accepted errors are left out of the severity counts too, and the chip shows only them; the severity filter still applies inside.
+  - The glyph is **A**, not ≈: ≈ already marks a stale cell.
+  - A `validate` provider cannot accept (`ErrorDraft` has no acceptance fields).
+- **Mistakes:** two of the new UI tests were wrong at first: one picked an already-open row again, which closed it, and one pressed a key after the filters had been redrawn, so the button that had focus was gone. Both tests were fixed; the code was not at fault.
+- **Next:** the orchestrator merges lane a.
+
+---
+
+## 2026-10-19 — W-68 closed: `meta` on an error and a `renderDetail` hook  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-68 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** `SheetpaneError.meta` holds the host's JSON (`ErrorMeta`), up to `ERROR_META_MAX` (64 KiB of JSON, UTF-8). `addError`, `updateError` (`meta: undefined` removes it) and `setErrors` keep its JSON round trip; `getErrors()` copies it. One that is not JSON or is over the cap is dropped with the new SP-3016, and the error is kept.
+  - `renderDetail(error)` on `<sheetpane-excel>` (the error card) and `<sheetpane-errors>` (the open row), each its own. Its result goes in a `part="detail"` region after the message: a string as text, a Node as is, nothing for `null`. It runs again only when that error changes or the hook is replaced; a throw is logged as the new SP-3017. Clicks, input and keys in the region are left to the host.
+  - Records changed: SR-GRID 5b, 9, 13 and the codes line; SR-ERRORS 1, 13 and Consequences; SR-CODES and SR-COMMENTS Consequences. The skill, the grid README, `docs/ERRORS.md` and the CHANGELOG are updated; `llms-full.txt`, the plugin copy of the skill, `custom-elements.json` and the framework typings are regenerated.
+- **Decided / left open:**
+  - The region is in the **open** row of the list, not every row: the message it follows is shown only there, and a crop in every row would be heavy. The decider may want a compact form in the closed row; not done.
+  - A `validate` provider cannot set `meta` (`ErrorDraft` has no field for it). Proposed as a follow-up, not done.
+  - On `updateError`, a `meta` that may not be kept leaves the error's own `meta`, rather than removing it.
+- **Mistakes:** one TSDoc `@example` did not type-check on its own (`tsdoc.test.ts` caught it); made self-contained.
+- **Next:** the orchestrator merges lane a.
+
+---
+
+## 2026-10-19 — W-55 closed: errors with no cell  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-55 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** `SheetpaneError` takes `range: ''` (the whole sheet) and `sheet: ''` with `range: ''` (the workbook). `errorScope` / `ErrorScope` are exported. The store gives such an error `found: ''`; it is never stale or matched, and "Also change the cell" writes nothing.
+  - `<sheetpane-errors>` lists a *Workbook* group, then *<sheet> · whole sheet* in sheet order, then *Cells*. Keyboard order follows the groups.
+  - In the sheet, a whole-sheet error is counted on its tab, and the count's label names it. It gets no pin or mark, and stepping skips it.
+  - Show in sheet opens the tab, or is disabled with a reason for a workbook-level error.
+  - `@sheetpane/comments` skips these errors as `no-cell` with the new SP-5804.
+  - Records changed: SR-GRID 5a, SR-ERRORS 3, 4 and Consequences, SR-COMMENTS 3 and Consequences, SR-CODES Consequences. The skill, the grid README, `docs/ERRORS.md` and the CHANGELOG are updated too, and `llms-full.txt` and the plugin copy of the skill are regenerated.
+- **Decided / left open:**
+  - The rules engine still anchors its workbook notes on A1: the rules file's own problems, and SP-6022 "no sheet named …". Moving them to `sheet: ''` changes the rules tests and `check_rules`, and a workbook-level draft does not resolve itself (because `validate` runs per sheet). Proposed as a follow-up, not done.
+  - A gap, not caused by W-55: axe's label-in-name rule (2.5.3) fails on every row and filter of `<sheetpane-errors>` in the default font. It is noted in SR-ERRORS Consequences, and the W-55 axe test turns that rule off and says why.
+  - The review-sheet half of DoD 3 belongs to W-59, whose DoD 3 already lists these errors.
+- **Mistakes:** none. Three repo tests timed out at load ~146 (other lanes building), then passed when run alone.
+- **Next:** the orchestrator merges lane a, then files the two follow-ups above if the decider wants them.
 
 ---
 

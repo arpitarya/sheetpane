@@ -23,10 +23,11 @@ decision 5.
 | kind | name | what |
 |---|---|---|
 | attribute | `pane` | the same id as the sheet's |
-| attribute | `author` | written on errors added here |
-| attribute | `readonly` | a sign-off screen: no form, Resolve, Delete, Undo or Redo (SR-ERRORS decision 7) |
+| attribute | `author` | written on errors added here, and as who accepted one (W-69) |
+| attribute | `readonly` | a sign-off screen: no form, Resolve, Accept…, Delete, Undo or Redo (SR-ERRORS decision 7) |
 | attribute | `plugins`, `theme` | as on the sheet |
 | property | `errors`, `errorTypes`, `readOnly`, `workbook` | |
+| property | `renderDetail` | the host's extra detail in an open row (W-68) — see below |
 | method | `getErrors()`, `setErrors(list, { plugins })` | |
 | event | `sheetpane-errors {errors, plugins}` | the list changed — the one to persist |
 | event | `sheetpane-reveal {error}` | **Show in sheet** was pressed: switch to the sheet's tab or open the pop-up |
@@ -50,6 +51,69 @@ Plain JSON, schema `v: 1` (`SheetpaneError`, exported as a type):
   for errors a plugin or a rule wrote — those are read-only and resolve
   themselves (SR-GRID decision 19b).
 - Ids are `ERR-0001…`, never reused in a session.
+
+### An error with no cell
+
+A finding about a whole sheet or the workbook has no cell, and is never put
+on A1 (W-55):
+
+```js
+excel.workbook.addError({ sheet: 'Pages', range: '', type: 'other', severity: 'error', message: 'No Pages List' }); // the whole sheet
+excel.workbook.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet' }); // the workbook
+```
+
+- The list shows a **Workbook** group, then each sheet's whole-sheet
+  errors, above the cell errors; a whole-sheet error counts on its tab.
+- **Show in sheet** opens the sheet's tab; for a workbook-level error it is
+  disabled (no `sheetpane-reveal`).
+- `found` is `""`; no pin, no cell mark; `errorScope(e)` → `cell` · `sheet`
+  · `workbook`.
+- **Code that parses `range` as A1 must handle `""`.**
+- `@sheetpane/comments` does not write them (a comment needs a cell):
+  `lastExport.skipped` lists each as `no-cell`, SP-5804.
+
+### The host's data and detail (W-68)
+
+`meta` is yours: any JSON (64 KiB at most, `ERROR_META_MAX`), kept by
+`getErrors()` / `setErrors()` and the `sheetpane-errors` envelope, **never
+written into the file**. `renderDetail` draws from it, after the message, in
+the panel's open row and the sheet's error card — set it on **both**:
+
+```js
+excel.workbook.addError({ sheet: 'Spec', range: 'C7', type: 'out-of-range', severity: 'error', meta: { page: 3, measured: '6.63 in' } });
+const detail = (e) => (e.meta?.measured ? `The PDF measures ${e.meta.measured}, outside ± 0.06 in` : null);
+excel.renderDetail = detail;
+panel.renderDetail = detail; // or return a Node: an <img> of the crop, a link
+```
+
+- A string is text, never HTML; a Node is yours, placed as it is. Style it
+  with `::part(detail)`.
+- It runs again only when that error changes (`meta` included).
+- A `meta` over the cap or not JSON is dropped (SP-3016); a throwing hook
+  shows nothing (SP-3017).
+- Keep a reference in `meta` (a page, a box), not the picture's pixels.
+
+### Accepted deviations (W-69)
+
+A known, approved difference should stop counting as a problem without being
+deleted. `status` is `open` · `resolved` · `accepted`; an accepted error
+carries `acceptedBy`, `acceptedAt` and a **required** `reason`:
+
+```js
+excel.workbook.acceptError(e.id, 'Approved by the customer on 18 Oct', { by: 'Ravi' }); // true; one undo step
+excel.workbook.updateError(e.id, { status: 'open' }); // Reopen: who, when and why are dropped
+```
+
+- In the panel, **Accept…** in an open row asks *Why is this accepted?* and
+  writes the element's `author` as who. Not in `readonly`, not on rule or
+  file-comment rows.
+- Not counted: "n open", the severity chips, the sheet's counts and tab
+  counts leave accepted errors out. The **Accepted n** chip lists them.
+- **Count open errors with `status === 'open'`**, not `!== 'resolved'`.
+- `@sheetpane/comments` writes a reply *Accepted: <reason>* by who accepted
+  it, and marks the thread done.
+- A blank reason, or a `workbook` / `file` error, is refused (SP-3018).
+  `setErrors` brings an accepted error without a reason back as `open`.
 
 ## Saving and restoring a review
 

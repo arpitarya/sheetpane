@@ -482,6 +482,7 @@ committed manifest drifts from the elements.
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
+| property | `renderDetail` | your extra detail in the error card (W-68, under *Saving and restoring a review*) |
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
@@ -652,8 +653,9 @@ opens no pop-up — the errors panel is the one place errors are read.
 | kind | name | what |
 |---|---|---|
 | attribute | `pane`, `author`, `plugins` | as above |
-| attribute | `readonly` | hides the form, Resolve and Delete — a sign-off screen |
+| attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
 | property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
+| property | `renderDetail` | your extra detail in an open row — see below (W-68) |
 | event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
 
 ## Saving and restoring a review
@@ -668,6 +670,50 @@ excel.addEventListener('sheetpane-load', () => errors.setErrors(saved.errors, { 
 
 An error whose cell no longer shows what was found is tagged *stale*, never
 moved.
+
+**An error with no cell** (W-55): `range: ""` is about the whole sheet, and
+`sheet: ""` with `range: ""` about the whole workbook — "no Pages List", "a
+listed tab has no sheet". Add one with `setErrors()`, `workbook.addError()` or
+a `validate` hook (a whole-sheet draft only). The list shows them first — a
+*Workbook* group, then each sheet's — above the cell errors; a whole-sheet
+error is counted on its tab and **Show in sheet** opens the tab; for a
+workbook-level one it is disabled. They are never placed on A1; no pin, no
+cell mark, no `found`. `errorScope(e)` says which (`cell` · `sheet` ·
+`workbook`). **If your code reads `range` as an A1 reference, handle `""`.**
+
+**Your data on an error, and your detail beside it** (W-68): `meta` holds any
+JSON of yours (64 KiB at most, `ERROR_META_MAX`); it is saved and restored
+with the error and never written into the file. `renderDetail(error)` — on
+`<sheetpane-excel>` for the error card and on `<sheetpane-errors>` for the
+open row, each its own — returns a string (shown as text, never HTML), a
+Node (yours, placed as it is) or `null`. It is drawn after the message, in
+`::part(detail)`, and runs again only when that error changes.
+
+```js
+workbook.addError({ sheet: 'Spec', range: 'C7', type: 'out-of-range', severity: 'error', meta: { page: 3, measured: '6.63 in' } });
+const detail = (e) => (e.meta?.measured ? `The PDF measures ${e.meta.measured}, outside ± 0.06 in` : null);
+excel.renderDetail = detail;
+errors.renderDetail = detail;
+```
+
+A `meta` that is not JSON or is over the cap is dropped (SP-3016); a hook
+that throws shows nothing (SP-3017).
+
+**Accepted deviations** (W-69): a known, approved difference can be accepted
+instead of deleted. **Accept…** in an open row of `<sheetpane-errors>` asks
+for a reason (required) and records it with who (the element's `author`) and
+when: `status: 'accepted'`, `acceptedBy`, `acceptedAt`, `reason`. Accepted
+errors stay in the review and the download but are not counted — not in
+"n open", the severity chips or the sheet's counts — and the **Accepted n**
+chip lists them. Reopen takes an acceptance back; so does undo. From code:
+
+```js
+workbook.acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' });
+```
+
+A blank reason is refused (SP-3018). Count open errors with
+`status === 'open'`. With `@sheetpane/comments`, the export adds a reply
+*Accepted: <reason>* to the error's comment thread.
 
 ## Plugins
 
@@ -2459,6 +2505,9 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
+| [SP-3016](#sp-3016) | Error meta dropped | warning |
+| [SP-3017](#sp-3017) | renderDetail failed | error |
+| [SP-3018](#sp-3018) | Error not accepted | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -2469,6 +2518,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5801](#sp-5801) | Comment part has no container | error |
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
+| [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -2871,6 +2921,30 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
 
+### SP-3016
+
+**Error meta dropped** · warning · [SR-GRID](../records/0105_GRID.md) decision 5b
+
+- **Meaning:** an error's `meta` (W-68) was not kept: it is not JSON (a cycle, a BigInt, a function on its own), or its JSON text is over 64 KiB (`ERROR_META_MAX`). The error itself is kept, without it; `updateError` leaves the error's own `meta` as it was.
+- **Likely cause:** an image's pixels, a whole PDF page or a DOM node put in `meta`.
+- **Fix:** keep a reference in `meta` — a page number, a box, an id the host resolves — and draw the picture in `renderDetail`.
+
+### SP-3017
+
+**renderDetail failed** · error · [SR-ERRORS](../records/0106_ERRORS.md) decision 13
+
+- **Meaning:** the host's `renderDetail` threw for an error; nothing is shown in that card or row, and the rest of it works.
+- **Likely cause:** a bug in the host's hook, or an error whose `meta` it did not expect (an older review, an error without one).
+- **Fix:** read the error logged after this line; make the hook return `null` when it has nothing to show.
+
+### SP-3018
+
+**Error not accepted** · warning · [SR-GRID](../records/0105_GRID.md) decision 5c
+
+- **Meaning:** an acceptance (W-69) did not stand. `acceptError` or `updateError(id, { status: 'accepted' })` changed nothing; or `setErrors` restored an `accepted` error as `open`.
+- **Likely cause:** no reason was given, or only spaces; or the error is the workbook's own (author `workbook` or `file` — a validation rule or a file comment), which is not accepted this way.
+- **Fix:** pass the reason the deviation was approved, e.g. `acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' })`; keep `reason` when saving a review.
+
 ---
 
 ## 4xxx · the errors element
@@ -2960,6 +3034,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** writing one sheet's comments failed; the export goes on without them.
 - **Likely cause:** SP-5801 or SP-5802 on that sheet, or an unexpected part.
 - **Fix:** read the error logged after this line; the export report lists the skipped ids.
+
+### SP-5804
+
+**Error with no cell not written as a comment** · note · [SR-COMMENTS](../records/0112_COMMENTS.md) decision 3
+
+- **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
+- **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
+- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
 
 ---
 
@@ -5409,6 +5491,45 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    `matchesExpected`, never resolves; deleting an error keeps a cell change it
    made; "Also change the cell" writes `expected` in as a change in the same
    undo step; `isStale` flags a saved error whose cell no longer shows `found`.
+   **5a. An error with no cell (W-55):** `range: ""` is about the whole
+   sheet; `sheet: ""` with `range: ""` about the whole workbook
+   (`errorScope(e)` → `cell` · `sheet` · `workbook`, exported with the
+   `ErrorScope` type). It is never placed on A1: `found` is `""`, it is never
+   stale and never matches, "Also change the cell" writes nothing, and the
+   sheet draws no pin or mark for it and skips it when stepping errors. A
+   whole-sheet error counts on its tab (the count's label says how many are
+   about the whole sheet). A `validate` draft may be about the whole sheet it
+   is called for, and resolves itself like any other. A workbook-level error
+   comes from the host (`setErrors`, `addError`), not from a provider, because
+   `validate` runs once per sheet.
+   **5b. The host's data on an error (W-68):** `SheetpaneError.meta` is
+   optional and holds any JSON value (`ErrorMeta`), up to `ERROR_META_MAX`
+   (64 KiB of JSON text, counted in UTF-8). `addError`, `updateError` and
+   `setErrors` keep it as its JSON round trip, so a save gives back what was
+   kept. One that is not JSON or is over the cap is dropped with SP-3016 and
+   the error is kept without it; `updateError` then leaves the error's own
+   `meta`, and `meta: undefined` removes it. `getErrors()` and the
+   `sheetpane-errors` envelope carry a copy. `meta` is never written into the
+   file: no export path reads it, and the comments plugin writes only the
+   fields SR-COMMENTS 3 names. What the host draws from it is SR-ERRORS
+   decision 13.
+   **5c. Accepted deviations (W-69):** `status` is `open` · `resolved` ·
+   `accepted` (`ErrorStatus`). An accepted error is a known deviation
+   someone approved: it stays in the review and the download, carries
+   `acceptedBy` (who — `""` when nobody was named), `acceptedAt` (ISO 8601)
+   and `reason` (required, never blank), and is never counted as open — not
+   in the toolbar's counts, a tab's count or a row's worst severity; its pin
+   reads **A** and its cell mark is quiet. `acceptError(id, reason, { by })`
+   and `updateError(id, { status: 'accepted', reason, acceptedBy })` set it
+   as one undo step and stamp `acceptedAt`; any other status drops the three
+   fields. A blank reason, or an error authored `workbook` or `file` (B-029's,
+   not this one's), is refused with SP-3018 and nothing changes. `setErrors`
+   restores an older envelope as it was; an accepted error without a reason
+   comes back `open` with SP-3018, and the three fields on any other status
+   are dropped. A `host` rule's error stays accepted while its cell fails the
+   same way; a different finding reopens it and a pass resolves it, each
+   without the acceptance (decision 19b). `ErrorDraft` cannot carry them: a
+   provider never accepts.
 6. **Export:** `exportFile({ options })` — `options` (from the element's
    `export(options)`, e.g. `{ comments: false }`) reach every `exportPatch`
    hook as `ctx.exportOptions`; `.xlsx`: `patchXlsx(upload, value changes,
@@ -5434,7 +5555,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    nothing is sent — data URL or base64), `mode`, `display` (`tab` ·
    `popup`), `open`, `author`, `plugins`; properties `workbook`, `errors`,
    `errorTypes`, `file`, `mode`, `open`, `src`, `sizes` (W-47: `{ [sheet]:
-   { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set);
+   { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set),
+   `renderDetail` (W-68: the error card's host region, SR-ERRORS decision 13);
    methods `load()`, `export()`,
    `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
    `shortcuts()`, `column()`, `reveal()`, `unreveal()` (W-49); attribute `header-row` (default 1); events
@@ -5611,7 +5733,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     original bytes when untouched (no change, and no review a plugin would
     write), else `export()` with the menu's plugin options, the change count
     on the button and in its tooltip. Also: numbered pins (✓ when resolved) and row glyphs ✕ ! i; the callout (Found →
-    Should be, message, tags, Resolve/Reopen, Delete, previous/next); Flag
+    Should be, message, the host's `part="detail"` region when `renderDetail` is set — W-68, SR-ERRORS decision 13 —
+    who accepted it, when and why — W-69, decision 5c —, tags, Resolve/Reopen
+    (Reopen for a resolved or an accepted error), Delete, previous/next); Flag
     issue sets `composing` and the inline form opens **only when no
     `<sheetpane-errors>` is connected to the pane** (contract decision 4).
 14. **Placement:** `display="popup"` moves the root into a modal `<dialog>`
@@ -5838,7 +5962,7 @@ listeners — the `on-invalid` attribute does its job). `test/manifest.test.ts`
 fails when the manifest, the typings or the editor data drift from the code.
 Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
-**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES).
+**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69).
 
 ### Consequences
 
@@ -5973,10 +6097,15 @@ was found, what it should be — and holds the form that **Flag issue** opens.
 resolved or deleted here shows in the sheet at once, and the reverse (L7).
 There is no "linked" chip and no export footer — it is always linked.
 
+**A known deviation can be accepted.** *Accept…* asks why; the error then
+stays in the review and the download with who, when and the reason, but no
+longer counts as open (W-69).
+
 ```mermaid
 flowchart LR
     S[("the pane's workbook")] --> L["list: filter · pick · Show in sheet · Resolve · Delete"]
     S --> F["New error form (when Flag issue fires)"]
+    L -->|"Accept… + a reason"| S
     L --> S
     F -->|Add error| S
     L -->|sheetpane-reveal| H["host switches tab / opens the pop-up"]
@@ -5989,6 +6118,7 @@ flowchart LR
    ( pane's workbook ) --> list (filter, pick, Show in sheet, Resolve, Delete) --> workbook
                        --> New error form (Flag issue) --Add error--> workbook
    list --sheetpane-reveal--> host switches tab / opens the pop-up
+   list --Accept… + a reason--> workbook (accepted: kept, not counted)
 ```
 
 </details>
@@ -6007,7 +6137,7 @@ the store and the contract are the contract verdict's and
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
    `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`, `theme`; methods `getErrors()`, `setErrors(list, { plugins? })`; events
+   `readOnly`, `theme`, `renderDetail` (W-68, decision 13); methods `getErrors()`, `setErrors(list, { plugins? })`; events
    `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it
@@ -6023,11 +6153,25 @@ the store and the contract are the contract verdict's and
    Found → Should be, the range and severity, and tags (cell changed ·
    resolved · matches suggestion · stale · hidden row · hidden column ·
    hidden sheet — W-49: picking such a row shows the place in the sheet,
-   SR-GRID 21c). Picking a row selects its cell
+   SR-GRID 21c). **Errors with no cell come first (W-55, SR-GRID 5a):** a
+   *Workbook* group, then one group per sheet for its whole-sheet errors
+   (*Holdings · whole sheet*) in the workbook's sheet order, then the cell
+   errors under *Cells*. The filters apply within each group, and keyboard
+   order follows the groups. Such a row reads *whole sheet* or *workbook* where a
+   range would be, and has no Found → Should be line when both are empty.
+   Picking a row selects its cell
    (selection syncs) and expands it: the message, author and time, **Show in
-   sheet**, Resolve / Reopen, Delete.
+   sheet**, Resolve / Reopen, **Accept…** (an open error, decision 14),
+   Delete. **Accepted errors are not counted (W-69):** "n open", the severity
+   chips and *All* leave them out, and the list hides them until the
+   **Accepted n** chip (shown while any exists) is pressed — it then lists
+   only them, the other filters still applying.
 4. **Show in sheet** selects the cell and dispatches `sheetpane-reveal
-   {error}`, so the host can switch tab or open the pop-up.
+   {error}`, so the host can switch tab or open the pop-up. For a whole-sheet
+   error it opens the sheet's tab, as a tab click does, and keeps the
+   selection if it is already on that sheet. For a workbook-level error it is
+   disabled, with *About the whole workbook — no sheet to show* beside it, and
+   nothing is dispatched (W-55).
 5. **The form** (while the pane is composing, in Edit, and never when the
    pane is `flagging="off"` — SR-GRID 22e): the cell, Found (the
    uploaded text), Column (the header text found above, and the letter), Row
@@ -6038,7 +6182,7 @@ the store and the contract are the contract verdict's and
    `duplicate-row` error covers the whole row.
 6. **`errorTypes`** defaults to the seven types and Other from the board
    `Edit-Examples` (`DEFAULT_ERROR_TYPES`, SR-GRID).
-7. **`readonly`** hides the form, Resolve, Delete, Undo and Redo — a sign-off
+7. **`readonly`** hides the form, Resolve, Accept…, Delete, Undo and Redo — a sign-off
    screen. Errors authored `workbook`, `file` or `host` are always read-only
    (SR-GRID decision 19b) and named from `BUILTIN_TYPE_NAMES` when the
    host's `errorTypes` does not name their type.
@@ -6055,12 +6199,56 @@ the store and the contract are the contract verdict's and
 
 12. **Test hooks (W-41):** rows carry `data-sp-error` and `data-sp-ref`; Resolve `data-sp="resolve"`; the form's Add `data-sp="add-error"` (SR-GRID decision 9a lists them all).
 
+13. **The host's detail (W-68):** `renderDetail(error) → Node | string |
+    null | undefined`, a property on this element and on `<sheetpane-excel>`,
+    each its own. It is called with a copy of the error (its `meta`, SR-GRID
+    5b, included) and its result is drawn in a `part="detail"` region right
+    after the message: in the open row here, in the error card in the sheet.
+    So the host's focusable controls come after the row's button (the card's
+    previous / next) and before Show in sheet, Resolve and Delete. A string
+    is text, never parsed as HTML; a Node is trusted host code, placed as it
+    is. `null`, `undefined` or `''` leaves the region empty, and an empty
+    region takes no room. The hook runs again only when that error changes
+    (`meta` included) or the hook is replaced, so a list re-drawn for another
+    error keeps the host's node. A throw is logged as SP-3017 and shows
+    nothing. Clicks, input and keys inside the region are the host's: the
+    element does not act on them. No hook, no region.
+
+14. **Accept… (W-69):** in the open row of an open error a person may
+    change (not `readonly`, not machine-authored — as Resolve), **Accept…**
+    opens a small form after the row's buttons: *Why is this accepted?*
+    (required — **Accept** stays disabled while it is blank), Cancel and
+    Accept. Focus goes to the reason; Esc or Cancel closes it and returns
+    focus to Accept…; ⌘/Ctrl+↵ accepts. Accepting calls the store's
+    `acceptError` (SR-GRID 5c) with this element's `author` as who — one
+    undo step, so Ctrl/⌘+Z here or in the sheet takes it back. The row then
+    moves under the Accepted chip, which takes focus. An accepted row's badge
+    reads **A** and its name ends *, accepted*; open, it shows *Accepted by
+    <who> · <when>* and the reason after the message, and Reopen (which drops
+    them). The sheet's error card shows the same lines and Reopen (SR-GRID
+    13); the form itself is only here. The workbook's own errors (validation,
+    file comments) are not accepted here — B-029.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
-  filters, reveal, readonly, `errorTypes`, events, notice, font, axe) and the
+  filters, reveal, readonly, `errorTypes`, events, notice, font, axe; W-55:
+  the groups and their order, keyboard order, the tab count, Show in sheet
+  for a sheet and disabled for the workbook, restore, axe; W-68: a string as
+  text in the card and the row, a Node kept until its error changes, the hook
+  replaced, a throw as SP-3017, the region's clicks left to the host, focus
+  order, axe; W-69: Accept… with a required reason, who / when / why, the
+  counts and the Accepted chip in both elements, the pin and the card, Esc,
+  Cancel and ⌘↵, one undo step, Reopen, `readonly` and a rule's row, axe with
+  the form open) and the
   L7 sync test in both mount orders with the errors element inside a
   `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
+
+- **Known gap (found by W-55):** axe's label-in-name rule (WCAG 2.5.3) fails
+  on every row and filter in the browser's default font. For example,
+  *All 4* is named *All severities: 4*. The host-font axe test passes only
+  because of the font, and the W-55 axe test turns that one rule off and
+  says why. Not fixed yet.
 
 ### Alternatives considered
 
@@ -6864,10 +7052,17 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file`, at the top-left cell of its
-   range. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   range. An error with no cell, about a whole sheet or the workbook (W-55,
+   SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
+   never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
+   reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
+   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
-   resolved. On a cell with someone's thread the errors join it as replies; on
+   resolved or accepted. **An accepted error (W-69, SR-GRID 5c)** gets one
+   more reply, `Accepted: <reason>`, written by who accepted it (`acceptedBy`,
+   else the error's author) at `acceptedAt`; reopened, the next export drops
+   it. On a cell with someone's thread the errors join it as replies; on
    a cell holding a legacy note nothing is written and the error is reported
    `note-at-cell` in `lastExport.skipped` (the file author's note is never
    rewritten).
@@ -6879,7 +7074,8 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    parts are **extended, never replaced**; a sheet whose parts cannot be
    parsed is left as is (`unreadable-part`).
 5. **Ids:** a thread entry's id is the version-5 UUID of
-   `sheetpane:<id>:<createdAt>` (`…#expected` for the reply); a person's, of
+   `sheetpane:<id>:<createdAt>` (`…#expected` and `…#accepted` for the
+   replies); a person's, of
    `sheetpane-person:<name>`. A second export of the same review replaces its
    own entries in place; replies added in Excel are kept and re-pointed.
 6. **Switches:** `write: false` for good; `ctx.exportOptions.comments ===
@@ -6892,16 +7088,19 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 
 ### Consequences
 
-- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet).
-- **Enforced today:** `just test-pkg comments` — 26 tests (notes and threads
+- **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
+- **Enforced today:** `just test-pkg comments` — 30 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
-  order; extending existing parts; joining a thread; the note-at-cell skip;
+  order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
+  an error's `meta` (W-68, SR-GRID 5b) found in no written part;
+  an accepted error's *Accepted* reply, its person and time, the thread
+  done, the reply dropped once reopened and skipped when read back (W-69);
   both switches byte-identical; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).
 - **Owed:** opening the exported fixture in Excel 365, Excel 2019 and
-  LibreOffice (DoD 4) and fixtures saved by Excel with notes, threads and
+  LibreOffice (DoD 4; an accepted error's reply included — W-69) and fixtures saved by Excel with notes, threads and
   both — W-30, the decider's; validating the parts against the OOXML schema
   (backlog B-033). Unverified until then: whether Excel links the note to its
   thread by the `tc=` author alone (no `xr:uid` is written), the `dT` format
@@ -7593,7 +7792,11 @@ flowchart LR
   for a throw (outside a three-line, reasoned allow-list), a console line not
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
-  W-40.
+  W-40. Later codes are appended to the lock in the order they were issued,
+  not by number. Example: SP-5804, from W-55, comes after SP-7007, and
+  SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
+  `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
+  refused), after them.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

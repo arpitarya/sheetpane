@@ -15,7 +15,7 @@ export interface CommentsOptions {
   write?: boolean;
 }
 
-/** What one export wrote (`written`: error ids) and skipped, with the reason (`note-at-cell`, `no-sheet`, `bad-range`, `unreadable-part`). */
+/** What one export wrote (`written`: error ids) and skipped, with the reason (`note-at-cell`, `no-cell` with SP-5804, `no-sheet`, `bad-range`, `unreadable-part`). */
 export type CommentsReport = WriteReport;
 
 /** The comments plugin, plus the report of its most recent export. */
@@ -34,7 +34,8 @@ const reviewOf = (ctx: PluginContext): SheetpaneError[] => ctx.snapshot().errors
  * The comments plugin, both ways. On load (`validate`), the file's notes and threaded comments become read-only
  * `file` notes in the error pane. On export (`exportPatch`), every other error is written as an Excel threaded
  * comment at the top-left cell of its range — with the legacy comment and VML parts older Excel needs — extending
- * existing parts, never replacing them. A cell holding someone's note is left alone and reported in `lastExport`.
+ * existing parts, never replacing them. A cell holding someone's note is left alone, and an error about a whole sheet
+ * or the workbook (no cell, W-55) is not written; both are reported in `lastExport`.
  * String XML only, so it runs in Node. Importing this module registers it as `comments`.
  *
  * @param options - `write: false` never writes the review; `export({ comments: false })` skips one export.

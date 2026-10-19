@@ -70,6 +70,9 @@ const TABLE = {
   'SP-3013': { title: 'Plugin validate failed', severity: 'error' },
   'SP-3014': { title: 'Plugin overlay failed', severity: 'error' },
   'SP-3015': { title: 'Source could not be read', severity: 'error' },
+  'SP-3016': { title: 'Error meta dropped', severity: 'warning' },
+  'SP-3017': { title: 'renderDetail failed', severity: 'error' },
+  'SP-3018': { title: 'Error not accepted', severity: 'warning' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 
@@ -89,6 +92,7 @@ const TABLE = {
   'SP-5801': { title: 'Comment part has no container', severity: 'error' },
   'SP-5802': { title: 'Not a worksheet', severity: 'error' },
   'SP-5803': { title: 'Comments not written for a sheet', severity: 'error' },
+  'SP-5804': { title: 'Error with no cell not written as a comment', severity: 'note' },
 
   // ── 6xxx · column rules and the rules file ──────────────────────────────
   'SP-6001': { title: 'Column rule pattern is not a regular expression', severity: 'error' },

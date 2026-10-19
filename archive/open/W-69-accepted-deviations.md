@@ -8,6 +8,8 @@ filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
 updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
+closed: 2026-10-19
+closed_by: "Claude Code (claude-opus-5-5), lane a"
 ---
 
 # W-69 — Accepted deviations: an error accepted with a reason, kept in the review and the download
@@ -16,9 +18,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `status: 'accepted'` with `acceptedBy`, `acceptedAt`, `reason` (required) | an approval is recorded, not lost | ⏳ |
-| 2 | *Accept…* in the list (not in `readonly`); counts exclude accepted; a filter chip shows them | accepted items stop shouting | ⏳ |
-| 3 | Comments and W-59's review sheet write *Accepted: <reason>* | the download carries the decision | ⏳ |
+| 1 | `status: 'accepted'` with `acceptedBy`, `acceptedAt`, `reason` (required) | an approval is recorded, not lost | ✅ |
+| 2 | *Accept…* in the list (not in `readonly`); counts exclude accepted; a filter chip shows them | accepted items stop shouting | ✅ |
+| 3 | Comments and W-59's review sheet write *Accepted: <reason>* | the download carries the decision | ✅ comments · → W-59 |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -38,10 +40,10 @@ A third status, `accepted`, with who, when and a required reason; not counted as
 
 | DoD | what | state |
 |---|---|---|
-| 1 · schema | status and fields; restore of old envelopes | ⏳ |
-| 2 · ui | form with required reason; undo | ⏳ |
-| 3 · export | comments and review sheet | ⏳ |
-| 4 · tests · docs | SR-ERRORS, SR-COMMENTS; skill `sheetpane-errors`; CHANGELOG | ⏳ |
+| 1 · schema | status and fields; restore of old envelopes | ✅ `status: 'open' \| 'resolved' \| 'accepted'` (`ErrorStatus`) with `acceptedBy`, `acceptedAt`, `reason`; `acceptError(id, reason, { by })` and `updateError(…, { status: 'accepted', reason })` — one undo step, `acceptedAt` stamped, a blank reason or a `workbook` / `file` error refused with SP-3018; any other status drops the fields; `setErrors` keeps an old envelope as it was and brings an accepted error with no reason back `open` (SP-3018); a `host` rule's acceptance stands while it fails the same way — `store.test.ts` (6) |
+| 2 · ui | form with required reason; undo | ✅ *Accept…* in an open row (not `readonly`, not rule rows): *Why is this accepted?*, Accept disabled while blank, Esc / Cancel / ⌘↵; the element's `author` as who; "n open", the severity chips and the sheet's counts leave accepted out; *Accepted n* chip; pin and badge **A**; who / when / why in the row and the sheet's card, Reopen; one undo step; axe — `errors.test.ts` (6) |
+| 3 · export | comments and review sheet | ✅ `@sheetpane/comments`: a reply *Accepted: <reason>* by who accepted it, at that time, the thread done; dropped once reopened; skipped when read back — `write.test.ts` (2). Review sheet → W-59 (DoD 5 added there). Opening it in Excel → W-30 (DoD 3) |
+| 4 · tests · docs | SR-ERRORS, SR-COMMENTS; skill `sheetpane-errors`; CHANGELOG | ✅ SR-GRID 5c, 13 and the codes line; SR-ERRORS 3, 7, 14, §1 and Consequences; SR-COMMENTS 3, 5 and Consequences; SR-CODES; the skill, the grid README, `docs/ERRORS.md`, CHANGELOG *Added* |
 
 ## Blockers
 

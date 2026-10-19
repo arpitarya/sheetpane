@@ -13,8 +13,9 @@ export interface SheetpaneError {
   v: 1;
   /** `"ERR-0003"` — stable, never reused in a session. */
   id: string;
+  /** The sheet's name; `""` (with `range: ""`) for an error about the whole workbook (W-55). */
   sheet: string;
-  /** A1 cell `"I6"` or a whole row `"A14:J14"`. */
+  /** A1 cell `"I6"` or a whole row `"A14:J14"`; `""` for an error about the whole sheet, or the workbook (W-55) — see {@link errorScope}. */
   range: string;
   /** An id from `errorTypes`, e.g. `"wrong-value"`. */
   type: string;
@@ -25,7 +26,8 @@ export interface SheetpaneError {
   message: string;
   /** "Also change the cell" was ticked. */
   cellChanged: boolean;
-  status: 'open' | 'resolved';
+  /** `accepted` (W-69): a known deviation someone approved — kept, never counted as open; it carries `acceptedBy`, `acceptedAt` and a `reason`. */
+  status: ErrorStatus;
   /** Computed: the cell now shows `expected` (B-022 — it does not resolve the error). */
   matchesExpected: boolean;
   /** The element's `author`, `"workbook"` (validation) or `"file"` (comments), or `""`. */
@@ -34,7 +36,55 @@ export interface SheetpaneError {
   createdAt: string;
   /** The stable SP code (W-40) when sheetpane itself raised the error — a rules-engine note, e.g. `"SP-6023"`; see docs/ERRORS.md. Optional: v1 stays valid without it. */
   code?: SpCode;
+  /**
+   * The host's own data about the error (W-68) — what `renderDetail` reads, e.g. a PDF page and box, a measured and an
+   * expected size. Any JSON value up to {@link ERROR_META_MAX} bytes; kept as its JSON round trip, carried by
+   * `getErrors()`, `setErrors()` and the `sheetpane-errors` envelope, and never written into the file. Optional: v1
+   * stays valid without it.
+   */
+  meta?: ErrorMeta;
+  /** Who accepted the deviation (W-69): the element's `author`, or what the host passed; `""` when nobody was named. Only while `status` is `accepted`. */
+  acceptedBy?: string;
+  /** When it was accepted, ISO 8601 (W-69). Only while `status` is `accepted`. */
+  acceptedAt?: string;
+  /** Why it was accepted (W-69) — required, never blank, while `status` is `accepted`; written into the export as *Accepted: <reason>*. */
+  reason?: string;
 }
+
+/**
+ * Where an error stands: `open` counts as a problem; `resolved` is fixed; `accepted` (W-69) is a known deviation someone
+ * approved with a reason — kept in the review and the download, never counted as open.
+ */
+export type ErrorStatus = 'open' | 'resolved' | 'accepted';
+
+/** A JSON value: what `SheetpaneError.meta` holds (W-68). */
+export type ErrorMeta = null | boolean | number | string | ErrorMeta[] | { [key: string]: ErrorMeta };
+
+/** The most an error's `meta` may weigh, in bytes of its JSON text (UTF-8): 64 KiB. Over it, the meta is dropped with SP-3016 (W-68). */
+export const ERROR_META_MAX = 65536;
+
+/**
+ * The host's extra detail for one error (W-68), drawn in the sheet's error card and the error list's open row, after the
+ * message, in a region the host styles as `::part(detail)`. A string is shown as text, never parsed as HTML; a Node is
+ * the host's own and is placed as it is; `null`, `undefined` or `''` shows nothing. It is called again only when the
+ * error changes (its `meta` included) or the hook is replaced. A throw is logged as SP-3017 and shows nothing.
+ *
+ * @example
+ * ```ts
+ * import '@sheetpane/grid';
+ * import type { RenderDetail } from '@sheetpane/grid';
+ * const detail: RenderDetail = (e) => {
+ *   const m = e.meta as { measured?: string; expected?: string } | null | undefined;
+ *   return m?.measured ? `The PDF measures ${m.measured}; the sheet says ${m.expected}.` : null;
+ * };
+ * document.querySelector('sheetpane-excel')!.renderDetail = detail;
+ * document.querySelector('sheetpane-errors')!.renderDetail = detail;
+ * ```
+ */
+export type RenderDetail = (error: SheetpaneError) => Node | string | null | undefined;
+
+/** A copy of an error the host may change freely: its `meta` is cloned too (W-68). */
+export const copyError = (e: SheetpaneError): SheetpaneError => (e.meta !== null && typeof e.meta === 'object' ? { ...e, meta: structuredClone(e.meta) } : { ...e });
 
 /** Plugins verdict decision 6. */
 export type ChangeKind = 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze' | 'hidden' | 'sheetState' | 'outline';
@@ -120,6 +170,24 @@ export const DEFAULT_ERROR_TYPES: readonly ErrorType[] = [
 
 /** Names for the types plugins and the core write, shown when the host's `errorTypes` does not name them. */
 export const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = { validation: 'Workbook rule', comment: 'Comment', 'column-rule': 'Column rule', 'cell-rule': 'Cell rule' };
+
+/** Where an error belongs (W-55). */
+export type ErrorScope = 'cell' | 'sheet' | 'workbook';
+
+/**
+ * Where an error belongs: `workbook` when `sheet` is `""`, `sheet` when `range` is `""`, else `cell`.
+ * A sheet- or workbook-level error has no cell — it is listed above the cell errors, never placed on A1.
+ *
+ * @param e - The error, or just its `sheet` and `range`.
+ * @returns `cell`, `sheet` or `workbook`.
+ * @example
+ * ```ts
+ * import { errorScope } from '@sheetpane/grid';
+ * errorScope({ sheet: 'Pages', range: '' }); // 'sheet'
+ * errorScope({ sheet: '', range: '' }); // 'workbook'
+ * ```
+ */
+export const errorScope = (e: Pick<SheetpaneError, 'sheet' | 'range'>): ErrorScope => (e.sheet === '' ? 'workbook' : e.range === '' ? 'sheet' : 'cell');
 
 /** Errors the workbook, the file or a host rule wrote: shown, never resolved or deleted by hand. */
 export const machineAuthored = (author: string) => author === 'workbook' || author === 'file' || author === 'host';

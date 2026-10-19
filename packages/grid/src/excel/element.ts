@@ -7,7 +7,8 @@ import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type Mode, type RenderDetail, type SheetpaneError, type Severity } from '../pane/types.js';
+import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
@@ -67,7 +68,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * - `flagging` — `on` (the default) or `off`: no Flag issue anywhere.
  *
  * Properties: `workbook`, `errors`, `errorTypes`, `file`, `mode`, `theme`, `open`, `src`, `sizes`,
- * `rules`, `flagging`, `columns`, `validate`, `onInvalid`.
+ * `rules`, `flagging`, `columns`, `validate`, `onInvalid`, `renderDetail`.
  *
  * Methods: `load()`, `export()`, `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
  * `shortcuts()`, `column()`, `renderNow()`, `geometryFor()`, `reveal()`, `unreveal()`.
@@ -98,6 +99,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * @csspart format-row - The format row (Edit): plugin controls and the `format-row` slot.
  * @csspart status - The status line under the sheet tabs.
  * @csspart dialog - The modal `<dialog>` the root moves into when `display="popup"`.
+ * @csspart detail - The host's region in the error card, after the message: what `renderDetail` returns (W-68).
  *
  * @example
  * ```ts
@@ -124,6 +126,7 @@ export class SheetpaneExcel extends ElementBase {
   private unsub: (() => void)[] = [];
   private shadow!: ShadowRoot;
   private q!: Refs;
+  private detailRegion = new DetailRegion();
   private built = false;
   private raf = 0;
   private zoom = 1;
@@ -188,6 +191,14 @@ export class SheetpaneExcel extends ElementBase {
   /** The types offered in the Flag issue form; an empty list falls back to `DEFAULT_ERROR_TYPES`. */
   get errorTypes(): readonly ErrorType[] { return this._errorTypes; }
   set errorTypes(t: readonly ErrorType[]) { this._errorTypes = t.length ? t : DEFAULT_ERROR_TYPES; this.schedule(); }
+  /**
+   * The host's extra detail for an error (W-68): called with a copy of the error when its card opens in the sheet, and
+   * drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called
+   * again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on
+   * each element that should show it — `<sheetpane-errors>` has its own.
+   */
+  get renderDetail(): RenderDetail | undefined { return this.detailRegion.render; }
+  set renderDetail(f: RenderDetail | undefined) { this.detailRegion.render = f; this.schedule(); }
   /** Loads a file, like `load()`; `null` does nothing. */
   set file(f: File | Blob | ArrayBuffer | Uint8Array | null) { if (f) void this.load(f); }
   /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
@@ -417,7 +428,7 @@ export class SheetpaneExcel extends ElementBase {
     this.built = true;
     this.shadow = this.attachShadow({ mode: 'open' });
     const zoomOpts = ZOOMS.map((z) => `<option value="${z}"${z === 1 ? ' selected' : ''}>${z * 100} %</option>`).join('');
-    this.shadow.innerHTML = `<style>${EXCEL_CSS}</style><dialog part="dialog" aria-label="Spreadsheet"></dialog>
+    this.shadow.innerHTML = `<style>${EXCEL_CSS}${DETAIL_CSS}</style><dialog part="dialog" aria-label="Spreadsheet"></dialog>
 <div class="sp" part="root">
  <div class="bar" part="toolbar">
   <span class="ico">${ICON.sheet}</span><span class="fname"></span><span class="chip meta"></span>
@@ -1829,6 +1840,7 @@ export class SheetpaneExcel extends ElementBase {
   }
 
   private onOverlayClick(e: Event): void {
+    if (inDetail(e.target)) return; // the host's region in the card: its clicks are the host's (W-68)
     const t = e.target as HTMLElement, s = this._store!, snap = s.getSnapshot();
     const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
     const pin = t.closest<HTMLElement>('[data-pin]');
@@ -1869,6 +1881,7 @@ export class SheetpaneExcel extends ElementBase {
   }
 
   private onComposerInput(e: Event): void {
+    if (inDetail(e.target)) return;
     const t = e.target as HTMLInputElement;
     const f = t.dataset.field;
     if (!f) return;
@@ -1894,7 +1907,7 @@ export class SheetpaneExcel extends ElementBase {
 
   private stepError(dir: 1 | -1): void {
     const s = this._store!, snap = s.getSnapshot();
-    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet);
+    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet && errorScope(e) === 'cell'); // a sheet-level error has no cell to step to (W-55)
     if (!list.length) return;
     const cur = this.errorAt(snap.selection.sheet, snap.selection.ref);
     const i = cur ? list.indexOf(cur) : -1;
@@ -2088,9 +2101,10 @@ export class SheetpaneExcel extends ElementBase {
     q.tabs.hidden = src.kind === 'csv';
     // W-49: hidden sheets are not tabs — one ⊘ button lists them; one opened for viewing shows dashed
     const tabsHtml = book.sheets.filter((sh) => s.hidden(sh.name).state === 'visible' || this.openedSheets.has(sh.name) || sh.name === sheet.name).map((sh) => {
-      const cnt = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open').length : 0;
+      const mine = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open') : [];
+      const cnt = mine.length, whole = mine.filter((e) => e.range === '').length; // W-55: a whole-sheet error is counted on its tab
       const hid = s.hidden(sh.name).state !== 'visible';
-      return `<button type="button" role="tab" class="tab${hid ? ' hid' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${hid ? ' title="Hidden in the file — shown for viewing"' : ''}>${hid ? '⊘ ' : ''}${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open">${cnt}</span>` : ''}</button>`;
+      return `<button type="button" role="tab" class="tab${hid ? ' hid' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${hid ? ' title="Hidden in the file — shown for viewing"' : ''}>${hid ? '⊘ ' : ''}${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open${whole ? `, ${whole} about the whole sheet` : ''}">${cnt}</span>` : ''}</button>`;
     }).join('');
     const tabsHtml2 = `<div class="tablist" role="tablist" aria-label="Sheets">${tabsHtml}</div>${this.hiddenSheetsHtml()}`;
     if (q.tabs.dataset.html !== tabsHtml2) { q.tabs.innerHTML = tabsHtml2; q.tabs.dataset.html = tabsHtml2; }
@@ -2215,7 +2229,7 @@ export class SheetpaneExcel extends ElementBase {
       if (e.sheet !== sheet.name) continue;
       const r = parseRange(e.range);
       if (!r) continue;
-      const m = e.status === 'resolved' ? 'm-pass' : `m-${e.severity}`;
+      const m = e.status === 'resolved' ? 'm-pass' : e.status === 'accepted' ? 'm-accepted' : `m-${e.severity}`; // an accepted deviation is marked quietly (W-69)
       for (let rr = r.top; rr <= Math.min(r.bottom, r.top + 2000); rr++) for (let cc = r.left; cc <= r.right; cc++) marks.set(`${rr},${cc}`, m);
       if (e.status === 'open') for (let rr = r.top; rr <= Math.min(r.bottom, r.top + 2000); rr++) { const w = rowWorst.get(rr); if (!w || sevOrder[e.severity] > sevOrder[w]) rowWorst.set(rr, e.severity); }
     }
@@ -2421,7 +2435,7 @@ export class SheetpaneExcel extends ElementBase {
         const on = r.top === selP.row && selP.col >= r.left && selP.col <= r.right;
         const mach = machineAuthored(e.author);
         const left = mach ? RW + X(r.right + 1) - 18 : p.x - 6;
-        parts.push(`<button type="button" class="pin ${e.status === 'resolved' ? 'resolved' : e.severity}${on ? ' on' : ''}${mach ? ' square' : ''}" data-pin="${esc(e.id)}" aria-label="${mach ? `${esc(BUILTIN_TYPE_NAMES[e.type] ?? e.type)}` : `Error ${errNum(e)}`}, ${esc(e.range)}, ${SEVERITY[e.severity].name}${e.status === 'resolved' ? ', resolved' : ''}" style="top:${p.y - 8}px;left:${left}px">${e.status === 'resolved' ? '✓' : mach ? '⚠' : errNum(e)}</button>`);
+        parts.push(`<button type="button" class="pin ${e.status === 'open' ? e.severity : e.status}${on ? ' on' : ''}${mach ? ' square' : ''}" data-pin="${esc(e.id)}" aria-label="${mach ? `${esc(BUILTIN_TYPE_NAMES[e.type] ?? e.type)}` : `Error ${errNum(e)}`}, ${esc(e.range)}, ${SEVERITY[e.severity].name}${e.status === 'open' ? '' : `, ${e.status}`}" style="top:${p.y - 8}px;left:${left}px">${e.status === 'resolved' ? '✓' : e.status === 'accepted' ? 'A' : mach ? '⚠' : errNum(e)}</button>`);
       }
     }
     const composing = snap.composing;
@@ -2474,6 +2488,7 @@ export class SheetpaneExcel extends ElementBase {
         if (card.startsWith('<div class="card composer"')) { this.composerKey = `${sel.sheet}!${sel.ref}|${this.draft.type}|${this.draft.severity}`; cardEl.dataset.key = this.composerKey; (cardEl.querySelector('textarea') as HTMLElement | null)?.focus(); }
       }
     }
+    this.detailRegion.sync(cardEl, card.startsWith('<div class="card callout"') ? err : undefined); // the host's region in the card (W-68)
     this.renderPluginOverlays(sheet, z, RW, HH, ov);
   }
 
@@ -2506,9 +2521,9 @@ export class SheetpaneExcel extends ElementBase {
     const meta = [sv.name, e.author || '', e.code ?? '', e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '', e.cellChanged ? 'cell changed' : ''].filter(Boolean).join(' · ');
     const ro = machineAuthored(e.author);
     return `<div class="card callout" role="group" aria-label="Error details" data-sp="callout" style="top:${top}px;left:${left}px;width:300px">
-<div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
-<div class="bd"><dl class="fe"><dt>Found</dt><dd><span class="found">${esc(e.found)}</span></dd><dt>Should be</dt><dd><span class="want">${esc(e.expected || '—')}</span></dd></dl>${e.message ? `<p style="margin:0;font-size:13px">${esc(e.message)}</p>` : ''}${tags ? `<div style="display:flex;gap:6px">${tags}</div>` : ''}<span class="xs faint">${esc(meta)}</span></div>
-${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button></div>`}</div>`;
+<div class="hd"><span class="g ${e.status === 'resolved' ? 'g-pass' : `g-${e.status === 'accepted' ? 'accepted' : e.severity}`}" aria-hidden="true">${e.status === 'resolved' ? '✓' : e.status === 'accepted' ? 'A' : sv.glyph}</span><span class="t">${esc(t?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type)}</span><span class="xs faint">${esc(e.range)}</span><span class="spacer"></span><button type="button" class="btn btn-g btn-i" data-act="prev" aria-label="Previous error">${ICON.prev}</button><button type="button" class="btn btn-g btn-i" data-act="next" aria-label="Next error">${ICON.next}</button></div>
+<div class="bd"><dl class="fe"><dt>Found</dt><dd><span class="found">${esc(e.found)}</span></dd><dt>Should be</dt><dd><span class="want">${esc(e.expected || '—')}</span></dd></dl>${e.message ? `<p style="margin:0;font-size:13px">${esc(e.message)}</p>` : ''}${this.detailRegion.html()}${acceptedHtml(e)}${tags ? `<div style="display:flex;gap:6px">${tags}</div>` : ''}<span class="xs faint">${esc(meta)}</span></div>
+${ro ? '' : `<div class="ft"><button type="button" class="btn" data-act="resolve">${e.status === 'open' ? '✓ Resolve' : 'Reopen'}</button><span class="spacer"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button></div>`}</div>`;
   }
 
   private composerHtml(left: number, top: number, ref: string): string {

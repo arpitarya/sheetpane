@@ -35,7 +35,8 @@ textarea.input{height:auto;min-height:56px;padding:6px 8px;resize:vertical;width
 .num{font-variant-numeric:tabular-nums}
 .xs{font-size:12px}.faint{color:var(--sp-ink-3)}.muted{color:var(--sp-ink-2)}
 .g{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:var(--sp-r-sm);font-size:10px;font-weight:700;color:var(--sp-on-solid);flex:none}
-.g-error{background:var(--sp-fail)}.g-warning{background:var(--sp-warn)}.g-note{background:var(--sp-accent)}.g-pass{background:var(--sp-pass)}
+.g-error{background:var(--sp-fail)}.g-warning{background:var(--sp-warn)}.g-note{background:var(--sp-accent)}.g-pass{background:var(--sp-pass)}.g-accepted{background:var(--sp-surface);color:var(--sp-ink-2);box-shadow:inset 0 0 0 1.5px var(--sp-ink-3)}
+.acceptance{display:flex;flex-direction:column;gap:2px;font-size:13px;margin:0;overflow-wrap:anywhere}
 `;
 
 export const EXCEL_CSS = `${BASE_CSS}
@@ -133,6 +134,7 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .c.m-warning{box-shadow:inset 0 0 0 1.5px var(--sp-warn)}.c.m-warning::before{background:var(--sp-warn-soft)}
 .c.m-note{box-shadow:inset 0 0 0 1.5px var(--sp-accent)}.c.m-note::before{background:var(--sp-accent-soft)}
 .c.m-pass{box-shadow:inset 0 0 0 1.5px var(--sp-pass)}
+.c.m-accepted{box-shadow:inset 0 0 0 1.5px var(--sp-ink-3)}
 .c.stale>.v{color:var(--sp-ink-3);font-style:italic}
 .c.stale>.v::before{content:"≈ ";color:var(--sp-warn);font-style:normal}
 .c.derived>.v{color:var(--sp-accent-ink)}
@@ -140,7 +142,7 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .overlay{position:absolute;inset:0;pointer-events:none;z-index:4}
 .overlay>*{pointer-events:auto}
 .pin{position:absolute;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:0;font-size:10px;font-weight:700;line-height:18px;color:var(--sp-on-solid);text-align:center;box-shadow:0 0 0 2px var(--sp-cell),0 1px 4px rgba(22,23,26,.3);cursor:pointer;font-variant-numeric:tabular-nums}
-.pin.error{background:var(--sp-fail)}.pin.warning{background:var(--sp-warn)}.pin.note{background:var(--sp-accent)}.pin.resolved{background:var(--sp-pass)}
+.pin.error{background:var(--sp-fail)}.pin.warning{background:var(--sp-warn)}.pin.note{background:var(--sp-accent)}.pin.resolved{background:var(--sp-pass)}.pin.accepted{background:var(--sp-surface);color:var(--sp-ink-2);box-shadow:0 0 0 2px var(--sp-cell),inset 0 0 0 1.5px var(--sp-ink-3)}
 .pin.on{box-shadow:0 0 0 2px var(--sp-cell),0 0 0 4px var(--sp-ink)}
 .pin.square{border-radius:3px;min-width:16px;height:16px;line-height:16px;padding:0 2px}
 .pin.pending{background:var(--sp-cell);color:var(--sp-accent);box-shadow:0 0 0 1.5px var(--sp-accent)}

@@ -37,6 +37,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'prop:errors'?: SheetpaneExcel['errors'] | undefined;
   /** The types offered in the Flag issue form; an empty list falls back to `DEFAULT_ERROR_TYPES`. */
   'prop:errorTypes'?: SheetpaneExcel['errorTypes'] | undefined;
+  /** The host's extra detail for an error (W-68): called with a copy of the error when its card opens in the sheet, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — `<sheetpane-errors>` has its own. */
+  'prop:renderDetail'?: SheetpaneExcel['renderDetail'] | undefined;
   /** Loads a file, like `load()`; `null` does nothing. */
   'prop:file'?: SheetpaneExcel['file'] | undefined;
   /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
@@ -93,9 +95,9 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
 export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErrorsProperties & {
   /** The pane id shared with the sheet; none gives the element its own store. */
   'attr:pane'?: string | undefined;
-  /** Hides the form, Resolve, Delete, Undo and Redo (a sign-off screen). */
+  /** Hides the form, Resolve, Accept…, Delete, Undo and Redo (a sign-off screen). */
   'attr:readonly'?: boolean | undefined;
-  /** Written into the errors this element's user adds. */
+  /** Written into the errors this element's user adds, and as who accepted one (W-69). */
   'attr:author'?: string | undefined;
   /** Space-separated registered plugin ids; fixed per pane. */
   'attr:plugins'?: string | undefined;
@@ -111,6 +113,8 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'prop:readOnly'?: SheetpaneErrors['readOnly'] | undefined;
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   'prop:theme'?: SheetpaneErrors['theme'] | undefined;
+  /** The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — the sheet's error card has its own. */
+  'prop:renderDetail'?: SheetpaneErrors['renderDetail'] | undefined;
   /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
   'on:sheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
@@ -119,7 +123,7 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'on:sheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select']) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history']) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55). */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal']) => void) | undefined;
 };
 

@@ -40,8 +40,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
 
-- 🟢 **W-55** `agent` · **G1** · Errors that belong to a whole sheet or the whole workbook, not a cell. Filed by Arpit (Cowork). [detail](open/W-55-sheet-and-workbook-errors.md)
-
 - 🟢 **W-56** `agent` · **G1** · A hover event and a host highlight that does not move the selection. Filed by Arpit (Cowork). [detail](open/W-56-hover-and-highlight.md)
 
 - 🟢 **W-57** `agent` · **G2** · Export writes data validation and conditional formatting. Filed by Arpit (Cowork). [detail](open/W-57-export-writes-validation-and-conditional-formats.md)
@@ -65,10 +63,6 @@ here. Read that record before changing anything below it.
 - 🟢 **W-66** `agent` · **G3** · Open straight at a cell: a `ref` attribute and opt-in links in the URL. Filed by Arpit (Cowork). [detail](open/W-66-link-to-a-cell.md)
 
 - 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
-
-- 🟢 **W-68** `agent` · **G3** · Room in the error card for the host: `meta` on an error and a `renderDetail` hook. Filed by Arpit (Cowork). [detail](open/W-68-error-detail-slot.md)
-
-- 🟢 **W-69** `agent` · **G3** · Accepted deviations: an error accepted with a reason, kept in the review and the download. Filed by Arpit (Cowork). [detail](open/W-69-accepted-deviations.md)
 
 ### testing
 

@@ -7,8 +7,8 @@ import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet,
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
-import { machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
+import { ERROR_META_MAX, copyError, machineAuthored } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
 /** What {@link createWorkbook} takes. */
 export interface StoreOptions {
@@ -84,6 +84,43 @@ export function parseInput(text: string, original: Cell, source: 'xlsx' | 'csv')
 
 /** A sheet's state as read: `state` (W-49), else the older `hidden` flag. */
 export const sheetStateOf = (s: ImportedSheet): SheetState => ((s as { state?: SheetState }).state ?? (s.hidden ? 'hidden' : 'visible'));
+/** An error's `meta` as kept (W-68): its JSON round trip, or `undefined` — logged as SP-3016 — when it is not JSON or weighs over ERROR_META_MAX. */
+function cleanMeta(id: string, meta: unknown): ErrorMeta | undefined {
+  let json: string | undefined;
+  try { json = JSON.stringify(meta); } catch { json = undefined; } // a cycle or a BigInt
+  if (json === undefined) { console.warn(spMessage('SP-3016', `${id || 'a new error'}: its meta is not JSON, so it was not kept`)); return undefined; }
+  // UTF-8 weighs one to three bytes per UTF-16 unit: encode only when the length cannot tell
+  const bytes = json.length * 3 <= ERROR_META_MAX ? json.length : new TextEncoder().encode(json).length;
+  if (bytes > ERROR_META_MAX) { console.warn(spMessage('SP-3016', `${id || 'a new error'}: its meta is ${bytes} bytes of JSON, over the ${ERROR_META_MAX}-byte cap, so it was not kept`)); return undefined; }
+  return JSON.parse(json) as ErrorMeta;
+}
+/** The error with `meta` set to what may be kept, or without it. */
+function withMeta(e: SheetpaneError, meta: unknown): SheetpaneError {
+  const { meta: _was, ...rest } = e;
+  const m = meta === undefined ? undefined : cleanMeta(e.id, meta);
+  return m === undefined ? rest : { ...rest, meta: m };
+}
+
+/** The error without who, when and why (W-69): only an `accepted` error carries them. */
+function withoutAcceptance(e: SheetpaneError): SheetpaneError {
+  if (!('acceptedBy' in e || 'acceptedAt' in e || 'reason' in e)) return e;
+  const { acceptedBy: _by, acceptedAt: _at, reason: _why, ...rest } = e;
+  return rest;
+}
+/** Why an error may not stand as `accepted` (W-69), or `undefined` when it may: it needs a reason, and the workbook's own errors are B-029's. */
+function acceptRefusal(e: SheetpaneError): string | undefined {
+  if (e.author === 'workbook' || e.author === 'file') return `${e.id}: it is the workbook's own (author "${e.author}"), which is not accepted here`;
+  if (typeof e.reason !== 'string' || !e.reason.trim()) return `${e.id || 'an error'}: no reason was given`;
+  return undefined;
+}
+/** An error as a restore keeps it (W-69): `accepted` with who, when and why — without a reason it comes back `open`, logged as SP-3018; any other status, without them. */
+function restoredStatus(e: SheetpaneError): SheetpaneError {
+  if (e.status !== 'accepted') return withoutAcceptance(e);
+  const why = acceptRefusal(e);
+  if (why) { console.warn(spMessage('SP-3018', `${why}, so it was restored as open`)); return { ...withoutAcceptance(e), status: 'open' }; }
+  return { ...e, acceptedBy: typeof e.acceptedBy === 'string' ? e.acceptedBy : '', acceptedAt: typeof e.acceptedAt === 'string' ? e.acceptedAt : '' };
+}
+
 const same = (a: unknown, b: unknown) => a === b || (typeof a === 'number' && typeof b === 'number' && Object.is(a, b)) || JSON.stringify(a) === JSON.stringify(b);
 
 /**
@@ -581,8 +618,9 @@ export class WorkbookStore {
     });
   }
 
-  /** The uploaded display text of a range's first cell, as `found` freezes it. */
+  /** The uploaded display text of a range's first cell, as `found` freezes it; `""` for a sheet- or workbook-level error (no cell, W-55). */
   foundFor(sheet: string, range: string): string {
+    if (range === '') return '';
     const r = parseRange(range);
     if (!r) return BLANK;
     if (r.top === r.bottom && r.left !== r.right) return `row ${r.top + 1}`;
@@ -597,13 +635,13 @@ export class WorkbookStore {
     return (this.original(e.sheet, cellRef(r.top, r.left)).text || BLANK) !== e.found;
   }
 
-  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. */
-  addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string }, origin?: Origin): SheetpaneError {
-    const e: SheetpaneError = {
+  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. `range: ''` is the whole sheet, and with `sheet: ''` the workbook (W-55): no cell, so `found` is `''` and nothing is written. `meta` is the host's data (W-68): kept as JSON, or dropped with SP-3016. */
+  addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string; meta?: ErrorMeta }, origin?: Origin): SheetpaneError {
+    const e: SheetpaneError = withMeta({
       v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity,
       found: this.foundFor(d.sheet, d.range), expected: d.expected ?? '', message: d.message ?? '',
       cellChanged: !!d.cellChanged, status: 'open', matchesExpected: false, author: d.author ?? '', createdAt: new Date().toISOString(),
-    };
+    }, d.meta);
     let changes = this.snap.changes;
     const keys: string[] = [];
     const events: StoreEvent[] = [{ type: 'errors', origin }];
@@ -620,10 +658,51 @@ export class WorkbookStore {
     return this.snap.errors.find((x) => x.id === e.id)!;
   }
 
-  /** Changes an error's status, severity, expected value, message or type; undoable. */
-  updateError(id: string, patch: Partial<Pick<SheetpaneError, 'status' | 'severity' | 'expected' | 'message' | 'type'>>, origin?: Origin): void {
-    if (!this.snap.errors.some((e) => e.id === id)) return;
-    this.commit({ changes: this.snap.changes, errors: this.snap.errors.map((e) => (e.id === id ? { ...e, ...patch } : e)) }, [], origin, [{ type: 'errors', origin }]);
+  /**
+   * Changes an error's status, severity, expected value, message, type or `meta` (W-68: `meta: undefined` removes it; a
+   * `meta` that may not be kept is dropped with SP-3016 and the error keeps its own); undoable. `status: 'accepted'`
+   * (W-69) needs a `reason` and stamps `acceptedAt`; any other status drops `acceptedBy`, `acceptedAt` and `reason`.
+   * @returns `false` when nothing changed: no such error, or an acceptance refused (SP-3018).
+   */
+  updateError(id: string, patch: { status?: SheetpaneError['status']; severity?: SheetpaneError['severity']; expected?: string; message?: string; type?: string; meta?: ErrorMeta | undefined; reason?: string; acceptedBy?: string }, origin?: Origin): boolean {
+    const cur = this.snap.errors.find((e) => e.id === id);
+    if (!cur) return false;
+    const { meta, reason, acceptedBy, ...rest } = patch;
+    let out = { ...cur, ...rest } as SheetpaneError;
+    if (out.status === 'accepted') {
+      if (reason !== undefined) out.reason = typeof reason === 'string' ? reason.trim() : reason;
+      if (acceptedBy !== undefined || cur.status !== 'accepted') out.acceptedBy = acceptedBy ?? '';
+      if (patch.status === 'accepted' || cur.status !== 'accepted') out.acceptedAt = new Date().toISOString();
+      const why = acceptRefusal(out);
+      if (why) { console.warn(spMessage('SP-3018', why)); return false; }
+      out = { ...withoutAcceptance(out), acceptedBy: out.acceptedBy!, acceptedAt: out.acceptedAt!, reason: out.reason! }; // keep the key order stable
+    } else out = withoutAcceptance(out);
+    if ('meta' in patch) {
+      if (meta === undefined) out = withMeta(out, undefined);
+      else { const m = cleanMeta(id, meta); if (m !== undefined) out = { ...out, meta: m }; }
+    }
+    this.commit({ changes: this.snap.changes, errors: this.snap.errors.map((e) => (e.id === id ? out : e)) }, [], origin, [{ type: 'errors', origin }]);
+    return true;
+  }
+
+  /**
+   * Accepts an error as a known deviation (W-69): it stays in the review and the download, recorded with who, when and
+   * why, and is no longer counted as open. One undo step; Reopen (`updateError(id, { status: 'open' })`) takes it back.
+   * The workbook's own errors (author `workbook` or `file`) are not accepted here.
+   * @param id - The error's id.
+   * @param reason - Why the deviation is accepted — required; blank is refused with SP-3018.
+   * @param o - `by`: who accepted it (the errors element passes its `author`).
+   * @returns `false` when nothing changed.
+   * @example
+   * ```ts
+   * import { createWorkbook } from '@sheetpane/grid';
+   * const wb = createWorkbook();
+   * const e = wb.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'Page 4 is 2 mm wider than the spec' });
+   * wb.acceptError(e.id, 'Approved by the customer on 18 Oct', { by: 'Ravi' }); // true
+   * ```
+   */
+  acceptError(id: string, reason: string, o: { by?: string } = {}, origin?: Origin): boolean {
+    return this.updateError(id, { status: 'accepted', reason, acceptedBy: o.by ?? '' }, origin);
   }
 
   /** Deletes an error; a cell it changed keeps the change (contract decision 6). */
@@ -632,12 +711,12 @@ export class WorkbookStore {
     this.commit({ changes: this.snap.changes, errors: this.snap.errors.filter((e) => e.id !== id) }, [], origin, [{ type: 'errors', origin }]);
   }
 
-  /** A copy of every error in the pane. */
-  getErrors(): SheetpaneError[] { return this.snap.errors.map((e) => ({ ...e })); }
+  /** A copy of every error in the pane, `meta` included (W-68). */
+  getErrors(): SheetpaneError[] { return this.snap.errors.map(copyError); }
 
-  /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). */
+  /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). Each `meta` is kept as JSON, or dropped with SP-3016 (W-68). */
   setErrors(list: readonly SheetpaneError[], origin?: Origin): void {
-    const errors = list.map((e) => ({ ...e, v: 1 as const, matchesExpected: false }));
+    const errors = list.map((e) => restoredStatus(withMeta({ ...e, v: 1 as const, matchesExpected: false }, e.meta)));
     for (const e of errors) { const n = /^ERR-(\d+)$/.exec(e.id); if (n) this.nextError = Math.max(this.nextError, Number(n[1]) + 1); }
     this.undoStack = []; this.redoStack = [];
     this.pluginErrors.clear(); // ids now name the restored list's errors; validate re-adopts its own by what they say, never by id
@@ -742,7 +821,7 @@ export class WorkbookStore {
             changed = true;
           } else if (errors[i]!.author !== 'file' && (errors[i]!.status === 'resolved' || errors[i]!.found !== d.found || errors[i]!.message !== d.message || errors[i]!.severity !== d.severity || errors[i]!.code !== d.code)) {
             // a machine-authored error follows the cell: reopened, and its found / message refreshed
-            const { code: _was, ...rest } = errors[i]!;
+            const { code: _was, ...rest } = withoutAcceptance(errors[i]!); // an acceptance was for what it found then (W-69)
             errors[i] = { ...rest, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found, severity: d.severity, ...(d.code ? { code: d.code } : {}) };
             changed = true;
           }
@@ -751,7 +830,7 @@ export class WorkbookStore {
         for (const [k, id] of this.pluginErrors) {
           if (!k.startsWith(`${p.id}|${sheet}|`) || seen.has(k)) continue;
           const i = at.get(id) ?? -1;
-          if (i >= 0 && (errors[i]!.author === 'workbook' || errors[i]!.author === 'host') && errors[i]!.status === 'open') { errors[i] = { ...errors[i]!, status: 'resolved' }; changed = true; }
+          if (i >= 0 && (errors[i]!.author === 'workbook' || errors[i]!.author === 'host') && (errors[i]!.status === 'open' || errors[i]!.status === 'accepted')) { errors[i] = { ...withoutAcceptance(errors[i]!), status: 'resolved' }; changed = true; }
         }
       }
     }

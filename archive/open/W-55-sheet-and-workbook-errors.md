@@ -8,6 +8,8 @@ filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
 updated_by: "Arpit (Cowork, claude-opus-5-5)"
 ball: agent
+closed: 2026-10-19
+closed_by: "Claude Code (claude-opus-5-5), lane a"
 ---
 
 # W-55 — Errors that belong to a whole sheet or the whole workbook, not a cell
@@ -16,9 +18,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `range: ''` means the whole sheet; `sheet: ''` and `range: ''` mean the workbook | every finding has an honest home | ⏳ |
-| 2 | List: a *Workbook* group, then each sheet's sheet-level errors, above the cell errors; *Show in sheet* opens the tab or is disabled | the biggest problems are read first | ⏳ |
-| 3 | Comments plugin skips them (no cell to attach to) and says so; W-59's review sheet lists them | nothing is dropped silently | ⏳ |
+| 1 | `range: ''` means the whole sheet; `sheet: ''` and `range: ''` mean the workbook | every finding has an honest home | ✅ |
+| 2 | List: a *Workbook* group, then each sheet's sheet-level errors, above the cell errors; *Show in sheet* opens the tab or is disabled | the biggest problems are read first | ✅ |
+| 3 | Comments plugin skips them (no cell to attach to) and says so; W-59's review sheet lists them | nothing is dropped silently | ✅ comments · → W-59 |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -38,10 +40,10 @@ An error with no cell — sheet-level or workbook-level — listed at the top, c
 
 | DoD | what | state |
 |---|---|---|
-| 1 · schema | types and docs; existing errors unaffected | ⏳ |
-| 2 · list | groups, counts, keyboard order, axe | ⏳ |
-| 3 · export | comments skip with an SP code note; listed in the review sheet when W-59 exists | ⏳ |
-| 4 · tests · docs | unit + browser; skill `sheetpane-errors`; CHANGELOG | ⏳ |
+| 1 · schema | types and docs; existing errors unaffected | ✅ `errorScope` / `ErrorScope`; `found` `''`, never stale, nothing written for "Also change the cell"; whole-sheet `validate` drafts resolve themselves — `store.test.ts` |
+| 2 · list | groups, counts, keyboard order, axe | ✅ Workbook → each sheet's *whole sheet* → *Cells*; tab count (its label names the whole-sheet ones); Show in sheet opens the tab / disabled with a reason; no pin, no mark; stepping skips them — `errors.test.ts` (5) |
+| 3 · export | comments skip with an SP code note; listed in the review sheet when W-59 exists | ✅ `lastExport.skipped` `{ reason: 'no-cell', code: 'SP-5804' }` — `write.test.ts`; the review sheet → W-59 (its DoD 3 already lists them) |
+| 4 · tests · docs | unit + browser; skill `sheetpane-errors`; CHANGELOG | ✅ skill, grid README, `docs/ERRORS.md`, CHANGELOG *Added* / *Changed* |
 
 ## Blockers
 
