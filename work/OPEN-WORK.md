@@ -34,8 +34,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-52** `agent` · **G1** · Insert and delete rows and columns in Edit, with every reference shifted. Filed by Arpit (Cowork). [detail](open/W-52-insert-delete-rows-columns.md)
 
-- 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
-
 - 🟢 **W-59** `agent` · **G2** · New plugin `@sheetpane/review`: the review written into the download as its own sheet, flagged cells coloured. Filed by Arpit (Cowork). [detail](open/W-59-review-sheet-plugin.md)
 
 - 🟢 **W-62** `agent` · **G2** · Locked cells and sheet protection honoured in Edit. Filed by Arpit (Cowork). [detail](open/W-62-locked-cells-and-protection.md)
@@ -44,7 +42,7 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-64** `agent` · **G3** · An *Edits* view in the errors panel: every change, before → after, revert one. Filed by Arpit (Cowork). [detail](open/W-64-edits-view.md)
 
-- 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
+- 🟢 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
 
 ### testing
 

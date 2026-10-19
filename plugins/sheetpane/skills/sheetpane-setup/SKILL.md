@@ -19,6 +19,7 @@ records; this skill points at them and restates none of their rules.
 | the sheet and the errors panel (`<sheetpane-excel>`, `<sheetpane-errors>`) | `@sheetpane/grid` (brings `@sheetpane/export` and `@sheetpane/import`) | [SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) |
 | write `.xlsx` / `.csv` from JavaScript, or save a file | `@sheetpane/export` (`toXlsx()`, `patchXlsx()`, `toCsv()`, `download()`) | [SR-EXPORT](https://github.com/arpitarya/sheetpane/blob/main/records/0103_EXPORT.md) · [SR-DOWNLOAD](https://github.com/arpitarya/sheetpane/blob/main/records/0101_DOWNLOAD.md) |
 | read `.xlsx` / `.csv` into an object, no UI | `@sheetpane/import` (`read()`, `fromXlsx()`, `fromCsv()`) | [SR-IMPORT](https://github.com/arpitarya/sheetpane/blob/main/records/0104_IMPORT.md) |
+| the pane's checks with no page — a CLI, a server, a worker | `@sheetpane/grid/check` (`check()`), with `@sheetpane/validation/check` for the workbook's own rules | [SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) decision 22f |
 | number formats, formulas, styles, workbook rules, conditional formats, pictures, charts, comments | one plugin package each — see [sheetpane-plugins](../sheetpane-plugins/SKILL.md) | the plugin records |
 | known workbooks for your own tests | `@sheetpane/fixtures` (dev dependency) | [SR-FIXTURES](https://github.com/arpitarya/sheetpane/blob/main/records/0115_FIXTURES.md) |
 | these agent skills in your repo | nothing extra — `@sheetpane/grid` exposes `npx sheetpane-skills install` | — |
@@ -80,9 +81,14 @@ template opens in StackBlitz from [the starters](https://github.com/arpitarya/sh
 - **Browsers** for the elements; **Node** may import every package without a
   DOM ([SR-LAW-8](https://github.com/arpitarya/sheetpane/blob/main/records/0010_LAW-8-npm-package.md)
   Consequences) — the elements simply do not register there.
-- **Reading `.xlsx` needs `DOMParser`** — a browser
+- **`.xlsx` and CSV read anywhere** — `DOMParser` where the runtime has it,
+  else the built-in reader
   ([SR-IMPORT](https://github.com/arpitarya/sheetpane/blob/main/records/0104_IMPORT.md)
-  decision 8). CSV reads anywhere.
+  decision 8).
+- **The checks run anywhere too:** `@sheetpane/grid/check` and
+  `@sheetpane/validation/check` import no element and touch no DOM — the
+  same errors the pane holds after load, from Node or a worker (see
+  [sheetpane-backend](../sheetpane-backend/SKILL.md)).
 - **Runtime dependencies** are only `numfmt` and `@ironcalc/wasm`, each in
   its plugin (SR-BUILD decision 7; licences under
   [SR-LAW-2](https://github.com/arpitarya/sheetpane/blob/main/records/0004_LAW-2-foss-dependencies.md)).

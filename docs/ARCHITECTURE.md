@@ -84,6 +84,7 @@ flowchart TB
 | **`<sheetpane-excel>`** | the sheet: the **view** component and the **edit** component as two modes of one element; reader, virtualised grid, cell bar with the docked selection actions (Flag issue, ⋯, right-click), pins and callouts, one Download button | `packages/grid/src/excel/` (W-01) | [grid verdict](../work/compare/grid-rendering.compare.md) |
 | **`@sheetpane/import`** | the reader: turns an `.xlsx` or `.csv` into the same `Workbook` object export takes in: ZIP walk + inflate + XML, or a CSV state machine; display text through a small number-format subset; usable without the UI | `packages/import/` (W-13) | [reading verdict](../work/compare/xlsx-csv-reading.compare.md), decision 5 overridden by Arpit 2026-10-18 |
 | **in-memory workbook** | the one shared object — sheets and cells, cell **changes**, **errors**, selected cell, mode; a store with `subscribe` / `getSnapshot`; one instance per `pane` id | `packages/grid/src/pane/` (W-01) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
+| **check entries** | the same store and checks with no element: `check(bytes, options)` gives the errors a pane holds after load, in Node, a worker or a page | `@sheetpane/grid/check` (`packages/grid/src/check.ts`), `@sheetpane/validation/check` (W-54) | [SR-GRID](../records/0105_GRID.md) decision 22f |
 | **`<sheetpane-errors>`** | the **error** component: the list (filter, resolve, delete) and the New error form; always on the same workbook as the sheet | `packages/grid/src/errors/` (W-02) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
 | **`@sheetpane/export`** | a plain object or the original file plus changes → `.xlsx` or `.csv` bytes; `download()` to save it (W-12, [SR-DOWNLOAD](../records/0101_DOWNLOAD.md)); ZIP read and write, CRC-32, XML, CSV; zero dependencies; also usable without the UI | `packages/export/` (W-03, W-12) | [export verdict](../work/compare/export-shape.compare.md) |
 | **plugins** | eight separate packages that register against the one workbook through six hooks (`format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch`) and add controls to six slots the grid draws; the grid with none installed is unchanged | `packages/numfmt/` `formulas/` `styles/` `validation/` `condfmt/` `images/` `charts/` `comments/` (W-15–W-22); the host in `packages/grid/src/plugins/` (W-14) | [plugins verdict](../work/compare/plugins.compare.md) |
@@ -191,6 +192,7 @@ packages/
       tokens.css          --sp-* custom properties (no font)
       plugins/            W-14 — hooks, slots, control descriptors, the plugins attribute
       index.ts            registers both elements when customElements exists
+      check.ts            @sheetpane/grid/check — check() and the store, no element, no DOM (W-54)
   numfmt/                 @sheetpane/numfmt — W-15; dep: numfmt 4.0.1
   formulas/               @sheetpane/formulas — W-16; dep: @ironcalc/wasm 0.9.0 (lazy-loaded)
   styles/                 @sheetpane/styles — W-17
@@ -200,7 +202,8 @@ packages/
   charts/                 @sheetpane/charts — W-21; peer: @sheetpane/images
   comments/               @sheetpane/comments — W-22
   tables/                 @sheetpane/tables — W-61; Excel tables drawn (read by import, Table[Column] resolved by export)
-    (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls)
+    (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls;
+     validation also src/plugin.ts — the plugin, unregistered — and src/check.ts, its /check entry)
 examples/                 W-09 — html/ (one index.html) and react/ (Vite + React 19)
 ```
 

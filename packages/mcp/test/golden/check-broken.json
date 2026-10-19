@@ -29,18 +29,18 @@
       "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6021"
     },
     {
+      "code": "SP-6023",
+      "sheet": "Numbers",
+      "found": "No such title",
+      "message": "No column is titled “No such title” — its rule is not checked",
+      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6023"
+    },
+    {
       "code": "SP-6022",
-      "sheet": "Nope",
+      "sheet": "Numbers",
       "found": "Nope",
       "message": "No sheet is named “Nope” — its rules are not checked",
       "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6022"
-    },
-    {
-      "code": "SP-6023",
-      "sheet": "*",
-      "found": "No such title",
-      "message": "No column is titled “No such title” in any sheet — its rule is not checked",
-      "url": "https://github.com/arpitarya/sheetpane/blob/main/docs/ERRORS.md#sp-6023"
     }
   ],
   "rules": [
@@ -54,5 +54,7 @@
       "target": "column “No such title”",
       "rule": "required"
     }
-  ]
+  ],
+  "findingCount": 0,
+  "findings": []
 }

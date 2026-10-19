@@ -23,6 +23,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./check": {
+      "source": "./src/check.ts",
+      "types": "./dist/check.d.ts",
+      "import": "./dist/check.js"
+    },
     "./style.css": "./dist/style.css",
     "./rules.schema.json": "./dist/rules.schema.json",
     "./llms.txt": "./dist/llms.txt",
@@ -72,6 +77,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./check": {
+        "types": "./dist/check.d.ts",
+        "import": "./dist/check.js"
       },
       "./style.css": "./dist/style.css",
       "./rules.schema.json": "./dist/rules.schema.json",

@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: checking a workbook against its own rules
 owns: [packages/validation/]
 laws: [L2, L5, L7, L8]
-timestamp: 2026-10-18T20:30:00Z
+timestamp: 2026-10-19T13:30:00Z
 content_sha: ""
 ratifies: W-18
 ---
@@ -72,7 +72,8 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    `@sheetpane/validation` registers it, `@sheetpane/validation/ui` registers
    it with `ui()` (`validation-ui`: a `cell` list arrow and a `status` count).
    No third-party runtime dependency; `@sheetpane/export` (a workspace
-   package) writes the rules of decision 10.
+   package) writes the rules of decision 10 and gives `shiftFormula` and
+   `resolveStructuredRef` (decision 4).
 2. **One error per failing cell:** `type: 'validation'`, severity `warning`
    (the host may choose another), `author: 'workbook'`, `range` = the cell,
    `found` = its current text (`(blank)` when empty), `expected` = the rule in
@@ -91,8 +92,11 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
-   cell, through `@sheetpane/export`'s `shiftFormula`, re-exported by the
-   grid), defined names and structured references, and `INDIRECT` of one cell
+   cell, through `@sheetpane/export`'s `shiftFormula` — imported from
+   `@sheetpane/export` itself since W-54, so the main entry needs no
+   `@sheetpane/grid/check` at run time; the grid re-exports the same
+   function), defined names and structured references (`resolveStructuredRef`,
+   from `@sheetpane/export` the same way), and `INDIRECT` of one cell
    or of quoted text (`INDIRECT(x, TRUE)` too; decision 9); anything else — a
    table or column that is not there, `[#This Row]`, `INDIRECT` of
    `SUBSTITUTE`, `&` or R1C1 (`FALSE`), `OFFSET` — skips the rule and counts
@@ -182,6 +186,19 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
     Excel; text that reads as a number or a date passes the rules engine's
     `number` / `date` but not Excel's; `minLength` counts the shown text,
     Excel the stored value.
+11. **With no page (W-54):** `@sheetpane/validation/check` serves the plugin
+    from `src/plugin.ts` — `validation`, `validateSheet`, `skippedRules`,
+    `lastReport`, `listRuleAt` and the evaluator (`rulesOf`, `ruleWords`,
+    `listOptions`, `parseOperand`) — registering nothing and importing only
+    `@sheetpane/grid/check` (SR-GRID decision 22f), and `check(bytes, options
+    & { severity })`: the grid's `check()` with `validation({ severity })`
+    added (an id `"validation"` in `plugins` means the same plugin). The main
+    entry re-exports the same module and registers its own `validation()`:
+    that one adds decision 10's export switch (`exportPatch`,
+    `exportOptions`, `src/write.ts`, which reads the rules file through
+    `@sheetpane/grid`), so `/check`'s plugin checks and never writes. The
+    one-rule `check(rule, store, row, col)` stays on the main entry only, so
+    `check` names one thing per entry.
 
 ### Consequences
 
@@ -233,7 +250,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/validation/src/index.ts`](../packages/validation/src/index.ts) · [`rules.ts`](../packages/validation/src/rules.ts) · [`ui.ts`](../packages/validation/src/ui.ts) · [`write.ts`](../packages/validation/src/write.ts)
+- [`packages/validation/src/index.ts`](../packages/validation/src/index.ts) · [`plugin.ts`](../packages/validation/src/plugin.ts) · [`check.ts`](../packages/validation/src/check.ts) · [`rules.ts`](../packages/validation/src/rules.ts) · [`ui.ts`](../packages/validation/src/ui.ts) · [`write.ts`](../packages/validation/src/write.ts)
 
 **Project docs**
 

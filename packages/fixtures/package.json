@@ -32,9 +32,13 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@sheetpane/comments": "workspace:*",
     "@sheetpane/export": "workspace:*",
+    "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",
-    "@sheetpane/import": "workspace:*"
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/numfmt": "workspace:*",
+    "@sheetpane/validation": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

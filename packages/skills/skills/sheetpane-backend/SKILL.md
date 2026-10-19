@@ -1,6 +1,6 @@
 ---
 name: sheetpane-backend
-description: Use when a host saves the reviewed file and the review on a server and restores them later - the exported blob, getErrors()/setErrors() JSON, restoring after sheetpane-load, a file that changed since. Not for client-only use.
+description: Use when a host saves the reviewed file and the review on a server and restores them later, or checks a file on the server with check() - the blob, getErrors()/setErrors() JSON, restoring after load. Not for client-only use.
 license: MIT
 metadata:
   audience: host
@@ -52,6 +52,28 @@ excel.src = `/api/files/${id}`;
 An error stores `found` — the text the cell showed when it was flagged. A
 restored error whose cell no longer shows it is marked **stale**
 (`store.isStale(error)`). Show those to the reviewer instead of dropping them.
+
+## The same checks on the server
+
+`@sheetpane/grid/check` runs what the pane runs on load — the rules file,
+column rules, an async `validate`, each plugin's `validate` — in Node or a
+worker, with no page, and returns the same errors
+([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) decision 22f):
+
+```js
+import { readFile } from 'node:fs/promises';
+import { check } from '@sheetpane/grid/check';
+import { validation } from '@sheetpane/validation/check';
+
+const errors = await check(await readFile(path), { name: 'q3.xlsx', rules, columns, validate, plugins: [validation()] });
+```
+
+Give it the settings and plugins the page gives the element — the same
+options, the same errors; only `id` and `createdAt` differ. It reads the
+bytes your server already holds and sends nothing
+([SR-LAW-11](https://github.com/arpitarya/sheetpane/blob/main/records/0013_LAW-11-workbook-stays-in-the-browser.md)
+decision 2). `@sheetpane/formulas` in Node needs `formulas({ wasm })` with
+the engine's `.wasm` bytes (no URL fetch there).
 
 ## Pitfalls
 

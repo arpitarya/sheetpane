@@ -95,6 +95,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3017](#sp-3017) | renderDetail failed | error |
 | [SP-3018](#sp-3018) | Error not accepted | warning |
 | [SP-3019](#sp-3019) | Cell to open at not found | warning |
+| [SP-3020](#sp-3020) | Nothing to check | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -562,6 +563,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
 - **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
 - **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
+
+### SP-3020
+
+**Nothing to check** · error · [SR-GRID](../records/0105_GRID.md) decision 22f · `TypeError`
+
+- **Meaning:** `check()` from `@sheetpane/grid/check` (or `@sheetpane/validation/check`) was given something that is not a file's bytes.
+- **Likely cause:** a path or a parsed workbook passed instead of the bytes; an unresolved promise (`readFile` without `await`).
+- **Fix:** pass the bytes — `await readFile(path)` in Node, a `File` or `Blob` in a page — and the file's `name` in the options.
 
 ---
 

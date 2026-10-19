@@ -8,10 +8,19 @@ and runs them through the `validate` hook. `<sheetpane-excel>` and
 `<sheetpane-errors>` on the same pane both see the result. On export it can
 also write the host's rules file into the `.xlsx` as Excel's own dropdowns
 and checks. No third-party runtime dependencies (`@sheetpane/export` writes
-the rules); `@sheetpane/grid` is a peer. Versioned in lockstep with it.
+the rules and gives `shiftFormula`); `@sheetpane/grid` is a peer. Versioned in lockstep with it.
 
 - `@sheetpane/validation`: the headless plugin (`validate`, and `exportPatch` for the rules file).
 - `@sheetpane/validation/ui`: opt-in. Adds the list arrow and the status-line count.
+- `@sheetpane/validation/check`: the same plugin with no registration, no
+  element and no Download switch (checking only — `exportPatch` is the page
+  entry's), and `check(bytes, options)` — `@sheetpane/grid/check`'s check with
+  this plugin on: the workbook's own validation from Node or a worker.
+
+  ```js
+  import { check } from '@sheetpane/validation/check';
+  const errors = await check(await readFile('budget.xlsx'), { name: 'budget.xlsx', severity: 'error' });
+  ```
 
 ## Use
 

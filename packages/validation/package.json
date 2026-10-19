@@ -24,6 +24,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./check": {
+      "source": "./src/check.ts",
+      "types": "./dist/check.d.ts",
+      "import": "./dist/check.js"
+    },
     "./ui": {
       "source": "./src/ui.ts",
       "types": "./dist/ui.d.ts",
@@ -54,6 +59,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./check": {
+        "types": "./dist/check.d.ts",
+        "import": "./dist/check.js"
       },
       "./ui": {
         "types": "./dist/ui.d.ts",
