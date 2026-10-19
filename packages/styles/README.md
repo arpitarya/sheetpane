@@ -41,7 +41,13 @@ and returns only these CSS properties:
 - Patterns blend by density; a gradient shows its midpoint; diagonal borders,
   indent and rotation are not drawn.
 
-`styles({ fileStyles: false })` draws only the reviewer's own changes.
+**Rich text:** a cell whose string has formatted runs (one italic word) is drawn
+as spans through `decorateRuns` — each run's weight, style, decoration, size and
+colour against the cell's own font, superscript and subscript at three quarters
+of the size; never a font family. An edit writes plain text (the cell bar says
+so first); untouched rich cells export byte for byte.
+
+`styles({ fileStyles: false })` draws only the reviewer's own changes (rich text plain).
 
 ## The format row (`ui()`)
 

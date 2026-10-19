@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-53 closed: rich text read, drawn and kept  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-53 (rich text: keep a cell's formatted runs on import and draw them) in lane b, its own worktree, while other agents build sibling items.*
+- **Done:** `@sheetpane/import`: `ImportedSheet.runs` and the `TextRun` type — each `<r>`'s text and `<rPr>` (through the `styles.xml` font reader, never `<rFont>`), shared and inline strings, `<rPh>` left out, only for a rich string; cells sharing a string share one array. `@sheetpane/grid`: `CellContext.runs` while the cell holds the file's value; `store.runs()` and `store.decorateRuns()`; the `decorate` hook's optional `decorateRuns(cell)` → `RunStyle[]`, allow-listed, SP-3010 on a family, plain when the pieces' text is not the display text; spans inside `.v`; editing a rich cell shows a cell-bar chip (`data-sp="rich-text"`) and `sheetpane-editstart` carries `richText: true`. `@sheetpane/styles`: `decorateRuns` and `runCss` — weight, style and decoration outright, size and colour against the cell's own font, super/subscript at 0.75. Export needed no change: `patchXlsx` writes the edit as a plain inline string and leaves `sharedStrings.xml` and untouched cells as they were (tested). Tests: `runs.test.ts` in import (7), grid (11), styles (10). Records: SR-IMPORT 2, 3, 12; SR-GRID 9, 9a, 15c, 17; SR-STYLES 9; SR-SKILLS. Manifest, typings, `llms-full.txt`, the Claude plugin regenerated; three READMEs, two skills, CHANGELOG; W-30 DoD 3 gains the Excel check.
+- **Decided / left open:** read in: a single run counts as rich only when it carries formatting (the hazard's "more than one run", widened so a wholly italic string's formatting is not lost); a formatted run states weight, style and decoration outright (an Excel `<rPr>` is the run's whole font), size and colour only where they differ from the cell's font; the warning is a cell-bar chip and an event flag, no SP code (no console line); `decorateRuns` is part of the `decorate` hook, so the hooks stay six. Paste and Delete over rich cells write plain text without the chip. `toXlsx` does not write runs (not asked). No example change — the demos' sample has no rich text.
+- **Mistakes:** the first skill wording wrote `sheet.runs`, which the skills drift check reads as an element member; reworded.
+- **Next:** the queue's next agent item.
+
+---
+
 ## 2026-10-19 — W-65 closed: the file's SHA-256 on load and on export  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-65 (the file's SHA-256 on load and on export) in lane b, its own worktree, while other agents build sibling items.*

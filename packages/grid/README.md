@@ -226,7 +226,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | event | fires | detail | cancel it to |
 |---|---|---|---|
 | `sheetpane-select` | the selected cell moves | `{sheet, ref, column, value}` | — |
-| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value}` | keep the cell read-only |
+| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value, richText?}` — `richText: true` on a rich-text cell, whose edit saves plain text | keep the cell read-only |
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |

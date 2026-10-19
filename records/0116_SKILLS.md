@@ -141,6 +141,9 @@ flowchart LR
 - **Owed:** one real prompt per tool from the packed tarballs — W-48, the
   decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
+  `sheetpane-plugins` and `sheetpane-plugin-author` name rich text with W-53
+  (a sheet's `runs`, `decorateRuns`, `richText` on `sheetpane-editstart`), so the
+  drift check covers them.
 
 ### Alternatives considered
 

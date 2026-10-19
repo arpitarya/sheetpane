@@ -27,7 +27,7 @@ export type SheetpaneExcelVueProps = SheetpaneExcelAttributes & SheetpaneExcelPr
   onSheetpaneMode?: ((event: SheetpaneExcelEventMap['sheetpane-mode']) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   onSheetpaneHistory?: ((event: SheetpaneExcelEventMap['sheetpane-history']) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   onSheetpaneEditstart?: ((event: SheetpaneExcelEventMap['sheetpane-editstart']) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   onSheetpaneInput?: ((event: SheetpaneExcelEventMap['sheetpane-input']) => void) | undefined;

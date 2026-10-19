@@ -34,3 +34,4 @@ description: "Recurring terms, defined once."
 | hook | one of six named functions on the workbook store a plugin may provide: `format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch` |
 | slot | one of six named places in the grid a plugin's control descriptor may target: `format-row`, `selbar`, `cellbar`, `status`, `cell`, `overlay`; the grid draws the control, the plugin describes it |
 | derived cell | a cell whose value a plugin computed (`derive`) rather than the user typed; marked in the grid, never in the change map |
+| rich text · run | a cell whose string mixes formatting (one word in italic); each differently formatted stretch is a run (`<r>`), read into a sheet's `runs` and drawn by `decorateRuns` — see SR-IMPORT decision 12 |

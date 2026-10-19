@@ -10,6 +10,7 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- `@sheetpane/import`, `@sheetpane/styles` and `@sheetpane/grid`: rich text (W-53). A cell with one word in italic is read as runs. Each sheet's `runs` maps the cell to `[{ text, b, i, u, strike, color, sz, vertAlign }]`, from shared and inline strings, with phonetic runs left out; `rows` and `text` are unchanged. With `styles` on, the grid draws the runs as spans: weight, style, underline and strike, size, colour, and superscript and subscript. It never draws a font family. A plugin draws runs through the new optional `decorateRuns` on the `decorate` hook. Editing a rich cell writes plain text. The cell bar warns first, and `sheetpane-editstart` carries `richText: true`. Rich cells left untouched, and the shared strings, export byte for byte.
 - `@sheetpane/import` and `@sheetpane/grid`: the file's SHA-256 (W-65). `read()` returns `sha256`, 64 lowercase hex digits of the bytes opened, and `sha256(bytes)` is exported. `sheetpane-load` and `sheetpane-export` carry `sha256` — the file opened and the file handed back — and so does `store.exportFile()`. On a page without Web Crypto (not `https` or `localhost`) it is `undefined` with a console warning, SP-1009, never a substitute hash. The demos' export line shows it.
 
 ### Fixed

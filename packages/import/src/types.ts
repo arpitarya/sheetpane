@@ -33,6 +33,26 @@ export interface StyleTables {
   indexedColors?: string[];
 }
 
+/**
+ * One run of a rich-text string (`<r>` of a shared or inline string, W-53): its text and the formatting its
+ * `<rPr>` names. A run with no `<rPr>` carries `text` alone and takes the cell's own font. The font's family
+ * (`<rFont>`) is never read — the host's font is the font (SR-LAW-5).
+ */
+export interface TextRun {
+  /** The run's text, SpreadsheetML escapes decoded. */
+  text: string;
+  b?: boolean;
+  i?: boolean;
+  /** The underline: `single`, `double`, `singleAccounting`, `doubleAccounting`. */
+  u?: string;
+  strike?: boolean;
+  color?: Color;
+  /** Size in points. */
+  sz?: number;
+  /** `superscript`, `subscript` or `baseline`. */
+  vertAlign?: string;
+}
+
 /** One `<dataValidation>` rule of a worksheet. */
 export interface DataValidation {
   /** Ranges the rule covers, e.g. `['B2:B100', 'D2']`. */
@@ -132,6 +152,12 @@ export interface ImportedSheet extends Sheet {
   path: string;
   /** Each styled cell's `s` (index into `cellXfs`), sparse: `{ B2: 3 }`. */
   styleIndex: Record<string, number>;
+  /**
+   * Rich-text cells' runs, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` (W-53). Only a
+   * string of two or more runs, or of one run that carries formatting, is listed; phonetic runs are left out. The
+   * runs' text joined is the cell's value. Cells sharing a string share one array. `{}` for CSV.
+   */
+  runs: Record<string, TextRun[]>;
   /** Each formula cell's formula text, without the `=`, shared formulas expanded: `{ D2: 'B2*C2' }`. */
   formulas: Record<string, string>;
   /** Frozen rows and columns from `<sheetView><pane state="frozen">`; `{0,0}` when none. */

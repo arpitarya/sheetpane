@@ -26,7 +26,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-mode'?: ((event: SheetpaneExcelEventMap['sheetpane-mode'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneExcelEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   'on:sheetpane-editstart'?: ((event: SheetpaneExcelEventMap['sheetpane-editstart'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'on:sheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -56,7 +56,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'onsheetpane-mode'?: ((event: SheetpaneExcelEventMap['sheetpane-mode'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneExcelEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   'onsheetpane-editstart'?: ((event: SheetpaneExcelEventMap['sheetpane-editstart'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'onsheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;

@@ -29,7 +29,7 @@ registerPlugin('shout', () => shout());      // then <sheetpane-excel plugins="s
 | hook | providers | does |
 |---|---|---|
 | `format` | one per pane | a number's display text |
-| `decorate` | many, ordered by `after` | allow-listed CSS for a cell — never `font-family` |
+| `decorate` | many, ordered by `after` | allow-listed CSS for a cell — never `font-family`; optional `decorateRuns(cell)` draws a rich-text cell's `cell.runs` as styled pieces |
 | `derive` | one per pane | recalculated cells (never user changes); `evaluate()` optional |
 | `validate` | many | error drafts, `author: 'workbook'` / `'file'` / `'host'` |
 | `overlay` | many | items in sheet space (`role`, `alt`, `passThrough`) |

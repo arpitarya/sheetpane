@@ -21,8 +21,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-mode': CustomEvent<{ mode: Mode }>;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'sheetpane-history': CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
-  'sheetpane-editstart': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>;
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
+  'sheetpane-editstart': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown; richText?: true }>;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'sheetpane-input': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; draft: string; was: unknown }>;
   /** `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused. */

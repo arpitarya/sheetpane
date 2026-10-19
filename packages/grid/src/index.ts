@@ -20,7 +20,7 @@ export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, t
 export type { SheetpaneError, Severity, Mode, ChangeKind, ChangeEntry, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType } from './pane/types.js';
 export { registerPlugin, registeredPluginIds, pluginsFromIds, checkPlugins, mergeDecorations, controlsFor, type PluginFactory } from './plugins/host.js';
 export { HOOKS, SLOTS, SINGLE_PROVIDER, STYLE_PROPS } from './plugins/types.js';
-export type { Plugin, HookName, SlotName, ControlDescriptor, CellContext, PluginContext, DeriveInput, DerivedChange, ErrorDraft, OverlayItem, Geometry, StyleSubset, StyleProp } from './plugins/types.js';
+export type { Plugin, HookName, SlotName, ControlDescriptor, CellContext, PluginContext, DeriveInput, DerivedChange, ErrorDraft, OverlayItem, Geometry, StyleSubset, StyleProp, RunStyle } from './plugins/types.js';
 export { sheetGeometry, charsToPx, ROW_H, HEAD_H, ROWHEAD_W } from './excel/geometry.js';
 export { DARK_TOKENS, TOKENS, TOKENS_CSS, type Theme, type TokenName } from './tokens.js';
 

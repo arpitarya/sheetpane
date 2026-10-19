@@ -71,7 +71,7 @@ carry over unchanged; the plugins verdict added what plugins read.
    `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), and every type.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
-   `path`, `styleIndex`, `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
+   `path`, `styleIndex`, `runs` (decision 12), `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
    `state`, `rowOutline`, `colOutline`, `outline`, `autoFilter?` (W-49;
    `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
@@ -82,7 +82,7 @@ carry over unchanged; the plugins verdict added what plugins read.
    `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
    decision 11) and `part(path)`.
 3. **Cells:** `t="s"` / `inlineStr` → the text, phonetic runs left out,
-   `_xHHHH_` decoded; `str` → the text; `b` → a boolean shown `TRUE` /
+   `_xHHHH_` decoded, its formatted runs in `runs` (decision 12); `str` → the text; `b` → a boolean shown `TRUE` /
    `FALSE`; `e` → the error text; `d` → the ISO string; otherwise a number. A
    formula cell holds its **cached `<v>`**, never evaluated; its formula text
    is in `formulas`, shared formulas expanded with `shiftFormula`.
@@ -152,6 +152,21 @@ carry over unchanged; the plugins verdict added what plugins read.
     `Promise<string | undefined>`; the grid hashes its exports with it
     (SR-GRID decision 6). Hashing is once per read or write, never per edit.
 
+12. **Rich text (W-53):** `runs` maps a cell to its string's runs —
+    `TextRun` `{ text, b?, i?, u?, strike?, color?, sz?, vertAlign? }` from
+    each `<r>` and its `<rPr>`, through the same font reader as `styles.xml`
+    — for shared (`<si>`) and inline (`<is>`) strings alike. **Only a rich
+    string is listed:** two or more runs, or one run that carries formatting
+    (a lone unformatted run, and a plain `<t>`, are not). A run with no
+    `<rPr>` is `{ text }` alone (it takes the cell's font). Phonetic runs
+    (`<rPh>`) are never runs; the family (`<rFont>`) is never read (L5). The
+    runs' text joined is the cell's value — `rows` and `text` are unchanged.
+    Cells sharing a string share one array (memory). A CSV has `{}`. The
+    built-in XML reader reads the same (a parity test). The grid draws runs
+    through the `decorate` hook (SR-GRID decision 17, SR-STYLES decision 9);
+    an edit writes plain text, and an untouched rich cell is never rewritten
+    (`patchXlsx` keeps `sharedStrings.xml` and the cell as they were).
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -169,8 +184,12 @@ carry over unchanged; the plugins verdict added what plugins read.
   448-bit message) on bytes, a view, an `ArrayBuffer` and a Blob; `read()` of a
   CSV and an `.xlsx` however passed; no `crypto` or a failing digest → absent
   with SP-1009.
+  `runs.test.ts` (W-53): runs of shared and inline strings, every run
+  property, phonetic runs left out, a lone run listed only when formatted,
+  shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
+  A rich-text cell saved by Excel is part of it (W-30 DoD 3).
   Until then the reader is proven on ExcelJS output and hand-written XML, and
   the reading verdict's "1 in 100" trigger cannot be measured.
 - Non-UTF-8 CSV (Windows-1252) decodes with replacement characters; the

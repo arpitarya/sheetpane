@@ -3,9 +3,9 @@
 // Every mutation goes through commit(): undo (W-23), derive and validate
 // (W-14), "matches suggestion" (B-022) and one notification.
 import { cellRef, detailOf, parseRange, parseRef, patchXlsx, rangesIntersect, spError, spMessage, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook, type SpCode } from '@sheetpane/export';
-import { formatCode, general, ImportError, read, sha256, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
+import { formatCode, general, ImportError, read, sha256, subsetCode, type ImportedSheet, type ImportedWorkbook, type TextRun } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
-import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
+import { STYLE_PROPS, type CellContext, type DeriveInput, type DerivedChange, type ErrorDraft, type Plugin, type PluginContext, type RunStyle, type StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
 import { machineAuthored } from './types.js';
 import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
@@ -37,6 +37,8 @@ interface HistoryEntry { before: Undoable; after: Undoable; keys: string[]; coal
 /** The undo stack's depth per pane; the oldest entry goes first (W-23, SR-GRID decision 7). */
 export const HISTORY_CAP = 500;
 const BLANK = '(blank)';
+/** The CSS a run's span may carry (W-53): the `decorate` allow-list. */
+const ALLOWED_PROPS: ReadonlySet<string> = new Set(STYLE_PROPS);
 
 /**
  * The change-map key of a cell: `Sheet1!B3` (exported as `cellKey`).
@@ -293,7 +295,43 @@ export class WorkbookStore {
   cellContext(sheet: string, ref: string, value?: Cell): CellContext | undefined {
     const book = this.snap.book, s = this.sheet(sheet), p = parseRef(ref);
     if (!book || !s || !p) return undefined;
-    return { store: this, book, sheet: s, ref, row: p.row, col: p.col, value: value === undefined ? this.value(sheet, ref) : value, styleIndex: s.styleIndex[ref] };
+    const runs = this.runs(sheet, ref);
+    return { store: this, book, sheet: s, ref, row: p.row, col: p.col, value: value === undefined ? this.value(sheet, ref) : value, styleIndex: s.styleIndex[ref], ...(runs ? { runs } : {}) };
+  }
+
+  /**
+   * A rich-text cell's runs from the file (W-53, SR-IMPORT decision 12) while it still holds the file's value — no
+   * value or formula change, no derived value; `undefined` otherwise. An edit writes plain text, so its runs go.
+   */
+  runs(sheet: string, ref: string): readonly TextRun[] | undefined {
+    const r = this.sheet(sheet)?.runs?.[ref];
+    if (!r) return undefined;
+    const k = key(sheet, ref), c = this.snap.changes.get(k);
+    if ((c && (c.kind === 'value' || c.kind === 'formula')) || this.snap.derived.has(k)) return undefined;
+    return r;
+  }
+
+  /**
+   * A rich-text cell as styled pieces (W-53): the last `decorate` provider's `decorateRuns` that answers, its CSS
+   * allow-listed to `STYLE_PROPS`; a `font-family` throws (SP-3010). `undefined` — draw the text plain — when the
+   * cell has no runs, no provider answers, or the pieces' text is not the display text.
+   */
+  decorateRuns(sheet: string, ref: string): RunStyle[] | undefined {
+    if (!this.runs(sheet, ref)) return undefined;
+    const ctx = this.cellContext(sheet, ref);
+    if (!ctx) return undefined;
+    let out: RunStyle[] | undefined;
+    for (const p of this.plugins) {
+      if (!p.provides.includes('decorate') || !p.decorateRuns) continue;
+      const pieces = p.decorateRuns(ctx);
+      if (!pieces) continue;
+      out = pieces.map((x) => {
+        const style = mergeDecorations([{ id: p.id, style: x.style }]);
+        for (const k of Object.keys(style)) if (!ALLOWED_PROPS.has(k)) delete (style as Record<string, string>)[k];
+        return Object.keys(style).length ? { text: x.text, style } : { text: x.text };
+      });
+    }
+    return out && out.map((x) => x.text).join('') === this.text(sheet, ref) ? out : undefined;
   }
 
   /** The merged `decorate` result for a cell; `{}` with no decorate plugin. */
