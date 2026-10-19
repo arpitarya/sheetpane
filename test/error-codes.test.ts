@@ -22,7 +22,7 @@ const SKIP = new Set(['fixtures', 'testing']);
 /** Which ranges a package may raise (the registry file itself is excluded). */
 const RANGES: Record<string, RegExp> = {
   import: /^SP-1/, export: /^SP-2/, grid: /^SP-[346]/,
-  numfmt: /^SP-51/, formulas: /^SP-52/, styles: /^SP-53/, validation: /^SP-54/, condfmt: /^SP-55/, images: /^SP-56/, charts: /^SP-57/, comments: /^SP-58/,
+  numfmt: /^SP-51/, formulas: /^SP-52/, styles: /^SP-53/, validation: /^SP-54/, condfmt: /^SP-55/, images: /^SP-56/, charts: /^SP-57/, comments: /^SP-58/, compare: /^SP-59/,
   // the MCP server raises its own 7xxx codes and reports the rules file's 60xx notes as check_rules finds them
   mcp: /^SP-[67]/,
 };

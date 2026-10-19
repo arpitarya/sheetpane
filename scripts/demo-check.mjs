@@ -84,6 +84,15 @@ async function gallery(page, name) {
   const unitError = () => t.x.evaluate((el) => el.workbook.getErrors().find((x) => x.sheet === 'Tables' && x.range === 'C9' && x.status === 'open')?.expected ?? '');
   await t.e.locator('.item').nth(2).waitFor({ timeout: 15000 });
   check(drawn && (await unitError()) === 'list — mg/L, ug/L, %, ppm', `${name}: Tables draws both tables in their styles, and C9’s list is Units[Unit] (${await unitError()})`);
+  // W-63: Compare — the fixtures' newer spec against its base (read in the page), keyed by Account
+  t = await tab('Compare', 'compare', 'Holdings');
+  await t.x.locator('.status').filter({ hasText: 'Compared with base.xlsx: 4 sheets · 7 rows · 2 cells changed' }).waitFor({ timeout: 15000 });
+  const amber = await t.x.locator('#c3_3').evaluate((el) => getComputedStyle(el).backgroundColor);
+  await t.x.locator('#c1_1').click();
+  await t.x.locator('.grid').press('Alt+F5');
+  const stepped = await t.x.evaluate((el) => el.workbook.getSnapshot().selection.ref);
+  const listed = await t.x.evaluate((el) => el.workbook.getErrors().filter((x) => x.type === 'compare').length);
+  check(amber === 'rgba(191, 135, 0, 0.3)' && stepped === 'D4' && listed === 7, `${name}: Compare tints the changed price, sums up 4 sheets · 7 rows · 2 cells, lists 7 changes, and Alt+F5 steps to D4 (${amber}, ${stepped}, ${listed})`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

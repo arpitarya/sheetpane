@@ -23,6 +23,7 @@ workbook ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/010
 | charts | `@sheetpane/charts` (needs images) | bar, column, line, pie, scatter as SVG | [SR-CHARTS](https://github.com/arpitarya/sheetpane/blob/main/records/0113_CHARTS.md) |
 | comments | `@sheetpane/comments` | file comments in, the review out as threads | [SR-COMMENTS](https://github.com/arpitarya/sheetpane/blob/main/records/0112_COMMENTS.md) |
 | Excel tables | `@sheetpane/tables` | each table's header, banded rows and totals row in its style | [SR-TABLES](https://github.com/arpitarya/sheetpane/blob/main/records/0122_TABLES.md) |
+| what changed since a base version | `@sheetpane/compare` | changes tinted, summed up in the status line, Alt+F5 to the next; `diffWorkbooks` headless | [SR-COMPARE](https://github.com/arpitarya/sheetpane/blob/main/records/0124_COMPARE.md) |
 
 ## Enable
 
@@ -55,6 +56,10 @@ it on per element. Import `@sheetpane/x` for the headless plugin, or
 - `@sheetpane/tables` only draws: the tables themselves are in every
   sheet's `tables` (`@sheetpane/import`), and a list rule over `Units[Unit]`
   is read by `@sheetpane/validation` without it.
+- `@sheetpane/compare` compares the file **as loaded** with a base the user
+  picks (Compare…) or the host passes — `compareWith(excel.workbook, bytes,
+  { name, key })`; both are read in the page, nothing is sent. Until review
+  layers land, its changes replace the undo history when they are listed.
 - `@sheetpane/validation` reads rules **saved in the workbook**; your own
   checks are [sheetpane-column-rules](../sheetpane-column-rules/SKILL.md) or a
   [rules file](../sheetpane-rules-file/SKILL.md).

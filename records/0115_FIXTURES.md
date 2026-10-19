@@ -66,7 +66,9 @@ helpers to become one package any runner can load (W-32 made the showcase).
    parameter on Lists; one stale unit, `Readings!C6`), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
-   guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
+   guard), `compare/` (W-63: `base.xlsx` and `now.xlsx`, two versions of one
+   spec workbook — a price changed, a row removed, added and moved, a sheet
+   renamed, removed and added) — are written by `scripts/make.mjs`, never hand-zipped, and are the
    same byte for byte on every run (`writeZip`'s fixed timestamps). The
    250,000-row case is `hugeCsv(rows)`, not a file.
 3. **The manifest** `files/fixtures.json` (and `src/manifest.ts`, generated

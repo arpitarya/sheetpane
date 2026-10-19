@@ -272,7 +272,11 @@ pnpm and a justfile; the testing verdict chose the runner.
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
     its header menu, the marker unhides it) · Tables (W-61: `tables
     validation` on the showcase's Tables sheet — both tables in their style
-    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Compare (W-63:
+    `@sheetpane/compare` — the fixtures' `compare/now.xlsx` against
+    `compare/base.xlsx`, which the host fetches and hands to `compareWith`;
+    `demo-check` reads the status line's 4 sheets · 7 rows · 2 cells, the
+    amber price, the 7 listed changes and Alt+F5 to D4) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a

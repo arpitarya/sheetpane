@@ -33,6 +33,7 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 - [@sheetpane/comments](https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/comments/README.md): Excel's comments and sheetpane's errors, in both directions. When a file loads, its notes and threaded comments show up in `<sheetpane-errors>`. When you export, every error in the review goes into the file as an Excel threaded comment on its cell.
 - [@sheetpane/visibility](https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/visibility/README.md): Hide and unhide rows, columns and sheets in `<sheetpane-excel>` — as changes, written into the download.
 - [@sheetpane/tables](https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/tables/README.md): Excel tables in `<sheetpane-excel>`, drawn as their style draws them — header row, banded rows and columns, totals row.
+- [@sheetpane/compare](https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/compare/README.md): What changed between two versions of a workbook — on the sheet in `<sheetpane-excel>`, or as data in Node.
 
 ## Rules and errors
 - [Column rules](https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/grid/README.md#column-rules): checks by column title in code
@@ -107,4 +108,5 @@ Every rule lives in one standing record; READMEs and skills point to them. The f
 - [SR-MCP](https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0119_MCP.md): A stdio MCP server, hand-written, tools only: describe the API, inspect a workbook, draft and check a rules file, explain an SP code, find a skill — deterministic and read-only.
 - [SR-VISIBILITY](https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0121_VISIBILITY.md): The plugin that lets an editor hide and unhide rows, columns and sheets and group outlines — menus, Google Sheets' keys, a marker click — written into the download. Seeing the file's hiding is core (SR-GRID 21c).
 - [SR-TABLES](https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0122_TABLES.md): The plugin that draws a workbook's Excel tables — header row, banded rows and columns, first and last column, totals row — from a named subset of the built-in table styles, through decorate. Reading the tables is SR-IMPORT's; resolving Table[Column] is SR-EXPORT's.
+- [SR-COMPARE](https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0124_COMPARE.md): A headless diffWorkbooks (sheets by name or content, columns by title, rows by key or alignment, cells by value, text and formula) and a grid plugin that tints the changes, sums them up in the status line, steps through them and lists them as errors — both files read in the page.
 

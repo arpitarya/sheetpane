@@ -51,7 +51,7 @@ flowchart LR
 1. **The package** ships `skills/`, `entry/`, `bin/` only, has no
    dependencies and no build, and is a `dependency` of export, import, grid
    and every plugin package at the lockstep version (`sheetpane-plugins`
-   lists each, `@sheetpane/tables` since W-61) — SR-BUILD decision 7's
+   lists each, `@sheetpane/tables` since W-61, visibility and compare included) — SR-BUILD decision 7's
    second exception. `@sheetpane/grid` exposes the same `sheetpane-skills`
    bin (`src/skills-bin.ts` forwards to `@sheetpane/skills/bin`), because
    package managers link only direct dependencies' bins.

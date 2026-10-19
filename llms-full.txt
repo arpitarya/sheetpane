@@ -141,6 +141,7 @@ and events.
 | [`comments`](packages/comments/README.md) | notes and threaded comments, read and written |
 | [`visibility`](packages/visibility/README.md) | hide, unhide and group rows, columns and sheets |
 | [`tables`](packages/tables/README.md) | Excel tables drawn in their style — header, bands, totals |
+| [`compare`](packages/compare/README.md) | what changed since a base version — tinted, summed up, stepped through; `diffWorkbooks` headless |
 
 ```html
 <script type="module">import '@sheetpane/grid'; import '@sheetpane/formulas/ui';</script>
@@ -2260,6 +2261,77 @@ Spec: [SR-TABLES](../../records/0122_TABLES.md). MIT.
 
 ---
 
+<!-- source: packages/compare/README.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/compare/README.md) -->
+
+# @sheetpane/compare
+
+**What changed between two versions of a workbook — on the sheet in `<sheetpane-excel>`, or as data in Node.**
+
+Pick the base version (the last approved one) and the pane shows what changed since: changed
+cells amber, added rows green, moved rows blue, a red line where rows were removed. The status line
+sums it up — *Compared with spec-v1.xlsx: 2 sheets · 5 rows · 3 cells changed* — and every change is
+an entry in the errors list. Both files are read in the page; nothing is sent anywhere.
+
+```js
+import '@sheetpane/compare/ui';
+excel.setAttribute('plugins', 'compare');   // Compare… in the cell bar picks the base file
+
+// or the host hands it the base (bytes, a File, or a workbook already read)
+import { compareWith } from '@sheetpane/compare/ui';
+await compareWith(excel.workbook, baseBytes, { name: 'spec-v1.xlsx', key: 'Account' });
+```
+
+| control | where | keys |
+|---|---|---|
+| Compare… / Compare with another file… | the cell bar (View and Edit) | — |
+| Previous change · Next change (wraps) | the cell bar | Alt+Shift+F5 · Alt+F5 |
+| Stop comparing | the cell bar | — |
+| the summary | the status line | — |
+
+## Headless
+
+```js
+import { read } from '@sheetpane/import';
+import { diffWorkbooks, summaryText, applyDiff } from '@sheetpane/compare';
+
+const d = diffWorkbooks(await read(was), await read(now), { key: 'Account' });
+summaryText(d.summary);    // "2 sheets · 5 rows · 3 cells changed"
+d.sheets[0].rows;          // { op: 'added' | 'removed' | 'changed' | 'moved', a?, b?, … }
+d.sheets[0].cells;         // { ref: 'D4', was: { value, text, formula? }, now: { … }, what: ['value', 'text'] }
+```
+
+- **Sheets** match by name; an unmatched sheet whose rows are mostly another's is *renamed*
+  (`renameThreshold`, default 0.5); the rest are added or removed.
+- **Columns** match by header title when both header rows hold distinct titles (a renamed title
+  pairs with the one column left over), otherwise by position.
+- **Rows** match by `key` columns (titles or letters, for every sheet or `{ Sheet: 'ID', '*': … }`)
+  — then a row that changed place is *moved*. Without a key, rows are aligned (patience anchors and
+  Myers' diff, alike rows paired as *changed*) and a row that changed place is removed and added:
+  *moved* is said only when it is certain.
+- **Cells** differ by value, display text (a number format) or formula — compared relative to the
+  cell, so a formula that only shifted with its row is not a change.
+- Also: merges, rows and columns newly hidden or shown, the sheet's state, and the counts of
+  data-validation and conditional-format rules.
+- `applyDiff(a, d)` rebuilds the newer version's values from the older one — the property the tests
+  check on random workbooks. 50,000 rows diff in about 0.1 s (the budget is 0.5 s).
+
+**Agents:** `@sheetpane/mcp`'s `diff_workbooks` tool runs the same function on two paths.
+
+## Notes
+
+- The comparison is the file **as loaded** against the base; edits made in the pane since are not
+  part of it. Loading another file into the pane compares it with the same base.
+- Until review layers (W-51) land, listing the changes
+  replaces the errors list's contents through `setErrors` (a person's own errors are kept), which
+  clears undo; with `@sheetpane/comments` a download also writes the changes as comments.
+- The tints are `--sp-compare-added`, `--sp-compare-changed`, `--sp-compare-moved` and
+  `--sp-compare-removed`; set them to restyle.
+
+Spec: [SR-COMPARE](../../records/0124_COMPARE.md). MIT.
+
+
+---
+
 <!-- source: packages/fixtures/README.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/fixtures/README.md) -->
 
 # @sheetpane/fixtures
@@ -2439,6 +2511,7 @@ npx sheetpane-skills install # registers it for Claude Code, Kiro and Codex (wit
 | `check_rules` | `{ "rules": {…} or "…json…", "path"?: "data/q3.xlsx" }` | the grid's own check, each rule in words; with a workbook, the pane's own `check()` over it — the sheets and titles it lacks, and the cells that fail |
 | `explain_code` | `{ "code": "SP-1002" }` | meaning, likely cause, fix and link — [docs/ERRORS.md](../../docs/ERRORS.md) |
 | `find_skill` | `{ "task": "validate columns from a JSON file" }` | the skill to read, with its `SKILL.md` path |
+| `diff_workbooks` | `{ "base": "spec-v1.xlsx", "path": "spec-v2.xlsx", "key"?: "Account" }` | what changed: sheets added, removed, renamed; rows added, removed, changed, moved; cells was → now — `@sheetpane/compare` |
 
 ## Registering it by hand
 
@@ -2848,6 +2921,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
 | [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
+| [SP-5901](#sp-5901) | Compare key is not a column | error |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -3459,6 +3533,13 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
 - **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
 - **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
+### SP-5901
+
+**Compare key is not a column** · error · [SR-COMPARE](../records/0124_COMPARE.md)
+
+- **Meaning:** `diffWorkbooks` was given a key for one sheet that is not a column of both versions, so it cannot tell which rows are the same row.
+- **Likely cause:** a header title spelled differently, a key column renamed or deleted in one version, or a `headerRow` that is not the row with the titles.
+- **Fix:** name the key by its title in the header row (or by its column letter) as both versions have it; a key given for every sheet (a string, a list or `'*'`) is used only where it exists.
 
 ---
 
@@ -5371,7 +5452,11 @@ pnpm and a justfile; the testing verdict chose the runner.
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
     its header menu, the marker unhides it) · Tables (W-61: `tables
     validation` on the showcase's Tables sheet — both tables in their style
-    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Compare (W-63:
+    `@sheetpane/compare` — the fixtures' `compare/now.xlsx` against
+    `compare/base.xlsx`, which the host fetches and hands to `compareWith`;
+    `demo-check` reads the status line's 4 sheets · 7 rows · 2 cells, the
+    amber price, the 7 listed changes and Alt+F5 to D4) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
@@ -8448,7 +8533,9 @@ helpers to become one package any runner can load (W-32 made the showcase).
    parameter on Lists; one stale unit, `Readings!C6`), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
-   guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
+   guard), `compare/` (W-63: `base.xlsx` and `now.xlsx`, two versions of one
+   spec workbook — a price changed, a row removed, added and moved, a sheet
+   renamed, removed and added) — are written by `scripts/make.mjs`, never hand-zipped, and are the
    same byte for byte on every run (`writeZip`'s fixed timestamps). The
    250,000-row case is `hugeCsv(rows)`, not a file.
 3. **The manifest** `files/fixtures.json` (and `src/manifest.ts`, generated
@@ -8559,7 +8646,7 @@ flowchart LR
 1. **The package** ships `skills/`, `entry/`, `bin/` only, has no
    dependencies and no build, and is a `dependency` of export, import, grid
    and every plugin package at the lockstep version (`sheetpane-plugins`
-   lists each, `@sheetpane/tables` since W-61) — SR-BUILD decision 7's
+   lists each, `@sheetpane/tables` since W-61, visibility and compare included) — SR-BUILD decision 7's
    second exception. `@sheetpane/grid` exposes the same `sheetpane-skills`
    bin (`src/skills-bin.ts` forwards to `@sheetpane/skills/bin`), because
    package managers link only direct dependencies' bins.
@@ -8741,7 +8828,8 @@ flowchart LR
    (SP-3020, W-54: `check()` given something other than bytes) ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
-   5800 comments) · 6xxx column rules and the rules file · 7xxx mcp
+   5800 comments, 5900 compare — W-63: SP-5901, a per-sheet key that is
+   not a column) · 6xxx column rules and the rules file · 7xxx mcp
    (W-39: SP-7001…7007, the MCP server's tool errors — SR-MCP decision 7;
    `@sheetpane/mcp` also reports the 60xx rules notes `check_rules` finds).
 3. **Never reuse:** a code is never renumbered or removed; a dead one stays in
@@ -8958,6 +9046,7 @@ flowchart LR
     S --> C["check_rules — the grid's checkDocument and check()"]
     S --> E["explain_code — docs/ERRORS.md"]
     S --> F["find_skill — @sheetpane/skills"]
+    S --> W["diff_workbooks — @sheetpane/compare"]
 ```
 
 <details>
@@ -8971,6 +9060,7 @@ flowchart LR
        check_rules       <- @sheetpane/grid/check: checkDocument, check()
        explain_code      <- docs/ERRORS.md
        find_skill        <- @sheetpane/skills descriptions
+       diff_workbooks    <- @sheetpane/compare diffWorkbooks (W-63)
 ```
 
 </details>
@@ -8990,8 +9080,8 @@ server to ask.
 1. **The package** `@sheetpane/mcp`, bin `sheetpane-mcp`, Node ≥ 20. Runtime
    dependencies `@sheetpane/import`, `@sheetpane/grid` (its DOM-free
    `@sheetpane/grid/check` entry: the rules checker, the pane's `check()` and
-   the code registry — SR-GRID decision 22f) and `@sheetpane/skills`; nothing
-   else. Its build copies `docs/ERRORS.md`, the grid's `custom-elements.json`
+   the code registry — SR-GRID decision 22f), `@sheetpane/compare` (its
+   headless root) and `@sheetpane/skills`; nothing else. Its build copies `docs/ERRORS.md`, the grid's `custom-elements.json`
    and a plugin table (from each plugin's `package.json`) into `dist/`.
 2. **Hand-written protocol, no SDK** (`work/compare/mcp-server.compare.md`):
    JSON-RPC 2.0 over stdio, one message per line; stdout carries protocol
@@ -9041,6 +9131,15 @@ server to ask.
      cause and fix from `docs/ERRORS.md`; the link.
    - `find_skill(task)` — words of the task against each skill's name (×3)
      and description, the "Not for …" clause left out; the top three.
+   - `diff_workbooks(base, path, key?, headerRow?, limit?)` — SR-COMPARE's
+     `diffWorkbooks` on two files: the summary and its line, then per sheet
+     that is not the same its status, names, rename likeness, key, counts,
+     columns, rows (1-based: added, removed, changed, moved from → to),
+     cells (`was` / `now`), merges, hidden and rule counts — at most `limit`
+     (default 200) rows of each kind and cells per sheet, with a `truncated`
+     note; the key is for every sheet, so a sheet without it is aligned
+     unkeyed and says so in a `note`. Listed last. A coded error a package
+     throws reaches the agent with its code first, as a ToolError does.
 6. **Read-only and bounded:** paths come from the agent and are only read;
    `.xlsx` and `.csv` only (SR-LAW-3, the import package refuses the rest);
    256 MB at most; no network, no writes.
@@ -9323,3 +9422,169 @@ is never listed here.*
 **Code**
 
 - [`packages/tables/src/index.ts`](../packages/tables/src/index.ts) · [`styles.ts`](../packages/tables/src/styles.ts)
+
+
+---
+
+<!-- source: records/0124_COMPARE.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0124_COMPARE.md) -->
+
+# SR-COMPARE — @sheetpane/compare
+
+## §1 — For humans
+
+**What changed since the version that was approved?** A reviewer picks the base file (or the host
+hands it over); the pane marks every added, removed, moved and changed row and cell, the status
+line says how much changed, and Alt+F5 walks through the changes. The same diff runs in Node and
+answers an agent through the MCP server.
+
+```mermaid
+flowchart LR
+    B["base file (picked, or from the host)"] -- "read in the page" --> D["diffWorkbooks(base, the pane's file)"]
+    P["the pane's file, as loaded"] --> D
+    D --> T["decorate: tints"]
+    D --> S["status: n sheets · n rows · n cells changed"]
+    D --> E["publishChanges → the errors list (type compare)"]
+    D --> K["Alt+F5 / Alt+Shift+F5: next / previous change"]
+    D --> M["@sheetpane/mcp diff_workbooks"]
+```
+
+<details>
+<summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
+
+```text
+   base file (picked / from the host) --read in the page--+
+   the pane's file, as loaded --------------------------> diffWorkbooks
+        -> decorate (tints) -> status line (summary) -> errors list (publishChanges, type compare)
+        -> Alt+F5 / Alt+Shift+F5 (next / previous change)   -> @sheetpane/mcp diff_workbooks
+```
+
+</details>
+
+---
+
+## §2 — For agents
+
+### Context
+
+pdfsuite's reviewers change a PDF template from a spec workbook; *what changed since the last
+approved spec* tells them which pages to re-test (W-63, Group 3). Excel's own Spreadsheet Compare
+runs only on Windows with some enterprise Office editions; `daff` (MIT) aligns table rows but knows
+no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-2: none is added).
+
+### Decision
+
+1. **The package:** `@sheetpane/compare`. The root is headless and side-effect free —
+   `diffWorkbooks`, `applyDiff`, `summaryText`, `relativeFormula` and their types — and runs in
+   Node and the browser. `@sheetpane/compare/ui` is the plugin (`id: 'compare'`, registered for the
+   `plugins` attribute) with `compareWith`, `clearCompare`, `comparison`, `stepChange` and
+   `publishChanges`. Dependencies `@sheetpane/export` and `@sheetpane/import`; `@sheetpane/grid` an
+   optional peer (the `/ui` entry only). No third-party code.
+2. **Sheets** match by name. An unmatched sheet of the newer workbook whose distinct rows are mostly
+   an unmatched older sheet's (rows in common over rows in either ≥ `renameThreshold`, default 0.5;
+   the most alike pairs first) is *renamed*; the rest are added or removed. The result lists the
+   newer workbook's sheets in its order, removed sheets last.
+3. **Columns** match by header-row title (trimmed, ignoring case; `headerRow`, default 1) when both
+   header rows hold two or more titles and no title twice; columns left over pair in order when
+   both sides have the same number left (a renamed title). Otherwise by position. Columns whose
+   order changed are reported as moved (the longest in-order run stays).
+4. **Rows.** With `key` columns (titles or letters; for every sheet, or per sheet with `'*'` as the
+   default) rows at or above the header row pair by position and data rows by key — the n-th row
+   of a key with the n-th; a pair outside the longest in-order run is **moved**; a row whose key
+   cells are blank matches only a row with the same content and is never called moved. Without a
+   key, rows align on their content (patience anchors — rows unique on both sides, kept in order —
+   and Myers' diff inside each gap, capped at 1,000 edits a gap), and inside each gap rows alike
+   enough (half or more of the filled cells equal) pair as **changed**; a row that changed place
+   is removed and added, never moved (W-63's hazard: *moved* only when certain). Of two in-order
+   runs of the same length, the one whose rows sit nearer their old places wins. Trailing blank
+   rows do not count.
+5. **Cells** of rows both versions hold differ by value, display text or formula; formulas are
+   compared with each relative reference written as an offset from its cell, so a formula that
+   only moved with its row is not a change. A new column's filled cells are changes with `was:
+   null`. Also reported per sheet: merges added and removed (mapped through the alignment), rows
+   and columns newly hidden or shown, the sheet's state, and data-validation and
+   conditional-format rule counts when they differ.
+6. **The result** is plain data (L9): per sheet a status, the row operations (`added` with its
+   values, `removed` after the newer row it followed, `changed`, `moved`), the cell changes (`was`
+   and `now`: value, text, formula; `what` differs), counts, and a summary — sheets, rows and cells
+   changed (a removed or added sheet's rows count). `applyDiff(a, diff)` rebuilds the newer
+   version's values; a key named for one sheet that both versions lack is SP-5901, a key named for
+   every sheet is used only where it exists (the sheet carries a `note`).
+7. **Speed:** two versions of a 50,000-row, 8-column sheet (500 cells edited, 100 rows inserted,
+   100 deleted, 50 moved), and the same sheet with every row changed, each diff in under **500 ms**
+   in Node. Recorded 2026-10-19 on an Apple M4 (10 cores, 16 GB, macOS) under a load average of
+   14–17 from six other build lanes: unkeyed 120 ms, keyed 119 ms, every row changed 138 ms.
+   With `CI` set the time is reported, not asserted.
+8. **The comparison in a pane** is the file as loaded (`store.book`) against the base, never the
+   pane's edits since; another file loaded into the pane is compared with the same base. The base
+   comes from Compare… (a file picker; `.xlsx` or `.csv`) or from the host (`compareWith(store,
+   bytes | File | workbook, { name, key, headerRow })`); either way it is read in the page and
+   nothing is sent (SR-LAW-11 decision 2). A base that cannot be read is said in the status line.
+9. **Tints** (`decorate`, after `styles` and `condfmt`): changed cell amber, added row or column
+   and every cell of an added sheet green, moved row blue, a red top border on the row below
+   removed rows (bottom border on the last row when they were at the end) — each a
+   `--sp-compare-*` custom property with a default that reads on light and dark.
+10. **The status line** (`status` slot, View and Edit): *Compared with ‹name›: n sheets · n rows ·
+    n cells changed*, and the removed sheets by name.
+11. **Keys and buttons** (cell bar, View and Edit): Compare…, Previous change (Alt+Shift+F5), Next
+    change (Alt+F5) — VS Code's keys for the same act; F-keys keep ⌥ from changing the key on a Mac
+    — and Stop comparing. Stops are sheet-level notes, new columns, added, moved and removed rows
+    (the row selected) and changed cells, in sheet, row, column order, wrapping.
+12. **The errors list** (L7: every surface shows the same comparison): each change is an error
+    of type `compare`, severity `note`, author `compare` — a sheet added or renamed and a sheet's
+    structural changes at A1, a column added, a row added or moved (the row), removed rows (the
+    row below them), a changed cell (`was … → now …`, formulas named) — at most 2,000 and one note
+    for the rest. `found` is the file's text (as for every error) and `expected` what the base
+    holds there — the base's text, its formula when only the formula changed, a moved row's old
+    row — so the list reads *now → base*. They are written by one function, `publishChanges`, which today replaces the
+    list through `setErrors` keeping every other error (it clears undo) and with review layers
+    (W-51) becomes the `compare` layer. A removed sheet has no place in the workbook: the status
+    line names it.
+13. **MCP:** `@sheetpane/mcp`'s `diff_workbooks(base, path, key?, headerRow?, limit?)` runs
+    `diffWorkbooks` on two local files, the key for every sheet (SR-MCP).
+
+### Consequences
+
+- **Enforced today:** `packages/compare/test/diff.node.test.ts` — fast-check: a workbook diffed
+  with itself is empty; the diff applied to `a` gives `b`'s values for any two workbooks, keyed or
+  not; a keyed shuffle is only moves — and the alignment, column, formula, sheet and structure
+  cases; `perf.node.test.ts` the budget (decision 7); `fixtures.node.test.ts` the fixtures pair
+  (SR-FIXTURES `compare/`); `compare.test.ts` (Chromium) the tints, the status line, the errors
+  list, the keys and buttons, Stop comparing and a second file; `packages/mcp/test` the tool's
+  golden; the demos' gallery tab *Compare* and its `demo-check` step (SR-BUILD 11a).
+- **Not done:** the `compare` layer — `publishChanges` writes through `setErrors` until W-51; a
+  removed sheet's changes have no place to be listed (W-55's sheet-level errors would give them
+  one); comparing the pane's edits, not the file, is W-64's edits view.
+
+### Alternatives considered
+
+- `daff` as a dependency — rejected: rows only, no sheets, merges or formulas, and SR-LAW-2 asks for
+  none where the code is this small.
+- Report a reordered row as moved without a key — rejected: equal rows make it a guess (W-63's
+  hazard).
+- Compare the pane's live values (edits included) — rejected for now: every edit would rewrite the
+  errors list and clear undo until layers land; the file against the file is the question asked.
+
+### Reference (required)
+
+- [`packages/compare/`](../packages/compare/) · W-63 · Myers, *An O(ND) Difference Algorithm and
+  Its Variations* (1986) · Bram Cohen's patience diff.
+
+### Veto condition
+
+**Reopen this decision if:** a host needs moved rows without a key, the 50,000-row budget fails on
+an idle machine, or W-51's layers change how a plugin writes errors.
+
+**How to check it:** `pnpm exec vitest run --project node packages/compare && pnpm exec vitest run --project compare`
+
+---
+
+## References
+
+*Every source this record cites, gathered in one place. An archived document
+is never listed here.*
+
+**Records** — [SR-GRID](0105_GRID.md) · [SR-ERRORS](0106_ERRORS.md) · [SR-IMPORT](0104_IMPORT.md) · [SR-MCP](0119_MCP.md) · [SR-FIXTURES](0115_FIXTURES.md) · [SR-CODES](0117_CODES.md) · [SR-BUILD](0102_BUILD.md) · [SR-LAW-11](0013_LAW-11-workbook-stays-in-the-browser.md)
+
+**Code**
+
+- [`packages/compare/src/diff.ts`](../packages/compare/src/diff.ts) · [`align.ts`](../packages/compare/src/align.ts) · [`ui.ts`](../packages/compare/src/ui.ts)

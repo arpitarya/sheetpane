@@ -9,6 +9,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { read, BUILTIN_FORMATS, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
 import { check, checkDocument, describeRule, CODES, codeUrl, spMessage, type ColumnRule, type SheetpaneError, type SpCode } from '@sheetpane/grid/check';
+import { diffWorkbooks, summaryText, type DiffOptions } from '@sheetpane/compare';
 import { describeApi } from './api.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -241,6 +242,43 @@ export async function checkRules(json: unknown, path?: string): Promise<Record<s
   return { ok: out.length === 0, problems: out.map((p) => ({ ...p, url: codeUrl(p.code as SpCode) })), rules, ...findings };
 }
 
+// ── two versions of a workbook (W-63) ─────────────────────────────────────
+
+const colLetter = (c: number) => a1(0, c).replace(/\d+$/, '');
+
+/** What changed between two workbooks — @sheetpane/compare's diffWorkbooks — with rows 1-based and at most `limit` rows and cells listed per sheet. */
+export async function diffReport(base: string, path: string, o: DiffOptions & { limit?: number } = {}): Promise<Record<string, unknown>> {
+  const [a, b] = [await loadWorkbook(base), await loadWorkbook(path)];
+  const { limit = 200, ...opts } = o;
+  const d = diffWorkbooks(a, b, opts); // the key is for every sheet: a sheet without it is aligned unkeyed, with a note
+  return {
+    base, path, summary: d.summary, text: summaryText(d.summary),
+    sheets: d.sheets.filter((s) => s.status !== 'same').map((s) => {
+      const rows = { added: [] as number[], removed: [] as number[], changed: [] as number[], moved: [] as { from: number; to: number }[] };
+      for (const r of s.rows) {
+        if (r.op === 'added') rows.added.push(r.b + 1);
+        else if (r.op === 'removed') rows.removed.push(r.a + 1);
+        else if (r.op === 'changed') rows.changed.push(r.b + 1);
+        else rows.moved.push({ from: r.a + 1, to: r.b + 1 });
+      }
+      const cut = <T>(l: T[]) => l.slice(0, limit);
+      const truncated = Object.values(rows).some((l) => l.length > limit) || s.cells.length > limit;
+      return {
+        status: s.status, ...(s.a !== undefined ? { was: s.a } : {}), ...(s.b !== undefined ? { now: s.b } : {}), ...(s.renamed !== undefined ? { renamed: s.renamed } : {}),
+        ...(s.status === 'changed' ? { keyed: s.keyed, ...(s.key ? { key: s.key } : {}), ...(s.note ? { note: s.note } : {}), columnsBy: s.columns.by } : {}),
+        counts: s.counts,
+        ...(s.columns.added.length || s.columns.removed.length || s.columns.moved.length ? { columns: { added: s.columns.added.map(colLetter), removed: s.columns.removed.map(colLetter), moved: s.columns.moved.map((m) => ({ from: colLetter(m.a), to: colLetter(m.b) })) } } : {}),
+        ...(s.status === 'changed' ? { rows: { added: cut(rows.added), removed: cut(rows.removed), changed: cut(rows.changed), moved: cut(rows.moved) } } : {}),
+        ...(s.cells.length ? { cells: cut(s.cells).map((c) => ({ ref: c.ref, ...(c.wasRef && c.wasRef !== c.ref ? { wasRef: c.wasRef } : {}), was: c.was, now: c.now, what: c.what })) } : {}),
+        ...(s.merges.added.length || s.merges.removed.length ? { merges: s.merges } : {}),
+        ...(s.hidden.rows.hidden.length || s.hidden.rows.shown.length || s.hidden.cols.hidden.length || s.hidden.cols.shown.length || s.hidden.state ? { hidden: s.hidden } : {}),
+        ...(s.rules ? { rules: s.rules } : {}),
+        ...(truncated ? { truncated: `rows and cells listed up to ${limit} each — pass a larger "limit" for more` } : {}),
+      };
+    }),
+  };
+}
+
 // ── error codes (W-40) ─────────────────────────────────────────────────────
 
 let errorsDoc: string | undefined;
@@ -363,6 +401,29 @@ export const TOOLS: Tool[] = [
     inputSchema: { $schema: SCHEMA, type: 'object', properties: { task: { type: 'string', description: 'The task in a few words.' } }, required: ['task'], additionalProperties: false },
     run: async (a) => JSON.stringify(findSkill(str(a, 'task')!), null, 2),
   },
+  {
+    name: 'diff_workbooks',
+    title: 'Diff two workbooks',
+    description: 'Compare two versions of an .xlsx or .csv file and say what changed: sheets added, removed and renamed; per sheet, rows added, removed, changed and (with key columns) moved, and cells changed by value, display text or formula, was → now; also merges, hidden rows and columns, and rule counts. Read-only; the same diff as @sheetpane/compare.',
+    inputSchema: {
+      $schema: SCHEMA, type: 'object',
+      properties: {
+        base: { type: 'string', description: 'The older version: a path to an .xlsx or .csv file.' },
+        path: { type: 'string', description: 'The newer version: a path to an .xlsx or .csv file.' },
+        key: { type: ['string', 'array'], items: { type: 'string' }, description: 'Key columns that identify a row — header titles or column letters, e.g. "Account" or ["Account", "Date"]. With a key, a row that changed place is reported as moved; without one, as removed and added.' },
+        headerRow: { type: 'integer', minimum: 1, description: 'The row holding the column titles (default 1).' },
+        limit: { type: 'integer', minimum: 1, maximum: 10000, description: 'At most this many rows of each kind and cells listed per sheet (default 200); the counts are always whole.' },
+      },
+      required: ['base', 'path'], additionalProperties: false,
+    },
+    run: async (a) => {
+      const key = a.key;
+      if (key !== undefined && !(typeof key === 'string' || (Array.isArray(key) && key.every((k) => typeof k === 'string')))) throw new ToolError('SP-7001', '“key” must be a column title or letter, or a list of them');
+      const int = (k: string) => { const v = a[k]; if (v === undefined) return undefined; if (!Number.isInteger(v) || (v as number) < 1) throw new ToolError('SP-7001', `“${k}” must be a whole number of 1 or more`); return v as number; };
+      const headerRow = int('headerRow'), limit = int('limit');
+      return JSON.stringify(await diffReport(str(a, 'base')!, str(a, 'path')!, { ...(key !== undefined ? { key: key as string | string[] } : {}), ...(headerRow ? { headerRow } : {}), ...(limit ? { limit } : {}) }), null, 2);
+    },
+  },
 ];
 
 /** Runs one tool. A ToolError or a failed read is the tool's error, never the server's. */
@@ -371,6 +432,8 @@ export async function callTool(name: string, args: Record<string, unknown>): Pro
   try {
     return { content: [{ type: 'text', text: await tool.run(args ?? {}) }] };
   } catch (e) {
-    return { content: [{ type: 'text', text: e instanceof ToolError ? e.message : `${name} failed: ${(e as Error).message}` }], isError: true };
+    // a ToolError, or a coded error from a package (SP-5901 from diffWorkbooks): its message starts with the code
+    const coded = e instanceof ToolError || typeof (e as { spCode?: unknown }).spCode === 'string';
+    return { content: [{ type: 'text', text: coded ? (e as Error).message : `${name} failed: ${(e as Error).message}` }], isError: true };
   }
 }

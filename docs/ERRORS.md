@@ -114,6 +114,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
 | [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
+| [SP-5901](#sp-5901) | Compare key is not a column | error |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -725,6 +726,13 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
 - **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
 - **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
+### SP-5901
+
+**Compare key is not a column** · error · [SR-COMPARE](../records/0124_COMPARE.md)
+
+- **Meaning:** `diffWorkbooks` was given a key for one sheet that is not a column of both versions, so it cannot tell which rows are the same row.
+- **Likely cause:** a header title spelled differently, a key column renamed or deleted in one version, or a `headerRow` that is not the row with the titles.
+- **Fix:** name the key by its title in the header row (or by its column letter) as both versions have it; a key given for every sheet (a string, a list or `'*'`) is used only where it exists.
 
 ---
 

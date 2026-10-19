@@ -249,6 +249,77 @@ export const MANIFEST = {
       ]
     },
     {
+      "name": "compare/base.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Holdings",
+          "hidden": false,
+          "headers": [
+            "Account",
+            "Name",
+            "Units",
+            "Price"
+          ]
+        },
+        {
+          "name": "Fees",
+          "hidden": false,
+          "headers": [
+            "Tier",
+            "Rate"
+          ]
+        },
+        {
+          "name": "Notes",
+          "hidden": false,
+          "headers": [
+            "Draft — not for release"
+          ]
+        }
+      ],
+      "features": [
+        "the older version of a compare pair (W-63)"
+      ]
+    },
+    {
+      "name": "compare/now.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Holdings",
+          "hidden": false,
+          "headers": [
+            "Account",
+            "Name",
+            "Units",
+            "Price"
+          ]
+        },
+        {
+          "name": "Fee schedule",
+          "hidden": false,
+          "headers": [
+            "Tier",
+            "Rate"
+          ]
+        },
+        {
+          "name": "Summary",
+          "hidden": false,
+          "headers": [
+            "Accounts",
+            5
+          ]
+        }
+      ],
+      "features": [
+        "the newer version of a compare pair (W-63): one price changed, a row removed, added and moved; a sheet renamed, one removed, one added"
+      ]
+    },
+    {
       "name": "edge/legacy.xls",
       "kind": "refused",
       "appSaved": null,
