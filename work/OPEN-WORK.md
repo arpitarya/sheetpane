@@ -22,7 +22,7 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-| 🔴 **W-44** — **no `NPM_TOKEN`** (the decider, 2026-10-19). Publishing is a GitHub Release → `publish.yml` over npm trusted publishing (OIDC); the steps are [`RELEASING.md`](../RELEASING.md) §One time: publish `0.1.0` **once** by hand (npm asks the authenticator code on every write — the account's 2FA is *auth-and-writes*), a trusted publisher per package (`publish.yml` · environment `npm` · *Allow npm publish*), and the `npm` environment in GitHub. Then `just release 0.2.0` and a GitHub Release `v0.2.0` prove the pipeline; an agent checks npm, the playground and the starters load and closes W-44 | 2026-10-18 | 1 d |
+| 🔴 **W-44** — **no `NPM_TOKEN`** (the decider, 2026-10-19). Publishing is a GitHub Release → `publish.yml` over npm trusted publishing (OIDC); the steps are [`RELEASING.md`](../RELEASING.md) §One time: publish `0.1.0` **once** by hand (npm asks the authenticator code on every write — the account's 2FA is *auth-and-writes*), a trusted publisher per package (`publish.yml` · environment `npm` · *Allow npm publish*), and the `npm` environment in GitHub. `v0.2.0` is released and its publish run (39168217324) passed every check and was refused by npm only for the missing trusted publishers (E404); after the one-time steps, *Re-run failed jobs* on it publishes 0.2.0. An agent then checks npm, the playground and the starters load and closes W-44 | 2026-10-18 | 1 d |
 | ↳ **blocks:** W-44 (closing only — everything is built) | | |
 
 ---

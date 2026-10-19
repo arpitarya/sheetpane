@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — CI green on three OSes; publishing via GitHub Release over OIDC; v0.1.0 and v0.2.0 released, npm refuses until trusted  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *"commit everything. push everything publish zero point one point zero … Create CI/CD pipeline … And publish the packages"*; then *"publish 0.2.0 through pipeline"*, a fux-modelled publishing spec (GitHub Release → `publish.yml`, OIDC, parity, three-OS matrix, `RELEASING.md`), *"merge everything to main … delete all the merged branches"*, *"Always follow the conventional commit message pattern and always have a proper release note"*, *"add a release item for 0.1.0"*.
+- **Done:** CI had been red on every push since W-36. Fixed: `just check` builds before it type-checks; wall-clock budgets asserted locally, reported in CI (SR-BUILD 6); Windows: `fileURLToPath` in the build scripts and CRLF-safe `ERRORS.md` in `@sheetpane/mcp`. `ci.yml`: push/PR/dispatch, `portable` ubuntu/macos/windows × Node 22/LTS with `smoke-built.mjs` (the packed tarballs imported from plain Node) — green on all 13 jobs. `publish.yml` replaces `release.yml`: CI gate, `check-version-parity.mjs` (178 sites), tag = version, one build, tarball checks, `npm publish --provenance` over OIDC. `release-notes.mjs` and `just publish`; `just release` commits `chore(release): …`. Engines `>=22` (SR-LAW-8, SR-EXPORT say Node 22+). `RELEASING.md`. Committed Cowork's L10, README, LICENSE, W-50 – W-69 and `create-sheetpane`-internal work. Versions `0.2.0`; CHANGELOG sections 0.2.0 and 0.1.0; GitHub Releases `v0.1.0` (tag only, never on npm, not latest) and `v0.2.0` (latest). The only branch besides `main` (`npm-publishing`) merged and deleted.
+- **Decided / left open:** the publish run for `v0.2.0` (run 39168217324) passed the gate, parity, tag, build and all 17 tarball checks; npm refused the first package `E404 … PUT create-sheetpane` — no trusted publisher, because no package exists on npm yet. **Open for the decider (W-44):** `RELEASING.md` §One time — the first publish by hand (the account's 2FA is *auth-and-writes*; the decider declined to type a code here) or 2FA switched to *auth-only*, then a trusted publisher per package; then *Re-run failed jobs* on run 39168217324 publishes 0.2.0. `create-sheetpane` is still published (the decider's open question).
+- **Mistakes:** `npm publish tarballs/x.tgz` without `./` read as GitHub owner/repo (EALLOWGIT) — fixed in `230f213` and `v0.2.0` re-cut there (nothing had reached npm). The `release v0.2.0` commit predates the conventional-commit rule; left as pushed. The first watcher used a short SHA `gh` could not match.
+- **Next:** the decider's one-time npm steps; then re-run the publish job and check npm, the playground and the starters; bump the actions to their Node-24 majors (GitHub's deprecation notice on `checkout@v4`, `setup-node@v4`, `*-artifact@v4`).
+
+---
+
 ## 2026-10-19 — `create-sheetpane` is internal: removed from every public doc  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"npm create sheetpane@latest — Do not market this. This is just for internal purposes. Internal testing purposes. Remove it from readme wherever this is mentioned … Remove it from Markdown wherever this is mentioned."*
