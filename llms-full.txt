@@ -1520,6 +1520,7 @@ What an operand can be:
 - a quoted string
 - a cell: `$G$1`, `Sheet2!B1`, or a relative `D1`, which shifts with each cell the same way it does in Excel
 - a defined name that resolves to one of these
+- `INDIRECT(<cell>)`: the cell named by that cell's text (see dependent lists below)
 
 A cell operand is read live, so changing the limit re-checks the rule. An
 empty operand cell reads as 0.
@@ -1532,8 +1533,30 @@ A `list` source can be:
 - an Excel table's column: `Units[Unit]` or `Units[[#Data],[Unit]]`, directly or
   through a defined name — the column's data rows, as the file stores the table
 
+- `INDIRECT($A2)` — a **dependent list** (W-60): each row reads its parent
+  cell's text and lists what it names — a defined name (any case; the sheet's
+  own name before a global one), a table or table column (`Units[Unit]`), or
+  an A1 range (`Lists!$B$2:$B$5`). `INDIRECT("Turbidity")` (quoted text) and
+  `INDIRECT($A2, TRUE)` work too.
+
 A range source is read live from the store, and the arrow's menu re-reads it
 each time it opens.
+
+### Dependent lists
+
+Excel's pattern for *Unit depends on Parameter*: one defined name per
+parameter (`Turbidity` → `Lists!$B$2:$B$3`) and `=INDIRECT($A2)` as the Unit
+column's list source. The parent's text is read per row, live: change the
+Parameter and the Unit is checked again in the same edit — a unit the new
+parameter does not allow (an orphan) is a warning, and the arrow offers the
+new parameter's units.
+
+A parent that names nothing (blank, or text that is no name, such as
+`Flow Rate`) gives no list. As in Excel, the child then passes under
+`allowBlank` ("Ignore blank") and fails without it (`expected`:
+`list — (A7 "Flow Rate" names no list)`). Names cannot hold spaces, so
+workbooks wrap the parent in `SUBSTITUTE`; that, `&` and R1C1
+(`INDIRECT($A2, FALSE)`) are not emulated — the rule is skipped (`source`).
 
 Blank cells pass when the rule has `allowBlank`. Without it, they fail.
 Cells are checked only inside the sheet's used range: its data plus any cell
@@ -1544,10 +1567,10 @@ the user changed. A rule on `B:B` therefore does not produce a million rows.
 | reason | what |
 |---|---|
 | `custom` | a `custom` rule when no formula plugin offers `evaluate()` (see below) |
-| `operand` | an operand the subset above does not cover, e.g. `SUM(...)` or `INDIRECT(...)` |
+| `operand` | an operand the subset above does not cover, e.g. `SUM(...)` or `INDIRECT(SUBSTITUTE(...))` |
 | `operator` | an operator outside the eight above |
 | `type` | an unknown rule type |
-| `source` | a list source that is neither a list, a range nor a name, or that names a missing sheet |
+| `source` | a list source that is neither a list, a range, a name nor `INDIRECT` of one cell or quoted text (`OFFSET(...)`, `INDIRECT(SUBSTITUTE(...))`), or that names a missing sheet |
 
 `skippedRules(store)` counts `custom` as checked when the pane has a formula
 evaluator. `skippedRules(book)` has only the workbook to go on, so it counts
@@ -2175,6 +2198,7 @@ info('showcase.rules.json').errors;                        // the cells the rule
 |---|---|
 | `showcase.xlsx` | one sheet per plugin: Numbers, Styles, Formulas, Validation, CondFmt, Images, Charts, Comments |
 | `showcase.rules.json` | a rules file (SR-GRID 22d) that fails six cells of the showcase |
+| `dependent-lists.xlsx` | dependent dropdowns: a Unit list `=INDIRECT($A2)` over one defined name per parameter; one stale unit (`Readings!C6`) |
 | `edge/*.xlsx` | an empty sheet, a hidden sheet, non-ASCII names, a merged range, the 1904 date system, cached formula errors |
 | `edge/legacy.xls`, `edge/not-a-zip.xlsx` | files sheetpane refuses (SR-LAW-3) |
 | `csv/*.csv` | comma, semicolon, tab, BOM, quoted fields with newlines, cells the formula guard escapes |
@@ -6259,7 +6283,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     drawing anchor (up to 26 columns past the data).
 19b. **Machine-authored errors** (`author` `workbook`, `file` or `host`) are
     read-only in both elements; `workbook` and `host` ones resolve themselves
-    when the cell passes and reopen with `found` refreshed; their pin is a
+    when the cell passes and reopen with `found` refreshed; an open one
+    follows its draft's `found`, `expected` and `message` (W-60: a dependent
+    list's choices change with its parent cell); their pin is a
     square ⚠ at the range's right edge; `BUILTIN_TYPE_NAMES` names their
     types. `validate` re-runs on every sheet after every change and after
     `derive`. A typed formula reads as its derived result. The grid
@@ -7050,16 +7076,19 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    reference (`Units[Unit]`, `Units[[#Data],[Unit]]`, directly or through a
    defined name — W-61, resolved by `@sheetpane/export`'s
    `resolveStructuredRef`, re-exported by the grid, to the table's cells as
-   the file stores its `ref`; it never shifts per cell), or the x14 form; `custom`
+   the file stores its `ref`; it never shifts per cell), a **dependent list**
+   `INDIRECT(<cell>)` (W-60, decision 9), or the x14 form; `custom`
    only through a `derive` provider exposing a synchronous `evaluate(formula,
    { sheet, ref })`, relative references shifted per cell —
    `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
    cell, through `@sheetpane/export`'s `shiftFormula`, re-exported by the
-   grid), defined names and structured references; anything else — a table
-   or column that is not there, `[#This Row]` — skips the rule and counts it
-   (`source` for a list).
+   grid), defined names and structured references, and `INDIRECT` of one cell
+   or of quoted text (`INDIRECT(x, TRUE)` too; decision 9); anything else — a
+   table or column that is not there, `[#This Row]`, `INDIRECT` of
+   `SUBSTITUTE`, `&` or R1C1 (`FALSE`), `OFFSET` — skips the rule and counts
+   it (`source` for a list), never guessed.
 5. **Values:** number rules need a number (`whole` an integer); text dates are
    not parsed; `textLength` uses the stored value's length; a list matches
    text ignoring case and a number by value. Blank cells pass with
@@ -7079,11 +7108,27 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    the grid widens to the columns rules name — by mouse or Alt+↓; the choices
    are re-read live; a pick sets the cell (undoable). `showDropDown` (Excel's
    "hide the arrow") is read by the importer and not yet honoured.
+9. **Dependent lists (W-60):** `INDIRECT(<cell>)` reads the cell (relative
+   parts shifted from the rule's first cell) at each checked cell, live, and
+   resolves its text to a defined name (case-insensitive, the rule sheet's
+   own name before a global one), a table or table column (W-61) or an A1
+   cell or range — always fixed; `INDIRECT("text")` resolves once. Text that
+   names nothing (blank, a space, an unknown name) gives no list: the cell
+   passes with `allowBlank` and fails without it, as Excel does, `expected`
+   saying why (`list — (A7 "Flow Rate" names no list)`). Because `validate`
+   re-runs on every sheet after every change (decision 6), a parent edit
+   re-checks its children in the same edit: an orphaned child opens a
+   warning, an open one follows the new list (SR-GRID decision 19b), and the
+   arrow offers the new parent's choices. A number rule's `INDIRECT` operand
+   reads the one cell its text names.
 
 ### Consequences
 
-- **Enforced today:** `just test-pkg validation` — 30 tests (every type and
-  operator, list sources (a table column by structured reference, W-61), x14, relative operands, live limits, resolve /
+- **Enforced today:** `just test-pkg validation` — 43 tests (every type and
+  operator, list sources (a table column by structured reference, W-61), dependent
+  `INDIRECT` lists — names per parameter, sheet-scoped first, tables, A1 text, a parent
+  that names nothing, the skipped forms, a parent edit and undo, the arrow following
+  the parent, `@sheetpane/fixtures`' `dependent-lists.xlsx` (W-60) — x14, relative operands, live limits, resolve /
   reopen / undo, the arrow and its menu, the shared error pane with the
   author filter, a `custom` rule evaluated by IronCalc through
   `@sheetpane/formulas`), plus SR-GRID's core tests for read-only rows, the ⚠ pin and
@@ -8103,7 +8148,9 @@ helpers to become one package any runner can load (W-32 made the showcase).
 2. **The files** — `showcase.xlsx` (one sheet per plugin; its `Tables`
    sheet, W-61, holds two Excel tables — Units, and Readings with a totals
    row — and a list rule over `Units[Unit]` through the defined name
-   `UnitList`), `showcase.rules.json`, `edge/` (empty,
+   `UnitList`), `showcase.rules.json`, `dependent-lists.xlsx` (W-60:
+   Readings' Unit list is `=INDIRECT($A2)` over one defined name per
+   parameter on Lists; one stale unit, `Readings!C6`), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
    guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
@@ -8119,7 +8166,8 @@ helpers to become one package any runner can load (W-32 made the showcase).
    `path(name)` (Node), `bytes(name)` (disk in Node, `fetch` elsewhere, typed
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
-   rules-file test; `@sheetpane/testing` (W-41) loads from here.
+   rules-file test; `@sheetpane/testing` (W-41) loads from here;
+   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60).
 
 ### Consequences
 

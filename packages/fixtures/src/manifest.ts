@@ -102,6 +102,35 @@ export const MANIFEST = {
       ]
     },
     {
+      "name": "dependent-lists.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Readings",
+          "headers": [
+            "Parameter",
+            "Value",
+            "Unit"
+          ]
+        },
+        {
+          "name": "Lists",
+          "headers": [
+            "Parameter",
+            "Turbidity",
+            "Temperature",
+            "Conductivity",
+            "Nitrate"
+          ]
+        }
+      ],
+      "features": [
+        "dependent lists: a Parameter list, and a Unit list =INDIRECT($A2) over one defined name per parameter (W-60)",
+        "one stale unit (Readings!C6 fails)"
+      ]
+    },
+    {
       "name": "edge/empty.xlsx",
       "kind": "xlsx",
       "appSaved": null,

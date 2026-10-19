@@ -2,6 +2,7 @@
 export const URLS = {
   'showcase.xlsx': () => new URL('../files/showcase.xlsx', import.meta.url),
   'showcase.rules.json': () => new URL('../files/showcase.rules.json', import.meta.url),
+  'dependent-lists.xlsx': () => new URL('../files/dependent-lists.xlsx', import.meta.url),
   'edge/empty.xlsx': () => new URL('../files/edge/empty.xlsx', import.meta.url),
   'edge/hidden-sheet.xlsx': () => new URL('../files/edge/hidden-sheet.xlsx', import.meta.url),
   'edge/unicode-names.xlsx': () => new URL('../files/edge/unicode-names.xlsx', import.meta.url),

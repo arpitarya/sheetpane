@@ -43,6 +43,7 @@ was W-13 DoD 9; W-13 closed without it.
 | 4 · trigger | misread cells counted across the fixtures and written into SR-IMPORT; over 1 in 100 reopens the reading verdict | ⏳ |
 | 5 · missing app | an app Arpit doesn't have is a backlog row, not a reason to keep this item open | ⏳ |
 | 6 · tables (from W-61) | a workbook saved by Excel with two tables (one with a totals row, one in a style outside the Light/Medium 1–7 subset) and a dropdown over `Table[Column]` through a defined name: `read()` gives each table's name, ref, columns and style; the list rule resolves; `@sheetpane/tables` draws them close to Excel; and a sheetpane download with an edit opens in Excel 365 with both tables intact and no repair prompt | ⏳ Arpit |
+| 7 · dependent lists (from W-60) | a workbook saved by Excel with one defined name per parameter (one of them sheet-scoped) and a Unit column whose list is `=INDIRECT($A2)`: the importer reads the names and the rule; each row's arrow offers its parameter's units; a stale unit is flagged; a blank parameter lets any unit in under "Ignore blank" and none without it — as Excel itself does | ⏳ Arpit |
 
 ## Blockers
 

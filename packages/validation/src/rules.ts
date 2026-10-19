@@ -54,12 +54,15 @@ export function parseBox(s: string): Box | undefined {
 const inBox = (b: Box, row: number, col: number) => row >= b.top && row <= b.bottom && col >= b.left && col <= b.right;
 
 // ── operands ──────────────────────────────────────────────────────────────
-/** A formula1/formula2 the subset evaluates: a number, a string, DATE/TIME of numbers, a cell (relative parts shift with the cell), or a range (list sources). */
+/** A formula1/formula2 the subset evaluates: a number, a string, DATE/TIME of numbers, a cell (relative parts shift with the cell), a range (list sources), or `INDIRECT` of a cell — the cell's text, read per cell, names the range (W-60). */
 export type Operand =
   | { k: 'num'; v: number }
   | { k: 'str'; v: string }
-  | { k: 'ref'; sheet: string | undefined; row: number; col: number; absRow: boolean; absCol: boolean }
-  | { k: 'range'; sheet: string | undefined; box: Box; absRow: boolean; absCol: boolean };
+  | RefOperand
+  | { k: 'range'; sheet: string | undefined; box: Box; absRow: boolean; absCol: boolean }
+  | { k: 'indirect'; arg: RefOperand };
+/** A single cell operand; relative parts shift from the rule's first cell. */
+export type RefOperand = { k: 'ref'; sheet: string | undefined; row: number; col: number; absRow: boolean; absCol: boolean };
 
 const NUM = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
 const SHEET = String.raw`(?:'((?:[^']|'')+)'|([^\s!'"(),:=<>&+\-*/^]+))!`;
@@ -73,6 +76,8 @@ export function dateSerial(y: number, m: number, d: number, d1904: boolean): num
  * Parses one operand (`formula1` / `formula2`): a number, quoted text, `DATE` / `TIME` of numbers, a cell or a
  * range; a defined name is followed (three levels) to its formula; a table's structured reference
  * (`Units[Name]`, `Units[[#Data],[Name]]`, W-61) is the table's cells, fixed — it does not shift per cell.
+ * `INDIRECT("…")` of quoted text is what that text names, fixed; `INDIRECT(<cell>)` (W-60) is read per cell — see
+ * {@link indirectAt}. `INDIRECT` of anything else (`SUBSTITUTE`, `&`, R1C1) is outside the subset.
  *
  * @param f - The operand as the file stores it, with or without `=`.
  * @param book - The workbook (its date system and defined names).
@@ -104,6 +109,13 @@ export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 
     const first = body.split(':')[0]!;
     return { k: 'range', sheet, box, absCol: first.startsWith('$'), absRow: /^\$?[A-Za-z]+\$/.test(first) || /^\$?[A-Za-z]+:/.test(body) };
   }
+  m = /^INDIRECT\(\s*(.+?)\s*(?:,\s*(?:TRUE|1)\s*)?\)$/i.exec(t);
+  if (m) {
+    const arg = m[1]!, q = /^"((?:[^"]|"")*)"$/.exec(arg);
+    if (q) return namedBy(q[1]!.replace(/""/g, '"'), book, sheetIndex);
+    const r = REF.exec(arg) ? parseOperand(arg, book, sheetIndex, depth) : undefined;
+    return r?.k === 'ref' ? { k: 'indirect', arg: r } : undefined;
+  }
   if (depth < 3 && /^[A-Za-z_\\][\w.]*$/.test(t)) {
     const names = book.definedNames.filter((n) => n.name.toLowerCase() === t.toLowerCase());
     const n = names.find((x) => x.localSheetId === sheetIndex) ?? names.find((x) => x.localSheetId === undefined);
@@ -112,6 +124,65 @@ export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 
   const s = resolveStructuredRef(t, book.sheets);
   if (s) return { k: 'range', sheet: s.sheet, box: s.range, absRow: true, absCol: true };
   return undefined;
+}
+
+const named = new WeakMap<Book, Map<string, Operand | null>>();
+
+/**
+ * What a text names, as `INDIRECT` reads it (A1 style): an A1 cell or range (`Lists!$A$2:$A$4`), a defined name
+ * (case-insensitive, the sheet's own name before a global one) or a table, a table column (`Units[Unit]`) — always
+ * fixed: it never shifts per cell. Cached per workbook (names and tables do not change after load).
+ *
+ * @param text - The text, e.g. a parent cell's value.
+ * @param book - The workbook.
+ * @param sheetIndex - The rule's sheet, 0-based.
+ * @returns The cell or range, or `undefined` when the text names nothing (blank, a space, a number, an unknown name).
+ */
+export function namedBy(text: string, book: Book, sheetIndex: number): Operand | undefined {
+  const t = text.trim();
+  if (!t || /^["=]/.test(t) || NUM.test(t) || /^INDIRECT\(/i.test(t)) return undefined;
+  let cache = named.get(book);
+  if (!cache) named.set(book, (cache = new Map()));
+  const key = `${sheetIndex}\u0000${t.toLowerCase()}`;
+  let o = cache.get(key);
+  if (o === undefined) {
+    const p = parseOperand(t, book, sheetIndex);
+    o = p?.k === 'ref' || p?.k === 'range' ? { ...p, absRow: true, absCol: true } : null;
+    cache.set(key, o);
+  }
+  return o ?? undefined;
+}
+
+/** An `INDIRECT(<cell>)` operand at one cell: the parent cell (shifted from the rule's anchor), its text, and what it names. */
+export interface IndirectAt {
+  /** The parent cell's sheet. */
+  sheet: string;
+  /** The parent cell, A1. */
+  ref: string;
+  /** The parent cell's text now. */
+  text: string;
+  /** The cell or range the text names; `undefined` when it names nothing. */
+  target?: Operand;
+}
+
+/**
+ * Resolves an `INDIRECT(<cell>)` operand at one cell (W-60): reads the parent cell's text live and looks up what it
+ * names (see {@link namedBy}).
+ *
+ * @param o - An `indirect` operand.
+ * @param rule - The rule it belongs to.
+ * @param store - The workbook store.
+ * @param row - The cell's row, 0-based.
+ * @param col - The cell's column, 0-based.
+ * @returns The parent cell and its target, or `undefined` when the shifted parent falls off the sheet.
+ */
+export function indirectAt(o: Extract<Operand, { k: 'indirect' }>, rule: Rule, store: WorkbookStore, row: number, col: number): IndirectAt | undefined {
+  const a = o.arg, book = store.book;
+  const r = a.absRow ? a.row : a.row + row - rule.anchor.row, c = a.absCol ? a.col : a.col + col - rule.anchor.col;
+  if (r < 0 || c < 0 || !book) return undefined;
+  const sheet = a.sheet ?? rule.sheet, ref = a1(r, c), text = textAt(store, sheet, ref);
+  const target = namedBy(text, book, Math.max(0, book.sheets.findIndex((s) => s.name === rule.sheet)));
+  return target ? { sheet, ref, text, target } : { sheet, ref, text };
 }
 
 /** Shifting relative references is @sheetpane/export's `shiftFormula`, re-exported by the grid peer. */
@@ -170,11 +241,12 @@ function compile(book: Book, sheetName: string): Rule[] {
       const lit = /^"((?:[^"]|"")*)"$/.exec(f);
       if (lit) { rule.literal = lit[1]!.replace(/""/g, '"').split(',').map((x) => x.trim()); continue; }
       const o = parseOperand(f, book, index);
-      if (o && (o.k === 'range' || o.k === 'ref')) {
-        const src = o.sheet ?? sheetName;
+      if (o && (o.k === 'range' || o.k === 'ref' || o.k === 'indirect')) {
+        const src = (o.k === 'indirect' ? o.arg.sheet : o.sheet) ?? sheetName;
         if (!book.sheets.some((s) => s.name === src)) { rule.skip = { reason: 'source', detail: `list source "${f}" names no sheet in this workbook` }; continue; }
         rule.f1 = o;
       } else if (o && o.k === 'num') rule.literal = [String(o.v)];
+      else if (/^=?\s*INDIRECT\(/i.test(f)) rule.skip = { reason: 'source', detail: `list source "${f}" — INDIRECT of one cell or of quoted text naming a range only (SUBSTITUTE, & and R1C1 are not emulated)` };
       else rule.skip = { reason: 'source', detail: `list source "${f}" is not a list, a range or a defined name` };
       continue;
     }
@@ -233,12 +305,17 @@ function operandAt(o: Operand, rule: Rule, store: WorkbookStore, row: number, co
     if (r < 0 || c < 0) return undefined;
     return toNumber(valueAt(store, o.sheet ?? rule.sheet, a1(r, c)));
   }
+  if (o.k === 'indirect') {
+    const t = indirectAt(o, rule, store, row, col)?.target;
+    return t?.k === 'ref' ? operandAt(t, rule, store, row, col) : undefined;
+  }
   return undefined;
 }
 
 /**
  * A `list` rule's choices at one cell — the literal list, or read live from the store for a range (relative parts
- * shifted to the cell; empty and repeated values dropped).
+ * shifted to the cell; empty and repeated values dropped). An `INDIRECT(<cell>)` source reads the range the parent
+ * cell's text names now; none when it names nothing.
  *
  * @param rule - A `list` rule.
  * @param store - The workbook store.
@@ -248,7 +325,8 @@ function operandAt(o: Operand, rule: Rule, store: WorkbookStore, row: number, co
  */
 export function listOptions(rule: Rule, store: WorkbookStore, row: number, col: number): string[] {
   if (rule.literal) return rule.literal;
-  const o = rule.f1;
+  let o = rule.f1;
+  if (o?.k === 'indirect') o = indirectAt(o, rule, store, row, col)?.target;
   if (!o || (o.k !== 'range' && o.k !== 'ref')) return [];
   const src = o.sheet ?? rule.sheet;
   const dr = o.absRow ? 0 : row - rule.anchor.row, dc = o.absCol ? 0 : col - rule.anchor.col;
@@ -325,7 +403,9 @@ export function check(rule: Rule, store: WorkbookStore, row: number, col: number
   }
   if (rule.kind === 'list') {
     if (blank) return 'fail';
-    const fixed = !rule.f1 || (rule.f1.k !== 'ref' && rule.f1.k !== 'range') || (rule.f1.absRow && rule.f1.absCol);
+    // Excel: a source that names nothing (a blank or unknown parent) lets anything in under "Ignore blank", nothing without it
+    if (rule.f1?.k === 'indirect' && !indirectAt(rule.f1, rule, store, row, col)?.target) return rule.dv.allowBlank ? 'pass' : 'fail';
+    const fixed = !rule.f1 || (rule.f1.k !== 'ref' && rule.f1.k !== 'range' && rule.f1.k !== 'indirect') || (rule.f1.k !== 'indirect' && rule.f1.absRow && rule.f1.absCol);
     let opts = fixed ? memo?.get(rule) : undefined;
     if (!opts) { opts = listOptions(rule, store, row, col); if (fixed) memo?.set(rule, opts); }
     const t = textAt(store, rule.sheet, ref).trim().toLowerCase();
@@ -376,6 +456,10 @@ const LIST_SHOWN = 8;
 export function ruleWords(rule: Rule, store: WorkbookStore, row: number, col: number): string {
   const ref = a1(row, col);
   if (rule.kind === 'list') {
+    if (rule.f1?.k === 'indirect') {
+      const at = indirectAt(rule.f1, rule, store, row, col);
+      if (at && !at.target) return `list — (${at.ref} ${at.text.trim() ? `"${at.text.trim()}" names no list` : 'is blank'})`;
+    }
     const opts = listOptions(rule, store, row, col);
     const shown = opts.slice(0, LIST_SHOWN).join(', ');
     return `list — ${shown || '(empty)'}${opts.length > LIST_SHOWN ? `, … (${opts.length - LIST_SHOWN} more)` : ''}`;
@@ -385,7 +469,7 @@ export function ruleWords(rule: Rule, store: WorkbookStore, row: number, col: nu
   const show = (o: Operand | undefined): string => {
     if (!o) return '?';
     const n = operandAt(o, rule, store, row, col);
-    if (n === undefined) return o.k === 'ref' ? a1(o.row, o.col) : '?';
+    if (n === undefined) return o.k === 'ref' ? a1(o.row, o.col) : o.k === 'indirect' ? `INDIRECT(${a1(o.arg.row, o.arg.col)})` : '?';
     if (rule.kind === 'date') return dateText(n, book?.date1904 ?? false);
     if (rule.kind === 'time') return timeText(n);
     if (rule.kind === 'textLength') return String(n);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createWorkbook, type Plugin, type SheetpaneError } from '@sheetpane/grid';
 import features from '../../import/test/fixtures/exceljs-features.xlsx?inline';
+import dependent from '../../fixtures/files/dependent-lists.xlsx?inline';
 import { skippedRules, validation } from '../src/index.js';
 import { shiftFormula } from '../src/rules.js';
 import { fromDataUrl, workbook, type Dv, type SheetSpec } from './helpers.js';
@@ -233,6 +234,112 @@ describe('list sources: a table column by structured reference (W-61 DoD 2)', ()
   it('a reference to a table or column that is not there is skipped with its reason', async () => {
     const s = await storeWith([{ ...sheets()[0]!, rules: [{ sqref: 'A1', type: 'list', f1: 'Units[Nope]' }, { sqref: 'A2', type: 'list', f1: 'Nope[Unit]' }] }, sheets()[1]!], names);
     expect(skippedRules(s).skipped.map((r) => [r.sqref, r.reason])).toEqual([['A1', 'source'], ['A2', 'source']]);
+  });
+});
+
+describe('dependent lists: INDIRECT of a cell (W-60 DoD 1)', () => {
+  // Readings!B: Unit = INDIRECT($A{row}); Lists holds one column of units per parameter
+  const sheets = (rules?: Dv[]): SheetSpec[] => [
+    { name: 'Readings', cells: {
+      A1: 'Turbidity', B1: 'NTU', A2: 'temperature', B2: '°f', A3: 'Nitrate', B3: 'mg N/L', A4: 'Chloride', B4: 'ppm',
+      A5: 'Lists!$C$2:$C$3', B5: '°C', A6: 'Turbidity', B6: '°C', A7: 'Flow Rate', B7: 'L/s', B8: 'NTU',
+    }, rules: rules ?? [{ sqref: 'B1:B10', type: 'list', f1: 'INDIRECT($A1)', allowBlank: true }] },
+    { name: 'Lists', cells: { B2: 'NTU', B3: 'FNU', C2: '°C', C3: '°F', D2: 'ppm', E1: 'Unit', E2: 'mg/L', E3: 'mg N/L', F1: 'Chloride', F2: 'mg/L', F3: 'ppm' },
+      tables: [{ name: 'NitrateUnits', ref: 'E1:E3', columns: ['Unit'] }, { name: 'Chloride', ref: 'F1:F3', columns: ['Chloride'] }] },
+  ];
+  // Nitrate: a global name (ppm) and Readings' own name over a table column — the sheet's own wins
+  const names = [
+    { name: 'Turbidity', formula: 'Lists!$B$2:$B$3' }, { name: 'Temperature', formula: 'Lists!$C$2:$C$3' },
+    { name: 'Nitrate', formula: 'Lists!$D$2' }, { name: 'Nitrate', formula: 'NitrateUnits[Unit]', localSheetId: 0 },
+  ];
+
+  it('each row’s list is what its parent names: a name (any case, the sheet’s own first), a table, an A1 range', async () => {
+    const s = await storeWith(sheets(), names);
+    expect(s.getErrors().map((e) => [e.range, e.found, e.expected])).toEqual([['B6', '°C', 'list — NTU, FNU']]);
+    expect(skippedRules(s).skipped).toEqual([]);
+  });
+
+  it('a parent that names nothing — blank, a name with a space — lets anything in under allowBlank, nothing without it', async () => {
+    const s = await storeWith(sheets([{ sqref: 'B6:B8', type: 'list', f1: 'INDIRECT($A6)' }]), names);
+    expect(s.getErrors().map((e) => [e.range, e.expected])).toEqual([['B6', 'list — NTU, FNU'], ['B7', 'list — (A7 "Flow Rate" names no list)'], ['B8', 'list — (A8 is blank)']]);
+  });
+
+  it('INDIRECT of quoted text, INDIRECT(cell, TRUE), and a name whose formula is INDIRECT', async () => {
+    const s = await storeWith([{ name: 'S', cells: { A1: 'Temperature', B1: '°C', C1: 'NTU', D1: '°F', E1: 'NTU' }, rules: [
+      { sqref: 'B1', type: 'list', f1: 'INDIRECT($A1,TRUE)' }, { sqref: 'C1', type: 'list', f1: 'INDIRECT("Temperature")' },
+      { sqref: 'D1', type: 'list', f1: 'UnitOf' }, { sqref: 'E1', type: 'list', f1: 'INDIRECT("Lists!B2:B3")' },
+    ] }, sheets()[1]!], [...names.slice(0, 2), { name: 'UnitOf', formula: 'INDIRECT($A1)' }]);
+    expect(s.getErrors().map((e) => [e.range, e.expected])).toEqual([['C1', 'list — °C, °F']]);
+  });
+
+  it('a number rule bounded by INDIRECT of a cell reads the cell the text names', async () => {
+    const s = await storeWith([{ name: 'S', cells: { A1: 'Cap', B1: 7, A2: 'Cap', B2: 12, D1: 10 }, rules: [{ sqref: 'B1:B2', type: 'whole', operator: 'lessThanOrEqual', f1: 'INDIRECT($A1)' }] }], [{ name: 'Cap', formula: 'S!$D$1' }]);
+    expect(s.getErrors().map((e) => [e.range, e.expected])).toEqual([['B2', 'whole number ≤ 10']]);
+  });
+
+  it('anything else — SUBSTITUTE, &, R1C1, OFFSET — is skipped with its reason, not guessed (DoD 3)', async () => {
+    const r = await storeWith([{ name: 'S', cells: { A1: 'Flow Rate', B1: 'x' }, rules: [
+      { sqref: 'B1', type: 'list', f1: 'INDIRECT(SUBSTITUTE($A1," ","_"))' }, { sqref: 'B2', type: 'list', f1: 'INDIRECT($A1&"_units")' },
+      { sqref: 'B3', type: 'list', f1: 'INDIRECT($A1,FALSE)' }, { sqref: 'B4', type: 'list', f1: 'OFFSET($A$1,0,0,3,1)' },
+    ] }]);
+    expect(r.getErrors()).toEqual([]);
+    const skipped = skippedRules(r).skipped;
+    expect(skipped.map((x) => [x.sqref, x.reason])).toEqual([['B1', 'source'], ['B2', 'source'], ['B3', 'source'], ['B4', 'source']]);
+    expect(skipped[0]!.detail).toMatch(/INDIRECT of one cell .*SUBSTITUTE/);
+  });
+});
+
+describe('dependent lists: the parent changes (W-60 DoD 2)', () => {
+  const book = () => workbook([
+    { name: 'Readings', cells: { A1: 'Turbidity', B1: 'NTU', A2: 'Temperature', B2: '°C' }, rules: [{ sqref: 'B1:B5', type: 'list', f1: 'INDIRECT($A1)', allowBlank: true, error: 'Pick a unit for this parameter' }] },
+    { name: 'Lists', cells: { A1: 'NTU', A2: 'FNU', B1: '°C', B2: '°F' } },
+  ], [{ name: 'Turbidity', formula: 'Lists!$A$1:$A$2' }, { name: 'Temperature', formula: 'Lists!$B$1:$B$2' }]);
+
+  it('a parent edit re-checks the child in the same call: the orphaned unit is a warning; a fix, undo and redo follow', async () => {
+    const s = createWorkbook({ plugins: [validation()] });
+    await s.load(await book(), 'd.xlsx');
+    expect(s.getErrors()).toEqual([]);
+    s.setCell('Readings', 'A1', 'Temperature');
+    expect(s.getErrors()).toEqual([expect.objectContaining({ range: 'B1', found: 'NTU', expected: 'list — °C, °F', message: 'Pick a unit for this parameter', status: 'open' })]);
+    s.setCell('Readings', 'B1', '°F');
+    expect(at(s.getErrors(), 'Readings', 'B1')!.status).toBe('resolved');
+    s.setCell('Readings', 'A1', 'Turbidity');
+    expect(at(s.getErrors(), 'Readings', 'B1')!.status).toBe('open');
+    s.undo();
+    expect(at(s.getErrors(), 'Readings', 'B1')!.status).toBe('resolved');
+    s.redo();
+    expect(at(s.getErrors(), 'Readings', 'B1')).toMatchObject({ status: 'open', found: '°F', expected: 'list — NTU, FNU' });
+  });
+
+  it('a list edited on another sheet re-checks the children that read it', async () => {
+    const s = createWorkbook({ plugins: [validation()] });
+    await s.load(await book(), 'd.xlsx');
+    s.setCell('Lists', 'A1', 'JTU');
+    expect(open(s.getErrors()).map((e) => [e.range, e.expected])).toEqual([['B1', 'list — JTU, FNU']]);
+  });
+
+  it('500 rows re-check on a parent edit without a pause', async () => {
+    const cells: Record<string, string> = {};
+    for (let r = 1; r <= 500; r++) { cells[`A${r}`] = r % 2 ? 'Turbidity' : 'Temperature'; cells[`B${r}`] = r % 2 ? 'NTU' : '°C'; }
+    const s = createWorkbook({ plugins: [validation()] });
+    await s.load(await workbook([{ name: 'Readings', cells, rules: [{ sqref: 'B1:B500', type: 'list', f1: 'INDIRECT($A1)' }] }, { name: 'Lists', cells: { A1: 'NTU', A2: 'FNU', B1: '°C', B2: '°F' } }],
+      [{ name: 'Turbidity', formula: 'Lists!$A$1:$A$2' }, { name: 'Temperature', formula: 'Lists!$B$1:$B$2' }]), 'd.xlsx');
+    expect(s.getErrors()).toEqual([]);
+    const t0 = performance.now();
+    s.setCell('Readings', 'A250', 'Turbidity');
+    expect(performance.now() - t0).toBeLessThan(500);
+    expect(open(s.getErrors()).map((e) => e.range)).toEqual(['B250']);
+  });
+});
+
+describe('the dependent-lists fixture (W-60 DoD 4)', () => {
+  it('@sheetpane/fixtures’ dependent-lists.xlsx: one name per parameter, Unit = INDIRECT($A2), C6 stale', async () => {
+    const s = createWorkbook({ plugins: [validation()] });
+    await s.load(fromDataUrl(dependent), 'dependent-lists.xlsx');
+    expect(s.getErrors().map((e) => [e.sheet, e.range, e.found, e.expected])).toEqual([['Readings', 'C6', '°C', 'list — NTU, FNU']]);
+    expect(skippedRules(s)).toEqual({ rules: 2, checked: 2, skipped: [] });
+    s.setCell('Readings', 'A6', 'Temperature');
+    expect(s.getErrors()[0]!.status).toBe('resolved');
   });
 });
 

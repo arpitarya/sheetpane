@@ -6,7 +6,7 @@ item: W-60
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `INDIRECT` of a cell (relative parts shift per row) or a quoted string, resolving the cell's text to a defined name, a table column (W-61) or an A1 range | the list arrow offers the right choices per row | ⏳ |
-| 2 | When the parent cell changes, re-check the dependent cells; an orphaned child becomes a warning | a stale unit is caught | ⏳ |
-| 3 | Anything else (`OFFSET`, concatenation) stays skipped with its reason | no guessing | ⏳ |
+| 1 | `INDIRECT` of a cell (relative parts shift per row) or a quoted string, resolving the cell's text to a defined name, a table column (W-61) or an A1 range | the list arrow offers the right choices per row | ✅ |
+| 2 | When the parent cell changes, re-check the dependent cells; an orphaned child becomes a warning | a stale unit is caught | ✅ |
+| 3 | Anything else (`OFFSET`, concatenation) stays skipped with its reason | no guessing | ✅ skipped with reason `source` |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -42,10 +42,10 @@ Excel's dependent drop-down lists are built with named ranges and `INDIRECT` in 
 
 | DoD | what | state |
 |---|---|---|
-| 1 · operand | `INDIRECT` parsed, names case-insensitive, sheet-scoped names first | ⏳ |
-| 2 · live | parent edit → child re-validated in the same frame | ⏳ |
-| 3 · list arrow | the cell menu offers the resolved list | ⏳ |
-| 4 · tests · docs | a fixture with names per parameter; SR-VALIDATION; CHANGELOG | ⏳ |
+| 1 · operand | `INDIRECT` parsed, names case-insensitive, sheet-scoped names first | ✅ `rules.ts` `parseOperand` / `namedBy` / `indirectAt`; tables and A1 text too |
+| 2 · live | parent edit → child re-validated in the same frame | ✅ in the same `setCell`; the grid now refreshes an open error's `expected` (SR-GRID 19b) |
+| 3 · list arrow | the cell menu offers the resolved list | ✅ `ui.test.ts` |
+| 4 · tests · docs | a fixture with names per parameter; SR-VALIDATION; CHANGELOG | ✅ `@sheetpane/fixtures` `dependent-lists.xlsx`; SR-VALIDATION 9; the Excel-saved check → W-30 DoD 7 |
 
 ## Blockers
 

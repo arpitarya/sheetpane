@@ -31,6 +31,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** rules keep `ProblemSeverity` (a failing rule is a problem), so `rules.schema.json` is unchanged; results are counted in cells, problems in entries; `includeResults` is host-only (no Download-menu switch); a result a `validate` provider stops reporting is removed, never resolved. Left open: a demo of results in `examples/` (not required by L10 — no example uses results).
 - **Mistakes:** none.
 - **Next:** merge lane f; then W-55/W-68/W-69's lane, which touches the same list.
+## 2026-10-19 — W-60 dependent dropdowns: `INDIRECT(<cell>)` list sources  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-60 in lane e (worktree `sheetpane-lanes/e`, branch `lane-e`), on top of W-61, beside other lanes.*
+- **Done:** `@sheetpane/validation`'s `parseOperand` reads `INDIRECT(<cell>)`, `INDIRECT("text")` and `, TRUE`; `namedBy` resolves a text to a defined name (case-insensitive, sheet-scoped first), a table or table column (W-61's `resolveStructuredRef`) or an A1 range, cached per workbook; `indirectAt` reads the parent per cell, live; lists, the arrow, `expected` and number operands use it (SR-VALIDATION 3, 4, 9). The grid's `validate` reconcile now refreshes an open machine error's `expected` (SR-GRID 19b) — without it an orphaned unit kept the old parameter's list. `@sheetpane/fixtures` adds `dependent-lists.xlsx` (SR-FIXTURES 2, 5). Tests: validation 43, a grid assertion; validation · grid · fixtures · repo · node 622 ✓, testing · tables 17 ✓.
+- **Decided / left open:** read in: a parent that names nothing (blank, `Flow Rate`) gives no list — the child passes under `allowBlank` ("Ignore blank") and fails without it, as Excel does; `INDIRECT(SUBSTITUTE(…))`, `&`, R1C1 and `OFFSET` are skipped (`source`), not emulated (the item's hazard). A separate fixture file rather than a showcase sheet, so the showcase, its goldens and the demos are unchanged. Handed on: the Excel-saved check to W-30 DoD 7.
+- **Mistakes:** none.
+- **Next:** the orchestrator merges lane e.
+
+---
+
 ## 2026-10-19 — W-61 Excel tables: read, `Table[Column]` resolved, `@sheetpane/tables` draws them  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-61 in lane e (worktree `sheetpane-lanes/e`, branch `lane-e`), beside five other lanes.*

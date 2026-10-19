@@ -882,8 +882,8 @@ export class WorkbookStore {
             at.set(e.id, errors.length);
             errors.push(e);
             changed = true;
-          } else if (errors[i]!.author !== 'file' && (errors[i]!.status === 'resolved' || errors[i]!.found !== d.found || errors[i]!.message !== d.message || errors[i]!.severity !== d.severity || errors[i]!.code !== d.code)) {
-            // a machine-authored error follows the cell: reopened, and its found / message refreshed
+          } else if (errors[i]!.author !== 'file' && (errors[i]!.status === 'resolved' || errors[i]!.found !== d.found || errors[i]!.expected !== d.expected || errors[i]!.message !== d.message || errors[i]!.severity !== d.severity || errors[i]!.code !== d.code)) {
+            // a machine-authored error follows the cell: reopened, and its found / expected / message refreshed (W-60: a dependent list's choices change with its parent)
             const { code: _was, ...rest } = withoutAcceptance(errors[i]!); // an acceptance was for what it found then (W-69)
             errors[i] = { ...rest, status: d.status ?? 'open', message: d.message, expected: d.expected, found: d.found, severity: d.severity, ...(d.code ? { code: d.code } : {}) };
             changed = true;
