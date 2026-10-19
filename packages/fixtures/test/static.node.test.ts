@@ -30,6 +30,9 @@ describe('renderStatic() in Node draws what the browser was checked against (W-6
     // not vacuous: marks, a merge, a stale and a changed cell, a decorate fill, a hidden row or column left out
     const all = Object.values(got).join('');
     for (const s of ['data-sp-mark="error"', 'data-sp-mark="warning"', 'data-sp-mark="note"', 'colspan=', 'data-sp-stale', 'data-sp-changed', 'data-sp-badge', 'linear-gradient(90deg']) expect(all, s).toContain(s);
+    // the later marks (W-50, W-51, W-55, W-69): results, an accepted deviation, the sheet's and the workbook's errors; a hidden layer's never
+    for (const s of ['data-sp-result="pass"', 'data-sp-result="skipped"', 'data-sp-mark="accepted"', 'data-sp-scope="sheet"', 'data-sp-scope="workbook"', 'accepted: The custodian rounds fractions']) expect(all, s).toContain(s);
+    expect(all).not.toContain('Only in the draft layer');
     expect(all).not.toMatch(/<script|font-family|url\(|\bon\w+=|class=/i);
   }, 60_000);
 });

@@ -106,11 +106,14 @@ helpers to become one package any runner can load (W-32 made the showcase).
    showcase, `merged`, `hidden-sheet`, `unicode-names`, `date1904` and
    `comma.csv`, with the rules sample, plugins numfmt, styles, condfmt,
    validation and comments, and one edit on the showcase (a changed and a
-   stale cell). `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
+   stale cell) plus its Numbers sheet's later marks — results at `marks`
+   (one under a rule's error), an accepted deviation, an error about the
+   sheet and one about the workbook, and one in a hidden layer. `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
    Chromium) and, for every sheet in both themes, compares each cell and
    header of `renderStatic()`'s table with the grid's — computed text,
    colours, weight, style, size, alignment, borders, padding, the mark's ring
-   and tint, the changed corner, width and height; `static.node.test.ts`
+   and tint, a result's glyph, colour, size and label, the changed corner,
+   width and height; `static.node.test.ts`
    renders the same in Node; both equal `test/golden/static.json`.
    `@sheetpane/styles` and `@sheetpane/condfmt` are devDependencies for it.
 

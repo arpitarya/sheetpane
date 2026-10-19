@@ -501,11 +501,15 @@ await writeFile('report.html', renderStatic(book, { sheet: 'Holdings', range: 'A
 - **`book`** is a loaded store: `loadWorkbook()`'s, `createWorkbook()`'s after
   `load()`, or an element's `workbook` — its changes and derived values show.
   `sheet` defaults to the selected one, `range` to the used range (≤ 200,000
-  cells), `errors` to the workbook's own (`[]` marks nothing; pass `check()`'s
+  cells), `errors` to the visible layers' (`[]` marks nothing; pass `check()`'s
   or a restored review), `theme` to `light` (`dark` too), `headers` to true.
 - **Marks:** a ring and a tint as the grid draws them, and a badge with the
-  glyph (✕ ! i ✓) and a number that the footer explains — severity, range,
-  type, message, *should be*. Never colour alone.
+  glyph (✕ ! i ✓, `A` for an accepted deviation) and a number that the footer
+  explains — severity, range, type, message, *should be*, the acceptance's
+  reason. Never colour alone. Errors about the whole sheet or the workbook
+  head the footer and mark no cell. Results (✓ passed, — not checked) show
+  as the grid's corner glyph only when the pane's `results` level is
+  `marks`. Rich text keeps its runs (italic, bold, colour), never a font.
 - **Inert:** no script, no event attribute, no `class`, no stylesheet, no URL
   (a `decorate` value that loads or escapes is dropped), every value escaped,
   no font family — the reader's font is the font.

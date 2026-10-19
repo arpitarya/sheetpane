@@ -5,8 +5,8 @@
 // (Fidelity against the grid's computed styles: packages/fixtures/test/static.test.ts.)
 import { afterEach, describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { toXlsx, type Cell } from '@sheetpane/export';
-import { createWorkbook, type Plugin, type SheetpaneError, type StyleSubset } from '../src/index.js';
+import { toXlsx, utf8, writeZip, type Cell } from '@sheetpane/export';
+import { createWorkbook, type Plugin, type SheetpaneError, type SheetpaneExcel, type StyleSubset } from '../src/index.js';
 import { renderStatic, STATIC_MARKS, TOKENS, DARK_TOKENS } from '../src/static.js';
 import { cleanup } from './helpers.js';
 
@@ -65,7 +65,7 @@ describe('renderStatic() (W-67)', () => {
     expect(notes).toEqual(['!1 Warning · C2:C3 · Wrong value — check', 'i2 Note · B3 · Wrong value — just so you know', '✕3 Error · B3 · Wrong value — negative · should be 3', '✓4 Resolved · A5 · Wrong value — fixed']);
     expect(out.querySelector('th[data-sp-row="2"] [data-sp-badge]')!.getAttribute('aria-label')).toBe('Error');
     expect(out.querySelector('th[data-sp-row="4"] [data-sp-badge]')).toBeNull(); // a resolved error marks its cell, not its row
-    expect(Object.keys(STATIC_MARKS)).toEqual(['error', 'warning', 'note', 'resolved']);
+    expect(Object.keys(STATIC_MARKS)).toEqual(['error', 'warning', 'note', 'accepted', 'resolved', 'skipped', 'pass']);
     // the workbook's own errors by default; [] marks nothing
     book.addError({ sheet: 'Data', range: 'A2', type: 'other', severity: 'warning', message: 'own' });
     expect(parse(renderStatic(book)).querySelector('td[data-sp-ref="A2"]')!.getAttribute('data-sp-mark')).toBe('warning');
@@ -104,6 +104,92 @@ describe('renderStatic() (W-67)', () => {
     expect(() => renderStatic(fonted)).toThrow(/^SP-3010: /);
   });
 
+  it('results (W-50) at the marks level only, a problem wins; an accepted deviation (W-69); the visible layers (W-51)', async () => {
+    const book = await bookOf(ROWS);
+    book.addError({ sheet: 'Data', range: 'A2', type: 'other', severity: 'pass', message: 'Name present' });
+    book.addError({ sheet: 'Data', range: 'B2:C2', type: 'other', severity: 'skipped', message: 'Not in the PDF' });
+    book.addError({ sheet: 'Data', range: 'B3', type: 'other', severity: 'pass', message: 'Units read' });
+    book.addError({ sheet: 'Data', range: 'B3', type: 'wrong-value', severity: 'error', message: 'negative' });
+    const ok = book.addError({ sheet: 'Data', range: 'A4', type: 'wrong-value', severity: 'warning', message: 'rounded' });
+    expect(book.acceptError(ok.id, 'Agreed with the custodian', { by: 'Ravi' })).toBe(true);
+    book.addError({ sheet: 'Data', range: 'A5', type: 'other', severity: 'error', message: 'draft only', layer: 'draft' });
+    const result = (out: DocumentFragment, ref: string) => out.querySelector<HTMLElement>(`td[data-sp-ref="${ref}"] [data-sp-result]`);
+    // summary (the default): no result is drawn, as in the grid
+    let out = parse(renderStatic(book));
+    expect(out.querySelector('[data-sp-result]')).toBeNull();
+    book.setResults('marks');
+    out = parse(renderStatic(book));
+    expect([result(out, 'A2')!.textContent, result(out, 'A2')!.getAttribute('aria-label'), result(out, 'B2')!.dataset.spResult, result(out, 'C2')!.textContent]).toEqual(['✓', 'Passed: Name present', 'skipped', '—']);
+    expect(result(out, 'B3')).toBeNull(); // a problem always wins
+    expect(out.querySelector('td[data-sp-ref="A2"]')!.hasAttribute('data-sp-mark')).toBe(false); // no ring, tint or badge
+    expect(out.querySelector<HTMLElement>('td[data-sp-ref="A2"] [data-sp-v]')!.textContent).toBe('a');
+    expect([...out.querySelectorAll('[data-sp-note]')].map((n) => n.textContent)).toEqual(['✕1 Error · B3 · Wrong value — negative', 'A\u20092 Accepted · A4 · Wrong value — rounded · accepted: Agreed with the custodian', '✕3 Error · A5 · Other — draft only']);
+    const a4 = out.querySelector<HTMLElement>('td[data-sp-ref="A4"]')!;
+    expect([a4.dataset.spMark, a4.style.backgroundColor]).toEqual(['accepted', out.querySelector<HTMLElement>('td[data-sp-ref="B4"]')!.style.backgroundColor]); // a ring, no tint
+    expect(a4.querySelector<HTMLElement>('[data-sp-badge="accepted"]')!.style.boxShadow).toContain('1.5px');
+    expect(out.querySelector('th[data-sp-row="3"] [data-sp-badge]')).toBeNull(); // an accepted deviation is not open
+    // W-51: the visible layers only — draft's error goes; given errors are drawn as given
+    book.setVisibleLayers(['review']);
+    out = parse(renderStatic(book));
+    expect(out.querySelector('td[data-sp-ref="A5"]')!.hasAttribute('data-sp-mark')).toBe(false);
+    expect(out.querySelectorAll('[data-sp-note]')).toHaveLength(2);
+    expect(parse(renderStatic(book, { errors: book.getErrors() })).querySelector('td[data-sp-ref="A5"]')!.getAttribute('data-sp-mark')).toBe('error');
+    book.setResults('summary');
+    expect(parse(renderStatic(book)).querySelector('[data-sp-result]')).toBeNull();
+  });
+
+  it('errors about the whole sheet or the workbook (W-55) head the footer and mark no cell', async () => {
+    const book = await bookOf(ROWS);
+    book.addError({ sheet: 'Data', range: 'B2', type: 'wrong-value', severity: 'note', message: 'a cell' });
+    book.addError({ sheet: 'Data', range: '', type: 'other', severity: 'warning', message: 'Page 2 is missing' });
+    book.addError({ sheet: '', range: '', type: 'other', severity: 'error', message: 'Not the spec’s revision' });
+    const other = err('', 'error', 'another sheet', { sheet: 'Other' });
+    const out = parse(renderStatic(book, { errors: [...book.getErrors(), other] }));
+    const notes = [...out.querySelectorAll<HTMLElement>('[data-sp-note]')];
+    expect(notes.map((n) => [n.dataset.spScope, n.textContent])).toEqual([
+      ['workbook', '✕1 Error · Whole workbook · Other — Not the spec’s revision'],
+      ['sheet', '!2 Warning · Whole sheet · Other — Page 2 is missing'],
+      [undefined, 'i3 Note · B2 · Wrong value — a cell'],
+    ]);
+    expect([...out.querySelectorAll<HTMLElement>('td[data-sp-mark]')].map((td) => td.dataset.spRef)).toEqual(['B2']);
+    expect([...out.querySelectorAll('tbody td [data-sp-badge]')].map((b) => b.textContent)).toEqual(['i3']);
+    expect(out.querySelector('th[data-sp-row] [data-sp-badge]')!.closest('th')!.getAttribute('data-sp-row')).toBe('1');
+  });
+
+  it('a rich-text cell (W-53): its runs as spans, styled as the grid draws them, never a font family', async () => {
+    const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', PR = 'http://schemas.openxmlformats.org/package/2006/relationships';
+    const parts: Record<string, string> = {
+      '[Content_Types].xml': `<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/></Types>`,
+      '_rels/.rels': `<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+      'xl/workbook.xml': `<workbook xmlns="${NS}" xmlns:r="${R}"><sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+      'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+      'xl/worksheets/sheet1.xml': `<worksheet xmlns="${NS}"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><r><t xml:space="preserve">Net </t></r><r><rPr><i/></rPr><t>of &lt;tax&gt;</t></r></is></c><c r="B1" t="inlineStr"><is><t>plain</t></is></c></row></sheetData></worksheet>`,
+    };
+    const runs: Plugin = {
+      id: 'st-runs', provides: ['decorate'], decorate: () => undefined,
+      decorateRuns: (cell) => cell.runs?.map((r) => (r.i ? { text: r.text, style: { 'font-style': 'italic', color: 'var(--sp-accent)', 'background-image': 'url(x)' } as StyleSubset } : { text: r.text })),
+    };
+    const book = createWorkbook({ plugins: [runs] });
+    await book.load(await writeZip(Object.entries(parts).map(([name, d]) => ({ name, data: utf8(d) }))), 'rich.xlsx');
+    const html = renderStatic(book);
+    expect(html).not.toMatch(/font-family|url\(/);
+    const v = parse(html).querySelector<HTMLElement>('td[data-sp-ref="A1"] [data-sp-v]')!;
+    expect([...v.childNodes].map((n) => [n.nodeName, n.textContent])).toEqual([['#text', 'Net '], ['SPAN', 'of <tax>']]);
+    const it = v.querySelector('span')!;
+    // the grid's own drawing of the same cell
+    const el = document.createElement('sheetpane-excel') as SheetpaneExcel;
+    el.style.height = '300px';
+    document.body.append(el);
+    el.workbook = book;
+    await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    const g = el.shadowRoot!.querySelector('.c[data-sp-ref="A1"] .v span')!;
+    expect([it.textContent, it.style.fontStyle]).toEqual([g.textContent, getComputedStyle(g).fontStyle]);
+    document.body.append(parse(html));
+    const placed = document.body.querySelector<HTMLElement>('table[data-sp-static] td[data-sp-ref="A1"] [data-sp-v] span')!;
+    expect(getComputedStyle(placed).color).toBe(getComputedStyle(g).color);
+    expect(parse(html).querySelector('td[data-sp-ref="B1"] [data-sp-v] span')).toBeNull();
+  });
+
   it('refuses what it cannot draw: SP-3027, SP-3028', async () => {
     expect(() => renderStatic(createWorkbook())).toThrow(/^SP-3027: /);
     const book = await bookOf(ROWS);
@@ -114,7 +200,7 @@ describe('renderStatic() (W-67)', () => {
 
 describe('W-67 DoD 3 — nothing a file, a plugin or a host says escapes the table', () => {
   const ALLOWED_TAGS = new Set(['TABLE', 'COLGROUP', 'COL', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD', 'SPAN', 'DIV', 'B']);
-  const ALLOWED_ATTRS = /^(style|scope|rowspan|colspan|title|aria-label|data-sp-[a-z-]+)$/;
+  const ALLOWED_ATTRS = /^(style|scope|rowspan|colspan|title|role|aria-label|data-sp-[a-z-]+)$/;
   const nasty = fc.oneof(
     fc.string({ unit: 'binary', maxLength: 40 }),
     fc.constantFrom('<script>alert(1)</script>', '"><img src=x onerror=alert(1)>', "'; color:red", '</td></tr></table><b>x', '&amp;&lt;', '<!--', ']]>', 'url(javascript:1)', 'expression(alert(1))', ' \u0000￿', '{{x}}', 'var(--sp-ink)'),
@@ -133,7 +219,9 @@ describe('W-67 DoD 3 — nothing a file, a plugin or a host says escapes the tab
       };
       const store = createWorkbook({ plugins: [plugin] });
       await store.load(await toXlsx({ sheets: [{ name, rows: [[1, 2], [3, 4]] }] }), 'f.xlsx');
-      const errors = [err('A1:B1', 'error', message, { sheet: name, type: typeId, expected: message }), err('B2', 'note', typeId, { sheet: name })];
+      store.setResults('marks');
+      const errors = [err('A1:B1', 'error', message, { sheet: name, type: typeId, expected: message }), err('B2', 'note', typeId, { sheet: name }),
+        err('A2', 'warning', 'ok', { sheet: name, status: 'accepted', reason: message, acceptedBy: typeId, acceptedAt: '2026-10-19T00:00:00Z' }), err('', 'warning', typeId, { sheet: name }), err('B2', 'pass', message, { sheet: name })];
       const html = renderStatic(store, { sheet: name, errors });
       const out = parse(html);
       expect(out.children).toHaveLength(1);
@@ -148,9 +236,13 @@ describe('W-67 DoD 3 — nothing a file, a plugin or a host says escapes the tab
       // HTML has no NUL: the parser reads it as U+FFFD, so that is what is written
       const read = (t: string) => t.replace(/\0/g, '\uFFFD');
       for (const ref of ['A1', 'B1', 'A2', 'B2']) expect(table.querySelector(`td[data-sp-ref="${ref}"] [data-sp-v]`)!.textContent).toBe(read(shown(ref)));
-      const notes = [...table.querySelectorAll('[data-sp-note]')].map((n) => n.textContent!);
-      expect(notes[0]).toContain(read(message));
-      expect(notes[1]).toContain(read(typeId));
+      const notes = [...table.querySelectorAll<HTMLElement>('[data-sp-note]')];
+      const said = (scope: string | undefined, ref?: string) => notes.find((n) => n.dataset.spScope === scope && (!ref || n.textContent!.includes(` · ${ref} · `)))!.textContent!;
+      expect(said(undefined, 'A1:B1')).toContain(read(message));
+      expect(said(undefined, 'B2')).toContain(read(typeId));
+      if (message) expect(said(undefined, 'A2')).toContain(`accepted: ${read(message)}`);
+      expect(said('sheet')).toContain(read(typeId));
+      expect(table.querySelector('[data-sp-result]')).toBeNull(); // B2's note wins over its result
     }), { numRuns: 150 });
   }, 60_000);
 });

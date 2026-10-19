@@ -43,7 +43,7 @@ describe('renderStatic() looks like the grid (W-67 DoD 2)', () => {
   it('every cell and header of every sheet, light and dark, matches the grid’s computed style; the HTML equals the Node golden', async () => {
     const golden = JSON.parse(goldenText) as Rendered;
     const got: Rendered = {};
-    let cells = 0, marked = 0, merged = 0;
+    let cells = 0, marked = 0, merged = 0, results = 0;
     for (const c of await staticCases()) {
       const el = document.createElement('sheetpane-excel') as SheetpaneExcel;
       el.setAttribute('plugins', PLUGIN_IDS.join(' '));
@@ -89,6 +89,14 @@ describe('renderStatic() looks like the grid (W-67 DoD 2)', () => {
             expect(td.dataset.spMark === 'resolved' ? 'pass' : td.dataset.spMark, `${at} mark`).toBe(mark);
             const bg = rgb(t.backgroundColor);
             expect(near(bg, mark && mark !== 'pass' ? tinted(gc!) : rgb(g.backgroundColor)), `${at} background ${t.backgroundColor}`).toBe(true);
+            // a result's corner glyph (W-50): the same kind, glyph, colour and label as the grid's
+            const sres = td.querySelector<HTMLElement>('[data-sp-result]'), gres = gc!.querySelector<HTMLElement>('.rmk');
+            expect(sres?.dataset.spResult, `${at} result`).toBe(gres ? [...gres.classList].find((k) => k !== 'rmk') : undefined);
+            if (sres && gres) {
+              expect([sres.textContent, sres.getAttribute('aria-label')], `${at} result glyph`).toEqual([gres.textContent, gres.getAttribute('aria-label')]);
+              for (const p of ['color', 'fontSize', 'fontWeight'] as const) expect(getComputedStyle(sres)[p], `${at} result ${p}`).toBe(getComputedStyle(gres)[p]);
+              results++;
+            }
             expect(td.dataset.spChanged !== undefined, `${at} changed`).toBe(gc!.classList.contains('chg'));
             expect(td.querySelector('[data-sp-stale]') !== null, `${at} stale`).toBe(gc!.classList.contains('stale'));
             const gr = gc!.getBoundingClientRect(), sr = td.getBoundingClientRect();
@@ -117,6 +125,7 @@ describe('renderStatic() looks like the grid (W-67 DoD 2)', () => {
     expect(cells).toBeGreaterThan(250);
     expect(marked).toBeGreaterThan(5);
     expect(merged).toBeGreaterThan(0);
+    expect(results).toBeGreaterThanOrEqual(6); // A2, A4, A5 on Numbers, light and dark
     expect(got).toEqual(golden);
   }, 180_000);
 });

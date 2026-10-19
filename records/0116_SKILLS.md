@@ -68,7 +68,9 @@ flowchart LR
    on a server or in a worker — `sheetpane-setup` and `sheetpane-backend`
    point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f), and
    `sheetpane-backend` at `@sheetpane/grid/static` for a report or an email
-   showing the sheet (W-67, SR-GRID decision 22g).
+   showing the sheet (W-67, SR-GRID decision 22g) — the visible layers'
+   errors by default, sheet and workbook errors in its footer, results only
+   at `marks`, an accepted deviation with its reason.
 2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
     in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
     (`$ARGUMENTS` where filled). Three are written as commands:

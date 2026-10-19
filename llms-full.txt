@@ -774,11 +774,15 @@ await writeFile('report.html', renderStatic(book, { sheet: 'Holdings', range: 'A
 - **`book`** is a loaded store: `loadWorkbook()`'s, `createWorkbook()`'s after
   `load()`, or an element's `workbook` — its changes and derived values show.
   `sheet` defaults to the selected one, `range` to the used range (≤ 200,000
-  cells), `errors` to the workbook's own (`[]` marks nothing; pass `check()`'s
+  cells), `errors` to the visible layers' (`[]` marks nothing; pass `check()`'s
   or a restored review), `theme` to `light` (`dark` too), `headers` to true.
 - **Marks:** a ring and a tint as the grid draws them, and a badge with the
-  glyph (✕ ! i ✓) and a number that the footer explains — severity, range,
-  type, message, *should be*. Never colour alone.
+  glyph (✕ ! i ✓, `A` for an accepted deviation) and a number that the footer
+  explains — severity, range, type, message, *should be*, the acceptance's
+  reason. Never colour alone. Errors about the whole sheet or the workbook
+  head the footer and mark no cell. Results (✓ passed, — not checked) show
+  as the grid's corner glyph only when the pane's `results` level is
+  `marks`. Rich text keeps its runs (italic, bold, colour), never a font.
 - **Inert:** no script, no event attribute, no `class`, no stylesheet, no URL
   (a `decorate` value that loads or escapes is dropped), every value escaped,
   no font family — the reader's font is the font.
@@ -7210,13 +7214,28 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     quote, semicolon, brace, comment or escape). Hidden rows and columns are
     left out. The tokens are inline hex for `light` or `dark` (no `auto`: no
     stylesheet). Marks (`STATIC_MARKS`, one function from an error to its
-    key — status, then severity): the grid's ring, its tint flattened at
+    key — a result by its severity, then a problem by its status, then by
+    its severity): the grid's ring, its tint flattened at
     60 % over the cell's own fill, and a badge — glyph and number — in the
     first shown cell of the error's range; a shared cell takes the
-    higher-ranked mark; a row header carries its worst open glyph; the
-    footer lists every marked error in reading order (row, column, type,
-    message) with its label, range, type, message and `expected`. `errors`
-    defaults to the store's; a result (`pass`, `skipped`, decision 23) is not marked. An `overlay` plugin is not run: the footer
+    higher-ranked mark; a row header carries its worst open glyph. An
+    accepted deviation (W-69, decision 5c) is the grid's quiet mark — an
+    `ink-3` ring, no tint, an `A` badge in a ring on the surface colour
+    (its number set off by a thin space) — and its footer line ends with
+    *accepted:* and the reason. A result (`pass` ✓, `skipped` —, decision
+    23) is drawn only while the store's `results` level is `marks`, as the
+    grid draws it — its glyph in `--sp-pass` / `--sp-skip` at `.69em`,
+    `role="img"` labelled "Passed: <check>", floated before the text (a mail
+    client keeps a float, not a position), no ring, tint, badge or footer
+    line, and none where any problem's range covers the cell. `errors`
+    defaults to the pane's visible layers' (`visibleErrors`, decision 5d);
+    given errors are drawn as given. The footer lists the workbook's errors,
+    then the sheet's (W-55, decision 5a: *Whole workbook*, *Whole sheet*,
+    `data-sp-scope`), which mark no cell, then every marked error in reading
+    order (row, column, type, message) with its label, range, type, message
+    and `expected`. A rich-text cell (W-53, decision 15c) is its
+    `decorateRuns` pieces as spans, each style through the same allow-list
+    and value check, never a font family (L5). An `overlay` plugin is not run: the footer
     says what it would draw and `data-sp-skipped` names it. The output has
     no `<script>`, event attribute, `class`, `<style>`, URL or font family;
     every text is escaped (CR as `&#13;`, NUL as U+FFFD). Text is clipped to
@@ -7478,9 +7497,12 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   arithmetic, is the one `excel/` module it may reach) and renders a CSV in
   Node; `packages/grid/test/static.test.ts` (Chromium) covers ranges,
   hidden rows and columns, merges, marks, themes, the dropped `decorate`
-  values and the refusals, and fuzzes escaping with fast-check (150 runs: a
+  values and the refusals; results at `marks` only with a problem winning,
+  an accepted deviation, the visible layers, sheet and workbook errors in
+  the footer, and a rich-text cell's runs against the grid's own spans; and
+  fuzzes escaping with fast-check (150 runs: a
   sheet name, cell text from a `format` hook, `decorate` values, an error's
-  message and type — one `<table>`, allowed elements and attributes only,
+  message, type and acceptance reason — one `<table>`, allowed elements and attributes only,
   no URL or font, every text read back unchanged); `@sheetpane/fixtures`'
   static pair holds it to the grid's computed styles (SR-FIXTURES 6a).
   **Owed by the decider:** the table opened in mail clients — W-30.
@@ -9428,11 +9450,14 @@ helpers to become one package any runner can load (W-32 made the showcase).
    showcase, `merged`, `hidden-sheet`, `unicode-names`, `date1904` and
    `comma.csv`, with the rules sample, plugins numfmt, styles, condfmt,
    validation and comments, and one edit on the showcase (a changed and a
-   stale cell). `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
+   stale cell) plus its Numbers sheet's later marks — results at `marks`
+   (one under a rule's error), an accepted deviation, an error about the
+   sheet and one about the workbook, and one in a hidden layer. `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
    Chromium) and, for every sheet in both themes, compares each cell and
    header of `renderStatic()`'s table with the grid's — computed text,
    colours, weight, style, size, alignment, borders, padding, the mark's ring
-   and tint, the changed corner, width and height; `static.node.test.ts`
+   and tint, a result's glyph, colour, size and label, the changed corner,
+   width and height; `static.node.test.ts`
    renders the same in Node; both equal `test/golden/static.json`.
    `@sheetpane/styles` and `@sheetpane/condfmt` are devDependencies for it.
 
@@ -9627,7 +9652,8 @@ flowchart LR
   check (decision 5) reads them against the element's source.
 - **Taught since W-62 (2026-10-19):** `sheetpane-security` covers protected
   sheets — locked cells refused with SP-3026, hidden formulas, the structure
-  lock, `protection="ignore"` as the host's decision, and that a password is
+  lock (sheets, and since the merge inserts and deletes, with a sheet's
+  insert/delete switches), `protection="ignore"` as the host's decision, and that a password is
   never read or removed; `sheetpane-events` lists `reason: 'locked'` on
   `sheetpane-editcancel`.
 - **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,

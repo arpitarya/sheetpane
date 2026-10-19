@@ -97,7 +97,9 @@ const book = await loadWorkbook(await readFile(path), { name: 'q3.xlsx', rules, 
 const html = renderStatic(book, { sheet: 'Holdings', range: 'A1:F20', errors: saved });
 ```
 
-`errors` defaults to the workbook's own; pass a restored review to mark it.
+`errors` defaults to the visible layers' errors; pass a restored review to
+mark it. Sheet and workbook errors are listed in the footer; results show
+only at `results: 'marks'`; an accepted deviation keeps its reason.
 `theme: 'dark'` for a dark report. The table carries no script, class,
 stylesheet or URL, so it pastes into any page or mail. Pictures and charts
 are not drawn — its footer says so.

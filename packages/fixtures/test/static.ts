@@ -21,9 +21,26 @@ export async function staticCases(): Promise<StaticCase[]> {
   return FILES.map((id) => ({ id, name: id.split('/').pop()!, data: () => bytes(id), rules }));
 }
 
-/** The change made before rendering, so the changed corner and the stale mark show: the showcase's first rent figure. */
+/**
+ * What is done before rendering. The showcase's first rent figure is changed, so the changed corner and the stale mark
+ * show; and its Numbers sheet gets the later marks: results at the `marks` level (W-50) — one where a rule's error
+ * wins — an accepted deviation (W-69), an error about the whole sheet and one about the workbook (W-55), and one in a
+ * layer the pane does not show (W-51).
+ */
 export function edit(id: string, store: WorkbookStore): void {
-  if (id === 'showcase.xlsx') store.setCell('Formulas', 'B2', '1300');
+  if (id !== 'showcase.xlsx') return;
+  store.setCell('Formulas', 'B2', '1300');
+  store.setResults('marks');
+  const add = (range: string, severity: 'pass' | 'skipped' | 'warning' | 'note' | 'error', message: string, layer = 'pdf', sheet = 'Numbers') => store.addError({ sheet, range, type: 'other', severity, message, author: 'pdf-check', layer });
+  add('A2', 'pass', 'Currency label matches the PDF');
+  add('A4:A5', 'skipped', 'Not on the PDF page');
+  add('B3', 'pass', 'Percent read'); // Numbers!B3 breaks a rule: the problem wins
+  const ok = add('B6', 'warning', 'Rounded to two places');
+  store.acceptError(ok.id, 'The custodian rounds fractions', { by: 'Priya' });
+  add('', 'warning', 'Page 2 of the PDF is missing');
+  add('', 'note', 'Checked against the Q3 PDF', 'pdf', '');
+  add('A7', 'error', 'Only in the draft layer', 'draft');
+  store.setVisibleLayers(['review', 'pdf']);
 }
 
 /** Every sheet, in both themes: `sheet|theme` → the static HTML. */
