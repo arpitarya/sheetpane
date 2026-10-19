@@ -93,6 +93,10 @@ flowchart LR
   write as Excel reads it (SR-EXPORT decision 6).
 - **W-66** added SP-3019 (warning): the `ref` attribute or a `#sheetpane=`
   link names no cell (SR-GRID decision 11d).
+- **W-62** added SP-3020 (warning, *Locked in the file*): an edit refused on a
+  locked cell of a protected sheet, carried by `sheetpane-editcancel`
+  `{ reason: 'locked', code: 'SP-3020' }` (SR-GRID decision 21d). Appended
+  to the lock after SP-3019.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

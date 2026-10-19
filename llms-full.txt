@@ -482,6 +482,7 @@ committed manifest drifts from the elements.
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
 | attribute / property | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide; see [Results](#results-passed-and-not-checked) |
+| attribute / property | `protection` | `honour` (default) or `ignore` — whether a protected sheet's locked cells refuse edits, pane-wide; see [Protected sheets](#protected-sheets) |
 | property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
@@ -506,7 +507,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
-| `sheetpane-editcancel` | Esc, or a column rule set to `block` refused the value | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', message}`) | — |
+| `sheetpane-editcancel` | Esc, a column rule set to `block` refused the value, or the cell is locked on a protected sheet | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', code: 'SP-6003', message}`; locked: `{sheet, ref, reason: 'locked', code: 'SP-3020', message: 'Locked in the file'}`) | — |
 | `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
 
 A refused value never reaches the change map, undo or a plugin.
@@ -792,6 +793,32 @@ errors.setErrors([
 ]);
 ```
 
+## Protected sheets
+
+What a file protects stays protected in Edit, with no plugin. On a protected
+sheet (Excel: Review › Protect Sheet) a locked cell — every cell is locked
+until someone unlocks it — shows its value and *🔒 Locked in the file* in the
+cell bar; typing, paste and Delete there are refused with
+`sheetpane-editcancel` `{ reason: 'locked', code: 'SP-3020' }`, before
+`sheetpane-beforechange`. Unlocked cells edit as usual, and a paste or a
+range Delete writes those only, saying how many locked cells it left. A
+formula marked *Hidden* shows its value, never its formula. A workbook whose
+structure is protected keeps its sheets: Hide and Unhide sheet are disabled
+with the reason.
+
+```js
+const wb = excel.workbook;
+wb.isLocked('Spec', 'A2');        // true: a locked cell on a protected sheet
+wb.isFormulaHidden('Spec', 'E2'); // true: shows its value only
+wb.structureLocked();             // true: <workbookProtection lockStructure="1">
+wb.sheetProtection('Spec');       // { formatCells: true, …, hasPassword: true } — never the password
+```
+
+sheetpane never reads, checks or removes a protection password, and the
+download carries the file's protection exactly as it was. `protection="ignore"`
+sets it aside for the pane — **the host's decision**: a host that lets people
+edit what the file locks owns that choice.
+
 ## Plugins
 
 Features beyond review — every Excel number format, live formulas, cell
@@ -1072,8 +1099,10 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
 | `runs` | rich-text cells only, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` — each run's text with its `b`, `i`, `u`, `strike`, `color`, `sz`, `vertAlign` (never the font family); phonetic runs left out; `rows` and `text` hold the joined text as before |
 | `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins; the first two are `@sheetpane/export`'s shapes, so `toXlsx` / `patchXlsx` write them back unchanged |
+| `protection`, `rowStyles`, `colStyles` | the sheet's `<sheetProtection>` switches while it is protected (`true` = refused; `hasPassword`, never the password), and the formats an empty cell takes from its row or column — with `cellProtection(sheet, styles, row, col)` for a cell's `{ locked, hidden }` |
 | `tables` | the sheet's Excel tables: `name` (as formulas use it), `ref`, header and totals rows, `columns`, `style` — drawn by `@sheetpane/tables` |
-| `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
+| `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook (each `styles.cellXfs` entry with its `protection?`) |
+| `workbookProtection` | `{ lockStructure, lockWindows, hasPassword }` when the file protects its structure or windows |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
 | `sha256` | from `read()`: the SHA-256 of the bytes opened, 64 lowercase hex digits — which file this is. Absent on a page without Web Crypto (not `https` or `localhost`), with a console warning `SP-1009`; never a substitute hash. `sha256(bytes)` is exported for hashing anything else |
 
@@ -1302,7 +1331,7 @@ by a dynamic `import()` on the first `derive` that has a formula to calculate:
 
 | slot | control |
 |---|---|
-| `cellbar` | View: `fx =B3*C3`, the selected cell's formula as read-only text. Edit: the grid's own cell input holds the formula, editable (retyping the file's formula restores the cell) |
+| `cellbar` | View: `fx =B3*C3`, the selected cell's formula as read-only text. Edit: the grid's own cell input holds the formula, editable (retyping the file's formula restores the cell). A formula the file marks *Hidden* on a protected sheet shows neither |
 | `status` | `Sum · Avg · Count` of the selection (formatted as the active cell); `⟳ N cells recalculated` (Edit); `Circular reference: B2` |
 | `cell` | `⟳` recalculated · `↻` in a cycle · `≈` not calculable |
 | `overlay` | in Edit, the ranges the selected formula reads, outlined and labelled in colour (`--sp-ref-1` … `--sp-ref-6`), following the formula as it is typed |
@@ -2123,9 +2152,11 @@ Ctrl+Shift+0 is often taken by the input-language hotkey — the header menu alw
 - **Changes:** hiding is counted once per sheet and axis, undoable, and the download carries it
   (`patchXlsx`'s `hidden` option). Revealing for viewing never is.
 - **Rules:** the last visible sheet cannot be hidden ("A workbook needs one visible sheet"); a CSV
-  stores no hidden state, so the controls are disabled there.
+  stores no hidden state, so the controls are disabled there; a workbook whose structure the file
+  protects keeps its sheets — Hide sheet (and the banner's Unhide) is disabled with the reason
+  until the host sets `protection="ignore"`.
 - **Headless:** `visibility()` from `@sheetpane/visibility`, and the actions `setSpanHidden`,
-  `setSheetHidden`, `hiddenIn`, `canHideSheet`, `spanOf`.
+  `setSheetHidden`, `hiddenIn`, `canHideSheet`, `spanOf`, `sheetBlockedReason`.
 
 Spec: [SR-VISIBILITY](../../records/0121_VISIBILITY.md). MIT.
 
@@ -2199,6 +2230,7 @@ info('showcase.rules.json').errors;                        // the cells the rule
 | `showcase.xlsx` | one sheet per plugin: Numbers, Styles, Formulas, Validation, CondFmt, Images, Charts, Comments |
 | `showcase.rules.json` | a rules file (SR-GRID 22d) that fails six cells of the showcase |
 | `dependent-lists.xlsx` | dependent dropdowns: a Unit list `=INDIRECT($A2)` over one defined name per parameter; one stale unit (`Readings!C6`) |
+| `protected.xlsx` | sheet protection (password `sheetpane`): Spec's Value, Unit and Description open, Parameter locked, Limit a hidden formula; Lists locked; Notes open; the structure locked, Archive hidden |
 | `edge/*.xlsx` | an empty sheet, a hidden sheet, non-ASCII names, a merged range, the 1904 date system, cached formula errors |
 | `edge/legacy.xls`, `edge/not-a-zip.xlsx` | files sheetpane refuses (SR-LAW-3) |
 | `csv/*.csv` | comma, semicolon, tab, BOM, quoted fields with newlines, cells the formula guard escapes |
@@ -2744,6 +2776,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3017](#sp-3017) | renderDetail failed | error |
 | [SP-3018](#sp-3018) | Error not accepted | warning |
 | [SP-3019](#sp-3019) | Cell to open at not found | warning |
+| [SP-3020](#sp-3020) | Locked in the file | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -3204,6 +3237,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
 - **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
 - **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
+
+### SP-3020
+
+**Locked in the file** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** an edit — typing, paste, Delete — was refused because the cell is locked on a protected sheet. `sheetpane-editcancel` carries `{ reason: 'locked', code: 'SP-3020', message: 'Locked in the file' }` and nothing is stored.
+- **Likely cause:** the file's sheet is protected (Excel: Review › Protect Sheet) and the cell's format is *Locked* — Excel's default for every cell until it is unlocked.
+- **Fix:** edit the cells the file leaves unlocked; or unlock the cells (Format Cells › Protection) or unprotect the sheet in Excel and open the file again. A host that rules otherwise sets `protection="ignore"` on `<sheetpane-excel>` — its own decision. sheetpane never checks or removes a protection password.
 
 ---
 
@@ -5600,7 +5641,7 @@ carry over unchanged; the plugins verdict added what plugins read.
    `fromXlsx(bytes | Blob)`, `fromCsv(text | Blob, { name?, delimiter? })` →
    `ImportedWorkbook`. Also exported: `detectDelimiter`, `parseCsv`,
    `sheetNameFrom`, `formatCode`, `general`, `inSubset`, `subsetCode`,
-   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), and every type.
+   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), `cellProtection` (W-62), and every type.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
    `path`, `styleIndex`, `runs` (decision 12), `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
@@ -5611,11 +5652,12 @@ carry over unchanged; the plugins verdict added what plugins read.
    `Border` / `Alignment` / `Color` shapes, are `@sheetpane/export`'s,
    re-exported here, so `toXlsx` and `patchXlsx` write what this reads —
    W-57), `drawings`, `notes`, `threadedComments`,
-   `pivotTables`, `tables` (W-61, decision 13). The workbook adds `source`, `activeSheet`, `date1904`,
-   `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
+   `pivotTables`, `tables` (W-61, decision 13), `rowStyles`, `colStyles` and
+   `protection?` (W-62, decision 14). The workbook adds `source`, `activeSheet`, `date1904`,
+   `styles` (`numFmts`, `cellXfs` — each with its `protection?` — `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
    `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
-   decision 11) and `part(path)`.
+   decision 11), `workbookProtection?` (decision 14) and `part(path)`.
 3. **Cells:** `t="s"` / `inlineStr` → the text, phonetic runs left out,
    `_xHHHH_` decoded, its formatted runs in `runs` (decision 12); `str` → the text; `b` → a boolean shown `TRUE` /
    `FALSE`; `e` → the error text; `d` → the ISO string; otherwise a number. A
@@ -5716,6 +5758,33 @@ carry over unchanged; the plugins verdict added what plugins read.
     `showColumnStripes`, default `false`). A CSV has none. The built-in XML
     reader reads the same (a parity test).
 
+14. **Protection (W-62):** what the file protects is read; **the password
+    never is** — only whether one is stored (`hasPassword`: a `password` /
+    `hashValue` on a sheet, a `workbookPassword` / `workbookHashValue` on the
+    workbook). A sheet's `protection` is present only while
+    `<sheetProtection sheet="1">`: its fifteen switches as the file stores
+    them — **`true` means the action is refused while the sheet is
+    protected** — with the schema's defaults (`objects`, `scenarios`,
+    `selectLockedCells`, `selectUnlockedCells` `false`; `formatCells`,
+    `formatColumns`, `formatRows`, `insertColumns`, `insertRows`,
+    `insertHyperlinks`, `deleteColumns`, `deleteRows`, `sort`,
+    `autoFilter`, `pivotTables` `true`). The workbook's
+    `workbookProtection` is `{ lockStructure, lockWindows, hasPassword }`,
+    present when the file has `<workbookProtection>`. Each `cellXfs` entry
+    carries `protection: { locked, hidden }` when its `<xf>` has a
+    `<protection>` child (and `applyProtection`); absent means locked and
+    not hidden, Excel's default. `rowStyles` (a `<row s>` with
+    `customFormat="1"`) and `colStyles` (`<col style>`, spans expanded) are
+    sparse, index 0 = row 1 / column A — the formats an empty cell takes.
+    **`cellProtection(sheet, styles, row, col)`** is a cell's effective
+    `{ locked, hidden }`: the cell's own format when the file stores the
+    cell, else its row's, else its column's, else the default (`cellXfs[0]`).
+    A CSV has none (`rowStyles` and `colStyles` `[]`). `patchXlsx` never
+    writes `<sheetProtection>`, `<workbookProtection>` or `<protection>`, so
+    a download keeps them as they were (SR-EXPORT). The built-in XML reader
+    reads the same (a parity test). What the grid does with it: SR-GRID
+    decision 21d.
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -5736,6 +5805,12 @@ carry over unchanged; the plugins verdict added what plugins read.
   `runs.test.ts` (W-53): runs of shared and inline strings, every run
   property, phonetic runs left out, a lone run listed only when formatted,
   shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
+  `protection.test.ts` (W-62): every sheet switch and its default, a
+  `sheet="0"` and a missing element, the workbook lock, the password noticed
+  and never in the object, each format's `<protection>`, row and column
+  formats, `cellProtection`'s order, a CSV; `patchXlsx` with an edit, a
+  freeze and a hidden row keeps both protection elements and `styles.xml`
+  byte for byte; parity.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
   A rich-text cell saved by Excel is part of it (W-30 DoD 3).
@@ -5774,7 +5849,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`hash.ts`](../packages/import/src/hash.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
+- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`hash.ts`](../packages/import/src/hash.ts) · [`protection.ts`](../packages/import/src/protection.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
 
 **Project docs**
 
@@ -5852,7 +5927,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    — never modified — the read time, and `sha256`, the bytes' SHA-256 from
    `read()`, W-65), `book` (the `ImportedWorkbook`),
    `changes`, `derived`, `errors`, `selection`, `mode`, `composing`,
-   `canUndo`, `canRedo`. Selection and mode are shared (contract decision 2);
+   `canUndo`, `canRedo`, `protection` (W-62, decision 21d). Selection and mode are shared (contract decision 2);
    scroll, zoom, find and form drafts are per element.
 3. **Changes:** a map `sheet!ref → { kind, was, now }` with kinds `value`,
    `style`, `numFmt`, `formula`, `merge`, `freeze` (freeze keys are
@@ -5941,8 +6016,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    shadow root; plain DOM. Attributes `pane`, `src` (URL — read with a GET,
    nothing is sent — data URL or base64), `mode`, `display` (`tab` ·
    `popup`), `open`, `author`, `plugins`, `ref` and `link` (W-66, decision
-   11d), `results` (W-50, decision 23); properties `workbook`, `errors`,
-   `errorTypes`, `file`, `mode`, `open`, `src`, `ref`, `link`, `results`, `sizes` (W-47: `{ [sheet]:
+   11d), `results` (W-50, decision 23), `protection` (W-62, decision 21d); properties `workbook`, `errors`,
+   `errorTypes`, `file`, `mode`, `open`, `src`, `ref`, `link`, `results`, `protection`, `sizes` (W-47: `{ [sheet]:
    { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set),
    `renderDetail` (W-68: the error card's host region, SR-ERRORS decision 13);
    methods `load()`, `export()`,
@@ -5957,7 +6032,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    {…, value, richText?}` (cancellable: the cell stays read-only; `richText:
    true` on a rich-text cell — W-53, decision 15c), `-input {…, draft,
    was}`, `-beforechange {…, was, now}` (cancellable: the value is refused
-   before the change map, undo, derive or validate see it), `-editcancel`,
+   before the change map, undo, derive or validate see it), `-editcancel`
+   (Esc; `reason: 'blocked'` for a column rule, decision 22b; `reason:
+   'locked'` for a locked cell, decision 21d),
    `-sheet {sheet}`, `-resize {sheet, axis, indexes, px, via}` (W-47: on
    release; `via` is `drag`, `fit`, `menu` or `reset`), `-visibility {sheet,
    axis, indexes, hidden, via}` (W-49, decision 21c), `-hover {sheet, ref,
@@ -5995,7 +6072,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `data-hall` and the status line's totals `data-sp="totals"` (W-46); the
     header edges `data-rz-c` / `data-rz-r` and the header menu
     `data-sp="header-menu"` (W-47); the cell bar's rich-text warning
-    `data-sp="rich-text"` (W-53).
+    `data-sp="rich-text"` (W-53); the cell bar's locked chip
+    `data-sp="locked"` (W-62).
     `@sheetpane/testing`
     (SR-TESTING) uses only these, roles and labels.
 10. **Layout:** toolbar (file, kind and size, View/Edit, open counts, find,
@@ -6456,6 +6534,50 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     errors panel tags rows *hidden row*, *hidden column*, *hidden sheet*.
     A CSV hides nothing.
 
+21d. **Protection is core (W-62):** what a file protects is honoured in Edit
+    without a plugin; changing protection (protect, unprotect, unlock) is a
+    later plugin's, and **the password is never read, checked or removed**
+    — only whether one is stored (SR-IMPORT decision 14). **Locked cells:**
+    on a sheet with `protection` (`<sheetProtection sheet="1">`), a cell is
+    locked when its effective format is (`cellProtection`: the cell's own
+    format, else its row's, else its column's, else the default — Excel's
+    default is locked). `store.isLocked(sheet, ref)` answers it;
+    `setCell`, `setCells` and an error's "Also change the cell" leave a
+    locked cell as it is (no change, no undo step). **In Edit** a locked
+    cell's cell bar shows its value and a chip "🔒 Locked in the file"
+    (`data-sp="locked"`), not an input; typing, Enter/F2, Delete, paste and
+    a range clear are refused **before** `sheetpane-beforechange` — each
+    refused cell fires `sheetpane-editcancel {sheet, ref, reason: 'locked',
+    code: 'SP-3020', message: 'Locked in the file'}`, the other cells of a
+    paste or clear are written as one undo step, and the status line says
+    "*n* locked cells left as they were — Locked in the file". A `cell`
+    control with `choose` (a list arrow) is not drawn on a locked cell, and
+    Alt+↓ opens none. **Hidden formulas:** a cell whose format is `hidden`
+    on a protected sheet shows its value only — `store.isFormulaHidden()`;
+    `store.input()` gives the value, not the formula; `store.formula()`
+    still holds it (data, not display); the formulas plugin's `fx` and its
+    reference outlines skip it. **Structure:** `store.structureLocked()` —
+    `<workbookProtection lockStructure="1">` — is the one predicate a
+    structural control asks: `setSheetState` is refused (hide and unhide a
+    sheet; @sheetpane/visibility's controls are disabled with the
+    `disabledReason` "Locked in the file — the workbook's structure is
+    protected", and so is the hidden-sheet banner's *Unhide*), and W-52's
+    insert and delete of rows and columns honour it. `store.sheetProtection(sheet)` gives a sheet's
+    switches (`true` = refused while protected) for the controls that need
+    one. **Snapshot helpers** for a control's `disabled(snap, sel)`:
+    `lockedIn`, `formulaHiddenIn`, `structureLockedIn`, `sheetProtectionIn`,
+    with `LOCKED_MESSAGE` and `STRUCTURE_LOCKED_MESSAGE`. **`protection`**
+    (attribute and property of `<sheetpane-excel>`; `store.protection`,
+    `setProtection()`, `snapshot.protection`) is `honour` (the default) or
+    `ignore` — **the host's decision**, documented as such: with `ignore`
+    nothing is locked or hidden and the structure is open. It is a view
+    setting of the pane, never a change or an undo step; anything other
+    than `ignore` is `honour`. The download keeps `<sheetProtection>`,
+    `<workbookProtection>` and each format's `<protection>` exactly as the
+    file had them (`patchXlsx` never writes them). Not honoured yet: the
+    sheet switches for formatting, sorting, filtering and hiding rows or
+    columns (`formatCells`, `formatRows`, …). A CSV has no protection.
+
 **The element contract's machine form (W-37):** `custom-elements.json`
 (Custom Elements Manifest 2.1.0, at the package root and exported) is
 generated from the source by `scripts/build-manifest.mjs` — the tags from
@@ -6475,7 +6597,7 @@ framework's — W-66). `test/manifest.test.ts`
 fails when the manifest, the typings or the editor data drift from the code.
 Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
-**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69). A load or export with no Web Crypto logs SP-1009 from `@sheetpane/import` (W-65). A `ref` or link naming no cell is warned as SP-3019 (W-66).
+**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69); an edit refused on a locked cell SP-3020 (W-62, decision 21d). A load or export with no Web Crypto logs SP-1009 from `@sheetpane/import` (W-65). A `ref` or link naming no cell is warned as SP-3019 (W-66).
 
 ### Consequences
 
@@ -6567,7 +6689,16 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   (W-33: `*` vs named sheets, columns, cells and ranges, `equals`, `noneOf`,
   the document's notes, an unknown version, merging with `columns`,
   `rules-src`, the JSON Schema against the README example and the demos'
-  file, `flagging="off"` end to end, 250,000 rows).
+  file, `flagging="off"` end to end, 250,000 rows); `protection.test.ts`
+  (W-62, on `@sheetpane/fixtures`' `protected.xlsx`: locked and unlocked
+  cells, an unlocked column's empty cells, an unprotected sheet; `setCell`,
+  `setCells` and "Also change the cell" refused on a locked cell; a hidden
+  formula's `input()` with a formula engine; `structureLocked()` and
+  `setSheetState` refused; `ignore` and back, no change and no undo step;
+  typing and Delete fire `editcancel` with SP-3020 and no `beforechange`,
+  the chip; paste and a range Delete write the unlocked cells only and say
+  how many were left; no value picker on a locked cell; the download keeps
+  the protection elements and `styles.xml` byte for byte).
 - **Measured** (Arpit's MacBook, headless Chromium 156, 10 cores, 2026-10-18):
   the 250,000-row CSV loads in 173–194 ms; a 5-second scroll at 900 px per
   frame paints 301 frames, none dropped, no long task — with and without two
@@ -7560,7 +7691,9 @@ W-16 asked for recalculation on the plugins verdict's single-provider
    the selection, `⟳ N cells recalculated`, circular references; `cell`
    marks ⟳ (recalculated), ↻ (cycle), ≈ (unsupported); `overlay` — coloured,
    labelled outlines of the referenced ranges while a formula is edited
-   (drawn as four edges, so cells stay clickable).
+   (drawn as four edges, so cells stay clickable). A hidden formula on a
+   protected sheet (W-62, SR-GRID 21d — `formulaHiddenIn`) shows no `fx` and
+   no outlines; its value only.
 8. **`evaluate(formula, { sheet, ref })`** returns one formula's value
    synchronously, through a scratch cell (the sheet's last cell) set,
    evaluated, read and cleared — the workbook is never touched. It serves
@@ -8150,7 +8283,12 @@ helpers to become one package any runner can load (W-32 made the showcase).
    row — and a list rule over `Units[Unit]` through the defined name
    `UnitList`), `showcase.rules.json`, `dependent-lists.xlsx` (W-60:
    Readings' Unit list is `=INDIRECT($A2)` over one defined name per
-   parameter on Lists; one stale unit, `Readings!C6`), `edge/` (empty,
+   parameter on Lists; one stale unit, `Readings!C6`), `protected.xlsx`
+   (W-62: Spec and Lists protected with the password `sheetpane`, stored as
+   Excel's legacy hash `CC7D`; Spec's Value, Unit and Description columns
+   unlocked — their cells and their `<col style>`, so empty rows below stay
+   open — Parameter and the header locked, Limit a hidden formula; Notes not
+   protected; the structure locked, Archive hidden), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
    guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
@@ -8167,7 +8305,11 @@ helpers to become one package any runner can load (W-32 made the showcase).
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
    rules-file test; `@sheetpane/testing` (W-41) loads from here;
-   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60).
+   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60);
+   the grid's, the formulas plugin's and `@sheetpane/visibility`'s
+   protection tests read `protected.xlsx` (W-62). `book()` in `make.mjs`
+   takes its own `styles`, a `workbookProtection` element and per-column
+   formats (`colStyle`); every other file is unchanged byte for byte.
 
 ### Consequences
 
@@ -8351,6 +8493,11 @@ flowchart LR
 - **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
   cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
   check (decision 5) reads them against the element's source.
+- **Taught since W-62 (2026-10-19):** `sheetpane-security` covers protected
+  sheets — locked cells refused with SP-3020, hidden formulas, the structure
+  lock, `protection="ignore"` as the host's decision, and that a password is
+  never read or removed; `sheetpane-events` lists `reason: 'locked'` on
+  `sheetpane-editcancel`.
 - **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,
   `link="hash"` and *Copy link*, and that React, Vue and Solid set `ref`
   with `setAttribute` (their own `ref` is the framework's).
@@ -8471,6 +8618,10 @@ flowchart LR
   write as Excel reads it (SR-EXPORT decision 6).
 - **W-66** added SP-3019 (warning): the `ref` attribute or a `#sheetpane=`
   link names no cell (SR-GRID decision 11d).
+- **W-62** added SP-3020 (warning, *Locked in the file*): an edit refused on a
+  locked cell of a protected sheet, carried by `sheetpane-editcancel`
+  `{ reason: 'locked', code: 'SP-3020' }` (SR-GRID decision 21d). Appended
+  to the lock after SP-3019.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool
@@ -8820,7 +8971,7 @@ flowchart LR
 1. **The package:** `@sheetpane/visibility` — `visibility()` (headless, `id:
    'visibility'`, no hook: its presence lets a marker click unhide in Edit)
    and the actions `setSpanHidden`, `setSheetHidden`, `hiddenIn`,
-   `canHideSheet`, `spanOf`, `blockedReason`; `@sheetpane/visibility/ui`
+   `canHideSheet`, `spanOf`, `blockedReason`, `sheetBlockedReason` (W-62); `@sheetpane/visibility/ui`
    adds the controls (`id: 'visibility-ui'`) and registers `visibility` for
    the `plugins` attribute. `@sheetpane/grid` is a peer; `@sheetpane/export`
    a dependency. No seventh hook: the core API (SR-GRID 21c) does the work.
@@ -8836,7 +8987,14 @@ flowchart LR
    the last visible sheet cannot be hidden ("A workbook needs one visible
    sheet"); Hide sheet writes `hidden`, never `veryHidden`, and moves to the
    next visible sheet; a CSV stores no hidden state, so every control is
-   disabled there with the reason ("CSV can't store hidden rows").
+   disabled there with the reason ("CSV can't store hidden rows"). **A
+   protected structure (W-62):** while the file's `<workbookProtection
+   lockStructure="1">` is honoured (SR-GRID 21d, `structureLockedIn`),
+   Hide sheet is disabled with "Locked in the file — the workbook's
+   structure is protected" (`sheetBlockedReason`) and `setSheetHidden`
+   returns `false`; the store refuses `setSheetState` itself, and the core
+   banner's *Unhide* is disabled with the same reason. `protection="ignore"`
+   opens them. Rows and columns are not covered by the structure lock.
 4. **Changes:** hiding is one change per sheet and axis (`hidden`), a sheet's
    state one (`sheetState`), outline levels one per axis (`outline`) —
    counted, undoable, exported (SR-GRID 21c, SR-EXPORT `hidden`).
@@ -8847,7 +9005,10 @@ flowchart LR
   the bar's label and its run, ⌘⌥9 matched on `e.code`, one change and undo;
   Unhide disabled until a range crosses the gap; a marker click unhides in
   Edit; the header menu's Hide and Group; the tab menu's Hide sheet and the
-  last-sheet rule; CSV disabled. The demos' gallery tab "Hide and show" and
+  last-sheet rule; CSV disabled; a protected structure (W-62, on
+  `protected.xlsx`) — Hide sheet and the banner's Unhide disabled with the
+  reason, `setSheetHidden` refused, both open again under
+  `protection="ignore"`. The demos' gallery tab "Hide and show" and
   its `demo-check` step.
 - **Not done:** opening a download in Excel and LibreOffice (W-30's real-app
   files).

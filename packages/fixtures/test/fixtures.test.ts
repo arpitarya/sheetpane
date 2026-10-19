@@ -30,6 +30,15 @@ describe('the manifest (DoD 2, 3)', () => {
     expect(t.tables.map((x) => [x.name, x.ref, x.totalsRowCount, x.style.name])).toEqual([['Units', 'A1:B5', 0, 'TableStyleMedium2'], ['Readings', 'A8:C13', 1, 'TableStyleMedium7']]);
     expect(t.dataValidations[0]!.formula1).toBe('UnitList');
   });
+  it('protected.xlsx: Spec and Lists protected with a password, Spec’s Value column open, the structure locked (W-62)', async () => {
+    const b = await read(await bytes('protected.xlsx'), { name: 'p.xlsx' });
+    expect(b.sheets.map((x) => [x.name, !!x.protection, x.state])).toEqual([['Spec', true, 'visible'], ['Lists', true, 'visible'], ['Notes', false, 'visible'], ['Archive', false, 'hidden']]);
+    expect(b.workbookProtection).toEqual({ lockStructure: true, lockWindows: false, hasPassword: true });
+    const s = createWorkbook();
+    await s.load(await bytes('protected.xlsx'), 'protected.xlsx');
+    expect(['A2', 'B2', 'C2', 'D2', 'E2', 'B9'].map((r) => s.isLocked('Spec', r))).toEqual([true, false, false, false, true, false]);
+    expect(s.isFormulaHidden('Spec', 'E2')).toBe(true);
+  });
 });
 
 describe('the rules sample (DoD 3)', () => {

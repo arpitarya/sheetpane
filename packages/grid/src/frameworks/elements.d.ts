@@ -29,8 +29,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-input': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; draft: string; was: unknown }>;
   /** `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused. */
   'sheetpane-beforechange': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; was: unknown; now: unknown }>;
-  /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
-  'sheetpane-editcancel': CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string }>;
+  /** `{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3020', message }` when the cell is locked on a protected sheet (W-62). */
+  'sheetpane-editcancel': CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string } | { sheet: string; ref: string; reason: 'locked'; code: 'SP-3020'; message: string }>;
   /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'sheetpane-export': CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; sha256: string | undefined; original?: boolean }>;
   /** `{}` when the pop-up closes. */
@@ -69,6 +69,8 @@ export interface SheetpaneExcelAttributes {
   link?: 'none' | 'hash' | undefined;
   /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
   results?: 'summary' | 'marks' | 'off' | undefined;
+  /** `honour` (the default) or `ignore`: whether a protected sheet's locked cells refuse edits and a protected structure keeps its sheets, pane-wide (W-62). `ignore` is the host's decision; the file is unchanged. */
+  protection?: 'honour' | 'ignore' | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-excel>`, typed as the element declares them. */
@@ -93,6 +95,8 @@ export interface SheetpaneExcelProperties {
   flagging?: SheetpaneExcel['flagging'] | undefined;
   /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
   results?: SheetpaneExcel['results'] | undefined;
+  /** The pane's protection mode (W-62): `honour` (the default) keeps the file's protection; `ignore` is the host's decision. Setting it sets the `protection` attribute. */
+  protection?: SheetpaneExcel['protection'] | undefined;
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   columns?: SheetpaneExcel['columns'] | undefined;
   /** `validate(ctx, signal)`, sync or async: `null`, or `{ severity, message, expected? }`. */

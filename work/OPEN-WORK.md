@@ -40,8 +40,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-59** `agent` · **G2** · New plugin `@sheetpane/review`: the review written into the download as its own sheet, flagged cells coloured. Filed by Arpit (Cowork). [detail](open/W-59-review-sheet-plugin.md)
 
-- 🟢 **W-62** `agent` · **G2** · Locked cells and sheet protection honoured in Edit. Filed by Arpit (Cowork). [detail](open/W-62-locked-cells-and-protection.md)
-
 - 🟡 **W-63** `agent` · **G3** · New plugin `@sheetpane/compare`: what changed between two versions of a workbook. Waiting on W-51. Filed by Arpit (Cowork). [detail](open/W-63-compare-plugin.md)
 
 - 🟢 **W-64** `agent` · **G3** · An *Edits* view in the errors panel: every change, before → after, revert one. Filed by Arpit (Cowork). [detail](open/W-64-edits-view.md)

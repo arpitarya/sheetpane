@@ -153,6 +153,9 @@ export interface Source {
   sha256?: string;
 }
 
+/** Whether the pane keeps the file's protection in Edit (W-62): `honour` (the default) or `ignore` (the host's decision). */
+export type ProtectionMode = 'honour' | 'ignore';
+
 /** The pane's state at one moment: immutable, a new object per change (SR-GRID decision 2). */
 export interface Snapshot {
   readonly load: LoadState;
@@ -168,6 +171,8 @@ export interface Snapshot {
   readonly composing: Composing | null;
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  /** Whether the file's sheet and workbook protection is kept (W-62, SR-GRID decision 21d); the pane's, never undone. */
+  readonly protection: ProtectionMode;
   /** Bumped on every change of state; elements compare it to skip work. */
   readonly version: number;
 }

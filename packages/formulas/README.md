@@ -81,7 +81,7 @@ by a dynamic `import()` on the first `derive` that has a formula to calculate:
 
 | slot | control |
 |---|---|
-| `cellbar` | View: `fx =B3*C3`, the selected cell's formula as read-only text. Edit: the grid's own cell input holds the formula, editable (retyping the file's formula restores the cell) |
+| `cellbar` | View: `fx =B3*C3`, the selected cell's formula as read-only text. Edit: the grid's own cell input holds the formula, editable (retyping the file's formula restores the cell). A formula the file marks *Hidden* on a protected sheet shows neither |
 | `status` | `Sum · Avg · Count` of the selection (formatted as the active cell); `⟳ N cells recalculated` (Edit); `Circular reference: B2` |
 | `cell` | `⟳` recalculated · `↻` in a cycle · `≈` not calculable |
 | `overlay` | in Edit, the ranges the selected formula reads, outlined and labelled in colour (`--sp-ref-1` … `--sp-ref-6`), following the formula as it is typed |

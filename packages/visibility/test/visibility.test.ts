@@ -5,6 +5,8 @@ import { patchXlsx, toXlsx } from '@sheetpane/export';
 import '@sheetpane/grid';
 import '../src/ui.js';
 import type { SheetpaneExcel } from '@sheetpane/grid';
+import protectedXlsx from '../../fixtures/files/protected.xlsx?inline';
+import { setSheetHidden } from '../src/index.js';
 
 afterEach(() => document.body.replaceChildren());
 const frame = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
@@ -95,6 +97,34 @@ describe('@sheetpane/visibility (W-49 DoD 8)', () => {
     const last = sh(el).querySelector<HTMLButtonElement>('[data-sp=tab-menu] [data-control=visibility-hide-sheet]')!;
     expect(last.disabled).toBe(true);
     expect(last.title).toBe('A workbook needs one visible sheet');
+  });
+
+  it('a protected structure (W-62): Hide sheet and the banner’s Unhide are disabled with the reason; protection="ignore" opens them', async () => {
+    const bytes = Uint8Array.from(atob(protectedXlsx.slice(protectedXlsx.indexOf(',') + 1)), (c) => c.charCodeAt(0));
+    const el = await mount(bytes, 'protected.xlsx');
+    const wb = el.workbook!;
+    const tabMenuHide = async (sheet: string) => {
+      sh(el).querySelector(`.tab[data-sheet="${sheet}"]`)!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true }));
+      await frame();
+      return sh(el).querySelector<HTMLButtonElement>('[data-sp=tab-menu] [data-control=visibility-hide-sheet]')!;
+    };
+    const hide = await tabMenuHide('Notes');
+    expect(hide.disabled).toBe(true);
+    expect(hide.title).toBe('Locked in the file — the workbook’s structure is protected');
+    expect(setSheetHidden(wb, 'Notes', true)).toBe(false);
+    // the hidden sheet opened for viewing: its banner's Unhide is there, disabled, saying why
+    wb.select({ sheet: 'Archive', ref: 'A1' });
+    await frame();
+    const unhide = sh(el).querySelector<HTMLButtonElement>('.hidbar [data-act=unhide-sheet]')!;
+    expect(unhide.disabled).toBe(true);
+    expect(unhide.title).toBe('Locked in the file — the workbook’s structure is protected');
+    expect(wb.hidden('Archive').state).toBe('hidden');
+    expect(wb.changeCount).toBe(0);
+    el.setAttribute('protection', 'ignore');
+    await frame();
+    expect(sh(el).querySelector<HTMLButtonElement>('.hidbar [data-act=unhide-sheet]')!.disabled).toBe(false);
+    expect((await tabMenuHide('Notes')).disabled).toBe(false);
+    expect(setSheetHidden(wb, 'Notes', true)).toBe(true);
   });
 
   it('a CSV: the controls are disabled with the reason', async () => {

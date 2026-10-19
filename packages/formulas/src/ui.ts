@@ -5,7 +5,7 @@
 //   overlay  the ranges the selected formula reads, outlined in Edit (updates as you type)
 // Opt-in: the headless entry never imports this file. Importing it makes
 // `plugins="formulas"` enable the plugin *with* these controls.
-import { cellKey, formulaRefs, registerPlugin } from '@sheetpane/grid';
+import { cellKey, formulaHiddenIn, formulaRefs, registerPlugin } from '@sheetpane/grid';
 import type { ControlDescriptor, OverlayItem, Plugin, Selection, Snapshot, WorkbookStore } from '@sheetpane/grid';
 import { cellRef, formulaIn, parseBox, valueIn } from './cells.js';
 import { formulas, sameValue, type FormulasOptions, type FormulasPlugin } from './index.js';
@@ -108,7 +108,7 @@ export function ui(engine?: FormulasPlugin): Plugin {
   // cell input itself holds the formula (SR-GRID decision 9), so this shows nothing there.
   const fx: ControlDescriptor = {
     id: 'formulas-fx', slot: 'cellbar', group: 'formulas', mode: 'view', label: 'Formula',
-    text(snap, sel) { const f = formulaIn(snap, sel.sheet, sel.ref); return f ? `fx ${f}` : ''; },
+    text(snap, sel) { const f = formulaHiddenIn(snap, sel.sheet, sel.ref) ? undefined : formulaIn(snap, sel.sheet, sel.ref); return f ? `fx ${f}` : ''; }, // W-62: a hidden formula is not shown
   };
 
   const stats: ControlDescriptor = {
@@ -166,7 +166,7 @@ export function ui(engine?: FormulasPlugin): Plugin {
     overlay(sheet, ctx): OverlayItem[] {
       seen = ctx.store;
       const snap = ctx.snapshot(), sel = snap.selection;
-      if (snap.mode !== 'edit' || sel.sheet !== sheet) return [];
+      if (snap.mode !== 'edit' || sel.sheet !== sheet || formulaHiddenIn(snap, sel.sheet, sel.ref)) return []; // W-62: a hidden formula's references are not outlined
       const f = formulaIn(snap, sel.sheet, sel.ref);
       if (!f) return [];
       const g = ctx.geometry, rows = ctx.book.sheets.find((s) => s.name === sheet)?.rows.length ?? 0;

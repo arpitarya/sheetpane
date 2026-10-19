@@ -34,7 +34,7 @@ export type SheetpaneExcelReactProps = Omit<SheetpaneExcelAttributes, 'ref'> & O
   'onsheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input']) => void) | undefined;
   /** `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused. */
   'onsheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange']) => void) | undefined;
-  /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
+  /** `{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3020', message }` when the cell is locked on a protected sheet (W-62). */
   'onsheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel']) => void) | undefined;
   /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'onsheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export']) => void) | undefined;

@@ -95,6 +95,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3017](#sp-3017) | renderDetail failed | error |
 | [SP-3018](#sp-3018) | Error not accepted | warning |
 | [SP-3019](#sp-3019) | Cell to open at not found | warning |
+| [SP-3020](#sp-3020) | Locked in the file | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -555,6 +556,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
 - **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
 - **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
+
+### SP-3020
+
+**Locked in the file** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** an edit — typing, paste, Delete — was refused because the cell is locked on a protected sheet. `sheetpane-editcancel` carries `{ reason: 'locked', code: 'SP-3020', message: 'Locked in the file' }` and nothing is stored.
+- **Likely cause:** the file's sheet is protected (Excel: Review › Protect Sheet) and the cell's format is *Locked* — Excel's default for every cell until it is unlocked.
+- **Fix:** edit the cells the file leaves unlocked; or unlock the cells (Format Cells › Protection) or unprotect the sheet in Excel and open the file again. A host that rules otherwise sets `protection="ignore"` on `<sheetpane-excel>` — its own decision. sheetpane never checks or removes a protection password.
 
 ---
 

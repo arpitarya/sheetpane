@@ -6,8 +6,9 @@ import type { ImportedSheet } from '@sheetpane/import';
 import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
+import { LOCKED_MESSAGE, STRUCTURE_LOCKED_MESSAGE, protectionModeOf } from '../pane/protection.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, SEVERITY_ORDER, errorScope, isResult, machineAuthored, resultsLevelOf, type ErrorType, type Mode, type RenderDetail, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, SEVERITY_ORDER, errorScope, isResult, machineAuthored, resultsLevelOf, type ErrorType, type Mode, type ProtectionMode, type RenderDetail, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
 import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
@@ -19,7 +20,7 @@ import { EXCEL_CSS } from './styles.js';
 import { parseTarget, readLink, splitSheetRef, writeLink } from './link.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'result' | 'hint' | 'rulemsg' | 'richmsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'hidlayer' | 'hidbar' | 'hidmenuslot' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'result' | 'hint' | 'rulemsg' | 'richmsg' | 'lockmsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'hidlayer' | 'hidbar' | 'hidmenuslot' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
 /** A size kept inside the limits (W-47 DoD 1): columns 16–1,200 px, rows 12–600 px, at 100 %. */
 const clampSize = (axis: 'col' | 'row', px: number) => Math.round(axis === 'col' ? Math.min(COL_MAX, Math.max(COL_MIN, px)) : Math.min(ROW_MAX, Math.max(ROW_MIN, px)));
@@ -93,9 +94,11 @@ export interface HighlightOptions {
  *   `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link*
  *   joins the cell menu. The rest of the fragment is the host's and is kept as it was.
  * - `results` — `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).
+ * - `protection` — `honour` (the default) or `ignore`: whether a protected sheet's locked cells refuse edits and a
+ *   protected structure keeps its sheets, pane-wide (W-62). `ignore` is the host's decision; the file is unchanged.
  *
  * Properties: `workbook`, `errors`, `errorTypes`, `file`, `mode`, `theme`, `open`, `src`, `sizes`,
- * `rules`, `flagging`, `results`, `columns`, `validate`, `onInvalid`, `renderDetail`, `ref`, `link`.
+ * `rules`, `flagging`, `results`, `protection`, `columns`, `validate`, `onInvalid`, `renderDetail`, `ref`, `link`.
  *
  * Methods: `load()`, `export()`, `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
  * `shortcuts()`, `column()`, `renderNow()`, `geometryFor()`, `reveal()`, `unreveal()`, `highlight()`,
@@ -117,7 +120,7 @@ export interface HighlightOptions {
  * @fires sheetpane-editstart `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only.
  * @fires sheetpane-input `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed.
  * @fires sheetpane-beforechange `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused.
- * @fires sheetpane-editcancel `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it.
+ * @fires sheetpane-editcancel `{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3020', message }` when the cell is locked on a protected sheet (W-62).
  * @fires sheetpane-export `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing.
  * @fires sheetpane-close `{}` when the pop-up closes.
  *
@@ -146,7 +149,7 @@ export interface HighlightOptions {
  */
 export class SheetpaneExcel extends ElementBase {
   /** The attributes the element reacts to. */
-  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging', 'ref', 'link', 'results'];
+  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging', 'ref', 'link', 'results', 'protection'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -267,6 +270,9 @@ export class SheetpaneExcel extends ElementBase {
   /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
   get results(): ResultsLevel { return this._store?.results ?? resultsLevelOf(this.getAttribute('results')); }
   set results(v: ResultsLevel) { this.setAttribute('results', v); }
+  /** The pane's protection mode (W-62): `honour` (the default) keeps the file's protection; `ignore` is the host's decision. Setting it sets the `protection` attribute. */
+  get protection(): ProtectionMode { return this._store?.protection ?? protectionModeOf(this.getAttribute('protection')); }
+  set protection(v: ProtectionMode) { this.setAttribute('protection', v); }
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   get columns(): ColumnRules | undefined { return this.rulesCfg?.columns; }
   set columns(c: ColumnRules | undefined) { this.rulesCfg = { ...this.rulesCfg, columns: c ?? {} }; this.applyRules(); }
@@ -500,6 +506,7 @@ export class SheetpaneExcel extends ElementBase {
       else if (old === 'hash') this.writeHash(this.linkHash(true)); // off: this pane's link leaves the URL; the host's part stays
     }
     else if (name === 'results' && val !== null) this._store?.setResults(resultsLevelOf(val));
+    else if (name === 'protection') this._store?.setProtection(protectionModeOf(val));
     this.schedule();
   }
 
@@ -521,6 +528,7 @@ export class SheetpaneExcel extends ElementBase {
     this.applyRules();
     if (this.hasAttribute('flagging')) s.setFlagging(this.getAttribute('flagging') !== 'off');
     if (this.hasAttribute('results')) s.setResults(resultsLevelOf(this.getAttribute('results')));
+    if (this.hasAttribute('protection')) s.setProtection(protectionModeOf(this.getAttribute('protection')));
   }
 
   private unbind(): void {
@@ -621,6 +629,7 @@ export class SheetpaneExcel extends ElementBase {
   <span class="chip chip-info hint">Describe it in the Errors panel</span>
   <span class="chip rulemsg" role="status"></span>
   <span class="chip chip-warn richmsg" data-sp="rich-text" role="status" hidden></span>
+  <span class="chip chip-info lockmsg" data-sp="locked" role="status" title="The file protects this sheet and locks this cell (SP-3020)" hidden></span>
   <span class="plug-cellbar" style="display:contents"></span>
   <span class="dock" role="toolbar" aria-label="Selection"></span>
  </div>
@@ -642,7 +651,7 @@ export class SheetpaneExcel extends ElementBase {
     this.q = {
       root: $('.sp'), dialog: $('dialog'), fname: $('.fname'), meta: $('.meta'), counts: $('.counts'), findin: $('.findin'), findcnt: $('.find .cnt'), zoom: $('.zoom'),
       editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), dlmore: $('.dlmore'), dlslot: $('.dlslot'), close: $('.close'), dock: $('.dock'),
-      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), result: $('.result'), hint: $('.hint'), rulemsg: $('.rulemsg'), richmsg: $('.richmsg'),
+      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), result: $('.result'), hint: $('.hint'), rulemsg: $('.rulemsg'), richmsg: $('.richmsg'), lockmsg: $('.lockmsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
       grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), sellayer: $('.sellayer'), hidlayer: $('.hidlayer'), hidbar: $('.hidbar'), hidmenuslot: $('.hidmenuslot'), selsay: $('.selsay'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
     } as Refs;
@@ -878,6 +887,7 @@ export class SheetpaneExcel extends ElementBase {
   /** `sheetpane-beforechange` (cancellable) for one cell; the value it would store is `now`. Then a column rule set to `block` (W-27). */
   private allowChange(sheet: string, ref: string, now: unknown, text = now === null || now === undefined ? '' : String(now)): boolean {
     const s = this._store!;
+    if (s.isLocked(sheet, ref)) { this.refuseLocked(sheet, ref); return false; } // W-62: before the host is asked
     if (!fire(this, 'sheetpane-beforechange', { sheet, ref, column: this.column(sheet, ref), was: s.value(sheet, ref), now }, true)) return false;
     const b = s.ruleBlocks(sheet, ref, now as Cell, text);
     if (!b) return true;
@@ -886,6 +896,19 @@ export class SheetpaneExcel extends ElementBase {
     fire(this, 'sheetpane-editcancel', { sheet, ref, reason: 'blocked', code: 'SP-6003', message: b.message });
     this.schedule();
     return false;
+  }
+
+  /** A locked cell of a protected sheet refused an edit (W-62): `sheetpane-editcancel` with SP-3020; nothing is stored. */
+  private lockedRefused = 0;
+  private refuseLocked(sheet: string, ref: string): void {
+    this.lockedRefused++;
+    fire(this, 'sheetpane-editcancel', { sheet, ref, reason: 'locked', code: 'SP-3020', message: LOCKED_MESSAGE });
+  }
+  /** After a paste or a clear: says how many locked cells were left as they were. */
+  private sayLocked(): void {
+    const n = this.lockedRefused;
+    this.lockedRefused = 0;
+    if (n) this.say0(`${n} locked cell${n === 1 ? '' : 's'} left as ${n === 1 ? 'it was' : 'they were'} — ${LOCKED_MESSAGE}`);
   }
 
   // ── column rules: the input phase (an outline and a tooltip, nothing stored) ──
@@ -931,6 +954,7 @@ export class SheetpaneExcel extends ElementBase {
     const text = e.clipboardData?.getData('text/plain');
     if (text === undefined) return;
     e.preventDefault();
+    this.lockedRefused = 0;
     const rows = text.replace(/\r\n?/g, '\n').replace(/\n$/, '').split('\n').map((r) => r.split('\t'));
     const p = parseRef(snap.selection.ref)!;
     const book = s.book!;
@@ -947,6 +971,7 @@ export class SheetpaneExcel extends ElementBase {
         if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source), v)) cells.push({ sheet: snap.selection.sheet, ref, input: v });
       }
       s.setCells(cells, { origin: this });
+      this.sayLocked();
       return;
     }
     rows.forEach((row, dr) => row.forEach((v, dc) => {
@@ -954,6 +979,7 @@ export class SheetpaneExcel extends ElementBase {
       if (this.allowChange(snap.selection.sheet, ref, parseInput(v, s.original(snap.selection.sheet, ref).value, book.source), v)) cells.push({ sheet: snap.selection.sheet, ref, input: v });
     }));
     s.setCells(cells, { origin: this });
+    this.sayLocked();
   }
 
   // ── selection actions (W-31): docked in the cell bar, and on right-click ──
@@ -1827,7 +1853,7 @@ export class SheetpaneExcel extends ElementBase {
       const mine = this.groupsOf(o.rows, o.levelRow, p0.row, p0.row, g.g.rows).filter(([, a, b]) => p0.row >= a && p0.row <= b).sort((x, y) => y[0] - x[0])[0];
       if (mine) { this.toggleGroup('rows', mine[1], mine[2], k === 'ArrowDown'); e.preventDefault(); return; }
     }
-    if (e.altKey && !e.shiftKey && k === 'ArrowDown' && edit) {
+    if (e.altKey && !e.shiftKey && k === 'ArrowDown' && edit && !s.isLocked(snap.selection.sheet, snap.selection.ref)) {
       const ctx = s.cellContext(snap.selection.sheet, snap.selection.ref);
       const mc = ctx && controlsFor(s.plugins, 'cell', 'edit').find((c) => c.cellOptions && c.choose && c.appliesTo?.(ctx));
       if (mc && ctx) { this.menu = { control: mc.id, sheet: snap.selection.sheet, ref: snap.selection.ref, options: mc.cellOptions!(ctx) }; this.focusMenu = true; this.schedule(); e.preventDefault(); return; }
@@ -1960,6 +1986,7 @@ export class SheetpaneExcel extends ElementBase {
     const s = this._store!, sheet = s.getSnapshot().selection.sheet, g = this.geometry();
     if (!g) return;
     const cells: { sheet: string; ref: string; input: Cell }[] = [];
+    this.lockedRefused = 0;
     const left = this.hiddenIn(g.g, r);
     if (left) this.say0(`Cleared the shown cells — ${left} hidden cell${left === 1 ? '' : 's'} left out`);
     for (let row = r.top; row <= Math.min(r.bottom, g.g.rows - 1); row++) for (let col = r.left; col <= Math.min(r.right, g.g.cols - 1); col++) {
@@ -1969,6 +1996,7 @@ export class SheetpaneExcel extends ElementBase {
       if (this.allowChange(sheet, ref, null)) cells.push({ sheet, ref, input: null });
     }
     if (cells.length) s.setCells(cells, { origin: this });
+    this.sayLocked();
   }
 
   private rangeEnd(sel: { ref: string; range?: string }): { row: number; col: number } {
@@ -1978,6 +2006,8 @@ export class SheetpaneExcel extends ElementBase {
 
   private editCell(first?: string): void {
     const cell = this.q.cell as HTMLInputElement;
+    const sel = this._store?.getSnapshot().selection;
+    if (sel && this._store!.isLocked(sel.sheet, sel.ref)) { this.refuseLocked(sel.sheet, sel.ref); return; } // W-62: the cell bar's chip says why
     if (cell.hidden) return;
     cell.focus();
     if (first !== undefined) { cell.value = first; cell.dispatchEvent(new Event('input')); } else cell.select();
@@ -2242,7 +2272,8 @@ export class SheetpaneExcel extends ElementBase {
     const merge = mergeAt(g.g, p.row, p.col);
     q.ref.textContent = sel.range ?? (merge ? `${cellRef(merge.top, merge.left)}:${cellRef(merge.bottom, merge.right)}` : sel.ref);
     const composing = !!snap.composing;
-    const editable = edit && !composing;
+    const locked = edit && s.isLocked(sel.sheet, sel.ref); // W-62: a locked cell shows its value, not an input
+    const editable = edit && !composing && !locked;
     const cell = q.cell as HTMLInputElement;
     cell.hidden = !editable;
     q.val.hidden = editable;
@@ -2280,6 +2311,8 @@ export class SheetpaneExcel extends ElementBase {
     const richEdit = edit && !!this.editing && this.editing.sheet === sel.sheet && this.editing.ref === sel.ref && !!s.runs(sel.sheet, sel.ref);
     q.richmsg.hidden = !richEdit;
     if (richEdit) q.richmsg.textContent = `${SEVERITY.warning.glyph} Mixed formatting — an edit saves plain text`;
+    q.lockmsg.hidden = !locked;
+    if (locked) q.lockmsg.textContent = `🔒 ${LOCKED_MESSAGE}`;
     q.plugCellbar.innerHTML = this.controlsHtml(controlsFor(s.plugins, 'cellbar', snap.mode), 'btn btn-g');
     // docked selection actions (W-31): Flag issue · selbar plugin controls · ⋯ — hidden while typing or composing
     const typing = !!this.editing && this.shadow.activeElement === cell;
@@ -2324,7 +2357,7 @@ export class SheetpaneExcel extends ElementBase {
     const curHidden = s.hidden(sheet.name).state !== 'visible';
     const note = this.revealNote?.sheet === sheet.name ? this.revealNote : undefined;
     const barHtml = curHidden
-      ? `<span>⊘ This sheet is hidden in the file</span><button type="button" class="btn btn-g" data-act="hide-sheet-again">Hide again</button>${this.canUnhide() ? '<button type="button" class="btn btn-g" data-act="unhide-sheet">Unhide</button>' : ''}`
+      ? `<span>⊘ This sheet is hidden in the file</span><button type="button" class="btn btn-g" data-act="hide-sheet-again">Hide again</button>${this.canUnhide() ? (s.structureLocked() ? `<button type="button" class="btn btn-g" data-act="unhide-sheet" disabled title="${esc(STRUCTURE_LOCKED_MESSAGE)}">Unhide</button>` : '<button type="button" class="btn btn-g" data-act="unhide-sheet">Unhide</button>') : ''}`
       : note ? `<span>${esc(note.text)}</span><button type="button" class="btn btn-g" data-act="hide-again">Hide again</button><button type="button" class="btn btn-g btn-i" data-act="note-close" aria-label="Dismiss">${ICON.close}</button>` : '';
     q.hidbar.hidden = !barHtml;
     if (q.hidbar.dataset.html !== barHtml) { q.hidbar.innerHTML = barHtml; q.hidbar.dataset.html = barHtml; }
@@ -2495,7 +2528,8 @@ export class SheetpaneExcel extends ElementBase {
       let extra = '';
       if (cellControls.length) {
         const ctx = s.cellContext(sheet.name, ref);
-        for (const cc of cellControls) if (ctx && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
+        const locked = cellControls.some((cc) => cc.choose) && s.isLocked(sheet.name, ref); // W-62: no picker that would write a locked cell
+        for (const cc of cellControls) if (ctx && !(locked && cc.choose) && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
       }
       if (markAll || (focus && r >= focus.top && r <= focus.bottom && c >= focus.left && c <= focus.right)) {
         const rs = s.resultAt(sheet.name, r, c); // a problem always wins: none there

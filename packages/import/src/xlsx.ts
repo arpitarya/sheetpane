@@ -8,7 +8,7 @@ import { all, bool, first, kid, kids, num, parseXml, relAttr, str } from './dom.
 import { ImportError } from './errors.js';
 import { formatCode, general, subsetCode } from './numfmt.js';
 import { color, font, parseStyles, parseTheme } from './styles.js';
-import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetState, StyleTables, Table, TextRun, ThreadedComment } from './types.js';
+import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetProtection, SheetState, StyleTables, Table, TextRun, ThreadedComment, WorkbookProtection } from './types.js';
 
 /** Options for reading an .xlsx: the ZIP size limits that refuse a ZIP bomb. */
 export interface ReadOptions extends ZipLimits {}
@@ -207,6 +207,28 @@ async function parseTable(pkg: Pkg, path: string): Promise<Table | undefined> {
   return t;
 }
 
+/** `<sheetProtection>`'s switches and their schema defaults: `true` = refused while protected (W-62). */
+const SHEET_PROTECTION_DEFAULTS = {
+  objects: false, scenarios: false, formatCells: true, formatColumns: true, formatRows: true, insertColumns: true, insertRows: true,
+  insertHyperlinks: true, deleteColumns: true, deleteRows: true, selectLockedCells: false, selectUnlockedCells: false, sort: true,
+  autoFilter: true, pivotTables: true,
+} as const;
+
+/** A sheet's protection while `sheet="1"`; the password is never read, only whether one is stored (W-62). */
+function sheetProtection(e: Element | undefined): SheetProtection | undefined {
+  if (!e || !bool(e, 'sheet')) return undefined;
+  const p = {} as SheetProtection;
+  for (const [k, d] of Object.entries(SHEET_PROTECTION_DEFAULTS)) p[k as keyof typeof SHEET_PROTECTION_DEFAULTS] = bool(e, k, d);
+  p.hasPassword = !!(e.getAttribute('password') || e.getAttribute('hashValue'));
+  return p;
+}
+
+/** The workbook's `<workbookProtection>`; the password is never read, only whether one is stored (W-62). */
+function workbookProtection(e: Element | undefined): WorkbookProtection | undefined {
+  if (!e) return undefined;
+  return { lockStructure: bool(e, 'lockStructure'), lockWindows: bool(e, 'lockWindows'), hasPassword: !!(e.getAttribute('workbookPassword') || e.getAttribute('workbookHashValue')) };
+}
+
 interface SheetCtx { pkg: Pkg; sst: string[]; sstRuns: (TextRun[] | undefined)[]; styles: StyleTables; date1904: boolean; name: string; path: string; state: SheetState }
 
 /** An `outlineLevel` / `collapsed` pair, or undefined when the element carries neither. Levels are clamped to Excel's 0–7. */
@@ -223,7 +245,7 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
   const root = doc.documentElement;
   const rows: Cell[][] = [], text: string[][] = [];
   const styleIndex: Record<string, number> = {}, formulas: Record<string, string> = {}, runs: Record<string, TextRun[]> = {};
-  const rowHeights: (number | undefined)[] = [], hiddenRows: number[] = [], rowOutline: (OutlineEntry | undefined)[] = [];
+  const rowHeights: (number | undefined)[] = [], hiddenRows: number[] = [], rowOutline: (OutlineEntry | undefined)[] = [], rowStyles: (number | undefined)[] = [];
   const shared = new Map<string, { f: string; row: number; col: number }>();
   const tooBig = (what: string) => new ImportError('too-large', `sheet "${c.name}" has a cell past Excel's limits (${what}) — refused`);
   const sheetData = kid(root, 'sheetData');
@@ -238,6 +260,8 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     if (bool(rowEl, 'hidden') || ht === 0) hiddenRows.push(r); // a zero height hides the row as well
     const ro = outlineOf(rowEl);
     if (ro) rowOutline[r] = ro;
+    const rs = num(rowEl, 's');
+    if (rs !== undefined && bool(rowEl, 'customFormat')) rowStyles[r] = rs; // W-62: an empty cell of the row takes it
     let prevCol = -1;
     for (const ce of kids(rowEl, 'c')) {
       const ref = ce.getAttribute('r');
@@ -288,15 +312,17 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     text[r] = Array.from({ length: row.length }, (_, i) => tr[i] ?? '');
   }
   const merges = (() => { const m = kid(root, 'mergeCells'); return m ? kids(m, 'mergeCell').map((e) => e.getAttribute('ref') ?? '').filter(Boolean) : []; })();
-  const columnWidths: number[] = [], colOutline: (OutlineEntry | undefined)[] = [];
+  const columnWidths: number[] = [], colOutline: (OutlineEntry | undefined)[] = [], colStyles: (number | undefined)[] = [];
   const hiddenColSet = new Set<number>();
   const cols = kid(root, 'cols');
   for (const col of cols ? kids(cols, 'col') : []) {
     const min = Math.max(1, num(col, 'min') ?? 1), max = Math.min(num(col, 'max') ?? min, MAX_COLS);
     const w = num(col, 'width'), hidden = bool(col, 'hidden') || w === 0; // a zero width hides the column as well
     const co = outlineOf(col);
+    const cs = num(col, 'style');
     for (let i = min - 1; i < max; i++) {
       if (w !== undefined) columnWidths[i] = w;
+      if (cs) colStyles[i] = cs;
       if (hidden) hiddenColSet.add(i);
       if (co) colOutline[i] = { ...co };
     }
@@ -399,12 +425,14 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     if (t) tables.push(t);
   }
   const dcw = num(fmt, 'defaultColWidth');
+  const protection = sheetProtection(kid(root, 'sheetProtection'));
   return {
     name: c.name, rows, text, path: c.path, merges, columnWidths, state: c.state, hidden: c.state !== 'visible',
     styleIndex, runs, formulas, freeze, hiddenRows, hiddenCols, rowOutline, colOutline, outline, ...(autoFilter ? { autoFilter } : {}), rowHeights,
     defaultRowHeight: num(fmt, 'defaultRowHeight') ?? 15,
     defaultColWidth: dcw ?? (num(fmt, 'baseColWidth') !== undefined ? num(fmt, 'baseColWidth')! + 0.71 : undefined),
-    dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables, tables,
+    dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables, tables, rowStyles, colStyles,
+    ...(protection ? { protection } : {}),
   };
 }
 
@@ -457,6 +485,7 @@ export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOpt
     if (pr) x.providerId = pr;
     persons.push(x);
   }
+  const wbProtection = workbookProtection(first(wb, 'workbookProtection'));
   const definedNames = all(wb, 'definedName').map((d) => {
     const n: ImportedWorkbook['definedNames'][number] = { name: d.getAttribute('name') ?? '', formula: d.textContent ?? '' };
     const l = num(d, 'localSheetId');
@@ -479,6 +508,7 @@ export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOpt
   activeTab = Math.max(0, keptIndex.indexOf(activeTab));
   return {
     sheets, source: 'xlsx', activeSheet: activeTab, date1904, styles, themeColors, persons, definedNames,
+    ...(wbProtection ? { workbookProtection: wbProtection } : {}),
     part: (path) => pkg.bytesOf(path),
   };
 }
