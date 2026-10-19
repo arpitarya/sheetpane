@@ -28,7 +28,7 @@ for (const dir of readdirSync(join(root, 'packages'))) {
 }
 mkdirSync(host, { recursive: true });
 writeFileSync(join(host, 'package.json'), JSON.stringify({ name: 'smoke-host', private: true, type: 'module' }));
-run('npm', ['install', '--no-audit', '--no-fund', '--legacy-peer-deps', '--loglevel=error', ...pkgs.map((x) => x.tgz)], host);
+run('npm', ['install', '--no-audit', '--no-fund', '--legacy-peer-deps', '--prefer-offline', '--loglevel=error', ...pkgs.map((x) => x.tgz)], host);
 
 let failed = 0;
 for (const { p } of pkgs) {
