@@ -17,6 +17,9 @@ export { escapeText, escapeAttr, unescapeXml, encodeOoxmlString, decodeOoxmlStri
 export { getAttr, setAttr, removeAttr, parseRels, resolveTarget, relsPathOf, setPane, setMergeCells, type Relationship } from './patch.js';
 export { colName, colIndex, parseRef, cellRef, parseRange, rangeRef, rangesIntersect, MAX_ROWS, MAX_COLS, type CellPos, type RangePos } from './refs.js';
 export { shiftFormula } from './formula.js';
+// Inserting and deleting rows and columns (W-52): the one implementation of every shift.
+export { restructureChartXml } from './restructure.js';
+export { restructureFormula, shiftRefText, shiftSqref, shiftIndex, shiftSpan, shiftCount, shiftRangePos, splitsRange, movesRange, tableRefusal, inverseOp, isRowOp, isInsertOp, type StructureOp, type StructureOpName } from './structure.js';
 export { checkSheetName } from './validate.js';
 
 // Saving a file in the browser — SR-DOWNLOAD.

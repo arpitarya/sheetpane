@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-52 insert and delete rows and columns, every reference shifted (closed)  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-52 in lane c (a worktree beside six other lanes), close it, commit, do not push; leave W-61's in-memory table shift as one marked hook.*
+- **Done:** in the Hazards' order, a test before each next part. **Shifts** (`@sheetpane/export` `structure.ts`, one implementation): index, span (an insert inside widens, a delete clips), leading count, A1 text, sqref, `restructureFormula` (`#REF!` for deleted targets; strings, other sheets, external, 3-D and structured refs left alone). **Import:** `restructureWorkbook(book, op)` moves every table plugins read, chart parts served moved; `PivotTable.source`; `shiftTables` is W-61's hook. **Store:** `insertRows` / `deleteRows` / `insertCols` / `deleteCols`, kind `structure` (`sheet!#structure`), one undo step restoring the moved book, derived values and plugin-error index; changes, errors (deleted → resolved "row deleted"), selection moved; refusals SP-3017 merge cut, SP-3018 pivot moved, SP-3019 off the sheet, SP-3020 table cut (reads `tables` when W-61 adds it). **Export:** `patchXlsx` `structure` replays the ops on the upload — rows, cells, formulas everywhere (shared groups unshared), merges, spans, filter, the existing rule blocks (own function, so W-57 composes), hyperlinks, view, tables, drawings, notes + VML, threads, charts, names; SP-2015 refusals. **Plugins:** `DeriveInput` `restructure` (formulas rebuild); charts, validation, comments verified. **UI:** cell, ⋯ and header menus, Ctrl/⌘+Shift+= and Ctrl/⌘+−, refusals greyed with their reason; sizes, reveals, highlights follow. Two fast-check properties: insert-then-delete is byte-stable on every part; memory ≡ download over random op sequences. Records SR-EXPORT 11, SR-IMPORT 11, SR-GRID 21d (+3, 6, 7, 17), SR-FORMULAS, SR-CHARTS, SR-CODES, SR-VALIDATION, SR-COMMENTS, SR-SKILLS, SR-MCP; skills, README, CHANGELOG; DoD 6 → W-30 DoD 6.
+- **Decided / left open:** a delete that cuts a merge is refused, as the item says — Excel itself shrinks a merge on a whole-row delete, so the decider may relax it. Inserted columns take the default width (Excel copies the left neighbour's format). Pivots are never rewritten: any op that would move one or its source is refused. Tables: rows inserted inside grow it, columns inserted inside are refused (new `tableColumn` names). The selection keeps its address after a menu or key op, as in Excel; the store API moves it with its cells. Refusing an Excel-saved table only works in memory once W-61 lands — until then the download refuses (SP-2015).
+- **Mistakes:** the first in-memory shift left trailing empty cells and rows a fresh read does not have — the memory ≡ download property found both; four menu tests listed exact items and now filter W-52's.
+- **Next:** the orchestrator merges lane c — wire W-61's tables into `shiftTables`, compose W-57's options after `restructureRuleBlocks`, renumber SP-2015 / SP-3017–3020 if taken.
+
+---
+
 ## 2026-10-19 — W-66 open at a cell: `ref`, `link="hash"`, Copy link (closed)  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-66 in lane c (a worktree beside other lanes), close it, commit, do not push.*

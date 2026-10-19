@@ -587,9 +587,9 @@
             {
               "name": "sheetpane-change",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>"
+                "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown; op?: 'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols'; at?: number; count?: number }>"
               },
-              "description": "`{ sheet, ref, kind, was, now }` for each change, undo and redo included."
+              "description": "`{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`."
             },
             {
               "name": "sheetpane-errors",

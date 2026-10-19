@@ -1,6 +1,6 @@
 // The plugin contract (plugins verdict decisions 2–7; W-14): six hooks, six slots.
 // A plugin is a plain object; everything it may touch goes through the store.
-import type { Cell, PatchContext } from '@sheetpane/export';
+import type { Cell, PatchContext, StructureOpName } from '@sheetpane/export';
 import type { ImportedSheet, ImportedWorkbook } from '@sheetpane/import';
 import type { Mode, Selection, SheetpaneError, Snapshot } from '../pane/types.js';
 import type { WorkbookStore } from '../pane/store.js';
@@ -45,10 +45,15 @@ export interface PluginContext {
   readonly exportOptions?: Readonly<Record<string, unknown>>;
 }
 
-/** What `derive` is told: the workbook loaded, or cells changed (by the user, or by undo). */
+/**
+ * What `derive` is told: the workbook loaded, cells changed (by the user, or by undo), or rows or
+ * columns were inserted or deleted (W-52) — `ctx.book` is then the moved workbook and, as on a
+ * load, the provider returns every derived cell (the store replaces its derived set with them).
+ */
 export type DeriveInput =
   | { kind: 'load' }
-  | { kind: 'change'; cells: { sheet: string; ref: string; value: Cell }[] };
+  | { kind: 'change'; cells: { sheet: string; ref: string; value: Cell }[] }
+  | { kind: 'restructure'; sheet: string; op: StructureOpName; at: number; count: number };
 
 /** One recalculated cell. `clear: true` removes the cell's derived entry (its value and text are then ignored). */
 export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string; clear?: boolean }

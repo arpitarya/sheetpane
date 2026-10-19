@@ -45,6 +45,7 @@ const TABLE = {
   'SP-2012': { title: 'Damaged archive', severity: 'error' },
   'SP-2013': { title: 'Archive over the size limit', severity: 'error' },
   'SP-2014': { title: 'Not a workbook package', severity: 'error' },
+  'SP-2015': { title: 'Insert or delete refused', severity: 'error' },
   // 21xx · download()
   'SP-2101': { title: 'download() needs a file name', severity: 'error' },
   'SP-2102': { title: 'Only .xlsx or .csv can be saved', severity: 'error' },
@@ -71,6 +72,10 @@ const TABLE = {
   'SP-3014': { title: 'Plugin overlay failed', severity: 'error' },
   'SP-3015': { title: 'Source could not be read', severity: 'error' },
   'SP-3016': { title: 'Cell to open at not found', severity: 'warning' },
+  'SP-3017': { title: 'Delete would split a merged range', severity: 'warning' },
+  'SP-3018': { title: 'Insert or delete would move a pivot table', severity: 'warning' },
+  'SP-3019': { title: 'Insert would push cells off the sheet', severity: 'warning' },
+  'SP-3020': { title: 'Insert or delete would cut a table', severity: 'warning' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

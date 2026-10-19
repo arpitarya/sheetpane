@@ -83,6 +83,9 @@ flowchart LR
   W-40.
 - **Added since:** SP-3016 (W-66, 2026-10-19) — a warning, not a throw: the
   `ref` attribute or a `#sheetpane=` link names no cell (SR-GRID decision 11d).
+- **Added since:** SP-2015 (`bad-structure`, an error) and SP-3017 to SP-3020
+  (warnings: a merge cut, a pivot moved, cells pushed off the sheet, a table
+  cut) — W-52, 2026-10-19 (SR-EXPORT decision 11, SR-GRID decision 21d).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

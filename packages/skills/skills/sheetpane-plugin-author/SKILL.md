@@ -48,6 +48,12 @@ adds a switch to the Download menu.
   one undo step) — never into the DOM.
 - No font family, ever ([SR-LAW-5](https://github.com/arpitarya/sheetpane/blob/main/records/0007_LAW-5-host-font.md)); no
   network beyond what the host gave.
+- Rows and columns inserted or deleted (W-52): the core moves every table of
+  `ctx.book` (a new object — re-read it, do not cache by address) and the
+  change map; `derive` is told `{ kind: 'restructure', sheet, op, at, count }`
+  and returns the whole derived set, as on a load. References a plugin keeps
+  itself (chart series, formula text) move with `restructureFormula` from
+  `@sheetpane/grid`; `book.part()` already serves chart parts moved.
 - Errors and warnings carry an `SP-5x00` code ([SR-CODES](https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md)):
   use `spError` / `spMessage` from `@sheetpane/grid`.
 

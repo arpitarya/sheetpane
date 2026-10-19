@@ -37,6 +37,26 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
 excel.addEventListener('sheetpane-change', (e) => save(e.detail)); // after it is stored
 ```
 
+## Rows and columns inserted or deleted (W-52)
+
+In Edit, the cell menu, the header menu, Ctrl/⌘+Shift+= and Ctrl/⌘+− insert
+and delete rows and columns; a host calls `excel.workbook.insertRows(sheet,
+at, count)` (also `deleteRows`, `insertCols`, `deleteCols`; `at` is 0-based).
+Each is one `sheetpane-change` with `kind: 'structure'`, `op`
+(`insertRows` · `deleteRows` · `insertCols` · `deleteCols`), `at`, `count`
+and `ref` the span (`5:6`, `C:D`); undo fires the inverse. Nothing else fires
+per moved cell: whatever a host keyed by address — saved errors excepted, they
+move — it moves itself. A refusal (a merge cut, a pivot moved, a table cut,
+cells pushed off the sheet) is `false` from the method, a greyed menu item with
+its reason, and an `SP-3017`…`SP-3020` warning; `workbook.structureRefusal(op)`
+asks first.
+
+```js
+excel.addEventListener('sheetpane-change', (e) => {
+  if (e.detail.kind === 'structure') shiftMyAnnotations(e.detail); // { sheet, op, at, count }
+});
+```
+
 ## Pointing at cells — hover and highlight (W-56)
 
 `sheetpane-hover` names the cell under a **mouse or pen** pointer:

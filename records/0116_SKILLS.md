@@ -147,6 +147,11 @@ flowchart LR
 - **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,
   `link="hash"` and *Copy link*, and that React, Vue and Solid set `ref`
   with `setAttribute` (their own `ref` is the framework's).
+- **Taught since W-52 (2026-10-19):** `sheetpane-events` covers inserting and
+  deleting rows and columns — the menus, the keys, the store methods,
+  `kind: 'structure'` with `op`, `at` and `count`, the SP-3017…3020 refusals;
+  `sheetpane-plugin-author` covers `DeriveInput` `restructure`, the moved
+  `ctx.book` and `restructureFormula`.
 
 ### Alternatives considered
 

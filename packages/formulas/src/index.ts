@@ -98,7 +98,9 @@ class Engine {
 
   derive(input: DeriveInput, ctx: PluginContext): Promise<DerivedChange[]> {
     this.store = ctx.store;
-    if (input.kind === 'load') {
+    // a new workbook, or rows or columns inserted or deleted (W-52): the model is rebuilt from the moved
+    // workbook — its formulas already point where Excel would point them (`#REF!` for deleted cells)
+    if (input.kind === 'load' || input.kind === 'restructure') {
       this.batch = undefined;
       return this.enqueue(() => this.load(ctx));
     }

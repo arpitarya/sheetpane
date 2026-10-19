@@ -322,7 +322,15 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     } else if (rel.type.endsWith('/pivotTable')) {
       const d = await c.pkg.doc(rel.target);
       const loc = d && first(d, 'location');
-      if (d && loc) pivotTables.push({ name: d.documentElement.getAttribute('name') ?? '', ref: loc.getAttribute('ref') ?? '' });
+      if (!d || !loc) continue;
+      const pt: PivotTable = { name: d.documentElement.getAttribute('name') ?? '', ref: loc.getAttribute('ref') ?? '' };
+      // the cache it reads: a worksheet range is what an insert or delete must not move (W-52)
+      const cache = (await c.pkg.rels(rel.target)).find((r) => r.type.endsWith('/pivotCacheDefinition'));
+      const cd = cache && await c.pkg.doc(cache.target);
+      const ws = cd && first(cd, 'worksheetSource');
+      const sheet = ws?.getAttribute('sheet'), ref = ws?.getAttribute('ref');
+      if (sheet && ref) pt.source = { sheet, ref };
+      pivotTables.push(pt);
     }
   }
   const dcw = num(fmt, 'defaultColWidth');

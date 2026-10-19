@@ -11,7 +11,7 @@ export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 export type SheetpaneExcelVueProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omit<SheetpaneExcelProperties, 'ref'> & {
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   onSheetpaneLoad?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
   onSheetpaneChange?: ((event: SheetpaneExcelEventMap['sheetpane-change']) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change. */
   onSheetpaneErrors?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;

@@ -101,8 +101,13 @@ export interface Note { ref: string; author: string; text: string }
 export interface ThreadedComment { id: string; ref: string; personId: string; parentId?: string; date?: string; done: boolean; text: string }
 /** An author of threaded comments. */
 export interface Person { id: string; displayName: string; userId?: string; providerId?: string }
-/** A pivot table on a worksheet: its name and where it sits. */
-export interface PivotTable { name: string; ref: string }
+/** A pivot table on a worksheet: its name, where it sits and, when its cache reads a worksheet range, that source. */
+export interface PivotTable {
+  name: string;
+  ref: string;
+  /** The cache's `worksheetSource` (W-52): the sheet and range it summarises; absent for a named or table source. */
+  source?: { sheet: string; ref: string };
+}
 
 /** One row's or column's place in an outline: its group level and whether its group is collapsed. */
 export interface OutlineEntry {

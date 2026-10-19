@@ -5,8 +5,8 @@ import type { ChangeKind, Mode, SheetpaneError, SheetpaneErrors, SheetpaneExcel,
 export interface SheetpaneExcelEventMap {
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'sheetpane-load': CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
-  'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>;
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
+  'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown; op?: 'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols'; at?: number; count?: number }>;
   /** `{ errors, plugins }` when the pane's errors change. */
   'sheetpane-errors': CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */

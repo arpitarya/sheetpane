@@ -69,7 +69,7 @@ describe('docked, never floating (DoD 1, 2, 4)', () => {
     const menu = $(el, '.dock .moremenu');
     expect(menu.getAttribute('role')).toBe('menu');
     expect($(el, '.dock [data-act=more]').getAttribute('aria-expanded')).toBe('true');
-    const visible = [...menu.querySelectorAll<HTMLElement>('[role=menuitem]')].filter((x) => x.offsetParent !== null).map((x) => x.firstChild!.textContent);
+    const visible = [...menu.querySelectorAll<HTMLElement>('[role=menuitem]')].filter((x) => x.offsetParent !== null).map((x) => x.firstChild!.textContent).filter((t) => !/^(Insert|Delete) /.test(t!)); // W-52's insert and delete: structure-ui.test.ts
     expect(visible).toEqual(['Copy ref', 'Copy value']);
     (menu.querySelector('[data-act=copy-value]') as HTMLButtonElement).click();
     expect(write).toHaveBeenCalledWith(el.workbook!.text('Holdings', 'C4'));
@@ -112,7 +112,7 @@ describe('the context menu (DoD 3)', () => {
     expect(el.workbook!.getSnapshot().selection.ref).toBe('D6');
     const menu = $(el, '.overlay .ctxmenu');
     expect(menu.getAttribute('role')).toBe('menu');
-    expect([...menu.querySelectorAll('[role=menuitem]')].map((x) => x.firstChild!.textContent)).toEqual(['Flag issue', 'Copy ref', 'Copy value', 'Shout']);
+    expect([...menu.querySelectorAll('[role=menuitem]')].map((x) => x.firstChild!.textContent).filter((t) => !/^(Insert|Delete) /.test(t!))).toEqual(['Flag issue', 'Copy ref', 'Copy value', 'Shout']);
     expect(menu.getBoundingClientRect().top).toBeGreaterThanOrEqual(cellEl(el, 5, 3)!.getBoundingClientRect().bottom - 1);
     expect(shadow(el).activeElement?.textContent).toContain('Flag issue');
     await userEvent.keyboard('{ArrowDown}');

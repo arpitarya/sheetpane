@@ -2,11 +2,12 @@
 // SR-LAW-7, SR-LAW-9). Framework-free: subscribe / getSnapshot, and mutators.
 // Every mutation goes through commit(): undo (W-23), derive and validate
 // (W-14), "matches suggestion" (B-022) and one notification.
-import { cellRef, detailOf, parseRange, parseRef, patchXlsx, rangesIntersect, spError, spMessage, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook, type SpCode } from '@sheetpane/export';
-import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
+import { cellRef, detailOf, inverseOp, isRowOp, parseRange, parseRef, patchXlsx, rangesIntersect, spError, spMessage, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook, type SpCode, type StructureOp, type StructureOpName } from '@sheetpane/export';
+import { formatCode, general, ImportError, read, restructureWorkbook, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
+import { STRUCTURE_REF, shiftChanges, shiftComposing, shiftDerived, shiftErrors, shiftPluginErrors, shiftSelection, structureRefusal, type StructureRefusal } from './structure.js';
 import { machineAuthored } from './types.js';
 import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
@@ -25,14 +26,17 @@ export type Origin = object | undefined;
  */
 export type StoreEvent =
   | { type: 'load'; origin: Origin }
-  | { type: 'change'; origin: Origin; sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }
+  /** `kind: 'structure'` (W-52) also carries `op`, `at` (0-based) and `count`; `ref` is the span, `5:6` or `C:D`. */
+  | { type: 'change'; origin: Origin; sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown; op?: StructureOpName; at?: number; count?: number }
   | { type: 'errors'; origin: Origin }
   | { type: 'select'; origin: Origin; sheet: string; ref: string }
   | { type: 'mode'; origin: Origin; mode: Mode }
   | { type: 'history'; origin: Origin; reason: 'undo' | 'redo' | 'cleared' };
 
 interface Undoable { changes: ReadonlyMap<string, ChangeEntry>; errors: readonly SheetpaneError[] }
-interface HistoryEntry { before: Undoable; after: Undoable; keys: string[]; coalesce: string | undefined }
+/** What a structural step (W-52) also restores: the moved workbook, derived values and the plugin-error index. */
+interface StructureState { book: ImportedWorkbook; derived: ReadonlyMap<string, DerivedCell>; pluginErrors: ReadonlyMap<string, string> }
+interface HistoryEntry { before: Undoable; after: Undoable; keys: string[]; coalesce: string | undefined; structure?: { op: StructureOp; before: StructureState; after: StructureState } }
 
 /** The undo stack's depth per pane; the oldest entry goes first (W-23, SR-GRID decision 7). */
 export const HISTORY_CAP = 500;
@@ -657,6 +661,7 @@ export class WorkbookStore {
     h.coalesce = undefined;
     to.push(h);
     const state = h[side];
+    if (h.structure) { this.travelStructure(h, side, origin, reason); return; }
     const events: StoreEvent[] = [{ type: 'history', origin, reason }];
     const cur = this.snap.changes;
     for (const k of new Set([...h.keys, ...[...cur.keys()].filter((x) => cur.get(x) !== state.changes.get(x))])) {
@@ -677,6 +682,100 @@ export class WorkbookStore {
     }
   }
 
+  // ── rows and columns (W-52): one change of kind `structure` per operation ──
+  /**
+   * Inserts rows above row `at` (0-based): everything at and below it moves down — cells, changes,
+   * errors, merges, rules, notes, drawings, sizes, hidden and outline state, and every formula that
+   * points there. One undo step; written into the download.
+   * @param sheet - The sheet's name.
+   * @param at - The first new row, 0-based.
+   * @param count - How many rows (default 1).
+   * @param origin - The element that asked.
+   * @returns False when refused (see {@link WorkbookStore.structureRefusal}) or nothing is loaded.
+   */
+  insertRows(sheet: string, at: number, count = 1, origin?: Origin): boolean { return this.restructure({ sheet, op: 'insertRows', at, count }, origin); }
+  /**
+   * Deletes rows `at` … `at + count − 1` (0-based) and what sits on them; references to them become `#REF!`.
+   * @param sheet - The sheet's name.
+   * @param at - The first row to delete, 0-based.
+   * @param count - How many rows (default 1).
+   * @param origin - The element that asked.
+   * @returns False when refused or nothing is loaded.
+   */
+  deleteRows(sheet: string, at: number, count = 1, origin?: Origin): boolean { return this.restructure({ sheet, op: 'deleteRows', at, count }, origin); }
+  /**
+   * Inserts columns left of column `at` (0-based: A is 0); everything at and right of it moves right.
+   * @param sheet - The sheet's name.
+   * @param at - The first new column, 0-based.
+   * @param count - How many columns (default 1).
+   * @param origin - The element that asked.
+   * @returns False when refused or nothing is loaded.
+   */
+  insertCols(sheet: string, at: number, count = 1, origin?: Origin): boolean { return this.restructure({ sheet, op: 'insertCols', at, count }, origin); }
+  /**
+   * Deletes columns `at` … `at + count − 1` (0-based) and what sits on them.
+   * @param sheet - The sheet's name.
+   * @param at - The first column to delete, 0-based.
+   * @param count - How many columns (default 1).
+   * @param origin - The element that asked.
+   * @returns False when refused or nothing is loaded.
+   */
+  deleteCols(sheet: string, at: number, count = 1, origin?: Origin): boolean { return this.restructure({ sheet, op: 'deleteCols', at, count }, origin); }
+
+  /**
+   * Why an insert or delete would be refused — a merge cut (SP-3017), a pivot moved (SP-3018),
+   * cells pushed off the sheet (SP-3019), a table cut (SP-3020) — or `undefined` when it may go ahead.
+   * @param o - The operation.
+   * @returns The SP code and a sentence for the person, or `undefined`.
+   */
+  structureRefusal(o: StructureOp): StructureRefusal | undefined {
+    const book = this.snap.book;
+    return book ? structureRefusal(book, this.merges(o.sheet), o) : undefined;
+  }
+
+  /** Every insert and delete made since the file was read, in order per sheet — what the download replays first. */
+  structureOps(): StructureOp[] {
+    return [...this.snap.changes].filter(([, c]) => c.kind === 'structure').flatMap(([, c]) => c.now as StructureOp[]);
+  }
+
+  /** The one structural path: check, move every table, one undo step, one `structure` change event. */
+  private restructure(o: StructureOp, origin: Origin): boolean {
+    const book = this.snap.book;
+    if (!book || !this.sheet(o.sheet) || !Number.isInteger(o.at) || o.at < 0 || !Number.isInteger(o.count) || o.count < 1) return false;
+    const no = this.structureRefusal(o);
+    if (no) { console.warn(spMessage(no.code, `sheetpane: ${no.message}`)); return false; }
+    const before: StructureState = { book, derived: this.snap.derived, pluginErrors: new Map(this.pluginErrors) };
+    const moved = shiftErrors(this.snap.errors, o);
+    const after: StructureState = { book: restructureWorkbook(book, o), derived: shiftDerived(this.snap.derived, o), pluginErrors: shiftPluginErrors(this.pluginErrors, this.snap.errors, moved.errors, moved.gone) };
+    const changes = shiftChanges(this.snap.changes, o);
+    const k = key(o.sheet, STRUCTURE_REF);
+    this.undoStack.push({ before: { changes: this.snap.changes, errors: this.snap.errors }, after: { changes, errors: moved.errors }, keys: [k], coalesce: undefined, structure: { op: o, before, after } });
+    if (this.undoStack.length > HISTORY_CAP) this.undoStack.shift();
+    this.redoStack = [];
+    this.applyStructure(o, after, changes, moved.errors, origin, [{ type: 'errors', origin }]);
+    return true;
+  }
+
+  private travelStructure(h: HistoryEntry, side: 'before' | 'after', origin: Origin, reason: 'undo' | 'redo'): void {
+    const s = h.structure!, o = side === 'before' ? inverseOp(s.op) : s.op;
+    this.applyStructure(o, s[side], h[side].changes, h[side].errors, origin, [{ type: 'history', origin, reason }, { type: 'errors', origin }]);
+  }
+
+  /** Puts a structural state in place: the moved book first (formatting reads it), then one notification, then validate and derive. */
+  private applyStructure(o: StructureOp, st: StructureState, changes: ReadonlyMap<string, ChangeEntry>, errors: readonly SheetpaneError[], origin: Origin, events: StoreEvent[]): void {
+    this.textCache.clear();
+    this.pluginErrors.clear();
+    for (const [k, v] of st.pluginErrors) this.pluginErrors.set(k, v);
+    this.snap = { ...this.snap, book: st.book, changes, derived: st.derived };
+    const rows = isRowOp(o), last = o.at + o.count - 1;
+    const ref = rows ? `${o.at + 1}:${last + 1}` : `${cellRef(0, o.at).replace(/\d+$/, '')}:${cellRef(0, last).replace(/\d+$/, '')}`;
+    const change: StoreEvent = { type: 'change', origin, sheet: o.sheet, ref, kind: 'structure', was: null, now: null, op: o.op, at: o.at, count: o.count };
+    this.set({ book: st.book, changes, derived: st.derived, errors: this.withMatches(errors, changes), selection: shiftSelection(this.snap.selection, o), composing: shiftComposing(this.snap.composing, o) }, [events[0]!, change, ...events.slice(1)]);
+    this.rules.reset();
+    this.runValidate(this.allSheets(), origin);
+    void this.runDerive({ kind: 'restructure', sheet: o.sheet, op: o.op, at: o.at, count: o.count });
+  }
+
   // ── plugin hooks: derive, validate ───────────────────────────────────────
   private async runDerive(input: DeriveInput): Promise<void> {
     const p = this.plugins.find((x) => x.provides.includes('derive'));
@@ -685,7 +784,7 @@ export class WorkbookStore {
     let out: DerivedChange[];
     try { out = await p.derive(input, this.pluginContext()); } catch (e) { console.error(spMessage('SP-3012', `sheetpane: plugin "${p.id}" derive failed`), e); return; }
     if (load !== this.loadSeq) return; // a newer workbook replaced this one
-    const derived = new Map(input.kind === 'load' ? [] : this.snap.derived);
+    const derived = new Map(input.kind === 'load' || input.kind === 'restructure' ? [] : this.snap.derived); // a load or a restructure returns the whole set
     for (const d of out) {
       const k = key(d.sheet, d.ref);
       if (d.clear) derived.delete(k);
@@ -866,7 +965,8 @@ export class WorkbookStore {
       const outline = has('#outlineRows') || has('#outlineCols') ? { outline: { ...(has('#outlineRows') ? { rows: o.rows } : {}), ...(has('#outlineCols') ? { cols: o.cols } : {}) } } : {};
       return { sheet, ...(has('#hiddenRows') ? { rows: h.rows } : {}), ...(has('#hiddenCols') ? { cols: h.cols } : {}), ...(has('#sheetState') ? { state: h.state } : {}), ...outline };
     });
-    const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(freeze.length ? { freeze } : {}), ...(merges.length ? { merges } : {}), ...(hidden.length ? { hidden } : {}) });
+    const structure = this.structureOps(); // replayed on the upload first; everything below is in the sheet as it stands now
+    const bytes = await patchXlsx(src.bytes, this.exportChanges(), { exportPatch: hooks, ...(structure.length ? { structure } : {}), ...(freeze.length ? { freeze } : {}), ...(merges.length ? { merges } : {}), ...(hidden.length ? { hidden } : {}) });
     return { blob: new Blob([bytes as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), kind: 'xlsx', name: src.name, guarded: [], converted: false };
   }
 

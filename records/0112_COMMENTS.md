@@ -98,6 +98,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet).
+- **W-52 (2026-10-19):** notes and threads move with their cells in the
+  workbook the plugin reads (SR-IMPORT decision 11), and their `file` errors
+  keep their ids; a deleted row's note is resolved "row deleted". The file's
+  parts are moved by `patchXlsx` before this plugin extends them.
+  `structure.test.ts` checks it — no code here changed.
 - **Enforced today:** `just test-pkg comments` — 26 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`

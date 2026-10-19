@@ -10,7 +10,7 @@ export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change. */
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -42,7 +42,7 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'onsheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
   'onsheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change. */
   'onsheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;

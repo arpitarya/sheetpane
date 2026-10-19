@@ -5,7 +5,7 @@ description: "Split from W-13 on 2026-10-18 at Arpit's request: test @sheetpane/
 item: W-30
 filed: 2026-10-18
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
-updated: 2026-10-18
+updated: 2026-10-19
 updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: arpit
 ---
@@ -42,6 +42,7 @@ was W-13 DoD 9; W-13 closed without it.
 | 3 · tests | `read()` on each file: values, display text (dates, percent), merges, the formula's cached value, both sheets, **a frozen header row** (W-24 DoD 6), **a picture** whose frame sits where Excel shows it (W-20 DoD 6); **number formats** shown as Excel shows them (W-15 DoD 7); **validation rules** of every type (W-18 DoD 7); **cell styles** — every fill, font and border kind, property by property (W-17 DoD 8); **formulas** — IronCalc's value equals Excel's cached `<v>` for ≥ 99 % of formula cells (W-16 DoD 7); **comments** — notes, threads and both read back, and a file `@sheetpane/comments` wrote opened in Excel 365, Excel 2019 and LibreOffice with every error at its cell and no repair prompt (W-22 DoD 4, 6); **charts** of each type (bar, column, line, pie, scatter and one that stays a frame) at their anchors, drawn against their series (W-21 DoD 5); **conditional formats** of each drawn type, coloured as Excel colours them (W-19 DoD 6); **the saved files join `@sheetpane/fixtures`** with `appSaved` naming the app and version in `fixtures.json` (W-42 DoD 5); `<sheetpane-excel>` opens each (W-01 DoD 13); failures fixed in the owning package with its record in the same change | ⏳ |
 | 4 · trigger | misread cells counted across the fixtures and written into SR-IMPORT; over 1 in 100 reopens the reading verdict | ⏳ |
 | 5 · missing app | an app Arpit doesn't have is a backlog row, not a reason to keep this item open | ⏳ |
+| 6 · structure (W-52 DoD 6) | a workbook saved by Excel with every part W-52 moves — formulas on two sheets, a defined name, a frozen header, merges, an autofilter, validations, conditional formats, hyperlinks, a table, a picture and a chart, a note and a threaded comment, hidden and grouped rows — has rows and columns inserted and deleted in `<sheetpane-excel>` (Edit), is downloaded, and opens in Excel with no repair prompt and every part where it belongs | ⏳ Arpit |
 
 ## Blockers
 

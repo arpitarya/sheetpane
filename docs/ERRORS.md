@@ -67,6 +67,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-2012](#sp-2012) | Damaged archive | error |
 | [SP-2013](#sp-2013) | Archive over the size limit | error |
 | [SP-2014](#sp-2014) | Not a workbook package | error |
+| [SP-2015](#sp-2015) | Insert or delete refused | error |
 | [SP-2101](#sp-2101) | download() needs a file name | error |
 | [SP-2102](#sp-2102) | Only .xlsx or .csv can be saved | error |
 | [SP-2103](#sp-2103) | File type cannot be told | error |
@@ -90,6 +91,10 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
 | [SP-3016](#sp-3016) | Cell to open at not found | warning |
+| [SP-3017](#sp-3017) | Delete would split a merged range | warning |
+| [SP-3018](#sp-3018) | Insert or delete would move a pivot table | warning |
+| [SP-3019](#sp-3019) | Insert would push cells off the sheet | warning |
+| [SP-3020](#sp-3020) | Insert or delete would cut a table | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -320,6 +325,14 @@ plain `Error`s or `TypeError`s.
 - **Likely cause:** the upload was not an `.xlsx`, or the wrong bytes were passed.
 - **Fix:** pass the original workbook's bytes.
 
+### SP-2015
+
+**Insert or delete refused** · error · [SR-EXPORT](../records/0103_EXPORT.md) decision 11 · `code: 'bad-structure'`
+
+- **Meaning:** `patchXlsx`'s `structure` option would have to move something it does not rewrite — a pivot table or its source range — or cut something Excel keeps whole: an array formula, a data table, or a table (all of it, its header or totals row, every data row, or columns inserted inside it). Nothing is written; the file is left as it was. Also thrown for an operation that is not an insert or delete of whole rows or columns.
+- **Likely cause:** the grid's store refuses these first (SP-3017 to SP-3020); a host calling `patchXlsx` directly, or a table the store could not see, reaches this.
+- **Fix:** insert or delete elsewhere — below a pivot's source, outside the table — or change the pivot or the table in Excel first.
+
 ### SP-2101
 
 **download() needs a file name** · error · [SR-DOWNLOAD](../records/0101_DOWNLOAD.md) · `TypeError`
@@ -509,6 +522,38 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
 - **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
 - **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
+
+### SP-3017
+
+**Delete would split a merged range** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** deleting these rows or columns would remove part of a merged range but not all of it; nothing is deleted. The menu item is greyed with this reason; `insertRows` and the other store methods return `false`.
+- **Likely cause:** the selection crosses a merged block (a title row, a merged label).
+- **Fix:** unmerge the range first, or delete every row (column) of it.
+
+### SP-3018
+
+**Insert or delete would move a pivot table** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** the operation would move a pivot table on this sheet, or the worksheet range a pivot table summarises; sheetpane does not rewrite pivots, so nothing changes.
+- **Likely cause:** rows or columns inserted or deleted above, left of, or inside a pivot table or its source.
+- **Fix:** insert or delete below and right of them, or change the pivot in Excel.
+
+### SP-3019
+
+**Insert would push cells off the sheet** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** the sheet already uses its last row (1,048,576) or column (XFD) — inserting would push those cells off the end; nothing is inserted, as Excel refuses.
+- **Likely cause:** a value or formula at the sheet's edge.
+- **Fix:** clear the cells at the edge first.
+
+### SP-3020
+
+**Insert or delete would cut a table** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** an Excel table cannot follow the operation — it would delete all of the table, its header or totals row, or every data row, or insert columns inside it; nothing changes.
+- **Likely cause:** whole rows or columns selected across a table's edge.
+- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. Raised once the reader reads tables (W-61); until then a download that would cut a table is refused with SP-2015.
 
 ---
 

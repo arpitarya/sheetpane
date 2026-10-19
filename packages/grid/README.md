@@ -232,7 +232,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value}` | keep the cell read-only |
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
-| `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
+| `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` (an insert or delete: `kind: 'structure'`, `op`, `at`, `count`) | — |
 | `sheetpane-editcancel` | Esc, or a column rule set to `block` refused the value | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', message}`) | — |
 | `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
 
@@ -269,6 +269,23 @@ them with the `sizes` property and the `sheetpane-resize` event:
 ```js
 excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
 excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
+**Inserting and deleting rows and columns (Edit):** the cell menu and the ⋯ menu offer *Insert row above /
+below*, *Insert column left / right*, *Delete row* and *Delete column* (with counts for a range); a header
+menu offers its axis's three. Ctrl/⌘+Shift+= inserts rows above (columns left when whole columns are
+selected); Ctrl/⌘+− deletes whole rows or columns. Everything that points at a cell moves — values, edits,
+errors, formulas on every sheet (`#REF!` for a deleted target), merges, validations, conditional formats,
+notes, pictures and charts, hidden and grouped rows, freeze, sizes — and the download carries it. Each is one
+undo step and one `sheetpane-change` with `kind: 'structure'`, `op`, `at` (0-based) and `count`. What Excel
+refuses is refused, greyed with its reason: a delete that splits a merged range (`SP-3017`), anything that
+would move a pivot table or its source (`SP-3018`), cells pushed off the sheet (`SP-3019`), a table cut
+(`SP-3020`). A host drives the same through the store:
+
+```js
+const book = excel.workbook;
+if (!book.structureRefusal({ sheet: 'Spec', op: 'insertRows', at: 4, count: 1 })) book.insertRows('Spec', 4); // above row 5
+book.deleteCols('Spec', 2, 2); // C and D
 ```
 
 **Pointing at cells from outside (W-56):** `sheetpane-hover` names the cell under a mouse or pen pointer —

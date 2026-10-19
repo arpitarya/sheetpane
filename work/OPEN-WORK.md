@@ -34,8 +34,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-51** `agent` · **G1** · Review layers: several sets of errors in one pane, switched without losing any. Filed by Arpit (Cowork). [detail](open/W-51-review-layers.md)
 
-- 🟢 **W-52** `agent` · **G1** · Insert and delete rows and columns in Edit, with every reference shifted. Filed by Arpit (Cowork). [detail](open/W-52-insert-delete-rows-columns.md)
-
 - 🟢 **W-53** `agent` · **G1** · Rich text: keep a cell's formatted runs (one word in italic) on import and draw them. Filed by Arpit (Cowork). [detail](open/W-53-rich-text-runs.md)
 
 - 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
