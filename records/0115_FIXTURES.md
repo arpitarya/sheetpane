@@ -63,7 +63,12 @@ helpers to become one package any runner can load (W-32 made the showcase).
    row — and a list rule over `Units[Unit]` through the defined name
    `UnitList`), `showcase.rules.json`, `dependent-lists.xlsx` (W-60:
    Readings' Unit list is `=INDIRECT($A2)` over one defined name per
-   parameter on Lists; one stale unit, `Readings!C6`), `edge/` (empty,
+   parameter on Lists; one stale unit, `Readings!C6`), `protected.xlsx`
+   (W-62: Spec and Lists protected with the password `sheetpane`, stored as
+   Excel's legacy hash `CC7D`; Spec's Value, Unit and Description columns
+   unlocked — their cells and their `<col style>`, so empty rows below stay
+   open — Parameter and the header locked, Limit a hidden formula; Notes not
+   protected; the structure locked, Archive hidden), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
    guard), `compare/` (W-63: `base.xlsx` and `now.xlsx`, two versions of one
@@ -82,7 +87,11 @@ helpers to become one package any runner can load (W-32 made the showcase).
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
    rules-file test; `@sheetpane/testing` (W-41) loads from here;
-   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60).
+   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60);
+   the grid's, the formulas plugin's and `@sheetpane/visibility`'s
+   protection tests read `protected.xlsx` (W-62). `book()` in `make.mjs`
+   takes its own `styles`, a `workbookProtection` element and per-column
+   formats (`colStyle`); every other file is unchanged byte for byte.
 6. **The parity pair (W-54):** `test/parity.ts` names the cases — every
    manifest file (the refused two by their code) and `hugeCsv(20000)` — and
    the pane's settings for each (the rules sample, element `columns`, an

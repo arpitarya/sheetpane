@@ -23,6 +23,26 @@ metadata:
   ([SR-EXPORT](https://github.com/arpitarya/sheetpane/blob/main/records/0103_EXPORT.md)) — sheetpane does not sanitise what it
   did not change.
 
+## Protected sheets
+
+A file's protection is honoured in Edit, with no plugin
+([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) decision 21e):
+
+- On a protected sheet, a locked cell (Excel's default) refuses typing, paste
+  and Delete — `sheetpane-editcancel` with `reason: 'locked'` and SP-3026,
+  *Locked in the file*; its unlocked cells edit as usual. A formula marked
+  hidden shows its value only.
+- A protected workbook structure keeps its sheets: hide and unhide are
+  disabled with the reason. Ask `store.structureLocked()` before a
+  structural edit of your own.
+- sheetpane **never reads, checks or removes a protection password** — it
+  knows only that one is stored (`hasPassword`). Protection in a file is a
+  guard against accidents, not access control: anyone with the file can
+  remove it in Excel.
+- `protection="ignore"` on `<sheetpane-excel>` sets the file's protection
+  aside for the pane. That is the host's decision and the host's to justify;
+  the download still carries the file's protection unchanged.
+
 ## CSV formula injection
 
 Exported CSV cells starting with `=`, `+`, `-` or `@` are guarded so a

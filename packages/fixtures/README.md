@@ -16,6 +16,7 @@ info('showcase.rules.json').errors;                        // the cells the rule
 | `showcase.xlsx` | one sheet per plugin: Numbers, Styles, Formulas, Validation, CondFmt, Images, Charts, Comments |
 | `showcase.rules.json` | a rules file (SR-GRID 22d) that fails six cells of the showcase |
 | `dependent-lists.xlsx` | dependent dropdowns: a Unit list `=INDIRECT($A2)` over one defined name per parameter; one stale unit (`Readings!C6`) |
+| `protected.xlsx` | sheet protection (password `sheetpane`): Spec's Value, Unit and Description open, Parameter locked, Limit a hidden formula; Lists locked; Notes open; the structure locked, Archive hidden |
 | `edge/*.xlsx` | an empty sheet, a hidden sheet, non-ASCII names, a merged range, the 1904 date system, cached formula errors |
 | `edge/legacy.xls`, `edge/not-a-zip.xlsx` | files sheetpane refuses (SR-LAW-3) |
 | `csv/*.csv` | comma, semicolon, tab, BOM, quoted fields with newlines, cells the formula guard escapes |

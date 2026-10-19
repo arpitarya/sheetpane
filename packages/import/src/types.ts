@@ -3,8 +3,62 @@
 // (W-13 DoD 3, 4, 12; plugins verdict Consequences).
 import type { Alignment, Border, BorderSide, Cell, CfRule, Cfvo, Color, ConditionalFormat, DataValidation, Dxf, Fill, Font, Sheet, SheetState } from '@sheetpane/export';
 
+/**
+ * A cell format's `<protection>` (W-62): what it does once its sheet is protected. Excel's default, when an `<xf>`
+ * has no `<protection>`, is `{ locked: true, hidden: false }` — every cell is locked until someone unlocks it.
+ */
+export interface CellProtection {
+  /** `locked` (default `true`): a protected sheet refuses edits to the cell. */
+  locked: boolean;
+  /** `hidden` (default `false`): a protected sheet shows the cell's value, never its formula. */
+  hidden: boolean;
+}
+
 /** One cell format (`<xf>` of `cellXfs`); a cell's `s` indexes these. */
-export interface CellXf { numFmtId: number; fontId: number; fillId: number; borderId: number; alignment?: Alignment; applyNumberFormat?: boolean; applyFont?: boolean; applyFill?: boolean; applyBorder?: boolean; applyAlignment?: boolean }
+export interface CellXf {
+  numFmtId: number; fontId: number; fillId: number; borderId: number; alignment?: Alignment;
+  /** The `<protection>` child (W-62); absent when the format has none, which means locked and not hidden. */
+  protection?: CellProtection;
+  applyNumberFormat?: boolean; applyFont?: boolean; applyFill?: boolean; applyBorder?: boolean; applyAlignment?: boolean; applyProtection?: boolean;
+}
+
+/**
+ * A protected sheet's `<sheetProtection>` (W-62), present only while `sheet="1"`. Each switch is as the file stores
+ * it: **`true` means the action is refused while the sheet is protected**, `false` that the file allows it. The
+ * defaults are the schema's: `objects`, `scenarios`, `selectLockedCells` and `selectUnlockedCells` `false`, every
+ * other switch `true`. The password is never read — only whether one is stored (sheetpane never checks or removes it).
+ */
+export interface SheetProtection {
+  objects: boolean;
+  scenarios: boolean;
+  formatCells: boolean;
+  formatColumns: boolean;
+  formatRows: boolean;
+  insertColumns: boolean;
+  insertRows: boolean;
+  insertHyperlinks: boolean;
+  deleteColumns: boolean;
+  deleteRows: boolean;
+  selectLockedCells: boolean;
+  selectUnlockedCells: boolean;
+  sort: boolean;
+  autoFilter: boolean;
+  pivotTables: boolean;
+  /** Whether the file stores a password hash (`password` or `hashValue`) — never the hash itself. */
+  hasPassword: boolean;
+}
+
+/**
+ * The workbook's `<workbookProtection>` (W-62), present when the file has one. `lockStructure`: sheets may not be
+ * added, removed, renamed, moved, hidden or unhidden; `lockWindows`: the window layout is fixed. The password is
+ * never read — only whether one is stored.
+ */
+export interface WorkbookProtection {
+  lockStructure: boolean;
+  lockWindows: boolean;
+  /** Whether the file stores a password hash (`workbookPassword` or `workbookHashValue`) — never the hash itself. */
+  hasPassword: boolean;
+}
 
 /** `xl/styles.xml`, parsed. */
 export interface StyleTables {
@@ -189,6 +243,15 @@ export interface ImportedSheet extends Sheet {
   pivotTables: PivotTable[];
   /** The sheet's Excel tables, in `<tableParts>` order (W-61); `[]` for CSV. */
   tables: Table[];
+  /**
+   * Each row's own format (`<row s customFormat="1">`), sparse, index 0 = row 1 (W-62): the format an empty cell of
+   * the row takes. `[]` for CSV.
+   */
+  rowStyles: (number | undefined)[];
+  /** Each column's own format (`<col style>`), sparse, index 0 = column A, spans expanded (W-62). `[]` for CSV. */
+  colStyles: (number | undefined)[];
+  /** The sheet's protection (`<sheetProtection sheet="1">`, W-62); absent when the sheet is not protected, and for CSV. */
+  protection?: SheetProtection;
 }
 
 /** What `read`, `fromXlsx` and `fromCsv` return: the sheets plus the workbook-wide tables. */
@@ -207,6 +270,8 @@ export interface ImportedWorkbook {
   delimiter?: ',' | ';' | '\t';
   /** The SHA-256 of the bytes `read()` was given, 64 lowercase hex digits (W-65). Absent from `fromXlsx` / `fromCsv`, and where Web Crypto is missing (SP-1009). */
   sha256?: string;
+  /** The workbook's protection (`<workbookProtection>`, W-62); absent when the file has none, and for CSV. */
+  workbookProtection?: WorkbookProtection;
   /** Reads any part of the package (media, chart XML) without re-walking the ZIP. Resolves undefined for CSV. */
   part(path: string): Promise<Uint8Array | undefined>;
 }

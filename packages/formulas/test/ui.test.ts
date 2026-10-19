@@ -5,6 +5,7 @@ import type { SheetpaneExcel } from '@sheetpane/grid';
 import '../src/ui.js';
 import { selectionStats } from '../src/ui.js';
 import { book, until } from './helpers.js';
+import protectedXlsx from '../../fixtures/files/protected.xlsx?inline';
 
 const holdings = () => book({
   Holdings: [
@@ -64,6 +65,28 @@ describe('formulas/ui in the grid', () => {
     store.revert('Holdings', 'D6');
     await until(() => !store.getSnapshot().derived.has('Holdings!D6'));
     expect(store.text('Holdings', 'D6')).toBe('387737.5');
+  });
+
+  it('a hidden formula on a protected sheet (W-62): no fx, its value in the cell bar, no reference outlines', async () => {
+    const el = document.createElement('sheetpane-excel') as SheetpaneExcel;
+    el.style.height = '600px';
+    el.setAttribute('plugins', 'formulas');
+    document.body.append(el);
+    await el.load(Uint8Array.from(atob(protectedXlsx.slice(protectedXlsx.indexOf(',') + 1)), (c) => c.charCodeAt(0)), 'protected.xlsx');
+    const store = el.workbook!;
+    store.select({ sheet: 'Spec', ref: 'E2' });
+    await frame();
+    expect(fxButton(el)).toBeNull();
+    expect(store.input('Spec', 'E2')).toBe('3.3');
+    el.mode = 'edit';
+    await frame();
+    expect(root(el).querySelector('[data-sp=locked]')!.hasAttribute('hidden')).toBe(false);
+    expect([...root(el).querySelectorAll('.overlay .olay')].map((o) => o.textContent).filter(Boolean)).toEqual([]);
+    el.setAttribute('protection', 'ignore');
+    el.mode = 'view';
+    store.select({ sheet: 'Spec', ref: 'E2' });
+    await frame();
+    expect(fxButton(el)?.textContent).toBe('fx =B2*1.1');
   });
 
   it('status: Sum · Avg · Count of the selection', async () => {

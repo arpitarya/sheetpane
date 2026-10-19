@@ -84,6 +84,7 @@ const TABLE = {
   'SP-3023': { title: 'Insert or delete would move a pivot table', severity: 'warning' },
   'SP-3024': { title: 'Insert would push cells off the sheet', severity: 'warning' },
   'SP-3025': { title: 'Insert or delete would cut a table', severity: 'warning' },
+  'SP-3026': { title: 'Locked in the file', severity: 'warning' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

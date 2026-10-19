@@ -131,6 +131,52 @@ export const MANIFEST = {
       ]
     },
     {
+      "name": "protected.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Spec",
+          "hidden": false,
+          "headers": [
+            "Parameter",
+            "Value",
+            "Unit",
+            "Description",
+            "Limit"
+          ]
+        },
+        {
+          "name": "Lists",
+          "hidden": false,
+          "headers": [
+            "Unit",
+            "Meaning"
+          ]
+        },
+        {
+          "name": "Notes",
+          "hidden": false,
+          "headers": [
+            "Note"
+          ]
+        },
+        {
+          "name": "Archive",
+          "hidden": true,
+          "headers": [
+            "Old limits"
+          ]
+        }
+      ],
+      "features": [
+        "sheet protection with a password (`sheetpane`, Excel’s legacy hash): Spec’s Value, Unit and Description unlocked (cells and columns), Parameter and the header locked (W-62)",
+        "Spec’s Limit a hidden formula",
+        "Lists protected, every cell locked; Notes not protected",
+        "the workbook structure locked; Archive hidden"
+      ]
+    },
+    {
       "name": "edge/empty.xlsx",
       "kind": "xlsx",
       "appSaved": null,

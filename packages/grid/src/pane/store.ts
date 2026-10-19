@@ -3,12 +3,13 @@
 // Every mutation goes through commit(): undo (W-23), derive and validate
 // (W-14), "matches suggestion" (B-022) and one notification.
 import { cellRef, detailOf, inverseOp, isRowOp, parseRange, parseRef, patchXlsx, rangesIntersect, spError, spMessage, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook, type SpCode, type StructureOp, type StructureOpName } from '@sheetpane/export';
-import { formatCode, general, ImportError, read, restructureWorkbook, sha256, subsetCode, type ImportedSheet, type ImportedWorkbook, type TextRun } from '@sheetpane/import';
+import { formatCode, general, ImportError, read, restructureWorkbook, sha256, subsetCode, type ImportedSheet, type ImportedWorkbook, type SheetProtection, type TextRun } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import { STYLE_PROPS, type CellContext, type DeriveInput, type DerivedChange, type ErrorDraft, type Plugin, type PluginContext, type RunStyle, type StyleSubset } from '../plugins/types.js';
+import { formulaHiddenIn, lockedIn, protectionModeOf, sheetProtectionIn, structureLockedIn } from './protection.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
 import { DEFAULT_LAYER, ERROR_META_MAX, RESULTS_LEVELS, SEVERITY_ORDER, copyError, isLayerName, isResult, layerOf, machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, Edit, EditEffects, ErrorMeta, ErrorsEnvelope, LoadState, Mode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, Edit, EditEffects, ErrorMeta, ErrorsEnvelope, LoadState, Mode, ProtectionMode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 import { STRUCTURE_REF, shiftChanges, shiftComposing, shiftDerived, shiftErrors, shiftPluginErrors, shiftSelection, structureRefusal, type StructureRefusal } from './structure.js';
 
 /** What {@link createWorkbook} takes. */
@@ -264,7 +265,7 @@ export class WorkbookStore {
       load: { status: 'empty' }, source: undefined, book: undefined,
       changes: new Map(), derived: new Map(), errors: [], layers: [], visibleLayers: [], visibleErrors: [],
       selection: { sheet: '', ref: 'A1' }, mode: 'view', composing: null,
-      canUndo: false, canRedo: false, version: 0,
+      canUndo: false, canRedo: false, protection: 'honour', version: 0,
     };
   }
 
@@ -368,7 +369,8 @@ export class WorkbookStore {
   }
   /** What the cell bar edits: the formula when a `derive` provider (a formula engine) is installed, else the raw value. */
   input(sheet: string, ref: string): string {
-    const f = this.plugins.some((x) => x.provides.includes('derive')) ? this.formula(sheet, ref) : undefined;
+    // a hidden formula on a protected sheet shows its value only (W-62)
+    const f = this.plugins.some((x) => x.provides.includes('derive')) && !this.isFormulaHidden(sheet, ref) ? this.formula(sheet, ref) : undefined;
     if (f !== undefined) return f;
     const v = this.value(sheet, ref);
     return v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : String(v);
@@ -548,6 +550,7 @@ export class WorkbookStore {
     const p = parseRef(ref);
     if (!book || !p || !this.sheet(sheet)) return undefined;
     const a1 = cellRef(p.row, p.col);
+    if (this.isLocked(sheet, a1)) return undefined; // W-62: a locked cell of a protected sheet refuses every write
     const orig = this.original(sheet, a1);
     const now: Cell = typeof input === 'string' && o.parse !== false ? parseInput(input, orig.value, book.source) : (input as Cell);
     const k = key(sheet, a1);
@@ -790,7 +793,7 @@ export class WorkbookStore {
    */
   setSheetState(sheet: string, state: SheetState, origin?: Origin): boolean {
     const s = this.sheet(sheet), book = this.snap.book;
-    if (!s || !book) return false;
+    if (!s || !book || this.structureLocked()) return false; // W-62: a protected structure keeps its sheets as they are
     if (state !== 'visible' && !book.sheets.some((x) => x.name !== sheet && this.hidden(x.name).state === 'visible')) return false;
     this.setChange(sheet, '#sheetState', 'sheetState', state, sheetStateOf(s), origin);
     return true;
@@ -915,7 +918,7 @@ export class WorkbookStore {
     const keys: string[] = [];
     const events: StoreEvent[] = [{ type: 'errors', origin }];
     const r = parseRange(d.range);
-    if (d.cellChanged && r && e.expected !== '') {
+    if (d.cellChanged && r && e.expected !== '' && !this.isLocked(d.sheet, cellRef(r.top, r.left))) { // W-62: a locked cell is not written
       const ref = cellRef(r.top, r.left), k = key(d.sheet, ref), orig = this.original(d.sheet, ref);
       const now = parseInput(e.expected, orig.value, this.snap.book?.source ?? 'xlsx');
       const m = new Map(changes);
@@ -1431,6 +1434,44 @@ export class WorkbookStore {
   get ruleProgress(): { done: number; total: number } | undefined { return this.rules.progress; }
   /** Whether a rules file (W-33) is in force for this pane. */
   get hasRulesDocument(): boolean { return this.rules.hasDocument; }
+
+  // ── protection (W-62, SR-GRID decision 21e): what the file locks, kept unless the host rules otherwise ──
+  /** `honour` (the default) keeps the file's sheet and workbook protection; `ignore` is the host's decision. */
+  get protection(): ProtectionMode { return this.snap.protection; }
+  /**
+   * Keeps (`honour`) or sets aside (`ignore`) the file's protection for this pane — a view setting, never a change or
+   * an undo step. The `protection` attribute of `<sheetpane-excel>` sets it.
+   * @param mode - `honour` or `ignore`; anything else is `honour`.
+   */
+  setProtection(mode: ProtectionMode): void { const m = protectionModeOf(mode); if (m !== this.snap.protection) this.set({ protection: m }); }
+  /**
+   * A sheet's protection while it is honoured: the file's switches (`true` = refused while protected) and whether a
+   * password is stored — never the password.
+   * @param sheet - The sheet's name.
+   * @returns The switches, or undefined when the sheet is not protected or protection is ignored.
+   */
+  sheetProtection(sheet: string): SheetProtection | undefined { return sheetProtectionIn(this.snap, sheet); }
+  /**
+   * Whether a cell refuses edits: a protected sheet, and the cell's format locked (Excel's default). `setCell`,
+   * `setCells` and an error's "Also change the cell" leave it as it is.
+   * @param sheet - The sheet's name.
+   * @param ref - The cell, `A1`.
+   * @returns True when the cell is locked.
+   */
+  isLocked(sheet: string, ref: string): boolean { return lockedIn(this.snap, sheet, ref); }
+  /**
+   * Whether a cell's formula is hidden: a protected sheet, and the cell's format `hidden`. It shows its value only.
+   * @param sheet - The sheet's name.
+   * @param ref - The cell, `A1`.
+   * @returns True when the formula is not shown.
+   */
+  isFormulaHidden(sheet: string, ref: string): boolean { return formulaHiddenIn(this.snap, sheet, ref); }
+  /**
+   * Whether the workbook's structure is protected (`lockStructure`, honoured): hiding or unhiding a sheet is
+   * refused, and inserting or deleting rows and columns. The one predicate a structural control asks.
+   * @returns True while structural edits are refused.
+   */
+  structureLocked(): boolean { return structureLockedIn(this.snap); }
 
   // ── flagging (W-33): `off` leaves the errors panel as the one place errors are read ──
   private flaggingOn = true;

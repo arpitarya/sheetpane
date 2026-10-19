@@ -100,7 +100,9 @@ W-16 asked for recalculation on the plugins verdict's single-provider
    the selection, `⟳ N cells recalculated`, circular references; `cell`
    marks ⟳ (recalculated), ↻ (cycle), ≈ (unsupported); `overlay` — coloured,
    labelled outlines of the referenced ranges while a formula is edited
-   (drawn as four edges, so cells stay clickable).
+   (drawn as four edges, so cells stay clickable). A hidden formula on a
+   protected sheet (W-62, SR-GRID 21e — `formulaHiddenIn`) shows no `fx` and
+   no outlines; its value only.
 8. **`evaluate(formula, { sheet, ref })`** returns one formula's value
    synchronously, through a scratch cell (the sheet's last cell) set,
    evaluated, read and cleared — the workbook is never touched. It serves

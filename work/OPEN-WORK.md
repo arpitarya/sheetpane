@@ -30,8 +30,6 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-62** `agent` · **G2** · Locked cells and sheet protection honoured in Edit. Filed by Arpit (Cowork). [detail](open/W-62-locked-cells-and-protection.md)
-
 - 🟢 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
 
 ### testing

@@ -70,3 +70,29 @@ export function tablesPkg(): Uint8Array {
     },
   );
 }
+
+/**
+ * W-62: a protected workbook — Spec protected with a password (formatting columns allowed), its column B and row 5
+ * unlocked by their own formats, C2 a hidden formula; Open not protected; Off with `sheet="0"`; the structure locked.
+ * `CC3D` stands in for a password hash: it is never read, only noticed.
+ */
+export function protectedPkg(): Uint8Array {
+  const rel = (n: number) => `<Relationship Id="rId${n}" Type="${R}/worksheet" Target="worksheets/sheet${n}.xml"/>`;
+  const plain = (rows: string, tail = '') => `<worksheet xmlns="${NS}"><sheetData>${rows}</sheetData>${tail}</worksheet>`;
+  return pkg(
+    `<worksheet xmlns="${NS}"><cols><col min="2" max="2" width="12" style="1" customWidth="1"/></cols><sheetData>`
+      + '<row r="1"><c r="A1" t="inlineStr"><is><t>Parameter</t></is></c><c r="B1" t="inlineStr"><is><t>Value</t></is></c><c r="C1" t="inlineStr"><is><t>Limit</t></is></c></row>'
+      + '<row r="2"><c r="A2" t="inlineStr"><is><t>Lead</t></is></c><c r="B2" s="1"><v>3</v></c><c r="C2" s="2"><f>B2*2</f><v>6</v></c><c r="D2" s="3"><v>1</v></c></row>'
+      + '<row r="5" s="1" customFormat="1"/><row r="6" s="1"/>'
+      + '</sheetData><sheetProtection password="CC3D" sheet="1" objects="1" scenarios="1" formatColumns="0"/></worksheet>',
+    {
+      'xl/workbook.xml': `<workbook xmlns="${NS}" xmlns:r="${R}"><workbookProtection workbookPassword="CC3D" lockStructure="1"/><sheets><sheet name="Spec" sheetId="1" r:id="rId1"/><sheet name="Open" sheetId="2" r:id="rId2"/><sheet name="Off" sheetId="3" r:id="rId3"/></sheets></workbook>`,
+      'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${PR}">${[1, 2, 3].map(rel).join('')}<Relationship Id="rId9" Type="${R}/styles" Target="styles.xml"/></Relationships>`,
+      'xl/styles.xml': `<styleSheet xmlns="${NS}"><fonts count="1"><font><sz val="11"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders>`
+        + '<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyProtection="1"><protection locked="0"/></xf>'
+        + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyProtection="1"><protection hidden="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyProtection="1"><protection locked="0" hidden="1"/></xf></cellXfs></styleSheet>',
+      'xl/worksheets/sheet2.xml': plain('<row r="1"><c r="A1"><v>2</v></c></row>'),
+      'xl/worksheets/sheet3.xml': plain('<row r="1"><c r="A1"><v>3</v></c></row>', `<sheetProtection sheet="0" hashValue="x" algorithmName="SHA-512"/>`),
+    },
+  );
+}

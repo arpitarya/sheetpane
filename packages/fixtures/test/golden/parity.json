@@ -332,6 +332,122 @@
       }
     ]
   },
+  "protected.xlsx": {
+    "errors": [
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Account",
+        "expected": "",
+        "message": "No column is titled “Account” — its rule is not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6023"
+      },
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Date",
+        "expected": "",
+        "message": "No column is titled “Date” — its rule is not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6023"
+      },
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Größe",
+        "expected": "",
+        "message": "No column is titled “Größe” — its rule is not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6023"
+      },
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Price",
+        "expected": "",
+        "message": "No column is titled “Price” — its rule is not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6023"
+      },
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Formulas",
+        "expected": "",
+        "message": "No sheet is named “Formulas” — its rules are not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6022"
+      },
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Numbers",
+        "expected": "",
+        "message": "No sheet is named “Numbers” — its rules are not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6022"
+      },
+      {
+        "v": 1,
+        "sheet": "Spec",
+        "range": "A1",
+        "type": "column-rule",
+        "severity": "note",
+        "found": "Validation",
+        "expected": "",
+        "message": "No sheet is named “Validation” — its rules are not checked",
+        "cellChanged": false,
+        "status": "open",
+        "matchesExpected": false,
+        "author": "host",
+        "layer": "review",
+        "code": "SP-6022"
+      }
+    ]
+  },
   "edge/empty.xlsx": {
     "errors": [
       {

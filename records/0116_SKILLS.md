@@ -152,6 +152,11 @@ flowchart LR
 - **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
   cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
   check (decision 5) reads them against the element's source.
+- **Taught since W-62 (2026-10-19):** `sheetpane-security` covers protected
+  sheets — locked cells refused with SP-3026, hidden formulas, the structure
+  lock, `protection="ignore"` as the host's decision, and that a password is
+  never read or removed; `sheetpane-events` lists `reason: 'locked'` on
+  `sheetpane-editcancel`.
 - **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,
   `link="hash"` and *Copy link*, and that React, Vue and Solid set `ref`
   with `setAttribute` (their own `ref` is the framework's).

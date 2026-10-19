@@ -22,7 +22,7 @@ attribute (default 1).
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
-| `sheetpane-editcancel` | Esc, or a rule set to `block` refused the value | `{sheet, ref}` (blocked: `reason`, `message`, `code`) | — |
+| `sheetpane-editcancel` | Esc; a rule set to `block` refused the value; or the cell is locked on a protected sheet | `{sheet, ref}` (blocked or locked: `reason`, `message`, `code` — `SP-6003` / `SP-3026`) | — |
 | `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
 
 A refused value never reaches the change map, undo, a plugin or the error

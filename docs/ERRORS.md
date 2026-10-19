@@ -102,6 +102,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3023](#sp-3023) | Insert or delete would move a pivot table | warning |
 | [SP-3024](#sp-3024) | Insert would push cells off the sheet | warning |
 | [SP-3025](#sp-3025) | Insert or delete would cut a table | warning |
+| [SP-3026](#sp-3026) | Locked in the file | warning |
 | [SP-5001](#sp-5001) | Review sheet not written | error |
 | [SP-5002](#sp-5002) | Flagged cells not coloured on a sheet | error |
 | [SP-5003](#sp-5003) | Range too large to colour whole | note |
@@ -631,6 +632,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** an Excel table cannot follow the operation — it would delete all of the table, its header or totals row, or every data row, or insert columns inside it; nothing changes.
 - **Likely cause:** whole rows or columns selected across a table's edge.
 - **Fix:** delete body rows or whole columns of the table, or change the table in Excel. The tables are the ones `@sheetpane/import` reads (W-61); a host calling `restructureWorkbook` or `patchXlsx` directly meets SP-2016 instead.
+
+### SP-3026
+
+**Locked in the file** · warning · [SR-GRID](../records/0105_GRID.md) decision 21e
+
+- **Meaning:** an edit — typing, paste, Delete — was refused because the cell is locked on a protected sheet. `sheetpane-editcancel` carries `{ reason: 'locked', code: 'SP-3026', message: 'Locked in the file' }` and nothing is stored.
+- **Likely cause:** the file's sheet is protected (Excel: Review › Protect Sheet) and the cell's format is *Locked* — Excel's default for every cell until it is unlocked.
+- **Fix:** edit the cells the file leaves unlocked; or unlock the cells (Format Cells › Protection) or unprotect the sheet in Excel and open the file again. A host that rules otherwise sets `protection="ignore"` on `<sheetpane-excel>` — its own decision. sheetpane never checks or removes a protection password.
 
 ---
 

@@ -120,6 +120,10 @@ flowchart LR
   cut) (SR-EXPORT decision 11, SR-GRID decision 21d). Issued as SP-2015 and
   SP-3017 – SP-3020 in its lane; renumbered at the merge, as W-57, W-68,
   W-69, W-66 and W-54 had taken them; appended to the lock after SP-5005.
+- **W-62** added SP-3026 (warning, *Locked in the file*): an edit refused on a
+  locked cell of a protected sheet, carried by `sheetpane-editcancel`
+  `{ reason: 'locked', code: 'SP-3026' }` (SR-GRID decision 21e). Appended
+  to the lock after SP-3019.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

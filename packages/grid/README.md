@@ -211,6 +211,7 @@ committed manifest drifts from the elements.
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
 | attribute / property | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide; see [Results](#results-passed-and-not-checked) |
+| attribute / property | `protection` | `honour` (default) or `ignore` — whether a protected sheet's locked cells refuse edits, pane-wide; see [Protected sheets](#protected-sheets) |
 | property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
@@ -236,7 +237,7 @@ every payload names the column `{ index, letter, header }` (the title from
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
 | `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` (an insert or delete: `kind: 'structure'`, `op`, `at`, `count`) | — |
-| `sheetpane-editcancel` | Esc, or a column rule set to `block` refused the value | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', message}`) | — |
+| `sheetpane-editcancel` | Esc, a column rule set to `block` refused the value, or the cell is locked on a protected sheet | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', code: 'SP-6003', message}`; locked: `{sheet, ref, reason: 'locked', code: 'SP-3026', message: 'Locked in the file'}`) | — |
 | `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
 
 A refused value never reaches the change map, undo or a plugin.
@@ -605,6 +606,32 @@ errors.setErrors([
     found: '0.35%', expected: '', cellChanged: false, status: 'open', matchesExpected: false, author: 'host', createdAt: new Date().toISOString() },
 ]);
 ```
+
+## Protected sheets
+
+What a file protects stays protected in Edit, with no plugin. On a protected
+sheet (Excel: Review › Protect Sheet) a locked cell — every cell is locked
+until someone unlocks it — shows its value and *🔒 Locked in the file* in the
+cell bar; typing, paste and Delete there are refused with
+`sheetpane-editcancel` `{ reason: 'locked', code: 'SP-3026' }`, before
+`sheetpane-beforechange`. Unlocked cells edit as usual, and a paste or a
+range Delete writes those only, saying how many locked cells it left. A
+formula marked *Hidden* shows its value, never its formula. A workbook whose
+structure is protected keeps its sheets: Hide and Unhide sheet are disabled
+with the reason.
+
+```js
+const wb = excel.workbook;
+wb.isLocked('Spec', 'A2');        // true: a locked cell on a protected sheet
+wb.isFormulaHidden('Spec', 'E2'); // true: shows its value only
+wb.structureLocked();             // true: <workbookProtection lockStructure="1">
+wb.sheetProtection('Spec');       // { formatCells: true, …, hasPassword: true } — never the password
+```
+
+sheetpane never reads, checks or removes a protection password, and the
+download carries the file's protection exactly as it was. `protection="ignore"`
+sets it aside for the pane — **the host's decision**: a host that lets people
+edit what the file locks owns that choice.
 
 ## Plugins
 

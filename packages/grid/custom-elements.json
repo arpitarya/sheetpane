@@ -146,6 +146,15 @@
                 "text": "string"
               },
               "fieldName": "layers"
+            },
+            {
+              "name": "protection",
+              "description": "`honour` (the default) or `ignore`: whether a protected sheet's locked cells refuse edits and a protected structure keeps its sheets, pane-wide (W-62). `ignore` is the host's decision; the file is unchanged.",
+              "type": {
+                "text": "'honour' | 'ignore'"
+              },
+              "default": "'honour'",
+              "fieldName": "protection"
             }
           ],
           "members": [
@@ -256,6 +265,17 @@
               },
               "description": "The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute.",
               "attribute": "results",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "protection",
+              "privacy": "public",
+              "type": {
+                "text": "ProtectionMode"
+              },
+              "description": "The pane's protection mode (W-62): `honour` (the default) keeps the file's protection; `ignore` is the host's decision. Setting it sets the `protection` attribute.",
+              "attribute": "protection",
               "reflects": true
             },
             {
@@ -742,9 +762,9 @@
             {
               "name": "sheetpane-editcancel",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string }>"
+                "text": "CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string } | { sheet: string; ref: string; reason: 'locked'; code: 'SP-3026'; message: string }>"
               },
-              "description": "`{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it."
+              "description": "`{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3026', message }` when the cell is locked on a protected sheet (W-62)."
             },
             {
               "name": "sheetpane-export",

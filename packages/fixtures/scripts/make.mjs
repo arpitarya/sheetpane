@@ -48,7 +48,7 @@ function cellXml(ref, c) {
   if (o.f) return `<c r="${ref}"${s} t="str">${f}<v>${esc(o.v ?? '')}</v></c>`;
   return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${esc(o.v)}</t></is></c>`;
 }
-function sheetXml({ cells, cols = [], tail = '' }) {
+function sheetXml({ cells, cols = [], colStyle = {}, tail = '' }) {
   const rows = new Map();
   for (const [ref, c] of Object.entries(cells)) {
     const r = Number(/\d+/.exec(ref)[0]);
@@ -57,7 +57,7 @@ function sheetXml({ cells, cols = [], tail = '' }) {
   }
   const colIdx = (ref) => [.../^[A-Z]+/.exec(ref)[0]].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
   const body = [...rows].sort(([a], [b]) => a - b).map(([r, cs]) => `<row r="${r}">${cs.sort(([a], [b]) => colIdx(a) - colIdx(b)).map(([ref, c]) => cellXml(ref, c)).join('')}</row>`).join('');
-  const colsXml = cols.length ? `<cols>${cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+  const colsXml = cols.length ? `<cols>${cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}"${colStyle[i + 1] ? ` style="${colStyle[i + 1]}"` : ''} customWidth="1"/>`).join('')}</cols>` : '';
   return `${XML}<worksheet xmlns="${NS}" xmlns:r="${R}">${colsXml}<sheetData>${body}</sheetData>${tail}</worksheet>`;
 }
 
@@ -202,9 +202,9 @@ out('showcase.xlsx', await zip(parts));
 async function book(spec) {
   const p = {
     '_rels/.rels': `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets>${spec.names ? `<definedNames>${spec.names.map(([name, f]) => `<definedName name="${name}">${esc(f)}</definedName>`).join('')}</definedNames>` : ''}</workbook>`,
+    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}${spec.workbookProtection ?? ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets>${spec.names ? `<definedNames>${spec.names.map(([name, f]) => `<definedName name="${name}">${esc(f)}</definedName>`).join('')}</definedNames>` : ''}</workbook>`,
     'xl/_rels/workbook.xml.rels': `${XML}<Relationships xmlns="${PR}">${spec.sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${spec.sheets.length + 1}" Type="${R}/styles" Target="styles.xml"/></Relationships>`,
-    'xl/styles.xml': styles,
+    'xl/styles.xml': spec.styles ?? styles,
     '[Content_Types].xml': `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${spec.sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
   };
   spec.sheets.forEach((s, i) => { p[`xl/worksheets/sheet${i + 1}.xml`] = sheetXml(s); });
@@ -247,6 +247,30 @@ const COMPARE = [
   { name: 'compare/now.xlsx', spec: { sheets: [holdings([HOLDINGS[3], HOLDINGS[0], [HOLDINGS[1][0], HOLDINGS[1][1], HOLDINGS[1][2], 76.1], HOLDINGS[4], ['AC-10099', 'Mia Chen', 50, 18.75]]), fees('Fee schedule', [['Bronze', 0.75], ['Silver', 0.45], ['Gold', 0.35], ['Platinum', 0.2]]), { name: 'Summary', cells: { A1: 'Accounts', B1: 5 } }] }, features: ['the newer version of a compare pair (W-63): one price changed, a row removed, added and moved; a sheet renamed, one removed, one added'] },
 ];
 for (const c of COMPARE) out(c.name, await book(c.spec));
+// ── W-62: protection — a spec sheet whose Value, Unit and Description stay open, a hidden formula, a locked list,
+// an unprotected sheet, and the structure locked. The password is `sheetpane`, stored as Excel's legacy hash.
+const legacyHash = (pw) => { // ECMA-376 Part 4 §14.7.1: the 16-bit password verifier
+  let h = 0;
+  for (let i = pw.length - 1; i >= 0; i--) { h = ((h >> 14) & 1) | ((h << 1) & 0x7fff); h ^= pw.charCodeAt(i); }
+  h = ((h >> 14) & 1) | ((h << 1) & 0x7fff);
+  return ((h ^ pw.length) ^ 0xce4b).toString(16).toUpperCase();
+};
+const PW = legacyHash('sheetpane');
+// two formats past the shared ones: 13 unlocked, 14 locked with its formula hidden
+const XF_OPEN = 13, XF_HIDDEN = 14;
+const protStyles = styles.replace('<cellXfs count="13">', '<cellXfs count="15">').replace('</cellXfs>', '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection locked="0"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection hidden="1"/></xf></cellXfs>');
+const SPEC_ROWS = [['Lead', 3, 'mg/L', 'Total lead, filtered'], ['Zinc', 40, 'ug/L', 'Dissolved zinc'], ['Copper', 7, 'ppm', '']];
+const SHEET_LOCK = `<sheetProtection password="${PW}" sheet="1" objects="1" scenarios="1"/>`;
+const PROTECTED = { styles: protStyles, workbookProtection: `<workbookProtection workbookPassword="${PW}" lockStructure="1"/>`, sheets: [
+  { name: 'Spec', cols: [14, 10, 10, 28, 10], colStyle: { 2: XF_OPEN, 3: XF_OPEN, 4: XF_OPEN }, cells: {
+    A1: { v: 'Parameter', s: XF.bold }, B1: { v: 'Value', s: XF.bold }, C1: { v: 'Unit', s: XF.bold }, D1: { v: 'Description', s: XF.bold }, E1: { v: 'Limit', s: XF.bold },
+    ...Object.fromEntries(SPEC_ROWS.flatMap(([p, v, u, d], i) => [[`A${i + 2}`, p], [`B${i + 2}`, { v, s: XF_OPEN }], [`C${i + 2}`, { v: u, s: XF_OPEN }], ...(d ? [[`D${i + 2}`, { v: d, s: XF_OPEN }]] : []), [`E${i + 2}`, { f: `B${i + 2}*1.1`, v: Math.round(v * 11) / 10, s: XF_HIDDEN }]])),
+  }, tail: SHEET_LOCK },
+  { name: 'Lists', cols: [10, 24], cells: { A1: { v: 'Unit', s: XF.bold }, B1: { v: 'Meaning', s: XF.bold }, ...Object.fromEntries(UNITS.flatMap(([u, m], i) => [[`A${i + 2}`, u], [`B${i + 2}`, m]])) }, tail: SHEET_LOCK },
+  { name: 'Notes', cells: { A1: { v: 'Note', s: XF.bold }, A2: 'This sheet is not protected: every cell edits.' } },
+  { name: 'Archive', hidden: true, cells: { A1: { v: 'Old limits', s: XF.bold }, A2: 'Kept hidden; the structure lock keeps it so.' } },
+] };
+out('protected.xlsx', await book(PROTECTED));
 // refused on purpose (SR-LAW-3: .xlsx and .csv only)
 out('edge/legacy.xls', new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, ...new Array(504).fill(0)]));
 out('edge/not-a-zip.xlsx', 'this is not a workbook');
@@ -272,6 +296,7 @@ const manifest = {
     { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread', 'two Excel tables, a list rule over a table column'] },
     { name: 'showcase.rules.json', kind: 'rules', appSaved: null, for: 'showcase.xlsx', errors: ['Validation!C3', 'Validation!B4', 'Formulas!B3', 'Formulas!B6', 'Formulas!B7', 'Numbers!B3'] },
     { name: 'dependent-lists.xlsx', kind: 'xlsx', appSaved: null, sheets: DEPENDENT.sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['dependent lists: a Parameter list, and a Unit list =INDIRECT($A2) over one defined name per parameter (W-60)', 'one stale unit (Readings!C6 fails)'] },
+    { name: 'protected.xlsx', kind: 'xlsx', appSaved: null, sheets: PROTECTED.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: ['sheet protection with a password (`sheetpane`, Excel’s legacy hash): Spec’s Value, Unit and Description unlocked (cells and columns), Parameter and the header locked (W-62)', 'Spec’s Limit a hidden formula', 'Lists protected, every cell locked; Notes not protected', 'the workbook structure locked; Archive hidden'] },
     ...EDGE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: e.features })),
     ...COMPARE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: false, headers: headersOf(s.cells) })), features: e.features })),
     { name: 'edge/legacy.xls', kind: 'refused', appSaved: null, features: ['a legacy .xls (compound file) header'] },

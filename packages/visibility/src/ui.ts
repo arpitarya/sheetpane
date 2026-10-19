@@ -3,7 +3,7 @@
 // are the browser's). Labels follow the selection; a CSV and the last visible sheet say why not.
 import { colName, parseRange } from '@sheetpane/export';
 import { registerPlugin, type ControlDescriptor, type Plugin, type Selection, type Snapshot, type WorkbookStore } from '@sheetpane/grid';
-import { blockedReason, canHideSheet, hiddenIn, setSheetHidden, setSpanHidden, spanOf, visibility } from './index.js';
+import { blockedReason, canHideSheet, hiddenIn, setSheetHidden, setSpanHidden, sheetBlockedReason, spanOf, visibility } from './index.js';
 
 const span = (axis: 'rows' | 'cols', sel: Selection) => {
   const list = spanOf(sel)[axis], a = list[0]!, b = list[list.length - 1]!;
@@ -67,8 +67,9 @@ export function ui(): Plugin {
     {
       id: 'visibility-hide-sheet', slot: 'selbar', group: 'visibility', mode: 'edit', label: 'Hide sheet', menus: ['tab'],
       labelFor: (_s: Snapshot, sel: Selection) => `Hide sheet ${sel.sheet}`,
-      disabled: (snap: Snapshot, sel: Selection) => !!blockedReason(snap) || !canHideSheet(snap, sel.sheet),
-      disabledReason: (snap: Snapshot, sel: Selection) => blockedReason(snap) ?? (!canHideSheet(snap, sel.sheet) ? 'A workbook needs one visible sheet' : undefined),
+      // a protected structure keeps its sheets as they are (W-62)
+      disabled: (snap: Snapshot, sel: Selection) => !!sheetBlockedReason(snap) || !canHideSheet(snap, sel.sheet),
+      disabledReason: (snap: Snapshot, sel: Selection) => sheetBlockedReason(snap) ?? (!canHideSheet(snap, sel.sheet) ? 'A workbook needs one visible sheet' : undefined),
       run: (store: WorkbookStore, sel: Selection) => { setSheetHidden(store, sel.sheet, true); },
     },
   ];
