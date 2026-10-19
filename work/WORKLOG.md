@@ -24,6 +24,19 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-54 closed: the pane's checks in Node (`@sheetpane/grid/check`, `@sheetpane/validation/check`)  ·  Claude Code (claude-opus-5-5, lane d)
+
+- **Asked:** the orchestrator: build W-54 in worktree lane d (branch `lane-d`), one item, commit, do not push.
+- **Done:**
+  - **The entries:** `packages/grid/src/check.ts` — `check(bytes, options)` over the existing store, `host-rules` and plugin host (none of `store.ts`, `rules.ts`, `element.ts` changed); it sets the rules before the file, waits for every `derive` (a prototype wrapper on the plugin) and for `ruleProgress` to clear, and sorts. `packages/validation/src/plugin.ts` holds the plugin moved out of `index.ts`; `check.ts` is its `/check` entry; `rules.ts` takes `shiftFormula` from `@sheetpane/export` (now a dependency) so the main entry needs no import-map line. SP-3016.
+  - **Proof:** `test/check-entries.test.ts` walks both import graphs (no element, no DOM global) and runs them in Node; the fixtures parity pair (browser `<sheetpane-excel>` / Node `check()`) on one golden, 16 cases, also green in WebKit; `check_rules` in `@sheetpane/mcp` now runs `check()`, its own copy of the header notes deleted, `findings` added.
+  - **Records:** SR-GRID 22f, SR-VALIDATION 1/4/9, SR-BUILD 5a/8, SR-MCP 1/5, SR-FIXTURES 6, SR-CODES 2, SR-SKILLS 2; registry rows; skills, READMEs, ARCHITECTURE, GLOSSARY, ERRORS.md, CHANGELOG; `llms*.txt` and `plugins/sheetpane` regenerated. W-67 re-balled 🟢.
+- **Decided / left open:** read in: `check()` returns the store's errors sorted (sheet, row, column, type, message) so a CLI's output is stable; `check` on `@sheetpane/validation/check` is the workbook check, the one-rule `check` stays on the main entry; no `settled()` was added to the store (other lanes edit it) — a backlog candidate.
+- **Mistakes:** the first cut imported `@sheetpane/grid/check` at run time from validation's shared `rules.ts`, which broke the plain-HTML import map (the testing package's Playwright run timed out); fixed by taking `shiftFormula` from `@sheetpane/export`. The TSDoc walker matched an `@example`'s import inside a comment and cut a real re-export in a cycle; it now strips comments.
+- **Next:** the orchestrator merges lane d (SP-3016 may need renumbering).
+
+---
+
 ## 2026-10-19 — law L11 filed: the workbook never leaves the browser  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Create a law. Everything should be within the browser. Nothing go back to the server. Meaning when you upload a CSV or when you upload an Excel file, it does not go to the server. It just stays within the browser."*

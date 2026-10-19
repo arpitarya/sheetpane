@@ -647,6 +647,37 @@ opens no pop-up — the errors panel is the one place errors are read.
   excel.rules = parse(await (await fetch('./sheetpane.rules.yaml')).text());
   ```
 
+## The same checks with no page (`@sheetpane/grid/check`)
+
+`check()` runs what the pane runs on load — the rules file, column rules, an
+async `validate`, and each plugin's `validate` after a `derive` plugin has
+recalculated — in Node, a worker or a page, and returns the errors the pane
+would hold. The entry imports no element and touches no DOM.
+
+```js
+import { readFile } from 'node:fs/promises';
+import { check } from '@sheetpane/grid/check';
+import { validation } from '@sheetpane/validation/check';
+
+const errors = await check(await readFile('q3.xlsx'), {
+  name: 'q3.xlsx',
+  rules: JSON.parse(await readFile('sheetpane.rules.json', 'utf8')),
+  plugins: [validation()],          // objects, or ids registered with registerPlugin
+});
+```
+
+- **Options are the element's:** `rules` (an object, or its JSON text),
+  `columns`, `validate(ctx, signal)`, `onInvalid`, `headerRow`, `plugins`, and
+  the file's `name` (`.csv` reads CSV; unnamed bytes are sniffed as `load()`
+  does).
+- **The same errors** as `<sheetpane-excel>` given the same file and settings
+  — only `id` and `createdAt` are per run — sorted by sheet, row and column.
+  A file that cannot be read throws its reader's code (SP-10xx); anything but
+  bytes throws SP-3016.
+- The store, the rules checker and the plugin contract are exported here too
+  (`createWorkbook`, `checkDocument`, `registerPlugin`, the types), for a
+  DOM-free plugin or a host's own pipeline.
+
 ## `<sheetpane-errors>`
 
 | kind | name | what |
@@ -1244,11 +1275,19 @@ How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plug
 A plugin for `@sheetpane/grid`. It reads the `<dataValidations>` the file's
 author saved, including the x14 form Excel uses for lists on another sheet,
 and runs them through the `validate` hook. `<sheetpane-excel>` and
-`<sheetpane-errors>` on the same pane both see the result. No runtime
-dependencies; `@sheetpane/grid` is a peer. Versioned in lockstep with it.
+`<sheetpane-errors>` on the same pane both see the result. No third-party
+runtime dependency (`@sheetpane/export` for `shiftFormula`); `@sheetpane/grid` is a peer. Versioned in lockstep with it.
 
 - `@sheetpane/validation`: the headless plugin (`validate` only).
 - `@sheetpane/validation/ui`: opt-in. Adds the list arrow and the status-line count.
+- `@sheetpane/validation/check`: the same plugin with no registration and no
+  element, and `check(bytes, options)` — `@sheetpane/grid/check`'s check with
+  this plugin on: the workbook's own validation from Node or a worker.
+
+  ```js
+  import { check } from '@sheetpane/validation/check';
+  const errors = await check(await readFile('budget.xlsx'), { name: 'budget.xlsx', severity: 'error' });
+  ```
 
 ## Use
 
@@ -2078,7 +2117,7 @@ npx sheetpane-skills install # registers it for Claude Code, Kiro and Codex (wit
 | `describe_api` | `{ "name": "flagging" }` — an element, attribute, property, method, event, `--sp-*` property, slot, part or plugin | its entry in `custom-elements.json` (with its TSDoc) and the record that specifies it |
 | `inspect_workbook` | `{ "path": "data/q3.xlsx" }` | sheets, size, header-row guess, titles, each column's type, blanks and values, merges, and which plugins the file would use — `@sheetpane/import` |
 | `draft_rules` | `{ "path": "data/q3.xlsx", "sheet"?: "Sales" }` | a rules file for `<sheetpane-excel rules-src>`: `required`, `type`, `oneOf` per titled column — **a draft to review** |
-| `check_rules` | `{ "rules": {…} or "…json…", "path"?: "data/q3.xlsx" }` | the grid's own check, each rule in words, and the sheets and titles the workbook lacks |
+| `check_rules` | `{ "rules": {…} or "…json…", "path"?: "data/q3.xlsx" }` | the grid's own check, each rule in words; with a workbook, the pane's own `check()` over it — the sheets and titles it lacks, and the cells that fail |
 | `explain_code` | `{ "code": "SP-1002" }` | meaning, likely cause, fix and link — [docs/ERRORS.md](../../docs/ERRORS.md) |
 | `find_skill` | `{ "task": "validate columns from a JSON file" }` | the skill to read, with its `SKILL.md` path |
 
@@ -2184,6 +2223,7 @@ flowchart TB
 | **`<sheetpane-excel>`** | the sheet: the **view** component and the **edit** component as two modes of one element; reader, virtualised grid, cell bar with the docked selection actions (Flag issue, ⋯, right-click), pins and callouts, one Download button | `packages/grid/src/excel/` (W-01) | [grid verdict](../work/compare/grid-rendering.compare.md) |
 | **`@sheetpane/import`** | the reader: turns an `.xlsx` or `.csv` into the same `Workbook` object export takes in: ZIP walk + inflate + XML, or a CSV state machine; display text through a small number-format subset; usable without the UI | `packages/import/` (W-13) | [reading verdict](../work/compare/xlsx-csv-reading.compare.md), decision 5 overridden by Arpit 2026-10-18 |
 | **in-memory workbook** | the one shared object — sheets and cells, cell **changes**, **errors**, selected cell, mode; a store with `subscribe` / `getSnapshot`; one instance per `pane` id | `packages/grid/src/pane/` (W-01) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
+| **check entries** | the same store and checks with no element: `check(bytes, options)` gives the errors a pane holds after load, in Node, a worker or a page | `@sheetpane/grid/check` (`packages/grid/src/check.ts`), `@sheetpane/validation/check` (W-54) | [SR-GRID](../records/0105_GRID.md) decision 22f |
 | **`<sheetpane-errors>`** | the **error** component: the list (filter, resolve, delete) and the New error form; always on the same workbook as the sheet | `packages/grid/src/errors/` (W-02) | [contract verdict](../work/compare/workbook-and-error-contract.compare.md) |
 | **`@sheetpane/export`** | a plain object or the original file plus changes → `.xlsx` or `.csv` bytes; `download()` to save it (W-12, [SR-DOWNLOAD](../records/0101_DOWNLOAD.md)); ZIP read and write, CRC-32, XML, CSV; zero dependencies; also usable without the UI | `packages/export/` (W-03, W-12) | [export verdict](../work/compare/export-shape.compare.md) |
 | **plugins** | eight separate packages that register against the one workbook through six hooks (`format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch`) and add controls to six slots the grid draws; the grid with none installed is unchanged | `packages/numfmt/` `formulas/` `styles/` `validation/` `condfmt/` `images/` `charts/` `comments/` (W-15–W-22); the host in `packages/grid/src/plugins/` (W-14) | [plugins verdict](../work/compare/plugins.compare.md) |
@@ -2291,6 +2331,7 @@ packages/
       tokens.css          --sp-* custom properties (no font)
       plugins/            W-14 — hooks, slots, control descriptors, the plugins attribute
       index.ts            registers both elements when customElements exists
+      check.ts            @sheetpane/grid/check — check() and the store, no element, no DOM (W-54)
   numfmt/                 @sheetpane/numfmt — W-15; dep: numfmt 4.0.1
   formulas/               @sheetpane/formulas — W-16; dep: @ironcalc/wasm 0.9.0 (lazy-loaded)
   styles/                 @sheetpane/styles — W-17
@@ -2299,7 +2340,8 @@ packages/
   images/                 @sheetpane/images — W-20
   charts/                 @sheetpane/charts — W-21; peer: @sheetpane/images
   comments/               @sheetpane/comments — W-22
-    (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls)
+    (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls;
+     validation also src/plugin.ts — the plugin, unregistered — and src/check.ts, its /check entry)
 examples/                 W-09 — html/ (one index.html) and react/ (Vite + React 19)
 ```
 
@@ -2358,6 +2400,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 | sheetpane-errors | working name of the web component that is the error component |
 | justfile | the root file of recipes for `just`, a command runner; `just --list` shows every repo command (W-10) |
 | column rules | checks a host supplies per column header title (`columns`, `validate`); failures become errors with `author: "host"` that resolve themselves when the cell passes (SR-GRID decision 22) |
+| check entry | a package's DOM-free `/check` sub-path (`@sheetpane/grid/check`, `@sheetpane/validation/check`): the checks the pane runs on load, callable from Node or a worker, giving the same errors (SR-GRID decision 22f) |
 | skill | a Markdown file an AI coding agent reads to learn a task; `npx sheetpane-skills install` copies sheetpane's into a repository (SR-SKILLS) |
 | SP code | a permanent `SP-xxxx` code on every error, warning, note and refusal sheetpane shows, listed in `docs/ERRORS.md` (SR-CODES) |
 | rules file | a JSON document of column, cell and range rules per sheet (`"*"` for every sheet), given as `rules` or `rules-src`; checked by the same engine as column rules (SR-GRID decision 22d) |
@@ -2459,6 +2502,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
+| [SP-3016](#sp-3016) | Nothing to check | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -2870,6 +2914,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `src` URL (or `load(url)`) could not be fetched; the pane shows "Can't open this file".
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
+
+### SP-3016
+
+**Nothing to check** · error · [SR-GRID](../records/0105_GRID.md) decision 22f · `TypeError`
+
+- **Meaning:** `check()` from `@sheetpane/grid/check` (or `@sheetpane/validation/check`) was given something that is not a file's bytes.
+- **Likely cause:** a path or a parsed workbook passed instead of the bytes; an unresolved promise (`readFile` without `await`).
+- **Fix:** pass the bytes — `await readFile(path)` in Node, a `File` or `Blob` in a page — and the file's `name` in the options.
 
 ---
 
@@ -4688,6 +4740,21 @@ pnpm and a justfile; the testing verdict chose the runner.
    grid's framework typings (W-37) are generated `.d.ts` files
    committed in `src/frameworks/`: `source` points at the `.d.ts`, the build
    copies them into `dist/frameworks/` with an empty `.js` for `import`.
+5a. **Entries** (each with its `source` condition, decision 5):
+
+    | entry | what | DOM |
+    |---|---|---|
+    | `@sheetpane/grid` | the elements, registered on import, and the API | a page (imports anywhere) |
+    | `@sheetpane/grid/check` | the pane's checks with no page — `check()`, the store, the rules checker (W-54, SR-GRID 22f) | none |
+    | `@sheetpane/grid/jsx` · `/vue` · `/svelte` · `/solid` | framework typings (W-37) | types only |
+    | `@sheetpane/grid/style.css` · `/rules.schema.json` · `/llms.txt` · `/custom-elements.json` · `/vscode.*-custom-data.json` · `/web-types.json` | data | — |
+    | `@sheetpane/<plugin>` | the plugin, registered on import | none |
+    | `@sheetpane/<plugin>/ui` | its controls (numfmt, formulas, styles, validation, condfmt, charts, visibility) | a page |
+    | `@sheetpane/validation/check` | the plugin unregistered, and `check()` with it on (W-54, SR-VALIDATION 9) | none |
+    | `@sheetpane/fixtures/files/*` | the fixture files | — |
+
+    A `/check` entry's import graph holds no element module and names no
+    `customElements`, `document` or `window` (`test/check-entries.test.ts`).
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
    Node; every other package runs in browser mode on Playwright, and so do
    `@sheetpane/export`'s `*.browser.test.ts` files (project `export-browser`,
@@ -4758,7 +4825,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    `portable` (ubuntu, macos and windows × Node 22 and the current LTS:
    version parity, build, typecheck, the Node unit tests, and
    `scripts/smoke-built.mjs`, which installs every package from its packed
-   tarball with npm into an empty folder and imports it from plain Node, so
+   tarball with npm into an empty folder and imports it from plain Node (and
+   runs each `/check` entry on a CSV, W-54), so
    the BUILT package is what is tested); and `create` — a matrix over the six
    `create-sheetpane` templates running `scripts/create-check.mjs`
    (SR-CREATE decision 5). A branch's newer push cancels its older run; on
@@ -5756,6 +5824,24 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `F` key or its help line, no composer (a host's `compose()` is cancelled),
     no callout card; a cell's error mark stays and selecting it marks its row
     in `<sheetpane-errors>`. Default `on`.
+22f. **The checks with no page (W-54):** `@sheetpane/grid/check` is a second
+    entry onto the same engine — the store, `host-rules`, the plugin host —
+    that imports no element, registers nothing and names no DOM global.
+    `check(bytes, { name?, rules?, columns?, validate?, onInvalid?,
+    headerRow?, plugins? })` takes the element's settings by the element's
+    names (`rules` an object or its JSON text; `plugins` objects or registered
+    ids; an unnamed file sniffed as `load()` does), sets the rules before the
+    file as a bound element does, loads, and resolves once every `derive` has
+    landed and the load phase is idle (an async `validate` is awaited inside
+    it); it returns `getErrors()` sorted by sheet (workbook order), row,
+    column, type, message. A refusal throws the reader's own code; anything
+    but bytes throws SP-3016. Same file and settings → the same errors as
+    `<sheetpane-excel>`, only `id` and `createdAt` per run. It waits for a
+    `derive` by watching the plugin's promise through a prototype wrapper (the
+    plugin object itself is untouched) and for the load phase through
+    `ruleProgress` — no store API was added. The entry also exports the store,
+    the rules checker, the plugin contract and the codes, for a DOM-free
+    plugin or a host's pipeline.
 
 ### Decision — freeze panes (W-24)
 
@@ -5842,6 +5928,13 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
 ### Consequences
 
+- **The check entry (W-54):** `test/check-entries.test.ts` (`--project
+  repo`) walks `@sheetpane/grid/check`'s import graph from source — no
+  element module, no third-party or Node import, no free `customElements`,
+  `document` or `window` — and runs it in Node with column rules, an async
+  `validate` and a rules file; `@sheetpane/fixtures`' parity pair holds the
+  pane in Chromium and `check()` in Node to one golden on every fixture
+  (SR-FIXTURES decision 6).
 - **Enforced today** (`just test-pkg grid`, Chromium per push, WebKit and
   Firefox nightly): store tests (changes, undo with a fast-check property and
   the cap, errors, export round-trip property, freeze, stale marks); element
@@ -6276,7 +6369,8 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
 1. **`validation({ severity? })`** → `{ id: 'validation', provides: ['validate'] }`;
    `@sheetpane/validation` registers it, `@sheetpane/validation/ui` registers
    it with `ui()` (`validation-ui`: a `cell` list arrow and a `status` count).
-   No runtime dependency.
+   No third-party runtime dependency; `@sheetpane/export` is one since W-54
+   (decision 4).
 2. **One error per failing cell:** `type: 'validation'`, severity `warning`
    (the host may choose another), `author: 'workbook'`, `range` = the cell,
    `found` = its current text (`(blank)` when empty), `expected` = the rule in
@@ -6290,8 +6384,9 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
-   cell, through `@sheetpane/export`'s `shiftFormula`, re-exported by the
-   grid) and defined names; anything else skips the rule and counts it.
+   cell, through `@sheetpane/export`'s `shiftFormula` — imported from
+   `@sheetpane/export` itself since W-54, so the main entry needs no
+   `@sheetpane/grid/check` at run time; the grid re-exports the same function) and defined names; anything else skips the rule and counts it.
 5. **Values:** number rules need a number (`whole` an integer); text dates are
    not parsed; `textLength` uses the stored value's length; a list matches
    text ignoring case and a number by value. Blank cells pass with
@@ -6311,6 +6406,16 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    the grid widens to the columns rules name — by mouse or Alt+↓; the choices
    are re-read live; a pick sets the cell (undoable). `showDropDown` (Excel's
    "hide the arrow") is read by the importer and not yet honoured.
+9. **With no page (W-54):** `@sheetpane/validation/check` serves the plugin
+   from `src/plugin.ts` — `validation`, `validateSheet`, `skippedRules`,
+   `lastReport`, `listRuleAt` and the evaluator (`rulesOf`, `ruleWords`,
+   `listOptions`, `parseOperand`) — registering nothing and importing only
+   `@sheetpane/grid/check` (SR-GRID decision 22f), and `check(bytes, options
+   & { severity })`: the grid's `check()` with `validation({ severity })`
+   added (an id `"validation"` in `plugins` means the same plugin). The main
+   entry re-exports the same module and registers it; the one-rule
+   `check(rule, store, row, col)` stays on the main entry only, so `check`
+   names one thing per entry.
 
 ### Consequences
 
@@ -6352,7 +6457,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/validation/src/index.ts`](../packages/validation/src/index.ts) · [`rules.ts`](../packages/validation/src/rules.ts) · [`ui.ts`](../packages/validation/src/ui.ts)
+- [`packages/validation/src/index.ts`](../packages/validation/src/index.ts) · [`plugin.ts`](../packages/validation/src/plugin.ts) · [`check.ts`](../packages/validation/src/check.ts) · [`rules.ts`](../packages/validation/src/rules.ts) · [`ui.ts`](../packages/validation/src/ui.ts)
 
 **Project docs**
 
@@ -7313,6 +7418,16 @@ helpers to become one package any runner can load (W-32 made the showcase).
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
    rules-file test; `@sheetpane/testing` (W-41) loads from here.
+6. **The parity pair (W-54):** `test/parity.ts` names the cases — every
+   manifest file (the refused two by their code) and `hugeCsv(20000)` — and
+   the pane's settings for each (the rules sample, element `columns`, an
+   async `validate`; plugins numfmt, validation, comments, formulas).
+   `parity.test.ts` opens each in `<sheetpane-excel>` in the browser,
+   `parity.node.test.ts` runs `check()` from `@sheetpane/grid/check` in Node;
+   both must equal `test/golden/parity.json` (errors without `id` and
+   `createdAt`, in one order), so the browser and Node agree.
+   `UPDATE_GOLDEN=1` rewrites it from Node. Those four plugins and
+   `@sheetpane/validation` are this package's devDependencies for it.
 
 ### Consequences
 
@@ -7320,7 +7435,7 @@ helpers to become one package any runner can load (W-32 made the showcase).
   node` — every listed file read in Chromium matches its sheets and titles;
   refused files are refused; the hidden sheet and 1904 read as listed; the
   rules sample on the showcase fails exactly the listed cells; `path()` and
-  `bytes()` in Node; `hugeCsv()`. `pack-check` checks the `./files/*` folder.
+  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6). `pack-check` checks the `./files/*` folder.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers,
   with `appSaved` naming the app and version — W-30 (DoD 5). The import
   package's ExcelJS fixtures stay with their generator (ExcelJS is that
@@ -7411,7 +7526,9 @@ flowchart LR
    (`audience`). No `argument-hint`: claude.ai and the Skills API refuse it. A `SKILL.md`
    is ≤ 200 lines. A skill links to its records on GitHub (so the links work
    once installed elsewhere) and never restates a rule as its own
-   (SR-LAW-0).
+   (SR-LAW-0). Where a host's step runs outside the page — checking a file
+   on a server or in a worker — `sheetpane-setup` and `sheetpane-backend`
+   point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f).
 2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
     in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
     (`$ARGUMENTS` where filled). Three are written as commands:
@@ -7563,7 +7680,8 @@ flowchart LR
 1. **Every message sheetpane shows a host carries `SP-` and four digits:**
    thrown errors, `console.warn` / `console.error`, rules-engine `note`
    errors, refused loads, event details that carry a reason.
-2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid ·
+2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid
+   (SP-3016, W-54: `check()` given something other than bytes) ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
    5800 comments) · 6xxx column rules and the rules file · 7xxx mcp
@@ -7750,7 +7868,7 @@ is never listed here.*
 
 **An agent asks; sheetpane answers from what ships.** `npx @sheetpane/mcp`
 starts a server any MCP client can use. Every answer is computed — from the
-custom-elements manifest, the import package, the grid's rules checker, the
+custom-elements manifest, the import package, the grid's own checks, the
 error docs and the skills — never generated, so the same question always gets
 the same answer.
 
@@ -7759,7 +7877,7 @@ flowchart LR
     A["agent (Claude Code, Kiro, Codex)"] -- "stdio, JSON-RPC" --> S["sheetpane-mcp"]
     S --> D["describe_api — custom-elements.json"]
     S --> I["inspect_workbook · draft_rules — @sheetpane/import"]
-    S --> C["check_rules — the grid's checkDocument"]
+    S --> C["check_rules — the grid's checkDocument and check()"]
     S --> E["explain_code — docs/ERRORS.md"]
     S --> F["find_skill — @sheetpane/skills"]
 ```
@@ -7772,7 +7890,7 @@ flowchart LR
        describe_api      <- custom-elements.json (W-37)
        inspect_workbook  <- @sheetpane/import (reads .xlsx in Node)
        draft_rules       <- @sheetpane/import
-       check_rules       <- @sheetpane/grid checkDocument
+       check_rules       <- @sheetpane/grid/check: checkDocument, check()
        explain_code      <- docs/ERRORS.md
        find_skill        <- @sheetpane/skills descriptions
 ```
@@ -7792,8 +7910,9 @@ server to ask.
 ### Decision
 
 1. **The package** `@sheetpane/mcp`, bin `sheetpane-mcp`, Node ≥ 20. Runtime
-   dependencies `@sheetpane/import`, `@sheetpane/grid` (its rules checker and
-   code registry, both Node-safe — SR-LAW-8) and `@sheetpane/skills`; nothing
+   dependencies `@sheetpane/import`, `@sheetpane/grid` (its DOM-free
+   `@sheetpane/grid/check` entry: the rules checker, the pane's `check()` and
+   the code registry — SR-GRID decision 22f) and `@sheetpane/skills`; nothing
    else. Its build copies `docs/ERRORS.md`, the grid's `custom-elements.json`
    and a plugin table (from each plugin's `package.json`) into `dist/`.
 2. **Hand-written protocol, no SDK** (`work/compare/mcp-server.compare.md`):
@@ -7833,9 +7952,13 @@ server to ask.
      (no title, duplicate title, mixed types) listed.
    - `check_rules(rules, path?)` — the grid's `checkDocument` (the same 60xx
      notes the grid gives), each rule in words (`describeRule`); with a
-     workbook, SP-6022 for a sheet it lacks, SP-6023 for a title no header row
-     has, SP-6024 for a duplicate title — matched as the grid matches
-     (trimmed, case-insensitive; the sheet's `headerRow`, else `*`'s, else 1).
+     workbook, the pane's own `check()` over it (W-54 — no third copy): its
+     workbook notes as problems (SP-6022 a sheet it lacks, SP-6023 a title no
+     header row has, SP-6024 a duplicated title a rule names — each on the
+     sheet and cell the grid puts it) and the cells that fail as `findings`
+     (`sheet`, `range`, `type`, `severity`, `found`, `expected`, `message`;
+     the first 50, in `check()`'s order) with `findingCount`; `ok` speaks of
+     the rules file only.
    - `explain_code(code)` — title and severity from the registry; meaning,
      cause and fix from `docs/ERRORS.md`; the link.
    - `find_skill(task)` — words of the task against each skill's name (×3)

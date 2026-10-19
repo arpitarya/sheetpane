@@ -5,11 +5,19 @@
 A plugin for `@sheetpane/grid`. It reads the `<dataValidations>` the file's
 author saved, including the x14 form Excel uses for lists on another sheet,
 and runs them through the `validate` hook. `<sheetpane-excel>` and
-`<sheetpane-errors>` on the same pane both see the result. No runtime
-dependencies; `@sheetpane/grid` is a peer. Versioned in lockstep with it.
+`<sheetpane-errors>` on the same pane both see the result. No third-party
+runtime dependency (`@sheetpane/export` for `shiftFormula`); `@sheetpane/grid` is a peer. Versioned in lockstep with it.
 
 - `@sheetpane/validation`: the headless plugin (`validate` only).
 - `@sheetpane/validation/ui`: opt-in. Adds the list arrow and the status-line count.
+- `@sheetpane/validation/check`: the same plugin with no registration and no
+  element, and `check(bytes, options)` — `@sheetpane/grid/check`'s check with
+  this plugin on: the workbook's own validation from Node or a worker.
+
+  ```js
+  import { check } from '@sheetpane/validation/check';
+  const errors = await check(await readFile('budget.xlsx'), { name: 'budget.xlsx', severity: 'error' });
+  ```
 
 ## Use
 

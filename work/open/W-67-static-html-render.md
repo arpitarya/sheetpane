@@ -45,7 +45,7 @@ ball: agent
 
 ## Blockers
 
-🟡 W-54 (the DOM-free split).
+None. W-54 (the DOM-free split) closed on 2026-10-19: `@sheetpane/grid/check` and its import-graph test (`test/check-entries.test.ts`) are the pattern for `/static`.
 
 ## Record affected
 

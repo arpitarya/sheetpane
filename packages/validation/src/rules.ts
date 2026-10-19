@@ -1,7 +1,10 @@
 // The rule engine: a sheet's `<dataValidations>` compiled once per workbook, then
-// checked against the store's current values. No DOM, no dependency — the types
-// come from @sheetpane/grid, the values from the store a hook is handed.
-import { shiftFormula, type CellContext, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
+// checked against the store's current values. No DOM, no third-party dependency — the types
+// come from @sheetpane/grid/check (erased: no element, and no import-map line a page must add),
+// `shiftFormula` from @sheetpane/export (the grid re-exports the same function), the values from
+// the store a hook is handed.
+import { shiftFormula } from '@sheetpane/export';
+import type { CellContext, PluginContext, WorkbookStore } from '@sheetpane/grid/check';
 
 /** The imported workbook, as a plugin hook receives it. */
 export type Book = PluginContext['book'];
@@ -111,7 +114,7 @@ export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 
   return undefined;
 }
 
-/** Shifting relative references is @sheetpane/export's `shiftFormula`, re-exported by the grid peer. */
+/** Shifting relative references is @sheetpane/export's `shiftFormula` (the grid re-exports the same function). */
 export { shiftFormula };
 
 // ── compiled rules ────────────────────────────────────────────────────────

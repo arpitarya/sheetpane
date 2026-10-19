@@ -377,6 +377,37 @@ opens no pop-up — the errors panel is the one place errors are read.
   excel.rules = parse(await (await fetch('./sheetpane.rules.yaml')).text());
   ```
 
+## The same checks with no page (`@sheetpane/grid/check`)
+
+`check()` runs what the pane runs on load — the rules file, column rules, an
+async `validate`, and each plugin's `validate` after a `derive` plugin has
+recalculated — in Node, a worker or a page, and returns the errors the pane
+would hold. The entry imports no element and touches no DOM.
+
+```js
+import { readFile } from 'node:fs/promises';
+import { check } from '@sheetpane/grid/check';
+import { validation } from '@sheetpane/validation/check';
+
+const errors = await check(await readFile('q3.xlsx'), {
+  name: 'q3.xlsx',
+  rules: JSON.parse(await readFile('sheetpane.rules.json', 'utf8')),
+  plugins: [validation()],          // objects, or ids registered with registerPlugin
+});
+```
+
+- **Options are the element's:** `rules` (an object, or its JSON text),
+  `columns`, `validate(ctx, signal)`, `onInvalid`, `headerRow`, `plugins`, and
+  the file's `name` (`.csv` reads CSV; unnamed bytes are sniffed as `load()`
+  does).
+- **The same errors** as `<sheetpane-excel>` given the same file and settings
+  — only `id` and `createdAt` are per run — sorted by sheet, row and column.
+  A file that cannot be read throws its reader's code (SP-10xx); anything but
+  bytes throws SP-3016.
+- The store, the rules checker and the plugin contract are exported here too
+  (`createWorkbook`, `checkDocument`, `registerPlugin`, the types), for a
+  DOM-free plugin or a host's own pipeline.
+
 ## `<sheetpane-errors>`
 
 | kind | name | what |

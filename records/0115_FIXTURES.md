@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: testing a host against known files
 owns: [packages/fixtures/]
 laws: [L2, L3, L8]
-timestamp: 2026-10-19T03:00:00Z
+timestamp: 2026-10-19T13:30:00Z
 content_sha: ""
 ratifies: W-42
 ---
@@ -75,6 +75,16 @@ helpers to become one package any runner can load (W-32 made the showcase).
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
    rules-file test; `@sheetpane/testing` (W-41) loads from here.
+6. **The parity pair (W-54):** `test/parity.ts` names the cases — every
+   manifest file (the refused two by their code) and `hugeCsv(20000)` — and
+   the pane's settings for each (the rules sample, element `columns`, an
+   async `validate`; plugins numfmt, validation, comments, formulas).
+   `parity.test.ts` opens each in `<sheetpane-excel>` in the browser,
+   `parity.node.test.ts` runs `check()` from `@sheetpane/grid/check` in Node;
+   both must equal `test/golden/parity.json` (errors without `id` and
+   `createdAt`, in one order), so the browser and Node agree.
+   `UPDATE_GOLDEN=1` rewrites it from Node. Those four plugins and
+   `@sheetpane/validation` are this package's devDependencies for it.
 
 ### Consequences
 
@@ -82,7 +92,7 @@ helpers to become one package any runner can load (W-32 made the showcase).
   node` — every listed file read in Chromium matches its sheets and titles;
   refused files are refused; the hidden sheet and 1904 read as listed; the
   rules sample on the showcase fails exactly the listed cells; `path()` and
-  `bytes()` in Node; `hugeCsv()`. `pack-check` checks the `./files/*` folder.
+  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6). `pack-check` checks the `./files/*` folder.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers,
   with `appSaved` naming the app and version — W-30 (DoD 5). The import
   package's ExcelJS fixtures stay with their generator (ExcelJS is that
