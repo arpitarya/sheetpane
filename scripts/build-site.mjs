@@ -5,10 +5,12 @@
 // Run after `just build`:  node scripts/build-site.mjs [outDir]
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url).pathname;
-const out = process.argv[2] ?? join(root, 'site');
+const root = fileURLToPath(new URL('..', import.meta.url));
+// absolute: Vite builds the React gallery from examples/react, where a relative outDir would land
+const out = resolve(process.argv[2] ?? join(root, 'site'));
 const version = JSON.parse(readFileSync(join(root, 'packages/grid/package.json'), 'utf8')).version;
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
