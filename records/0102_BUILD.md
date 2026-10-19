@@ -7,7 +7,7 @@ description: "How the monorepo installs, type-checks, builds, tests, runs in CI 
 status: accepted
 date: 2026-10-18
 feature: the monorepo toolchain
-owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, scripts/release-notes.mjs, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
+owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, scripts/release-notes.mjs, scripts/test-durations.mjs, .github/actions/, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
 timestamp: 2026-10-19T09:00:00Z
 content_sha: ""
@@ -102,8 +102,14 @@ pnpm and a justfile; the testing verdict chose the runner.
    catch a real download through Playwright. Dev-only readers
    for read-back tests (ExcelJS, PapaParse, fflate) are dev dependencies of
    the package that uses them; so is any `@sheetpane/*` package a test
-   imports (`workspace:*`). Coverage (v8) is reported on every run; 90 % lines on
-   `packages/export/src/**` fails the run. A wall-clock budget (a frame gap,
+   imports (`workspace:*`). Coverage (v8) is reported on every `just test`;
+   90 % lines on `packages/export/src/**` fails the run — in CI, the
+   `coverage` job runs `@sheetpane/export`'s tests with coverage and holds that
+   line, while the sharded test jobs collect none. CI shards (`--shard=k/n`)
+   are balanced by measured time, not Vitest's path hash: `vitest.config.ts`'s
+   sequencer puts the longest file first, each into the lightest shard, from
+   `test/durations.json` (`just test-durations` re-measures it; an unlisted
+   file counts 1 s). A wall-clock budget (a frame gap,
    pixels scrolled in 5 s) is asserted on a developer machine and only
    reported on a shared CI runner: `vitest.config.ts` provides
    `timingBudgets` (off when `CI` is set), the grid's test helpers export it
@@ -141,15 +147,22 @@ pnpm and a justfile; the testing verdict chose the runner.
     `@sheetpane/<pkg>` re-exports itself — and fails naming each symbol; it
     also type-checks every `@example` code block against the built packages.
 8. **CI:** `.github/workflows/ci.yml` runs on every push to any branch, every
-   PR and on demand: `check` (Linux, Node 22: version parity, `just check`,
-   `just pack-check`, `just demo-check` in Chromium); `portable` (ubuntu,
-   macos and windows × Node 22 and the current LTS: version parity, build,
-   typecheck — the repo's lint — the Node unit tests, and
+   PR and on demand, every job in parallel and set up by
+   `.github/actions/setup` (Node; the pinned pnpm, installed with npm; the
+   pnpm store cached by the lockfile; Playwright's Chromium cached by its
+   version, without apt dependencies — the Ubuntu image carries them). Jobs:
+   `lint` (version parity, build, typecheck — the repo's lint); `test` (the
+   whole suite, Node + Chromium, in four balanced shards, decision 6);
+   `coverage`; `package` (`pack-check` and `demo-check` in Chromium);
+   `portable` (ubuntu, macos and windows × Node 22 and the current LTS:
+   version parity, build, typecheck, the Node unit tests, and
    `scripts/smoke-built.mjs`, which installs every package from its packed
    tarball with npm into an empty folder and imports it from plain Node, so
    the BUILT package is what is tested); and `create` — a matrix over the six
-   `create-sheetpane` templates running `just create-check <template>`
-   (SR-CREATE decision 5). Every package's `engines.node` is `>=22` (the
+   `create-sheetpane` templates running `scripts/create-check.mjs`
+   (SR-CREATE decision 5). A branch's newer push cancels its older run; on
+   `main` every run finishes, since `publish.yml` reads each commit's verdict.
+   The target is about two minutes of wall time. Every package's `engines.node` is `>=22` (the
    decider, 2026-10-19; Node 20 is past end of life). Build scripts resolve
    paths with `fileURLToPath`, never `URL.pathname`, so they run on Windows;
    `nightly.yml` runs the browser suites in Chromium, Firefox and WebKit;

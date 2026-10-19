@@ -2,7 +2,10 @@
 // Node for @sheetpane/export and the repo-level checks; a real browser for
 // every package that touches the DOM. SP_BROWSERS picks the engines
 // (chromium per push; chromium,firefox,webkit nightly).
+import { readFileSync } from 'node:fs';
+import { relative, sep } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { BaseSequencer, type TestSpecification } from 'vitest/node';
 import { playwright } from '@vitest/browser-playwright';
 import { armDownload, takeDownload } from './test/commands.ts';
 
@@ -10,6 +13,26 @@ const browsers = (process.env.SP_BROWSERS ?? 'chromium').split(',') as ('chromiu
 // Wall-clock budgets (frame gaps, pixels scrolled in 5 s) hold on a developer machine; on a
 // shared CI runner (`CI` set) they are reported, not asserted — `budgets` in the grid's test helpers.
 const provide = { timingBudgets: !process.env.CI };
+
+// CI runs the suite in `--shard=k/n` jobs. Vitest's own shards split by path hash (one got 80 s,
+// another 9 s); these balance by measured time — the longest file first, each into the lightest
+// shard. test/durations.json is refreshed by `just test-durations`; a file not in it counts 1 s.
+const durations: Record<string, number> = JSON.parse(readFileSync(new URL('./test/durations.json', import.meta.url), 'utf8'));
+class BalancedSequencer extends BaseSequencer {
+  override async shard(files: TestSpecification[]): Promise<TestSpecification[]> {
+    const { index, count } = this.ctx.config.shard!;
+    const key = (s: TestSpecification) => relative(this.ctx.config.root, s.moduleId).split(sep).join('/');
+    const ms = (s: TestSpecification) => durations[key(s)] ?? 1000;
+    const id = (s: TestSpecification) => `${s.project.name} ${key(s)}`;
+    const bins = Array.from({ length: count }, () => ({ ms: 0, files: [] as TestSpecification[] }));
+    for (const f of [...files].sort((a, b) => ms(b) - ms(a) || (id(a) < id(b) ? -1 : 1))) {
+      const bin = bins.reduce((min, b) => (b.ms < min.ms ? b : min));
+      bin.ms += ms(f);
+      bin.files.push(f);
+    }
+    return bins[index - 1]!.files;
+  }
+}
 const resolve = { conditions: ['source'] };
 // Node projects resolve through Vite's SSR environment, which needs the condition too.
 const ssr = { resolve: { conditions: ['source'], externalConditions: ['source'] } };
@@ -23,6 +46,7 @@ export default defineConfig({
   resolve,
   assetsInclude,
   test: {
+    sequence: { sequencer: BalancedSequencer },
     coverage: {
       provider: 'v8',
       include: ['packages/*/src/**'],

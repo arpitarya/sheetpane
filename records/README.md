@@ -185,6 +185,8 @@ directions.
 | `scripts/smoke-built.mjs` | SR-BUILD | the built packages installed from tarballs and imported in Node |
 | `RELEASING.md` | SR-BUILD | how a release is cut; the decider's one-time npm steps |
 | `.github/workflows/` | SR-BUILD | CI on every push (three OSes); the three-engine nightly; the publish on a GitHub Release |
+| `.github/actions/` | SR-BUILD | the setup every CI job shares: Node, pnpm, the cached store and Chromium |
+| `scripts/test-durations.mjs` | SR-BUILD | each test file's time, which balances CI's shards |
 | `scripts/serve.mjs` | SR-BUILD | the demos' static server |
 | `scripts/build-site.mjs` | SR-BUILD | the live playground's static site (W-44) |
 | `scripts/build-manifest.mjs`, `packages/grid/custom-elements.json` | SR-BUILD · SR-GRID | the manifest, editor data and framework typings, generated at grid build (W-37) |

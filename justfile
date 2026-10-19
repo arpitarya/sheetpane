@@ -70,6 +70,11 @@ publish version:
 version-parity:
     node scripts/check-version-parity.mjs
 
+# re-measure each test file's time into test/durations.json, which balances CI's shards
+test-durations:
+    pnpm exec vitest run --reporter=json --outputFile=.vitest/report.json
+    node scripts/test-durations.mjs .vitest/report.json
+
 # the built packages, installed from their tarballs and imported from plain Node (also in CI on three OSes)
 smoke-built: build
     node scripts/smoke-built.mjs

@@ -1,41 +1,70 @@
 # Every push, PR and manual run (SR-BUILD decision 8). publish.yml refuses a release unless
-# this workflow concluded `success` on the commit being released, on main.
-#   check     the full suite on Linux: typecheck, Node + Chromium tests, build, the pack check,
-#             both demos in Chromium, version parity
-#   portable  ubuntu / macos / windows × Node 22 and the current LTS: build, typecheck (the
-#             repo's lint), the Node unit tests, version parity, and the BUILT packages
-#             installed from their tarballs and imported from plain Node
-#   create    each `npm create sheetpane` template, installed from the packed tarballs
+# this workflow concluded `success` on the commit being released, on main. Jobs run in parallel,
+# each set up by .github/actions/setup (pnpm store and Chromium cached):
+#   lint       version parity, build, typecheck (the repo's lint)
+#   test       the whole suite (Node + Chromium) in four shards balanced by test/durations.json
+#   coverage   @sheetpane/export's Node tests with coverage: under 90 % lines fails
+#   package    the pack check and both demos in Chromium
+#   portable   ubuntu / macos / windows × Node 22 and the current LTS: build, typecheck, the Node
+#              tests, and the BUILT packages installed from their tarballs and imported
+#   create     each `npm create sheetpane` template, installed from the packed tarballs
 name: ci
 on:
   push:
     branches: ['**']
   pull_request:
   workflow_dispatch:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: just
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - run: node scripts/check-version-parity.mjs
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: just check
-      - run: just pack-check
-      - run: just demo-check
+      - run: pnpm run build
+      - run: pnpm run typecheck
+  test:
+    name: test (${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          playwright: 'true'
+      - run: pnpm run build
+      - run: pnpm exec vitest run --shard=${{ matrix.shard }}/4
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm exec vitest run --project export --coverage
+  package:
+    name: pack + demos
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          playwright: 'true'
+      - run: pnpm run build
+      - run: node scripts/pack-check.mjs
+      - run: node scripts/demo-check.mjs examples/html examples/react/dist
   portable:
     name: portable (${{ matrix.os }}, Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -43,36 +72,27 @@ jobs:
         node: ['22', 'lts/*']
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
           node-version: ${{ matrix.node }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
       - run: node scripts/check-version-parity.mjs
       - run: pnpm run build
       - run: pnpm run typecheck
-      # the Node tests; playwright.node.test.ts drives Chromium, which `check` runs with a browser
+      # the Node tests; playwright.node.test.ts drives Chromium, which `test` runs with a browser
       - run: pnpm exec vitest run --project export --project node --exclude '**/playwright.node.test.ts'
       - run: node scripts/smoke-built.mjs
   # W-43: each `npm create sheetpane` template, installed from the packed tarballs, built and tested
   create:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         template: [vanilla, react, next, vue, angular, svelte]
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version: 22
-          cache: pnpm
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: just
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: just create-check ${{ matrix.template }}
+          playwright: 'true'
+      - run: pnpm run build
+      - run: node scripts/create-check.mjs ${{ matrix.template }}

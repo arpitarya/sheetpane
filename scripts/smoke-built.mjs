@@ -1,6 +1,8 @@
 // The built packages, as a host installs them (SR-BUILD decision 8): every package packed by
 // `pnpm pack` (workspace:* rewritten), all the tarballs installed with npm into an empty folder
-// outside the workspace, then each one used from plain Node — its main entry imported (SR-LAW-8:
+// outside the workspace (`--legacy-peer-deps`: a host's own peers — Playwright, Vitest for
+// @sheetpane/testing — are not downloaded; the packages' peers on each other are installed
+// explicitly), then each one used from plain Node — its main entry imported (SR-LAW-8:
 // every package imports with no DOM), a bin-only package's bin syntax-checked. No source is read.
 // Usage: node scripts/smoke-built.mjs   (after `pnpm -r build`)
 import { execFileSync } from 'node:child_process';
@@ -26,7 +28,7 @@ for (const dir of readdirSync(join(root, 'packages'))) {
 }
 mkdirSync(host, { recursive: true });
 writeFileSync(join(host, 'package.json'), JSON.stringify({ name: 'smoke-host', private: true, type: 'module' }));
-run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...pkgs.map((x) => x.tgz)], host);
+run('npm', ['install', '--no-audit', '--no-fund', '--legacy-peer-deps', '--loglevel=error', ...pkgs.map((x) => x.tgz)], host);
 
 let failed = 0;
 for (const { p } of pkgs) {
