@@ -86,6 +86,7 @@ has a `BREAKING CHANGE:` footer.
 
 | symptom | cause | fix |
 |---|---|---|
+| `npm trusts this workflow` fails: *npm refused the OIDC exchange* for a package (nothing is published) | that package has no trusted publisher, or it names another workflow file (e.g. the old `release.yml`) or environment | on npmjs.com, *package → Settings → Trusted Publisher*: `arpitarya` / `sheetpane` / `publish.yml` / `npm`, **Allow npm publish** ticked; re-run the job |
 | `publish npm` fails with `ENEEDAUTH`, `E401`, `E403` or "OIDC token exchange" | the trusted publisher does not match: workflow file not `publish.yml`, environment not `npm`, the repository misspelled, or **Allow npm publish** unticked | correct it on npmjs.com (*package → Settings → Trusted Publisher*), then re-run the failed job |
 | the same, on a package published for the first time | npm binds trusted publishers only to existing packages | publish that package once by hand (step 3), add its trusted publisher (step 4), re-run |
 | the npm step prints a version below 11.5.1 | npm too old for OIDC | the workflow installs `npm@latest`; check that step's output |

@@ -116,6 +116,31 @@ jobs:
           npm i -g npm@latest
           npm --version
 
+      - name: npm trusts this workflow for every package it will publish
+        # Asked before anything is published: a package npm does not trust from here would
+        # fail mid-loop (a bare E404 on PUT) and leave the release half on npm. This makes the
+        # same OIDC exchange `npm publish` makes, per package, and prints npm's own answer.
+        run: |
+          bad=0
+          for t in ./tarballs/*.tgz; do
+            read -r name ver < <(tar -xzOf "$t" package/package.json | node -e 'const p = JSON.parse(require("fs").readFileSync(0, "utf8")); console.log(p.name, p.version)')
+            npm view "$name@$ver" version >/dev/null 2>&1 && { echo "✓ $name@$ver is already on npm"; continue; }
+            idt="$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).value')"
+            code="$(curl -sS -o "$RUNNER_TEMP/oidc.json" -w '%{http_code}' -X POST -H "Authorization: Bearer $idt" \
+                    "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/${name/\//%2f}")"
+            if [ "${code:0:1}" = 2 ]; then
+              echo "✓ $name trusts publish.yml"
+            else
+              echo "::error::$name — npm refused the OIDC exchange (HTTP $code): $(node -p 'try { JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).message ?? "" } catch { "" }' "$RUNNER_TEMP/oidc.json")"
+              bad=1
+            fi
+          done
+          rm -f "$RUNNER_TEMP/oidc.json"
+          if [ "$bad" != 0 ]; then
+            echo "::error::Nothing was published. On npmjs.com, for each package above: Settings → Trusted Publisher → GitHub Actions — organization arpitarya, repository sheetpane, workflow publish.yml, environment npm — and tick 'Allow npm publish' (or run scripts/npm-trust.sh). Then re-run this job."
+            exit 1
+          fi
+
       - name: publish each tarball
         # A version with a "-" (0.3.0-beta.1) goes to `next`, never to `latest`. A version
         # already on npm is skipped, so a failed run is re-run, not re-released.
