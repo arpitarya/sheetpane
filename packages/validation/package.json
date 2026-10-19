@@ -41,10 +41,10 @@
     "@sheetpane/grid": "workspace:*"
   },
   "dependencies": {
+    "@sheetpane/export": "workspace:*",
     "@sheetpane/skills": "workspace:*"
   },
   "devDependencies": {
-    "@sheetpane/export": "workspace:*",
     "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*"
   },

@@ -36,8 +36,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
 
-- 🟢 **W-58** `agent` · **G2** · Write the rules file into the download as Excel's own dropdowns and checks. Filed by Arpit (Cowork). [detail](open/W-58-rules-file-as-excel-dropdowns.md)
-
 - 🟢 **W-59** `agent` · **G2** · New plugin `@sheetpane/review`: the review written into the download as its own sheet, flagged cells coloured. Filed by Arpit (Cowork). [detail](open/W-59-review-sheet-plugin.md)
 
 - 🟢 **W-62** `agent` · **G2** · Locked cells and sheet protection honoured in Edit. Filed by Arpit (Cowork). [detail](open/W-62-locked-cells-and-protection.md)

@@ -6,7 +6,7 @@ item: W-58
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Claude Code (claude-opus-5-5), closed"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | Map rules to validation: `valid` lists → list rule; numeric bounds → whole/decimal; dates → date; regex and anything inexpressible → skipped and listed | one rules file, two places it works | ⏳ |
-| 2 | Download menu option *Write rules as Excel dropdowns* (`exportOptions.rulesAsValidation`) | the host or user chooses | ⏳ |
-| 3 | Parity: export with rules → re-import → the validation plugin flags the same cells the rules engine flags | Excel and sheetpane agree | ⏳ |
+| 1 | Map rules to validation: `valid` lists → list rule; numeric bounds → whole/decimal; dates → date; regex and anything inexpressible → skipped and listed | one rules file, two places it works | ✅ |
+| 2 | Download menu option *Write rules as Excel dropdowns* (`exportOptions.rulesAsValidation`) | the host or user chooses | ✅ |
+| 3 | Parity: export with rules → re-import → the validation plugin flags the same cells the rules engine flags | Excel and sheetpane agree | ✅ (Excel itself → W-30) |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -38,10 +38,10 @@ An export option that turns a host's JSON rules file into the workbook's own dat
 
 | DoD | what | state |
 |---|---|---|
-| 1 · mapping | a table in SR-VALIDATION of what maps and what is skipped, with SP codes | ⏳ |
-| 2 · option | export option; the skipped list on the console and status line (B-032: plugins cannot add to event details) | ⏳ |
-| 3 · parity | on the fixtures' rules sample | ⏳ |
-| 4 · tests · docs | skill `sheetpane-rules-file`; CHANGELOG | ⏳ |
+| 1 · mapping | a table in SR-VALIDATION of what maps and what is skipped, with SP codes | ✅ SR-VALIDATION decision 10's table; `validationOf(rule)` (`packages/validation/src/write.ts`): `oneOf` / `equals` → list, `integer` / `number` / bounds → whole / decimal, `date` → date (`DATE()` or a serial), lengths → textLength, `boolean` → TRUE, FALSE, `required` → blank not allowed; `pattern`, `noneOf`, `unique` SP-5401, two checks SP-5402, a list Excel cannot type out SP-5403, an unreadable bound SP-5404, a missing column or sheet SP-5405. `rulesAsValidations(store)` places them (a column from under its titles to the last row, a cell rule its range) and merges: the workbook's own rule keeps its cells (SP-5406, listed), the same check joins it instead of repeating; `x14` rules left in `extLst`; a sheet whose own rules export refuses keeps its block (SP-5407) |
+| 2 · option | export option; the skipped list on the console and status line (B-032: plugins cannot add to event details) | ✅ `validation()` provides `exportPatch` with `exportOptions: [{ key: 'rulesAsValidation', label: 'Write rules as Excel dropdowns', default: false, applies }]` (`validation({ rulesAsValidation: true })` sets the default); the grid's new `ExportOption.applies(store)` hides the switch without rules and makes Download export an untouched workbook while it is on (SR-GRID 10, 17); one console warning per rule not written, with its code; `lastRulesWrite(book)`; the status line adds "k rules not written to Excel" (`export()` now re-renders) |
+| 3 · parity | on the fixtures' rules sample | ✅ `showcase.xlsx` + `showcase.rules.json`, with edits: exported with the rules, re-opened with the validation plugin alone, it flags exactly the rules engine's cells but for Account's pattern (not written) — 7 cells on Validation and Formulas; Status joined the file's own list, Units kept the file's own `whole > 0` on C2:C5. Opening the file in Excel and LibreOffice → W-30 (DoD 3) |
+| 4 · tests · docs | skill `sheetpane-rules-file`; CHANGELOG | ✅ `packages/validation/test/write.test.ts` (16); the `sheetpane-rules-file` and `sheetpane-plugin-author` skills; the validation README; SR-VALIDATION 1, 10; SR-GRID 10, 17; SR-CODES; docs/ERRORS.md (SP-5401 – SP-5407); `llms-full.txt`; CHANGELOG |
 
 ## Blockers
 

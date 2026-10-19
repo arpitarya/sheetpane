@@ -144,7 +144,9 @@ flowchart LR
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
   `sheetpane-plugins` and `sheetpane-plugin-author` name rich text with W-53
   (a sheet's `runs`, `decorateRuns`, `richText` on `sheetpane-editstart`), so the
-  drift check covers them.
+  drift check covers them. `sheetpane-rules-file` names W-58's *Write rules as
+  Excel dropdowns* (`rulesAsValidation`, `lastRulesWrite`, SP-5401 – SP-5406)
+  and `sheetpane-plugin-author` the export switch's `applies` (W-58).
 - **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
   cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
   check (decision 5) reads them against the element's source.

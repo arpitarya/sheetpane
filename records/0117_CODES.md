@@ -93,6 +93,11 @@ flowchart LR
   write as Excel reads it (SR-EXPORT decision 6).
 - **W-66** added SP-3019 (warning): the `ref` attribute or a `#sheetpane=`
   link names no cell (SR-GRID decision 11d).
+- **W-58** added SP-5401 – SP-5407 (warnings), the first 5400 codes: the
+  host's rules written into the download as Excel's own — a check Excel
+  cannot hold, two checks in one rule, a list it cannot type out, a bound it
+  cannot read, a missing column or sheet, cells that keep their own rule,
+  and a sheet whose rules could not be rewritten (SR-VALIDATION decision 10).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

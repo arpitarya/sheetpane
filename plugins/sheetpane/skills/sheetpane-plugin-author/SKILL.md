@@ -37,8 +37,10 @@ registerPlugin('shout', () => shout());      // then <sheetpane-excel plugins="s
 
 **Slots** for `controls`: `format-row`, `selbar` (docked in the cell bar and
 the right-click menu), `cellbar`, `status` (text), `cell` (a mark where
-`appliesTo` accepts), `overlay`. `exportOptions: [{ key, label, default }]`
-adds a switch to the Download menu.
+`appliesTo` accepts), `overlay`. `exportOptions: [{ key, label, default,
+applies? }]` adds a switch to the Download menu; `applies(store)` hides it
+while it has nothing to do and, while it is on, makes Download export an
+untouched workbook instead of handing back the original bytes.
 
 ## Rules
 

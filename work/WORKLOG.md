@@ -31,6 +31,9 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** rules keep `ProblemSeverity` (a failing rule is a problem), so `rules.schema.json` is unchanged; results are counted in cells, problems in entries; `includeResults` is host-only (no Download-menu switch); a result a `validate` provider stops reporting is removed, never resolved. Left open: a demo of results in `examples/` (not required by L10 — no example uses results).
 - **Mistakes:** none.
 - **Next:** merge lane f; then W-55/W-68/W-69's lane, which touches the same list.
+
+---
+
 ## 2026-10-19 — W-60 dependent dropdowns: `INDIRECT(<cell>)` list sources  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-60 in lane e (worktree `sheetpane-lanes/e`, branch `lane-e`), on top of W-61, beside other lanes.*
@@ -62,6 +65,9 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** the decider ruled (1) sheetpane never sends anything, while a host's own code may save to its server; (2) the `src`/`rules-src` GETs stay, because they send nothing. `NOW.md` was left alone: a concurrent Claude Code session owns it (lanes W-50–W-69). **Not committed**, at the decider's word.
 - **Mistakes:** the first regex matched `fetch (` inside a doc comment; it was tightened to `fetch(`.
 - **Next:** run `pnpm vitest run test/packages.test.ts -t 'SR-LAW-11'` on the Mac, then commit with explicit pathspecs.
+
+---
+
 ## 2026-10-19 — W-69 closed: accepted deviations  ·  Claude Code (claude-opus-5-5, lane a)
 
 - **Asked:** *build W-69 in the lane-a worktree and close it* (the orchestrator's brief).
@@ -110,6 +116,19 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
   - The review-sheet half of DoD 3 belongs to W-59, whose DoD 3 already lists these errors.
 - **Mistakes:** none. Three repo tests timed out at load ~146 (other lanes building), then passed when run alone.
 - **Next:** the orchestrator merges lane a, then files the two follow-ups above if the decider wants them.
+
+---
+
+## 2026-10-19 — W-58 closed: the rules file written into the download as Excel dropdowns  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-58 (write the rules file into the download as Excel's own dropdowns and checks) in lane b, its own worktree, while other agents build sibling items; use W-57's `setDataValidations`.*
+- **Done:** `@sheetpane/validation` `src/write.ts` (DOM-free): `validationOf` maps one rule to one Excel rule (SR-VALIDATION decision 10's table), `rulesAsValidations(store)` places them per sheet from `store.columnRules` through the grid's exported `checkDocument` (element columns < `"*"` < named sheet, as the rules engine merges; rules.ts untouched), `writeRules` writes each changed sheet's whole block with `setDataValidations` from the plugin's new `exportPatch`. Option `rulesAsValidation` (*Write rules as Excel dropdowns*, off unless `validation({ rulesAsValidation: true })`). Grid: `ExportOption.applies(store)` — the menu hides a switch with nothing to do, Download exports an untouched workbook while an applying switch is on, a plugin whose switches all say `applies` is no longer caught by the "errors + exportPatch" heuristic; `export()` re-renders when done so the status line can report. SP-5401 – SP-5407 (CODES, lock, ERRORS.md). `@sheetpane/export` moved from devDependency to dependency of validation (lockfile). Tests: `packages/validation/test/write.test.ts` (16) — the mapping row by row, placing and merging, `x14` left alone, SP-5407, the option, console and status line, the Download menu, and parity on the showcase. Records: SR-VALIDATION 1, 10; SR-GRID 10, 17; SR-CODES. Skills `sheetpane-rules-file`, `sheetpane-plugin-author`; validation README; `llms-full.txt`; CHANGELOG. DoD 3's Excel/LibreOffice opening joins W-30 DoD 3.
+- **Decided / left open:** "the file's own rule wins" read as the *workbook's* own validation (SR-VALIDATION §1's wording): a written rule leaves cells the workbook already rules (listed, SP-5406) and joins a rule that checks the same thing rather than repeating it; among written rules a cell rule beats a column rule, a named sheet's beats `"*"`'s. One rule → one Excel rule, or none: a rule with two checks is skipped whole, not half-written; no `custom` formulas are generated (they would need `@sheetpane/formulas` to be checked back). The switch is off by default, so Download is unchanged for every existing host. A rule that checks nothing (`type: 'text'` alone) is neither written nor listed. CSV downloads, and CSV converted to `.xlsx`, carry no rules. The element's `validate` function is not a rule and is not written.
+- **Mistakes:** the first Download-menu test toggled the still-open menu shut; the status line did not show the report until the grid re-rendered after `export()`.
+- **Next:** W-30 DoD 3 (the decider opens a written file in Excel and LibreOffice).
+
+---
+
 ## 2026-10-19 — W-57 closed: export writes data validation and conditional formatting  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-57 (export writes data validation and conditional formatting) in lane b, its own worktree, while other agents build sibling items.*
@@ -137,6 +156,9 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** read in: only `read()` hashes (`fromXlsx` / `fromCsv` may be given text, not the file); a refused file is not hashed; SP-1009 warns on every unhashed load or export rather than once per page; the event key is always present (`string | undefined`). `@sheetpane/mcp` does not report the hash yet — not asked.
 - **Mistakes:** the empty-message vector was misremembered in the first test draft (`…afbe4c…` for `…afbf4c…`); `shasum -a 256` settled it before anything was committed.
 - **Next:** the queue's next agent item.
+
+---
+
 ## 2026-10-19 — W-66 open at a cell: `ref`, `link="hash"`, Copy link (closed)  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-66 in lane c (a worktree beside other lanes), close it, commit, do not push.*
@@ -275,6 +297,8 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** the decider ruled L10. Read in, open to override: "examples" = all of `examples/` (HTML demo, React demo and recipes, starters); "maintained" = working **and** current, in the same change; an example is never deleted or skipped to let a package change pass (removal takes a ruling); the law does not require a new example per feature (SR-BUILD 11/11a decide that). Left open: B-035, a commit-msg gate for "current".
 - **Mistakes:** none.
 - **Next:** the decider reviews and commits; rules on B-035.
+
+---
 
 ## 2026-10-18 — hide and show researched; W-49 filed (core honours the file's hiding, `@sheetpane/visibility` edits it)  ·  Claude (Cowork, claude-opus-5-5)
 
