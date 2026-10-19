@@ -23,7 +23,7 @@ here. Read that record before changing anything below it.
 | what the decider decides | filed | age |
 |---|---|---|
 
-*Empty since 2026-10-19 — next gate: W-30 and W-48, the decider's hands-on runs (testing), and the first npm publish of `@sheetpane/tables`, `review` and `compare` for 0.4.0.*
+*Empty since 2026-10-19 — next gate: W-30 and W-48, the decider's hands-on runs (testing), and a trusted publisher on `@sheetpane/tables`, `review` and `compare` before the next release.*
 
 ---
 

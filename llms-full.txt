@@ -5819,10 +5819,14 @@ pnpm and a justfile; the testing verdict chose the runner.
    already on npm is skipped, so a failed run is re-run. **No token** — npm
    trusted publishing (OIDC; the decider's ruling, 2026-10-19: no
    `NPM_TOKEN`). Trusted publishing needs the package to exist: the first
-   version is published once by hand, then each package trusts `publish.yml`
-   and environment `npm` (npmjs.com, or `scripts/npm-trust.sh`). Neither name
-   may change: npmjs.com is bound to both. Never `npm publish` from a package
-   folder: npm ships `workspace:*` literally.
+   version is published once by hand — `pnpm publish` in the package's
+   folder, approved in the browser (no code; pnpm rewrites `workspace:*` to
+   the exact version), as `@sheetpane/tables`, `review` and `compare` were at
+   0.4.0 — then the release's failed `publish.yml` job is re-run, and each
+   package trusts `publish.yml` and environment `npm` (npmjs.com, or
+   `scripts/npm-trust.sh`). Neither name may change: npmjs.com is bound to
+   both. Never plain `npm publish` from a package folder: npm ships
+   `workspace:*` literally.
 9a. **llms.txt (W-38):** `scripts/build-llms.mjs` (`just llms`, no
     dependencies, deterministic) writes `llms.txt` (llmstxt.org: an H1, a
     summary, sections Start · Elements · Plugins · Rules and errors · Testing
@@ -5894,7 +5898,8 @@ pnpm and a justfile; the testing verdict chose the runner.
 - **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
   pack-check`, locally and in CI.
 - **Owed by the decider:** the first publish by hand (any package not yet on
-  npm), a trusted publisher per package (`publish.yml`, environment `npm`,
+  npm), a trusted publisher per package (`tables`, `review` and `compare`
+  have none yet, 2026-10-19) (`publish.yml`, environment `npm`,
   *Allow npm publish*) and the `npm` environment in GitHub — `RELEASING.md`
   §One time; the `@sheetpane` organisation exists.
 - **Still open:** the licence check over the whole lockfile (backlog B-008);

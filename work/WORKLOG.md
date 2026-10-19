@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — 0.4.0 published: all 20 packages on npm  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *"commit everything and pull the latest changes merge all branches to main and delete other branches"*, then the publish.
+- **Done:** committed the other session's fux setup (`6c95735`; SR-BUILD 1a written — its record text was missing), merged `origin/main` (`22d2d2b`), removed the ten lane worktrees and branches (all already in `main`). The first `publish.yml` run refused without publishing: the three new packages did not exist on npm. The decider would not type an OTP, but published them with `pnpm publish` in each folder (browser approval); the failed job was re-run and CI published the other 17. A clean install of the new packages from npm works. RELEASING.md: 20 packages, and the first-publish step as it was done.
+- **Decided / left open:** a trusted publisher on tables, review and compare is owed before the next release (OPEN-WORK's next gate). Registry lag: a fresh version took 1–5 min to be served.
+- **Mistakes:** I first told the decider "19 others" and "all 22" — it is 17 and 20; an agent started holding the three back as private before the decider's own publish made it moot (stopped before editing).
+- **Next:** the decider's trusted publishers; then W-30 / W-48.
+
+---
+
 ## 2026-10-19 — fux docs index set up; L11 committed  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *"setup fux-engine"*, then *"set it up using uv package manager"*, then *"commit everything"*.

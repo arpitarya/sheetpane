@@ -18,28 +18,23 @@ that already exists, so the first publish cannot come from CI.
 
 1. **npm account with 2FA.** Account `aarya11`, 2FA set to *auth-and-writes*.
 2. **The `sheetpane` organisation** on npmjs.com, with `aarya11` as owner. Done.
-3. **The first publish, by hand,** from a green, tagged tree. Run `npm publish`
-   on the packed tarballs, never from a package folder: npm would ship
-   `workspace:*` as-is.
-   ```bash
-   git checkout v0.1.0 && pnpm install --frozen-lockfile && pnpm run build
-   npm login
-   for d in packages/*/; do (cd "$d" && pnpm pack --pack-destination /tmp/sp); done
-   for t in /tmp/sp/*.tgz; do npm publish "$t" --access public --otp=<code>; done
-   git checkout main
-   ```
-   npm asks for a code from your authenticator on every write. One fresh code
-   usually covers all 18 if you go straight through; if it expires, re-run the
-   loop with a new code. A version already on npm is refused, not
-   overwritten, so re-running is safe.
-4. **A trusted publisher on each of the 18 packages.** On npmjs.com, open
+3. **The first publish, by hand,** of each package new to npm, from a green
+   tree at the release's version: in the package's folder, `pnpm publish`
+   (pnpm rewrites `workspace:*` to the exact version; plain `npm publish` in a
+   folder would not). npm opens a browser sign-in to approve the write — no
+   code to type. This is how `@sheetpane/tables`, `review` and `compare`
+   reached npm at 0.4.0. A new package can take a few minutes to become
+   visible (a `0.0.0-stage` placeholder may show first). Then re-run the
+   release's failed `publish.yml` job (`gh run rerun <id> --failed`): it skips
+   versions already on npm and publishes the rest.
+4. **A trusted publisher on each of the 20 packages.** On npmjs.com, open
    *package → Settings → Trusted Publisher → GitHub Actions* and fill in:
    - **Organization or user:** `arpitarya`
    - **Repository:** `sheetpane`
    - **Workflow filename:** `publish.yml`
    - **Environment name:** `npm`
 
-   Then tick **Allow npm publish**. Or let `scripts/npm-trust.sh` do all 18
+   Then tick **Allow npm publish**. Or let `scripts/npm-trust.sh` do all 20
    with `npm trust github`. It needs npm 12 and asks for your login and 2FA.
 5. **The `npm` environment in GitHub:** *Settings → Environments → New
    environment → `npm`*. Add yourself as a required reviewer if you want to
@@ -74,7 +69,7 @@ has a `BREAKING CHANGE:` footer.
    release creates the tag and runs `publish.yml`, which:
    - refuses unless `ci.yml` succeeded on this commit;
    - checks version parity and that the tag is the packages' version;
-   - builds once and packs the 18 tarballs;
+   - builds once and packs the 20 tarballs;
    - checks each tarball (README, LICENSE and build output present; no
      `src/`, no tests, no `workspace:`);
    - publishes each one with provenance. A version with a `-` (e.g.
@@ -88,7 +83,7 @@ has a `BREAKING CHANGE:` footer.
 |---|---|---|
 | `npm trusts this workflow` fails: *npm refused the OIDC exchange* for a package (nothing is published) | that package has no trusted publisher, or it names another workflow file (e.g. the old `release.yml`) or environment | on npmjs.com, *package → Settings → Trusted Publisher*: `arpitarya` / `sheetpane` / `publish.yml` / `npm`, **Allow npm publish** ticked; re-run the job |
 | `publish npm` fails with `ENEEDAUTH`, `E401`, `E403` or "OIDC token exchange" | the trusted publisher does not match: workflow file not `publish.yml`, environment not `npm`, the repository misspelled, or **Allow npm publish** unticked | correct it on npmjs.com (*package → Settings → Trusted Publisher*), then re-run the failed job |
-| the same, on a package published for the first time | npm binds trusted publishers only to existing packages | publish that package once by hand (step 3), add its trusted publisher (step 4), re-run |
+| the same, on a package published for the first time | npm binds trusted publishers only to existing packages | publish that package once with `pnpm publish` in its folder (step 3), add its trusted publisher (step 4), re-run the failed job |
 | the npm step prints a version below 11.5.1 | npm too old for OIDC | the workflow installs `npm@latest`; check that step's output |
 | `refusing to publish: ci.yml has not succeeded` | the release was created before CI finished, or CI is red | wait for green, or fix and push; then re-run the `build` job |
 | `release tag vX != package version Y` | the release was created without `just release X` | delete the release and its tag, run `just release X`, release again |
