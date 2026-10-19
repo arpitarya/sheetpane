@@ -252,7 +252,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
-    its header menu, the marker unhides it) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    its header menu, the marker unhides it) · Tables (W-61: `tables
+    validation` on the showcase's Tables sheet — both tables in their style
+    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
@@ -265,7 +267,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     1 1/4; the yellow fill; B6 recalculated; two rule errors; a data bar; the
     picture; both charts; the note and the thread; all of them together; lazy
     mounting and edits kept; the Rules file tab's six errors with no Flag issue
-    and no card on F or a click.
+    and no card on F or a click; the Tables tab's two header fills and C9's
+    list.
 
 ### Consequences
 

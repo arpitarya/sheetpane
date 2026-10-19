@@ -1,0 +1,53 @@
+{
+  "name": "@sheetpane/tables",
+  "version": "0.3.0",
+  "description": "Excel tables for sheetpane — each table's header row, banded rows and columns and totals row drawn from its built-in table style, as a plugin on the `decorate` hook. The tables themselves are read by @sheetpane/import.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/tables"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./dist/index.js",
+    "./src/index.ts"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "dependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/skills": "workspace:*"
+  },
+  "devDependencies": {
+    "@sheetpane/grid": "workspace:*",
+    "@sheetpane/styles": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  }
+}

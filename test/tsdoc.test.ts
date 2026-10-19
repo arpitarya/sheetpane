@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { problems, walk } from './tsdoc-walk.ts';
 
 const root = join(import.meta.dirname, '..');
-const PKGS = ['export', 'import', 'grid', 'numfmt', 'styles', 'formulas', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'fixtures', 'testing'];
+const PKGS = ['export', 'import', 'grid', 'numfmt', 'styles', 'formulas', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'fixtures', 'testing'];
 const built = PKGS.every((p) => existsSync(join(root, 'packages', p, 'dist')));
 const all = built ? walk(root, PKGS) : [];
 const unique = [...new Map(all.map((e) => [`${e.file}#${e.name}`, e])).values()];

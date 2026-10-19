@@ -16,6 +16,8 @@ export { checkDocument, describeRule, RULE_TYPE, CELL_RULE_TYPE, type RulesDocum
 export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, ERROR_META_MAX, SEVERITY, SEVERITY_ORDER, RESULTS_LEVELS, errorScope, isResult, resultsLevelOf, machineAuthored } from './pane/types.js';
 // for plugins whose rules are written against a range's top-left (validation, condfmt): the one implementation
 export { shiftFormula } from '@sheetpane/export';
+// W-61: a table's structured reference (`Units[Name]`) as cells — for plugins that read list sources.
+export { resolveStructuredRef, type StructuredRef, type TableShape } from '@sheetpane/export';
 // Stable error codes (W-40), re-exported for plugins that do not depend on @sheetpane/export.
 export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, type CodeInfo, type SpCode, type SpCoded, type SpError } from '@sheetpane/export';
 export type { SheetpaneError, Severity, ProblemSeverity, ResultSeverity, ResultsLevel, Mode, ChangeKind, ChangeEntry, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType, ErrorScope, ErrorMeta, ErrorStatus, RenderDetail } from './pane/types.js';

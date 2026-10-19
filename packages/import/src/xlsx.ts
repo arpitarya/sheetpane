@@ -8,7 +8,7 @@ import { all, bool, first, kid, kids, num, parseXml, relAttr, str } from './dom.
 import { ImportError } from './errors.js';
 import { formatCode, general, subsetCode } from './numfmt.js';
 import { color, font, parseStyles, parseTheme } from './styles.js';
-import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetState, StyleTables, TextRun, ThreadedComment } from './types.js';
+import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetState, StyleTables, Table, TextRun, ThreadedComment } from './types.js';
 
 /** Options for reading an .xlsx: the ZIP size limits that refuse a ZIP bomb. */
 export interface ReadOptions extends ZipLimits {}
@@ -165,6 +165,46 @@ async function parseDrawing(pkg: Pkg, path: string): Promise<DrawingAnchor[]> {
     }
   }
   return out;
+}
+
+/**
+ * One table part (`xl/tables/tableN.xml`, W-61): its name as formulas use it, its range, header and totals
+ * rows, columns and `tableStyleInfo`. Undefined when the part is missing or names no range.
+ */
+async function parseTable(pkg: Pkg, path: string): Promise<Table | undefined> {
+  const d = await pkg.doc(path);
+  const root = d?.documentElement;
+  const ref = root?.getAttribute('ref');
+  if (!root || !ref) return undefined;
+  const info = kid(root, 'tableStyleInfo');
+  const style: Table['style'] = {
+    showFirstColumn: bool(info, 'showFirstColumn'),
+    showLastColumn: bool(info, 'showLastColumn'),
+    showRowStripes: bool(info, 'showRowStripes'),
+    showColumnStripes: bool(info, 'showColumnStripes'),
+  };
+  const sn = str(info, 'name');
+  if (sn) style.name = sn;
+  const cols = kid(root, 'tableColumns');
+  const t: Table = {
+    name: str(root, 'displayName') || str(root, 'name') || '',
+    id: num(root, 'id') ?? 0,
+    ref,
+    headerRowCount: num(root, 'headerRowCount') ?? 1,
+    totalsRowCount: num(root, 'totalsRowCount') ?? 0,
+    columns: (cols ? kids(cols, 'tableColumn') : []).map((c) => {
+      const col: Table['columns'][number] = { name: decodeOoxmlString(c.getAttribute('name') ?? '') };
+      const fn = str(c, 'totalsRowFunction'), label = str(c, 'totalsRowLabel');
+      if (fn) col.totalsRowFunction = fn;
+      if (label !== undefined) col.totalsRowLabel = decodeOoxmlString(label);
+      return col;
+    }),
+    style,
+    path,
+  };
+  const af = kid(root, 'autoFilter')?.getAttribute('ref');
+  if (af) t.autoFilter = af;
+  return t;
 }
 
 interface SheetCtx { pkg: Pkg; sst: string[]; sstRuns: (TextRun[] | undefined)[]; styles: StyleTables; date1904: boolean; name: string; path: string; state: SheetState }
@@ -350,13 +390,21 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
       if (d && loc) pivotTables.push({ name: d.documentElement.getAttribute('name') ?? '', ref: loc.getAttribute('ref') ?? '' });
     }
   }
+  // Excel tables (W-61): in <tableParts> order, each its own part
+  const tables: Table[] = [];
+  const parts = kid(root, 'tableParts');
+  for (const tp of parts ? kids(parts, 'tablePart') : []) {
+    const rel = rels.find((r) => r.id === relAttr(tp, 'id') && !r.external && r.type.endsWith('/table'));
+    const t = rel && (await parseTable(c.pkg, rel.target));
+    if (t) tables.push(t);
+  }
   const dcw = num(fmt, 'defaultColWidth');
   return {
     name: c.name, rows, text, path: c.path, merges, columnWidths, state: c.state, hidden: c.state !== 'visible',
     styleIndex, runs, formulas, freeze, hiddenRows, hiddenCols, rowOutline, colOutline, outline, ...(autoFilter ? { autoFilter } : {}), rowHeights,
     defaultRowHeight: num(fmt, 'defaultRowHeight') ?? 15,
     defaultColWidth: dcw ?? (num(fmt, 'baseColWidth') !== undefined ? num(fmt, 'baseColWidth')! + 0.71 : undefined),
-    dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables,
+    dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables, tables,
   };
 }
 

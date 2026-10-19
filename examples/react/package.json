@@ -12,6 +12,7 @@
   "dependencies": {
     "@sheetpane/charts": "workspace:*",
     "@sheetpane/comments": "workspace:*",
+    "@sheetpane/tables": "workspace:*",
     "@sheetpane/visibility": "workspace:*",
     "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/fixtures": "workspace:*",

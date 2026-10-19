@@ -69,14 +69,20 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    rule in words. When a cell breaks several rules, the first counts.
 3. **Rule types:** `whole`, `decimal`, `date`, `time`, `textLength` with all
    eight operators (default `between`, inclusive); `list` from a literal, a
-   range, another sheet's range, a defined name, or the x14 form; `custom`
+   range, another sheet's range, a defined name, a table's structured
+   reference (`Units[Unit]`, `Units[[#Data],[Unit]]`, directly or through a
+   defined name — W-61, resolved by `@sheetpane/export`'s
+   `resolveStructuredRef`, re-exported by the grid, to the table's cells as
+   the file stores its `ref`; it never shifts per cell), or the x14 form; `custom`
    only through a `derive` provider exposing a synchronous `evaluate(formula,
    { sheet, ref })`, relative references shifted per cell —
    `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
    cell, through `@sheetpane/export`'s `shiftFormula`, re-exported by the
-   grid) and defined names; anything else skips the rule and counts it.
+   grid), defined names and structured references; anything else — a table
+   or column that is not there, `[#This Row]` — skips the rule and counts it
+   (`source` for a list).
 5. **Values:** number rules need a number (`whole` an integer); text dates are
    not parsed; `textLength` uses the stored value's length; a list matches
    text ignoring case and a number by value. Blank cells pass with
@@ -100,7 +106,7 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
 ### Consequences
 
 - **Enforced today:** `just test-pkg validation` — 30 tests (every type and
-  operator, list sources, x14, relative operands, live limits, resolve /
+  operator, list sources (a table column by structured reference, W-61), x14, relative operands, live limits, resolve /
   reopen / undo, the arrow and its menu, the shared error pane with the
   author filter, a `custom` rule evaluated by IronCalc through
   `@sheetpane/formulas`), plus SR-GRID's core tests for read-only rows, the ⚠ pin and

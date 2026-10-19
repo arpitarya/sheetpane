@@ -34,6 +34,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-39-mcp-server.md` | 2026-10-18 | [SR-MCP](../records/0119_MCP.md) |
 | `W-43-create-sheetpane.md` | 2026-10-18 | [SR-CREATE](../records/0120_CREATE.md) · [SR-BUILD](../records/0102_BUILD.md) decisions 7, 8 |
 | `W-50-pass-and-not-checked.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 23 · [SR-ERRORS](../records/0106_ERRORS.md) 13 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 |
+| `W-61-excel-tables.md` | 2026-10-19 | [SR-TABLES](../records/0122_TABLES.md) · [SR-IMPORT](../records/0104_IMPORT.md) 13 · [SR-EXPORT](../records/0103_EXPORT.md) 9a · [SR-VALIDATION](../records/0108_VALIDATION.md) 3–4; the Excel check is W-30 DoD 6, the `ref` shift W-52 |
 | `W-49-hide-and-show.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 21c · [SR-VISIBILITY](../records/0121_VISIBILITY.md) · [SR-IMPORT](../records/0104_IMPORT.md) 10 · [SR-EXPORT](../records/0103_EXPORT.md) 3 |
 | `W-57-export-writes-validation-and-conditional-formats.md` | 2026-10-19 | [SR-EXPORT](../records/0103_EXPORT.md) 1, 2, 3, 6 · [SR-IMPORT](../records/0104_IMPORT.md) 2 · [SR-CODES](../records/0117_CODES.md) (SP-2015) |
 | `W-53-rich-text-runs.md` | 2026-10-19 | [SR-IMPORT](../records/0104_IMPORT.md) 12 · [SR-GRID](../records/0105_GRID.md) 9, 9a, 15c, 17 · [SR-STYLES](../records/0110_STYLES.md) 9 |

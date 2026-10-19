@@ -129,6 +129,7 @@ function pluginsFor(wb: ImportedWorkbook): string[] {
     if (s.drawings.some((d) => d.kind === 'picture')) out.add('images');
     if (s.drawings.some((d) => d.kind === 'chart')) out.add('charts');
     if (s.notes.length || s.threadedComments.length) out.add('comments');
+    if (s.tables.length) out.add('tables');
   }
   return [...out].sort().map((p) => `@sheetpane/${p}`);
 }

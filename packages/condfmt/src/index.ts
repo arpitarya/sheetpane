@@ -103,7 +103,7 @@ export function condfmt(): Plugin {
   return {
     id: PLUGIN_ID,
     provides: ['decorate'],
-    after: ['styles'],
+    after: ['styles', 'tables'], // over a cell's own format and its table's style (W-61)
     decorate: (cell) => decorateCell(cell),
   };
 }

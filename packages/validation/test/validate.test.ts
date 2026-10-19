@@ -206,6 +206,36 @@ describe('list sources: a range, another sheet, a defined name, x14 (DoD 2)', ()
   });
 });
 
+describe('list sources: a table column by structured reference (W-61 DoD 2)', () => {
+  // Units: Lists!A1:A4 — a header and three units; the Unit column of Data is checked against it
+  const sheets = (): SheetSpec[] => [
+    { name: 'Data', cells: { A1: 'mg/L', A2: 'furlong', A3: '%', B1: 'ppm', B2: 'mg/L', C1: 'ug/L', C2: 'Total' },
+      rules: [{ sqref: 'A1:A3', type: 'list', f1: 'UnitList' }, { sqref: 'B1:B2', type: 'list', f1: 'Units[[#Data],[Unit]]' }, { sqref: 'C1:C2', type: 'list', f1: 'Units[[#All],[Unit]]' }] },
+    { name: 'Lists', cells: { A1: 'Unit', A2: 'mg/L', A3: 'ug/L', A4: '%' }, tables: [{ name: 'Units', ref: 'A1:A4', columns: ['Unit'] }] },
+  ];
+  const names = [{ name: 'UnitList', formula: 'Units[Unit]' }];
+
+  it('a defined name over Units[Unit], and the reference itself, read the column’s data rows', async () => {
+    const s = await storeWith(sheets(), names);
+    expect(s.getErrors().map((e) => [e.range, e.expected])).toEqual([
+      ['A2', 'list — mg/L, ug/L, %'], ['B1', 'list — mg/L, ug/L, %'], ['C2', 'list — Unit, mg/L, ug/L, %'],
+    ]);
+    expect(skippedRules(s).skipped).toEqual([]);
+  });
+
+  it('the list follows the table’s cells: a unit typed into the column is a choice', async () => {
+    const s = await storeWith(sheets(), names);
+    s.setCell('Lists', 'A4', 'furlong');
+    expect(at(s.getErrors(), 'Data', 'A2')!.status).toBe('resolved');
+    expect(at(s.getErrors(), 'Data', 'A3')!.status).toBe('open');
+  });
+
+  it('a reference to a table or column that is not there is skipped with its reason', async () => {
+    const s = await storeWith([{ ...sheets()[0]!, rules: [{ sqref: 'A1', type: 'list', f1: 'Units[Nope]' }, { sqref: 'A2', type: 'list', f1: 'Nope[Unit]' }] }, sheets()[1]!], names);
+    expect(skippedRules(s).skipped.map((r) => [r.sqref, r.reason])).toEqual([['A1', 'source'], ['A2', 'source']]);
+  });
+});
+
 describe('custom rules, unsupported operands and operators: skipped and counted (DoD 2, 6)', () => {
   const sheet: SheetSpec = { name: 'S', cells: { A1: 5, A2: -5, B1: 1 }, rules: [
     { sqref: 'A1:A2', type: 'custom', f1: 'A1>0', error: 'positive' },

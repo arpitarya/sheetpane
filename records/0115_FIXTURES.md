@@ -58,7 +58,10 @@ helpers to become one package any runner can load (W-32 made the showcase).
    the one exception to SR-BUILD decision 7's `dist`-only rule, so that
    `url()` reaches the files from `src/` and `dist/` alike. `./files/*` is
    exported.
-2. **The files** — `showcase.xlsx`, `showcase.rules.json`, `edge/` (empty,
+2. **The files** — `showcase.xlsx` (one sheet per plugin; its `Tables`
+   sheet, W-61, holds two Excel tables — Units, and Readings with a totals
+   row — and a list rule over `Units[Unit]` through the defined name
+   `UnitList`), `showcase.rules.json`, `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
    guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the

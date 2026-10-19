@@ -60,7 +60,8 @@ the number format is SR-NUMFMT's.
 ### Decision
 
 1. **`styles({ fileStyles? })`** → `{ id: 'styles', provides: ['decorate',
-   'exportPatch'] }`; `ui(options?)` (`styles-ui`) carries the controls.
+   'exportPatch'], after: ['tables'] }` — a cell's own format draws over its
+   Excel table's style (SR-TABLES decision 4); `ui(options?)` (`styles-ui`) carries the controls.
    Importing `@sheetpane/styles` registers `styles` alone;
    `@sheetpane/styles/ui` registers `[styles(), ui()]`. The headless entry
    never imports the UI. No runtime dependency; `@sheetpane/grid` is a peer.

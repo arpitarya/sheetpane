@@ -25,6 +25,11 @@ describe('the manifest (DoD 2, 3)', () => {
     expect((await read(await bytes('edge/hidden-sheet.xlsx'), { name: 'h.xlsx' })).sheets[1]!.hidden).toBe(true);
     expect((await read(await bytes('edge/date1904.xlsx'), { name: 'd.xlsx' })).date1904).toBe(true);
   });
+  it('the showcase’s Tables sheet holds two Excel tables, one with a totals row (W-61)', async () => {
+    const t = (await read(await bytes('showcase.xlsx'), { name: 's.xlsx' })).sheets.find((x) => x.name === 'Tables')!;
+    expect(t.tables.map((x) => [x.name, x.ref, x.totalsRowCount, x.style.name])).toEqual([['Units', 'A1:B5', 0, 'TableStyleMedium2'], ['Readings', 'A8:C13', 1, 'TableStyleMedium7']]);
+    expect(t.dataValidations[0]!.formula1).toBe('UnitList');
+  });
 });
 
 describe('the rules sample (DoD 3)', () => {

@@ -139,6 +139,21 @@ so your app can say so. Turn it off with `{ guardFormulas: false }`.
 
 `toCsv` writes one sheet; for a multi-sheet workbook, pick the one you mean.
 
+## Table references — `resolveStructuredRef(formula, sheets)`
+
+An Excel table's structured reference as plain cells, from the tables each sheet
+carries (`@sheetpane/import` reads them):
+
+```js
+resolveStructuredRef('Units[Unit]', book.sheets);
+// { sheet: 'Lists', table: 'Units', ref: 'A2:A5', range: { top: 1, left: 0, bottom: 4, right: 0 } }
+```
+
+`Table[Column]` and `Table[[#Data],[Column]]` are the column's data rows;
+`#Headers`, `#Totals` and `#All` name those rows; `Table[[A]:[B]]` spans columns;
+`Table[]` and the bare name are the data body. `[#This Row]` and anything that is
+not one range give `undefined`. `patchXlsx` keeps a workbook's table parts as they are.
+
 ## Errors
 
 Every refusal is an `ExportError` with a `code` and the `sheet` / `ref` it is

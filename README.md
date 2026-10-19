@@ -131,6 +131,7 @@ and events.
 | [`images`](packages/images/README.md) | pictures anchored in the sheet |
 | [`comments`](packages/comments/README.md) | notes and threaded comments, read and written |
 | [`visibility`](packages/visibility/README.md) | hide, unhide and group rows, columns and sheets |
+| [`tables`](packages/tables/README.md) | Excel tables drawn in their style — header, bands, totals |
 
 ```html
 <script type="module">import '@sheetpane/grid'; import '@sheetpane/formulas/ui';</script>

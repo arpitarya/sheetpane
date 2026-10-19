@@ -140,6 +140,7 @@ and events.
 | [`images`](packages/images/README.md) | pictures anchored in the sheet |
 | [`comments`](packages/comments/README.md) | notes and threaded comments, read and written |
 | [`visibility`](packages/visibility/README.md) | hide, unhide and group rows, columns and sheets |
+| [`tables`](packages/tables/README.md) | Excel tables drawn in their style — header, bands, totals |
 
 ```html
 <script type="module">import '@sheetpane/grid'; import '@sheetpane/formulas/ui';</script>
@@ -967,6 +968,21 @@ so your app can say so. Turn it off with `{ guardFormulas: false }`.
 
 `toCsv` writes one sheet; for a multi-sheet workbook, pick the one you mean.
 
+## Table references — `resolveStructuredRef(formula, sheets)`
+
+An Excel table's structured reference as plain cells, from the tables each sheet
+carries (`@sheetpane/import` reads them):
+
+```js
+resolveStructuredRef('Units[Unit]', book.sheets);
+// { sheet: 'Lists', table: 'Units', ref: 'A2:A5', range: { top: 1, left: 0, bottom: 4, right: 0 } }
+```
+
+`Table[Column]` and `Table[[#Data],[Column]]` are the column's data rows;
+`#Headers`, `#Totals` and `#All` name those rows; `Table[[A]:[B]]` spans columns;
+`Table[]` and the bare name are the data body. `[#This Row]` and anything that is
+not one range give `undefined`. `patchXlsx` keeps a workbook's table parts as they are.
+
 ## Errors
 
 Every refusal is an `ExportError` with a `code` and the `sheet` / `ref` it is
@@ -1056,6 +1072,7 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
 | `runs` | rich-text cells only, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` — each run's text with its `b`, `i`, `u`, `strike`, `color`, `sz`, `vertAlign` (never the font family); phonetic runs left out; `rows` and `text` hold the joined text as before |
 | `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins; the first two are `@sheetpane/export`'s shapes, so `toXlsx` / `patchXlsx` write them back unchanged |
+| `tables` | the sheet's Excel tables: `name` (as formulas use it), `ref`, header and totals rows, `columns`, `style` — drawn by `@sheetpane/tables` |
 | `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
 | `sha256` | from `read()`: the SHA-256 of the bytes opened, 64 lowercase hex digits — which file this is. Absent on a page without Web Crypto (not `https` or `localhost`), with a console warning `SP-1009`; never a substitute hash. `sha256(bytes)` is exported for hashing anything else |
@@ -1512,6 +1529,8 @@ A `list` source can be:
 - a literal list: `"a,b,c"`
 - a range: `$H$1:$H$9`, `Lists!$A$1:$A$9`, `$A:$A`
 - a defined name that resolves to a range
+- an Excel table's column: `Units[Unit]` or `Units[[#Data],[Unit]]`, directly or
+  through a defined name — the column's data rows, as the file stores the table
 
 A range source is read live from the store, and the arrow's menu re-reads it
 each time it opens.
@@ -2090,6 +2109,53 @@ Spec: [SR-VISIBILITY](../../records/0121_VISIBILITY.md). MIT.
 
 ---
 
+<!-- source: packages/tables/README.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/tables/README.md) -->
+
+# @sheetpane/tables
+
+**Excel tables in `<sheetpane-excel>`, drawn as their style draws them — header row, banded rows and columns, totals row.**
+
+A table (a ListObject — *Insert › Table* in Excel) is read by `@sheetpane/import` whether or not
+this plugin is on: every sheet carries its `tables` (name, range, header and totals rows, columns,
+style). This plugin only draws them:
+
+```js
+import '@sheetpane/grid';
+import '@sheetpane/tables'; // registers `tables`
+excel.setAttribute('plugins', 'tables styles');
+```
+
+or `createWorkbook({ plugins: [tables()] })`.
+
+| a table's | drawn |
+|---|---|
+| header row | bold; filled in the style's colour with light text (Medium), or a line under it (Light) |
+| banded rows / columns | every other data row or column filled in a light tint of the style's colour |
+| first / last column | bold, when the table turns it on |
+| totals row | bold, under a double line |
+| lines | Light: over and under the table; Medium: under every row |
+
+- **Styles:** `TableStyleLight1`–`7` and `TableStyleMedium1`–`7`, in the workbook's theme colours
+  (style 1 in the dark text colour, 2–7 in accents 1–6) — `TABLE_STYLES`. Any other style (Light
+  8–21, Medium 8–28, Dark, a custom style) draws a bold header row only; a table with no style
+  draws nothing, as Excel's *None*.
+- **Order:** a cell's own format (`@sheetpane/styles`) and a conditional format
+  (`@sheetpane/condfmt`) draw over the table's style, as in Excel, whatever order `plugins` lists
+  them in.
+- **Draw-only:** no control, no change, nothing written — a download keeps the file's table parts
+  as they were.
+- **Headless helpers:** `tableAt(sheet, row, col)`, `findTable(book, name)`, `tableCss(table, row,
+  col, theme)`, `paletteOf(style, theme)`.
+
+**Structured references** — `Units[Name]`, `Units[[#Data],[Name]]` — are resolved by
+`@sheetpane/export`'s `resolveStructuredRef`, which `@sheetpane/validation` uses for list sources:
+a dropdown over a table column reads the table's cells, with or without this plugin.
+
+Spec: [SR-TABLES](../../records/0122_TABLES.md). MIT.
+
+
+---
+
 <!-- source: packages/fixtures/README.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/fixtures/README.md) -->
 
 # @sheetpane/fixtures
@@ -2486,6 +2552,7 @@ packages/
   images/                 @sheetpane/images — W-20
   charts/                 @sheetpane/charts — W-21; peer: @sheetpane/images
   comments/               @sheetpane/comments — W-22
+  tables/                 @sheetpane/tables — W-61; Excel tables drawn (read by import, Table[Column] resolved by export)
     (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls)
 examples/                 W-09 — html/ (one index.html) and react/ (Vite + React 19)
 ```
@@ -5103,7 +5170,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
-    its header menu, the marker unhides it) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    its header menu, the marker unhides it) · Tables (W-61: `tables
+    validation` on the showcase's Tables sheet — both tables in their style
+    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
@@ -5116,7 +5185,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     1 1/4; the yellow fill; B6 recalculated; two rule errors; a data bar; the
     picture; both charts; the note and the thread; all of them together; lazy
     mounting and edits kept; the Rules file tab's six errors with no Flag issue
-    and no card on F or a click.
+    and no card on F or a click; the Tables tab's two header fills and C9's
+    list.
 
 ### Consequences
 
@@ -5362,7 +5432,20 @@ else.
    `inflateEntry`, `rawData`, `writeZip`, `isZip`, `crc32`, the XML and
    OOXML-string helpers, `getAttr` / `setAttr` / `parseRels` /
    `resolveTarget` / `relsPathOf`, the A1 helpers, `shiftFormula`,
-   `checkSheetName`.
+   `checkSheetName`, `resolveStructuredRef`.
+9a. **Structured references (W-61):** `resolveStructuredRef(formula,
+    sheets)` turns a table reference into `{ sheet, table, range, ref }`
+    from the tables each sheet carries (SR-IMPORT decision 13; any `{ name,
+    ref, headerRowCount, totalsRowCount, columns }` fits — `TableShape`):
+    `Table[Column]` and `[[#Data],[Column]]` are the column's data rows;
+    `#Headers`, `#Totals`, `#All` and touching pairs of them
+    (`#Headers,#Data`, `#Data,#Totals`) name the bands; `[[A]:[B]]` a
+    column span; `Table[]`, `Table[#Data]` and the bare `Table` the data
+    body. Table and column names are case-insensitive; `'` escapes `[ ] #
+    '`. `[#This Row]` / `@`, a union of columns, bands that do not touch and
+    a band the table does not have resolve to `undefined`. `patchXlsx`
+    leaves table parts as they are (a test reads both tables back after an
+    edit); moving a table's `ref` when rows are inserted is W-52's.
 10. **No runtime dependencies** (SR-LAW-2). `download()` lives in this
     package too — [SR-DOWNLOAD](0101_DOWNLOAD.md).
 
@@ -5504,7 +5587,7 @@ carry over unchanged; the plugins verdict added what plugins read.
    `Border` / `Alignment` / `Color` shapes, are `@sheetpane/export`'s,
    re-exported here, so `toXlsx` and `patchXlsx` write what this reads —
    W-57), `drawings`, `notes`, `threadedComments`,
-   `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
+   `pivotTables`, `tables` (W-61, decision 13). The workbook adds `source`, `activeSheet`, `date1904`,
    `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
    `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
@@ -5594,6 +5677,20 @@ carry over unchanged; the plugins verdict added what plugins read.
     through the `decorate` hook (SR-GRID decision 17, SR-STYLES decision 9);
     an edit writes plain text, and an untouched rich cell is never rewritten
     (`patchXlsx` keeps `sharedStrings.xml` and the cell as they were).
+
+13. **Excel tables (W-61):** `tables` lists the sheet's tables in
+    `<tableParts>` order, each read from its own part
+    (`xl/tables/tableN.xml`) through the sheet's relationship; a part or
+    relationship that is missing is skipped. A `Table` is `{ name, id, ref,
+    headerRowCount, totalsRowCount, columns, style, autoFilter?, path }`:
+    `name` is `displayName` (the name structured references use; `name`
+    when it is absent), `ref` the whole table, header and totals rows
+    included, `headerRowCount` default 1, `totalsRowCount` default 0;
+    `columns` are `{ name, totalsRowFunction?, totalsRowLabel? }` with
+    `_xHHHH_` decoded; `style` is `tableStyleInfo`'s `name?` and its four
+    switches (`showFirstColumn`, `showLastColumn`, `showRowStripes`,
+    `showColumnStripes`, default `false`). A CSV has none. The built-in XML
+    reader reads the same (a parity test).
 
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
@@ -6167,7 +6264,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     types. `validate` re-runs on every sheet after every change and after
     `derive`. A typed formula reads as its derived result. The grid
     re-exports `@sheetpane/export`'s `shiftFormula` for plugins whose rules
-    are written against a range's top-left (validation, condfmt). The grid widens to
+    are written against a range's top-left (validation, condfmt), and its
+    `resolveStructuredRef` (W-61) for plugins that read a table column. The grid widens to
     the columns validation and conditional-format ranges name (up to 26 past
     the data). Alt+↓ opens a cell control's menu.
 20. **Derived cells** are drawn with a mark and never enter the change map or
@@ -6948,14 +7046,20 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    rule in words. When a cell breaks several rules, the first counts.
 3. **Rule types:** `whole`, `decimal`, `date`, `time`, `textLength` with all
    eight operators (default `between`, inclusive); `list` from a literal, a
-   range, another sheet's range, a defined name, or the x14 form; `custom`
+   range, another sheet's range, a defined name, a table's structured
+   reference (`Units[Unit]`, `Units[[#Data],[Unit]]`, directly or through a
+   defined name — W-61, resolved by `@sheetpane/export`'s
+   `resolveStructuredRef`, re-exported by the grid, to the table's cells as
+   the file stores its `ref`; it never shifts per cell), or the x14 form; `custom`
    only through a `derive` provider exposing a synchronous `evaluate(formula,
    { sheet, ref })`, relative references shifted per cell —
    `@sheetpane/formulas` provides it (SR-FORMULAS decision 8).
 4. **Operands:** numbers, quoted text, `DATE` / `TIME` with numeric
    arguments, cell references (relative parts shift from the rule's first
    cell, through `@sheetpane/export`'s `shiftFormula`, re-exported by the
-   grid) and defined names; anything else skips the rule and counts it.
+   grid), defined names and structured references; anything else — a table
+   or column that is not there, `[#This Row]` — skips the rule and counts it
+   (`source` for a list).
 5. **Values:** number rules need a number (`whole` an integer); text dates are
    not parsed; `textLength` uses the stored value's length; a list matches
    text ignoring case and a number by value. Blank cells pass with
@@ -6979,7 +7083,7 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
 ### Consequences
 
 - **Enforced today:** `just test-pkg validation` — 30 tests (every type and
-  operator, list sources, x14, relative operands, live limits, resolve /
+  operator, list sources (a table column by structured reference, W-61), x14, relative operands, live limits, resolve /
   reopen / undo, the arrow and its menu, the shared error pane with the
   author filter, a `custom` rule evaluated by IronCalc through
   `@sheetpane/formulas`), plus SR-GRID's core tests for read-only rows, the ⚠ pin and
@@ -7209,7 +7313,8 @@ the number format is SR-NUMFMT's.
 ### Decision
 
 1. **`styles({ fileStyles? })`** → `{ id: 'styles', provides: ['decorate',
-   'exportPatch'] }`; `ui(options?)` (`styles-ui`) carries the controls.
+   'exportPatch'], after: ['tables'] }` — a cell's own format draws over its
+   Excel table's style (SR-TABLES decision 4); `ui(options?)` (`styles-ui`) carries the controls.
    Importing `@sheetpane/styles` registers `styles` alone;
    `@sheetpane/styles/ui` registers `[styles(), ui()]`. The headless entry
    never imports the UI. No runtime dependency; `@sheetpane/grid` is a peer.
@@ -7847,7 +7952,8 @@ W-19 asked for conditional formatting as a second `decorate` provider after
 ### Decision
 
 1. **`condfmt()`** → `{ id: 'condfmt', provides: ['decorate'], after:
-   ['styles'] }`: a rule's dxf overrides the static style per property.
+   ['styles', 'tables'] }`: a rule's dxf overrides the static style and an
+   Excel table's style (SR-TABLES) per property.
    `ui()` (`condfmt-ui`) adds the legend and the count. Importing
    `@sheetpane/condfmt` registers `condfmt`; `/ui` registers `[condfmt(),
    ui()]`. Peers: `@sheetpane/grid` and `@sheetpane/styles` (`dxfCss`,
@@ -7994,7 +8100,10 @@ helpers to become one package any runner can load (W-32 made the showcase).
    the one exception to SR-BUILD decision 7's `dist`-only rule, so that
    `url()` reaches the files from `src/` and `dist/` alike. `./files/*` is
    exported.
-2. **The files** — `showcase.xlsx`, `showcase.rules.json`, `edge/` (empty,
+2. **The files** — `showcase.xlsx` (one sheet per plugin; its `Tables`
+   sheet, W-61, holds two Excel tables — Units, and Readings with a totals
+   row — and a list rule over `Units[Unit]` through the defined name
+   `UnitList`), `showcase.rules.json`, `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
    guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
@@ -8096,7 +8205,8 @@ flowchart LR
 
 1. **The package** ships `skills/`, `entry/`, `bin/` only, has no
    dependencies and no build, and is a `dependency` of export, import, grid
-   and all eight plugins at the lockstep version — SR-BUILD decision 7's
+   and every plugin package at the lockstep version (`sheetpane-plugins`
+   lists each, `@sheetpane/tables` since W-61) — SR-BUILD decision 7's
    second exception. `@sheetpane/grid` exposes the same `sheetpane-skills`
    bin (`src/skills-bin.ts` forwards to `@sheetpane/skills/bin`), because
    package managers link only direct dependencies' bins.
@@ -8424,7 +8534,7 @@ flowchart LR
 - **Enforced today:** `--project testing` (the DOM driver, every helper, in
   Chromium; Firefox and WebKit nightly) and `--project node` (the Playwright
   driver against the HTML demo; the Node reader on `@sheetpane/fixtures`'
-  showcase); `demo-check`.
+  showcase, every sheet by name — its Tables sheet since W-61); `demo-check`.
 - **Owed:** each starter template ships one test using these (W-43).
 
 ### Alternatives considered
@@ -8545,7 +8655,7 @@ server to ask.
      date — by its number format — boolean, mixed, empty), blanks, up to 12
      distinct values, merges, freeze, counts of formulas, validations,
      conditional formats, pictures, charts and notes, and the plugins the file
-     would use.
+     would use (`@sheetpane/tables` when a sheet holds an Excel table, W-61).
    - `draft_rules(path, sheet?)` — a W-33 rules file: per titled column
      `required` when it has no blanks, its type, `oneOf` for a text column of
      2–12 distinct values; `draft: true` and a note to review it; problems
@@ -8722,3 +8832,122 @@ is never listed here.*
 **Code**
 
 - [`packages/visibility/src/index.ts`](../packages/visibility/src/index.ts) · [`ui.ts`](../packages/visibility/src/ui.ts)
+
+
+---
+
+<!-- source: records/0122_TABLES.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0122_TABLES.md) -->
+
+# SR-TABLES — @sheetpane/tables
+
+## §1 — For humans
+
+**A table looks like a table.** Excel's tables (*Insert › Table*) carry a
+style: a coloured header row, banded rows, a totals row. The reader already
+knows every table by name (SR-IMPORT decision 13) and a dropdown over a table
+column already follows it (SR-VALIDATION decision 3); this plugin draws them.
+
+```mermaid
+flowchart LR
+    F["xl/tables/tableN.xml"] --> I["@sheetpane/import: sheet.tables"]
+    I --> X["@sheetpane/export: resolveStructuredRef('Units[Unit]')"]
+    X --> V["@sheetpane/validation: the list follows the table"]
+    I --> T["@sheetpane/tables: decorate — header, bands, totals"]
+```
+
+<details>
+<summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
+
+```text
+   xl/tables/tableN.xml -> import: sheet.tables
+        -> export: resolveStructuredRef('Units[Unit]') -> validation: list sources
+        -> tables: decorate (header row, bands, first/last column, totals row)
+```
+
+</details>
+
+---
+
+## §2 — For agents
+
+### Decision
+
+1. **The package:** `@sheetpane/tables` — `tables()` (`id: 'tables'`,
+   `provides: ['decorate']`), registered as `tables` on import; the helpers
+   `tableAt(sheet, row, col)`, `findTable(book, name)` (case-insensitive),
+   `tableCss(table, row, col, theme)`, `paletteOf(style, theme)`, `tint`,
+   `TABLE_STYLES`. Draw-only: no control, no change kind, no `exportPatch` —
+   a download keeps the file's table parts untouched (`patchXlsx` copies
+   every part it does not rewrite, SR-EXPORT). `@sheetpane/grid` is a peer;
+   `@sheetpane/export` (`parseRange`) a dependency. No third-party
+   dependency (SR-LAW-2).
+2. **What is drawn**, per cell inside a table's `ref`: the header row bold;
+   the totals row bold under a 3 px double line in the style's colour; with
+   `showRowStripes`, every other data row from the first filled with the
+   stripe tint; with `showColumnStripes`, every other column from the first;
+   `showFirstColumn` / `showLastColumn` bold. **Light** styles: a 1 px line
+   in the style's colour over and under the table and under the header.
+   **Medium** styles: the header filled in the style's colour with the
+   theme's light colour as text, and a 1 px line (tint 0.4) under every row.
+   A filled cell takes the theme's dark text colour, so it reads in a dark
+   host (SR-GRID 15a: the file's colours are data). No `font-family`
+   (SR-LAW-5).
+3. **The subset:** `TableStyleLight1`–`7` and `TableStyleMedium1`–`7`,
+   approximated from the workbook's theme (`themeColors`, Office's default
+   when the file has none): style 1 in `dk1`, styles 2–7 in accents 1–6;
+   stripes tint 0.8 (0.85 for `dk1`). **Every other style** — Light 8–21,
+   Medium 8–28, Dark 1–11, a custom `<tableStyle>` — draws a bold header row
+   only. A table that names no style draws nothing (Excel's *None*).
+4. **Order:** a cell's own format and its conditional formats draw over the
+   table's style, as in Excel, whatever order `plugins` lists them in:
+   `styles` declares `after: ['tables']`, `condfmt` `after: ['styles',
+   'tables']` (SR-GRID decision 17's `after`).
+
+### Consequences
+
+- **Enforced today:** `pnpm exec vitest run --project tables` (Chromium): the
+  subset and its palette from the theme; Excel's HSL tint; each region's CSS
+  (Medium header, bands, totals, banded and bold columns, Light lines, no
+  header row, the fallback, no style, outside); through a store and a real
+  `<sheetpane-excel>`; a cell's own fill over the table's in both plugin
+  orders; registration. The demos' gallery tab "Tables" and its `demo-check`
+  step (both tables in their colours; C9's list is `Units[Unit]`).
+- **Not done:** inserting or deleting rows moves no table `ref` until W-52
+  shifts it; a table's own `<autoFilter>` buttons, `[#This Row]`, totals-row
+  formulas recalculated by the table and custom table styles are not drawn
+  or evaluated. Opening a sheetpane download with tables in Excel is W-30's.
+
+### Alternatives considered
+
+- Reading each built-in style's dxfs from Excel's `presetTableStyles.xml` —
+  rejected: the file is Microsoft's, not in the package, and 60 styles of
+  exact borders are decoration; the subset covers the defaults
+  (`TableStyleMedium2` is Excel's) and the rest stays readable.
+- Drawing tables in core — rejected: a style is optional decoration, which
+  is what `decorate` plugins are for; the reading and the resolver are core
+  because validation needs them without this plugin.
+
+### Reference (required)
+
+- [`packages/tables/`](../packages/tables/)
+
+### Veto condition
+
+**Reopen this decision if:** hosts' files use table styles outside the
+subset often enough that a bold header reads as broken, or a custom table
+style must match Excel exactly.
+
+**How to check it:** `pnpm exec vitest run --project tables`
+
+---
+
+## References
+
+*Every source this record cites, gathered in one place. An archived document
+is never listed here.*
+
+**Records** — [SR-IMPORT](0104_IMPORT.md) · [SR-EXPORT](0103_EXPORT.md) · [SR-VALIDATION](0108_VALIDATION.md) · [SR-GRID](0105_GRID.md) · [SR-STYLES](0110_STYLES.md) · [SR-CONDFMT](0114_CONDFMT.md)
+
+**Code**
+
+- [`packages/tables/src/index.ts`](../packages/tables/src/index.ts) · [`styles.ts`](../packages/tables/src/styles.ts)

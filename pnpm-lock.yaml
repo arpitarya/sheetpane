@@ -83,6 +83,9 @@ importers:
       '@sheetpane/styles':
         specifier: workspace:*
         version: link:../../packages/styles
+      '@sheetpane/tables':
+        specifier: workspace:*
+        version: link:../../packages/tables
       '@sheetpane/validation':
         specifier: workspace:*
         version: link:../../packages/validation
@@ -122,6 +125,9 @@ importers:
       '@sheetpane/styles':
         specifier: workspace:*
         version: link:../../packages/styles
+      '@sheetpane/tables':
+        specifier: workspace:*
+        version: link:../../packages/tables
       '@sheetpane/validation':
         specifier: workspace:*
         version: link:../../packages/validation
@@ -315,6 +321,22 @@ importers:
       '@sheetpane/grid':
         specifier: workspace:*
         version: link:../grid
+
+  packages/tables:
+    dependencies:
+      '@sheetpane/export':
+        specifier: workspace:*
+        version: link:../export
+      '@sheetpane/skills':
+        specifier: workspace:*
+        version: link:../skills
+    devDependencies:
+      '@sheetpane/grid':
+        specifier: workspace:*
+        version: link:../grid
+      '@sheetpane/styles':
+        specifier: workspace:*
+        version: link:../styles
 
   packages/testing:
     dependencies:

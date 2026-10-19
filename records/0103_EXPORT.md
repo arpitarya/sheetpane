@@ -196,7 +196,20 @@ else.
    `inflateEntry`, `rawData`, `writeZip`, `isZip`, `crc32`, the XML and
    OOXML-string helpers, `getAttr` / `setAttr` / `parseRels` /
    `resolveTarget` / `relsPathOf`, the A1 helpers, `shiftFormula`,
-   `checkSheetName`.
+   `checkSheetName`, `resolveStructuredRef`.
+9a. **Structured references (W-61):** `resolveStructuredRef(formula,
+    sheets)` turns a table reference into `{ sheet, table, range, ref }`
+    from the tables each sheet carries (SR-IMPORT decision 13; any `{ name,
+    ref, headerRowCount, totalsRowCount, columns }` fits — `TableShape`):
+    `Table[Column]` and `[[#Data],[Column]]` are the column's data rows;
+    `#Headers`, `#Totals`, `#All` and touching pairs of them
+    (`#Headers,#Data`, `#Data,#Totals`) name the bands; `[[A]:[B]]` a
+    column span; `Table[]`, `Table[#Data]` and the bare `Table` the data
+    body. Table and column names are case-insensitive; `'` escapes `[ ] #
+    '`. `[#This Row]` / `@`, a union of columns, bands that do not touch and
+    a band the table does not have resolve to `undefined`. `patchXlsx`
+    leaves table parts as they are (a test reads both tables back after an
+    edit); moving a table's `ref` when rows are inserted is W-52's.
 10. **No runtime dependencies** (SR-LAW-2). `download()` lives in this
     package too — [SR-DOWNLOAD](0101_DOWNLOAD.md).
 
