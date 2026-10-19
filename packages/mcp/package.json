@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A Model Context Protocol server for sheetpane: describe the API, inspect a workbook, draft and check a rules file, explain an SP code, find a skill — deterministic, read-only, over stdio.",
   "license": "MIT",
   "repository": {

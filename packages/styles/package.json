@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/styles",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Cell styles for sheetpane — fill, bold, italic, underline, colour, borders, alignment, wrap — as a plugin on the `decorate` hook. Never a font family (SR-LAW-5).",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/condfmt",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Conditional formatting for sheetpane — cellIs, containsText, duplicates, top10, colour scales, data bars — rendered through the `decorate` hook after @sheetpane/styles.",
   "license": "MIT",
   "repository": {
