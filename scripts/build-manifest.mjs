@@ -282,6 +282,17 @@ const camel = (s) => s.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 /** Writable fields a framework may set; an `on…` name is skipped (frameworks read it as a listener — use the attribute). */
 const settable = (d) => d.members.filter((x) => x.kind === 'field' && !x.readonly && !/^on[A-Z]/.test(x.name));
 const attrTs = (a) => (a.type.text === 'number' ? 'number | `${number}`' : a.type.text);
+/**
+ * Attributes and properties a framework may set — less `ref` (W-66) in React, Vue and Solid, which keep `ref`
+ * for their own refs: the element's `ref` attribute is set there with `setAttribute` (or Solid's `attr:ref`).
+ */
+const RESERVED = ['ref'];
+const fwProps = (d, reserved = []) => {
+  const omit = reserved.filter((r) => d.attributes.some((a) => a.name === r) || settable(d).some((f) => f.name === r));
+  if (!omit.length) return `${d.name}Attributes & ${d.name}Properties`;
+  const keys = omit.map((r) => `'${r}'`).join(' | ');
+  return `Omit<${d.name}Attributes, ${keys}> & Omit<${d.name}Properties, ${keys}>`;
+};
 
 function elementsDts(m) {
   const blocks = declarations(m).map((d) => {
@@ -317,7 +328,7 @@ const handlers = (d, key, evt = (e) => `${d.name}EventMap['${e.name}']`) => d.ev
 
 function reactDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in React 19 JSX: attributes, properties and \`onsheetpane-…\` event props (React 19 sets properties and listens to custom events). */
-export type ${d.name}ReactProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}ReactProps = ${fwProps(d, RESERVED)} & {
 ${handlers(d, (n) => `on${n}`)}
 };
 `).join('\n');
@@ -337,7 +348,7 @@ ${declarations(m).map((d) => `      '${d.tagName}': DetailedHTMLProps<HTMLAttrib
 
 function vueDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in a Vue 3 template: attributes, properties and \`@sheetpane-…\` listeners (\`onSheetpane…\` props). */
-export type ${d.name}VueProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}VueProps = ${fwProps(d, RESERVED)} & {
 ${handlers(d, (n) => camel(`on-${n}`))}
 };
 `).join('\n');
@@ -362,7 +373,7 @@ ${declarations(m).map((d) => `    '${d.tagName}': VueCustomElement<${d.name}, ${
 
 function svelteDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in Svelte: attributes, properties, \`on:sheetpane-…\` (Svelte 4) and \`onsheetpane-…\` (Svelte 5) listeners. */
-export type ${d.name}SvelteProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}SvelteProps = ${fwProps(d)} & {
 ${handlers(d, (n) => `on:${n}`, (e) => `${d.name}EventMap['${e.name}'] & { currentTarget: EventTarget & ${d.name} }`)}
 ${handlers(d, (n) => `on${n}`, (e) => `${d.name}EventMap['${e.name}'] & { currentTarget: EventTarget & ${d.name} }`)}
 };
@@ -381,7 +392,7 @@ ${declarations(m).map((d) => `    '${d.tagName}': HTMLAttributes<${d.name}> & ${
 
 function solidDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in Solid JSX: attributes (also as \`attr:…\`), properties (also as \`prop:…\`) and \`on:sheetpane-…\` listeners. Solid sets a custom element's props as properties, so write an attribute with no property (\`pane\`, \`header-row\`) as \`attr:…\`. */
-export type ${d.name}SolidProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}SolidProps = ${fwProps(d, RESERVED)} & {
 ${d.attributes.map((a) => `${jsdoc(a.description)}  'attr:${a.name}'?: ${attrTs(a)} | undefined;`).join('\n')}
 ${settable(d).map((f) => `${jsdoc(f.description)}  'prop:${f.name}'?: ${d.name}['${f.name}'] | undefined;`).join('\n')}
 ${handlers(d, (n) => `on:${n}`)}

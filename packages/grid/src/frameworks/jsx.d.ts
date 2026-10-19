@@ -7,7 +7,7 @@ import type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneErrorsProperties, SheetpaneExcelAttributes, SheetpaneExcelEventMap, SheetpaneExcelProperties } from './elements.js';
 
 /** `<sheetpane-excel>` in React 19 JSX: attributes, properties and `onsheetpane-…` event props (React 19 sets properties and listens to custom events). */
-export type SheetpaneExcelReactProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
+export type SheetpaneExcelReactProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omit<SheetpaneExcelProperties, 'ref'> & {
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'onsheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */

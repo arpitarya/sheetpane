@@ -8,7 +8,7 @@ import type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneErrorsProperties, SheetpaneExcelAttributes, SheetpaneExcelEventMap, SheetpaneExcelProperties } from './elements.js';
 
 /** `<sheetpane-excel>` in a Vue 3 template: attributes, properties and `@sheetpane-…` listeners (`onSheetpane…` props). */
-export type SheetpaneExcelVueProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
+export type SheetpaneExcelVueProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omit<SheetpaneExcelProperties, 'ref'> & {
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   onSheetpaneLoad?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */

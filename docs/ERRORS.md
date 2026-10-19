@@ -89,6 +89,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
+| [SP-3016](#sp-3016) | Cell to open at not found | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -500,6 +501,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `src` URL (or `load(url)`) could not be fetched; the pane shows "Can't open this file".
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
+
+### SP-3016
+
+**Cell to open at not found** · warning · [SR-GRID](../records/0105_GRID.md) decision 11d
+
+- **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
+- **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
+- **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
 
 ---
 

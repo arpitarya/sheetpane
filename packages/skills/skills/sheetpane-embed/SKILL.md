@@ -34,6 +34,8 @@ app's build or tests and say what you changed.
 | the review list beside it, in a side column, or in another tab | `<sheetpane-errors>` with the **same `pane`** | [SR-ERRORS](https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md) decisions 1–2 |
 | read-only sign-off list | `<sheetpane-errors readonly>` | SR-ERRORS decision 7 |
 | one sheet, nothing linked | omit `pane` — the element gets its own workbook | SR-GRID decision 1 |
+| open the file at a cell | `ref="Data!F9"` (a cell or range, sheet optional) | SR-GRID decision 11d |
+| a reload or a shared URL lands on the same cell; *Copy link* | `link="hash"` — off by default | SR-GRID decision 11d |
 
 ## Example — sheet and errors, side by side
 
@@ -67,6 +69,27 @@ app's build or tests and say what you changed.
 Closing (Esc or the close button) removes `open`, fires `sheetpane-close` and
 returns focus (SR-GRID decision 14). In React, mirror it into state from
 `onsheetpane-close`, or the next `open={true}` is not a change.
+
+## Opening at a cell, and links
+
+```html
+<sheetpane-excel pane="q3" src="/files/q3.xlsx" ref="Data!F9" link="hash"></sheetpane-excel>
+```
+
+- **`ref`** is the selection once the file is read, scrolled into view; set
+  later, it selects then. A ref naming no cell warns `SP-3016` and opens at
+  A1. **In React, Vue and Solid `ref` is the framework's** — the typings
+  leave it out: `ref={(el) => el?.setAttribute('ref', 'Data!F9')}`, or call
+  `select(sheet, ref)` from `sheetpane-load`.
+- **`link="hash"`** keeps the selection in the fragment as
+  `sheetpane=<pane>:<Sheet>!<ref>`, touching nothing else in it: a hash
+  router's path keeps its place (`#/reports/12?sheetpane=q3:Data!F9`). It
+  is written with `replaceState` (no history entry, no `hashchange` for the
+  router) and read on load, back and forward; a link wins over `ref`.
+  *Copy link* joins the cell menu. One `pane` per sheet when a page has two.
+- The fragment is never sent to a server
+  ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md)
+  decision 11d).
 
 ## Height
 

@@ -6,7 +6,7 @@ import type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneErrorsProperties, SheetpaneExcelAttributes, SheetpaneExcelEventMap, SheetpaneExcelProperties } from './elements.js';
 
 /** `<sheetpane-excel>` in Solid JSX: attributes (also as `attr:…`), properties (also as `prop:…`) and `on:sheetpane-…` listeners. Solid sets a custom element's props as properties, so write an attribute with no property (`pane`, `header-row`) as `attr:…`. */
-export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
+export type SheetpaneExcelSolidProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omit<SheetpaneExcelProperties, 'ref'> & {
   /** The pane id shared with other elements; none gives the element its own store. */
   'attr:pane'?: string | undefined;
   /** A URL (read with a GET; nothing is sent), a data URL or base64. */
@@ -31,6 +31,10 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'attr:rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   'attr:flagging'?: 'on' | 'off' | undefined;
+  /** The cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3016) and the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`. */
+  'attr:ref'?: string | undefined;
+  /** `none` (the default) or `hash`: the selection is kept in the URL fragment as `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link* joins the cell menu. The rest of the fragment is the host's and is kept as it was. */
+  'attr:link'?: 'none' | 'hash' | undefined;
   /** The pane's store; assigning one replaces the `pane` lookup and applies this element's `mode` to it. */
   'prop:workbook'?: SheetpaneExcel['workbook'] | undefined;
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
@@ -57,6 +61,10 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'prop:sizes'?: SheetpaneExcel['sizes'] | undefined;
   /** The `src` attribute; `null`, `undefined` or `''` removes it. */
   'prop:src'?: SheetpaneExcel['src'] | undefined;
+  /** The `ref` attribute: the cell or range selected once a file is read (W-66); `null`, `undefined` or `''` removes it. */
+  'prop:ref'?: SheetpaneExcel['ref'] | undefined;
+  /** `none` (the default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu (W-66). */
+  'prop:link'?: SheetpaneExcel['link'] | undefined;
   /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */

@@ -474,6 +474,8 @@ committed manifest drifts from the elements.
 | attribute | `plugins` | the enabled plugin ids, e.g. `numfmt formulas` |
 | attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it, and column rules match by it |
 | attribute | `theme` | `light` (default), `dark` or `auto` (follows the page's `prefers-color-scheme`) |
+| attribute / property | `ref` | the cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8` — see [Opening at a cell](#opening-at-a-cell-and-links) |
+| attribute / property | `link` | `none` (default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu |
 | attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
@@ -513,8 +515,8 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
 
 **Keys:** arrows, Shift+arrows, Home/End, Ctrl+Home/End, PageUp/PageDown;
 Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**;
-**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy value and
-plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
+**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy link with
+`link="hash"`, Copy value and plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
 
@@ -552,6 +554,32 @@ does":
 ```js
 excel.addEventListener('sheetpane-hover', (e) => pdf.outline(e.detail && boxFor(e.detail.ref))); // null: none
 pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' : 'fail', label: box.name }) : excel.clearHighlight());
+```
+
+### Opening at a cell, and links
+
+`ref` opens the file at a cell — the selection once it is read, scrolled into view; set later, it selects
+then. A cell or range, with or without its sheet (`B4`, `Data!B4`, `'Q3 data'!B4:D8`). One that names no
+cell warns `SP-3016` in the console and the sheet opens at A1.
+
+```html
+<sheetpane-excel pane="q3" src="/files/q3.xlsx" ref="Data!F9"></sheetpane-excel>
+```
+
+`link="hash"` keeps the selection in the URL, so a reload or a shared link opens at the same cell, and adds
+*Copy link* to the cell menu. It is off by default. Only one parameter of the fragment is sheetpane's —
+`sheetpane=<pane>:<Sheet>!<ref>` — and the rest is left as it was: after a hash router's path it goes with
+`?` (`#/reports/12?sheetpane=q3:Data!F9`), after an anchor or your own parameters with `&`. It is written
+with `history.replaceState` once the selection settles — no history entry, no `hashchange` for your router
+— and read when a file is read and on back and forward. A link wins over `ref`. Give each sheet its own
+`pane` when a page has two. The fragment never leaves the browser: it is not part of any request.
+
+**React, Vue and Solid** keep `ref` for their own refs, so their typings leave it out. Set it from a ref
+callback, or call `select()` once the file is read:
+
+```jsx
+<sheetpane-excel pane="q3" src={url} ref={(el) => el?.setAttribute('ref', 'Data!F9')} />
+<sheetpane-excel pane="q3" src={url} onsheetpane-load={(e) => e.detail.status === 'ready' && e.currentTarget.select('Data', 'F9')} />
 ```
 
 ## Column rules
@@ -2475,6 +2503,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
+| [SP-3016](#sp-3016) | Cell to open at not found | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -2886,6 +2915,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `src` URL (or `load(url)`) could not be fetched; the pane shows "Can't open this file".
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
+
+### SP-3016
+
+**Cell to open at not found** · warning · [SR-GRID](../records/0105_GRID.md) decision 11d
+
+- **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
+- **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
+- **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
 
 ---
 
@@ -5446,8 +5483,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
 9. **The element** registers on import where `customElements` exists; open
    shadow root; plain DOM. Attributes `pane`, `src` (URL — read with a GET,
    nothing is sent — data URL or base64), `mode`, `display` (`tab` ·
-   `popup`), `open`, `author`, `plugins`; properties `workbook`, `errors`,
-   `errorTypes`, `file`, `mode`, `open`, `src`, `sizes` (W-47: `{ [sheet]:
+   `popup`), `open`, `author`, `plugins`, `ref` and `link` (W-66, decision
+   11d); properties `workbook`, `errors`,
+   `errorTypes`, `file`, `mode`, `open`, `src`, `ref`, `link`, `sizes` (W-47: `{ [sheet]:
    { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set);
    methods `load()`, `export()`,
    `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
@@ -5614,6 +5652,38 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     under its top-left cell (decision 21c). A `label` is shown in the status
     line while an outline shows; the status line (`role="status"`) replaces
     its nodes only when its text changes, so the label is said once.
+11d. **Open at a cell, and links (W-66):** **`ref`** (attribute and
+    property) names the cell or range selected once a file is read —
+    `B4`, `Data!B4`, `'Q3 data'!B4:D8` (no sheet: the sheet shown) — and
+    scrolls it into view (the status line is laid out before the grid, so
+    the scroll measures its final height); set after a load, it selects
+    then; one that names no cell or a sheet the workbook lacks is a
+    `console.warn` (SP-3016) and the sheet opens at A1. It is the pane's
+    shared selection, so `sheetpane-select` fires and every element of the
+    pane follows. React, Vue and Solid keep `ref` for their own refs: their
+    typings leave it out (Solid's `attr:ref` stays) and a host there sets it
+    with `setAttribute`, or uses `link` or `select()`. **`link="hash"`**
+    (default `none`, so a host's own hash routing is untouched unless it opts
+    in) binds the selection to the URL fragment as
+    `sheetpane=<pane>:<Sheet>!<ref>` (`<Sheet>!<ref>` without a `pane`; the
+    pane and sheet percent-encoded, `!` too; a range as `B3:D8`). Only that
+    parameter is read or written: the rest of the fragment stays byte for
+    byte — after a hash router's path it goes with `?` (`#/reports/12?
+    sheetpane=…`), after anything else with `&`, and another pane's link
+    keeps its own parameter and place. When a file is read the fragment's
+    link wins over `ref` (a bad one is SP-3016, then `ref`, then A1). The
+    selection is written 300 ms after it settles with `history.replaceState`
+    — the host's `history.state` kept, no history entry, no `hashchange` —
+    so a held arrow key is one write and a router hears nothing; `hashchange`
+    and `popstate` (back, forward, a followed link, the host setting
+    `location.hash`) select the cell the fragment names for this pane, once
+    per navigation. Turning `link` off takes this pane's parameter out of
+    the URL. **SR-LAW-11:** the fragment is never sent — a browser keeps it
+    out of requests and the `Referer` header — and sheetpane makes no request
+    for it; *Copy link* writes to the clipboard, in the page. Sharing the
+    link is the user's act. **Copy link** joins the cell menu and the ⋯
+    menu after Copy ref while `link="hash"` (decision 13): the page's URL
+    with this pane's selection as its link.
 12. **Keyboard (APG grid):** focus stays on the `role="grid"` element and
     `aria-activedescendant` names the active cell; arrows, Shift+arrows,
     Home/End, Ctrl+Home/End, PageUp/PageDown; Ctrl/⌘+arrow jumps to the edge
@@ -5632,7 +5702,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
 13. **Review — nothing floats over the cells (W-31):** the selection actions
     are **docked at the right end of the cell bar** — Flag issue with its F
     hint (Edit, a cell with no error), the `selbar` plugin controls (Edit),
-    then **⋯** (View and Edit) opening Copy ref and Copy value — **Copy
+    then **⋯** (View and Edit) opening Copy ref, Copy link (with
+    `link="hash"`, decision 11d) and Copy value — **Copy
     values** for a range, written as `text/plain` TSV and a `text/html`
     table so Excel and Sheets paste a grid (over 1,000,000 cells nothing is
     copied); Copy ref gives `B3`, `B3:D8`, `B:D`, `4:12` or the sheet's name
@@ -5645,7 +5716,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     only when it joins the cell menu and applies now. In the menus, Flag
     issue and the plugin items each sit under a separator. **Right-click, Shift+F10 and the Menu key** on a cell select
     it and open the same actions as a `role="menu"` just under it (Flag
-    issue · Copy ref · Copy value · the `selbar` controls); arrows move, Enter
+    issue · Copy ref · Copy link · Copy value · the `selbar` controls); arrows move, Enter
     runs, Esc closes and returns focus to the grid; the browser's menu is
     suppressed on cells only. A copy without a secure context says so in the
     status line. **Download** (decision 10): the main part's file is the
@@ -5876,11 +5947,13 @@ and `@csspart` (excel: `root` `toolbar` `cellbar` `format-row` `status`
 data and JetBrains `web-types.json` (in `dist/`), and the framework typings
 `@sheetpane/grid/jsx` (React 19), `/vue`, `/svelte` and `/solid` (type-only;
 the `onInvalid` property is left out of framework props, which read `on…` as
-listeners — the `on-invalid` attribute does its job). `test/manifest.test.ts`
+listeners — the `on-invalid` attribute does its job; the `ref` attribute and
+property are left out of the React, Vue and Solid props, whose `ref` is the
+framework's — W-66). `test/manifest.test.ts`
 fails when the manifest, the typings or the editor data drift from the code.
 Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
-**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES).
+**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014; a `ref` or link naming no cell is warned as SP-3016 (W-66) (SR-CODES).
 
 ### Consequences
 
@@ -5931,6 +6004,20 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   four pointer moves a frame and the host highlighting each hovered cell —
   301 frames, 300 hover events, worst 16.8 ms, none dropped, Chromium 156
   headless, 10 cores, load average ≈ 115 from parallel agents, reported);
+  `link.test.ts` (W-66: `ref` selects its cell or a quoted sheet's range
+  once a file is read and scrolls it inside the client area, fires
+  `sheetpane-select`, waits for a file, is followed by a second element on
+  the pane, selects at once when set later; a bad one warns SP-3016 and
+  opens at A1; `link` off leaves the URL alone; on, the fragment's link
+  wins over `ref` beside a hash router's path, which stays; the write waits
+  for the selection to settle, adds no history entry, fires no
+  `hashchange` and keeps `history.state`; back and forward select the
+  linked cells; another pane's link moves nothing and keeps its place; a
+  bad link warns and falls back to `ref`; off takes the link out; Copy link
+  after Copy ref in the cell and ⋯ menus only with `link`, copying a URL
+  that opens there; axe in View and Edit) and `link.node.test.ts` (the
+  fragment grammar: encoding, a router's path, anchors, two panes, in-place
+  replacement, removal);
   `theme.test.ts` (every token has a hex dark
   value, the contrast table in both themes, the attribute restyling chrome
   while a `decorate` fill stays as saved, a host override winning);
@@ -5965,6 +6052,9 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   in both.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers, opened
   by the grid and read with their frozen panes — W-30 (the decider's files).
+- **Not built (W-66):** a history entry per selection — the fragment is
+  replaced, so back and forward step between links followed, not between
+  cells clicked; a `ref` name a JSX host can write as an attribute.
 - **SR-LAW-6's veto command lists one hit:** the `src` loader's `fetch(` in
   `packages/grid/src/excel/element.ts` — a read, with nothing sent (backlog
   B-030).
@@ -7548,6 +7638,9 @@ flowchart LR
 - **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
   cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
   check (decision 5) reads them against the element's source.
+- **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,
+  `link="hash"` and *Copy link*, and that React, Vue and Solid set `ref`
+  with `setAttribute` (their own `ref` is the framework's).
 
 ### Alternatives considered
 
@@ -7653,6 +7746,8 @@ flowchart LR
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
   W-40.
+- **Added since:** SP-3016 (W-66, 2026-10-19) — a warning, not a throw: the
+  `ref` attribute or a `#sheetpane=` link names no cell (SR-GRID decision 11d).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

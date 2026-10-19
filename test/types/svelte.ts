@@ -3,7 +3,7 @@ import type {} from '@sheetpane/grid/svelte';
 import type { SvelteHTMLElements } from 'svelte/elements';
 
 const excel: SvelteHTMLElements['sheetpane-excel'] = {
-  pane: 'q3', mode: 'edit', 'rules-src': '/rules.json', class: 'grow',
+  pane: 'q3', mode: 'edit', 'rules-src': '/rules.json', class: 'grow', ref: 'Data!F9', link: 'hash', // W-66: `ref` is no Svelte keyword
   'on:sheetpane-change': (e) => console.log(e.detail.ref, e.currentTarget.mode),
   'onsheetpane-select': (e) => console.log(e.detail.column.letter, e.detail.value),
 };

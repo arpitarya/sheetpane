@@ -81,6 +81,8 @@ flowchart LR
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
   W-40.
+- **Added since:** SP-3016 (W-66, 2026-10-19) — a warning, not a throw: the
+  `ref` attribute or a `#sheetpane=` link names no cell (SR-GRID decision 11d).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool
