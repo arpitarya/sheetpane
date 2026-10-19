@@ -115,23 +115,45 @@ excel.workbook.updateError(e.id, { status: 'open' }); // Reopen: who, when and w
 - A blank reason, or a `workbook` / `file` error, is refused (SP-3018).
   `setErrors` brings an accepted error without a reason back as `open`.
 
+### Review layers (W-51)
+
+Two result sets over one workbook (a validation run, a PDF check), each
+replaced whole. Every error has a `layer` (`review` when none is named):
+
+```js
+panel.setErrors(validationFindings, { layer: 'validation' });
+panel.setErrors(pdfFindings, { layer: 'pdf' }); // validation is untouched
+panel.layerNames = { pdf: 'PDF check' };
+panel.layers = ['pdf']; // or layers="pdf" on either element; null shows all
+```
+
+- With two or more layers the header shows a switch (**All**, then each
+  layer with its open count); a choice fires `sheetpane-layers`.
+- **What is shown is the pane's:** pins, marks, counts, the list and the
+  comments export follow it. Count what the user sees from
+  `snapshot.visibleErrors`. A new error goes into the layer shown.
+- Re-running a check keeps undo; an id another layer holds gets a new one.
+  Names are ids, no spaces (SP-3019). A `validate` draft may set `layer`.
+
 ## Saving and restoring a review
 
 ```js
 const excel = document.querySelector('sheetpane-excel');
 const panel = document.querySelector('sheetpane-errors');
-panel.addEventListener('sheetpane-errors', (e) => save({ errors: e.detail.errors, plugins: e.detail.plugins }));
+panel.addEventListener('sheetpane-errors', (e) => save(e.detail)); // { v: 2, errors, plugins, layers, changed }
 excel.addEventListener('sheetpane-load', () => {
-  panel.setErrors(saved.errors, { plugins: saved.plugins });
+  panel.setErrors(saved); // the envelope: every layer, and the plugins notice
 }, { once: true });
 ```
 
+- **Save the whole envelope:** `layers` keeps a layer with no errors. A
+  review saved before W-51 (`{ errors, plugins }`) restores into `review`.
 - **Restore after `sheetpane-load`.** Loading a file starts with an empty
   list; a restore before it is wiped.
 - **`setErrors()` is a restore, not an edit:** it clears undo (SR-GRID
   decision 7). An error whose cell no longer shows `found` is tagged *stale*,
   never moved.
-- **Pass `plugins`** from the saved envelope: a different plugin set shows the
+- **Keep `plugins`** in the saved envelope: a different plugin set shows the
   "formatted differently" notice (SR-ERRORS decision 8).
 - The full server round trip is [sheetpane-backend](../sheetpane-backend/SKILL.md).
 

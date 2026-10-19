@@ -92,6 +92,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3016](#sp-3016) | Error meta dropped | warning |
 | [SP-3017](#sp-3017) | renderDetail failed | error |
 | [SP-3018](#sp-3018) | Error not accepted | warning |
+| [SP-3019](#sp-3019) | Layer name not valid | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -528,6 +529,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** an acceptance (W-69) did not stand. `acceptError` or `updateError(id, { status: 'accepted' })` changed nothing; or `setErrors` restored an `accepted` error as `open`.
 - **Likely cause:** no reason was given, or only spaces; or the error is the workbook's own (author `workbook` or `file` — a validation rule or a file comment), which is not accepted this way.
 - **Fix:** pass the reason the deviation was approved, e.g. `acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' })`; keep `reason` when saving a review.
+
+### SP-3019
+
+**Layer name not valid** · warning · [SR-GRID](../records/0105_GRID.md) decision 5d
+
+- **Meaning:** a review layer (W-51) was named with something that is not a name: not a string, empty, over 64 characters, or holding a space. `setErrors(list, { layer })`, `getErrors({ layer })` and the `layers` property change nothing; an error restored or written with such a `layer` goes into `review`.
+- **Likely cause:** a display label used as the name (`'PDF check'`), or a layer read from a file that was never set.
+- **Fix:** name layers with short ids — `validation`, `pdf` — and give `<sheetpane-errors>` the words to show in `layerNames` (`{ pdf: 'PDF check' }`).
 
 ---
 

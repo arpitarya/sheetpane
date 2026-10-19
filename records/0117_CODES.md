@@ -84,7 +84,8 @@ flowchart LR
   not by number. Example: SP-5804, from W-55, comes after SP-7007, and
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
-  refused), after them.
+  refused), after them; SP-3019, from W-51 (an unusable review-layer name),
+  after SP-3018.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

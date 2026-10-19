@@ -7,8 +7,10 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-load': CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>;
-  /** `{ errors, plugins }` when the pane's errors change. */
-  'sheetpane-errors': CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>;
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
+  'sheetpane-errors': CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  'sheetpane-layers': CustomEvent<{ visible: string[]; layers: string[] }>;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'sheetpane-select': CustomEvent<{ sheet: string; ref: string; range: string | undefined; column: { index: number; letter: string; header: string }; value: unknown }>;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
@@ -61,6 +63,8 @@ export interface SheetpaneExcelAttributes {
   'rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   flagging?: 'on' | 'off' | undefined;
+  /** Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements. */
+  layers?: string | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-excel>`, typed as the element declares them. */
@@ -75,6 +79,8 @@ export interface SheetpaneExcelProperties {
   renderDetail?: SheetpaneExcel['renderDetail'] | undefined;
   /** Loads a file, like `load()`; `null` does nothing. */
   file?: SheetpaneExcel['file'] | undefined;
+  /** The review layers shown (W-51) — the pane's, shared with `<sheetpane-errors>`: every layer until the `layers` attribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer. */
+  layers?: SheetpaneExcel['layers'] | undefined;
   /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
   mode?: SheetpaneExcel['mode'] | undefined;
   /** `light` (the default), `dark`, or `auto` (follows `prefers-color-scheme`) — colour only; the file's own colours never change (W-29). */
@@ -97,8 +103,10 @@ export interface SheetpaneExcelProperties {
 
 /** The events `<sheetpane-errors>` dispatches, by name; each bubbles and is composed. */
 export interface SheetpaneErrorsEventMap {
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
-  'sheetpane-errors': CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>;
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
+  'sheetpane-errors': CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  'sheetpane-layers': CustomEvent<{ visible: string[]; layers: string[] }>;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>;
   /** `{ sheet, ref }` when picking a row selects its cell. */
@@ -121,6 +129,8 @@ export interface SheetpaneErrorsAttributes {
   plugins?: string | undefined;
   /** `light` (the default), `dark` or `auto`. */
   theme?: 'light' | 'dark' | 'auto' | undefined;
+  /** Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements; with two or more layers the header shows a switch. */
+  layers?: string | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-errors>`, typed as the element declares them. */
@@ -137,4 +147,8 @@ export interface SheetpaneErrorsProperties {
   theme?: SheetpaneErrors['theme'] | undefined;
   /** The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — the sheet's error card has its own. */
   renderDetail?: SheetpaneErrors['renderDetail'] | undefined;
+  /** The review layers shown (W-51) — the pane's, shared with `<sheetpane-excel>`: every layer until the `layers` attribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer. */
+  layers?: SheetpaneErrors['layers'] | undefined;
+  /** What the switch and the rows call each layer (W-51), e.g. `{ pdf: 'PDF check' }`; a layer not named here shows its name (`review` as *Review*). */
+  layerNames?: SheetpaneErrors['layerNames'] | undefined;
 }

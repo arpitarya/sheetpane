@@ -45,8 +45,9 @@ const FIELD = {
   mode: 'Mode', reason: "'undo' | 'redo' | 'cleared'", canUndo: 'boolean', canRedo: 'boolean',
   blob: 'Blob', name: 'string', guarded: 'string[] | false', format: "'xlsx' | 'csv'", converted: 'boolean', original: 'boolean',
   sheets: 'string[]', readMs: 'number', code: 'string', spCode: 'SpCode', message: 'string', detail: 'string',
+  layers: 'string[]', changed: 'string[]', visible: 'string[]',
 };
-const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" } };
+const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" }, 'sheetpane-errors': { v: '2' } };
 /** The type names payloads use, all exported by `@sheetpane/grid`. */
 const PAYLOAD_TYPES = ['ChangeKind', 'Mode', 'SheetpaneError', 'SpCode'];
 const LIFECYCLE = new Set(['connectedCallback', 'disconnectedCallback', 'attributeChangedCallback', 'adoptedCallback']);

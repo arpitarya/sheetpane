@@ -33,3 +33,6 @@ export const ICON = {
 export function fire<T>(el: EventTarget, name: string, detail: T, cancelable = false): boolean {
   return el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true, cancelable }));
 }
+
+/** The `layers` attribute as names (W-51): space-separated; absent or blank is `null`, every layer. */
+export const layersAttr = (v: string | null): string[] | null => { const l = (v ?? '').split(/\s+/).filter(Boolean); return l.length ? l : null; };

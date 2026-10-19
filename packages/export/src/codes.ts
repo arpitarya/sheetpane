@@ -73,6 +73,7 @@ const TABLE = {
   'SP-3016': { title: 'Error meta dropped', severity: 'warning' },
   'SP-3017': { title: 'renderDetail failed', severity: 'error' },
   'SP-3018': { title: 'Error not accepted', severity: 'warning' },
+  'SP-3019': { title: 'Layer name not valid', severity: 'warning' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

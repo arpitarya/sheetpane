@@ -482,10 +482,11 @@ committed manifest drifts from the elements.
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
 | property | `renderDetail` | your extra detail in the error card (W-68, under *Saving and restoring a review*) |
+| attribute / property | `layers` | the review layers shown, space-separated — the pane's, shared with `<sheetpane-errors>`; none shows every layer (W-51, under *Saving and restoring a review*) |
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
-| method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
+| method | `select(sheet, ref)`, `getErrors({ layer? })`, `setErrors(list or envelope, { layer? })`, `undo()`, `redo()` | |
+| event | `sheetpane-load`, `sheetpane-errors {v, errors, plugins, layers, changed}`, `sheetpane-layers {visible, layers}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
 
 ### Following an edit
 
@@ -653,19 +654,42 @@ opens no pop-up — the errors panel is the one place errors are read.
 |---|---|---|
 | attribute | `pane`, `author`, `plugins` | as above |
 | attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
-| property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
+| property / method | `errors`, `errorTypes`, `getErrors({ layer? })`, `setErrors(list or envelope, { plugins?, layer? })` | |
 | property | `renderDetail` | your extra detail in an open row — see below (W-68) |
-| event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
+| attribute / property | `layers`; `layerNames` | the review layers shown (as on the sheet); what the switch calls each, e.g. `{ pdf: 'PDF check' }` (W-51) |
+| event | `sheetpane-errors {v, errors, plugins, layers, changed}`, `sheetpane-layers {visible, layers}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
 
 ## Saving and restoring a review
 
 Errors are plain JSON (`SheetpaneError`, schema `v: 1`). Listen to
-`sheetpane-errors`, store `detail.errors` and `detail.plugins` where you like,
-and give them back after the file loads:
+`sheetpane-errors`, store its `detail` — the envelope `{ v: 2, errors,
+plugins, layers, changed }` — where you like, and give it back after the
+file loads:
 
 ```js
-excel.addEventListener('sheetpane-load', () => errors.setErrors(saved.errors, { plugins: saved.plugins }));
+excel.addEventListener('sheetpane-load', () => errors.setErrors(saved));
 ```
+
+A review saved before W-51 (`{ errors, plugins }`) restores the same way, into
+the `review` layer.
+
+**Review layers** (W-51): several sets of errors in one pane — say a
+validation run and a PDF check — each replaced whole without touching the
+others. Every error has a `layer` (`review` unless named):
+
+```js
+errors.setErrors(validationFindings, { layer: 'validation' });
+errors.setErrors(pdfFindings, { layer: 'pdf' }); // validation is kept
+errors.layerNames = { pdf: 'PDF check' };
+errors.layers = ['pdf']; // or layers="pdf" on either element; null shows all
+```
+
+With two or more layers the panel's header shows a switch — **All**, then
+each layer with its open count. What is shown is the pane's: the sheet's
+pins, marks and counts, the list and the comments an export writes all
+follow it (`export({ layers: [...] })` names another set). Replacing a layer
+keeps undo; a person's new error goes into the layer they are looking at.
+Names are ids: 1–64 characters, no spaces (SP-3019).
 
 An error whose cell no longer shows what was found is tagged *stale*, never
 moved.
@@ -1892,6 +1916,7 @@ neutral or switch writing off.
 
 - `comments({ write: false })`: never write. Notes and threads are still read.
 - `export({ comments: false })` on `<sheetpane-excel>` (or `store.exportFile({ options: { comments: false } })`): skip the parts for that one export.
+- **Review layers** (W-51): an export writes the errors of the layers shown — what the layers switch or the `layers` attribute chose. `export({ layers: ['validation', 'pdf'] })` writes the layers named instead, whatever is shown; `layers: []` writes none.
 
 There is no menu item for this. The host decides, and a host that wants an
 end-user toggle can put one in its own `format-row` slot.
@@ -2507,6 +2532,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3016](#sp-3016) | Error meta dropped | warning |
 | [SP-3017](#sp-3017) | renderDetail failed | error |
 | [SP-3018](#sp-3018) | Error not accepted | warning |
+| [SP-3019](#sp-3019) | Layer name not valid | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -2943,6 +2969,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** an acceptance (W-69) did not stand. `acceptError` or `updateError(id, { status: 'accepted' })` changed nothing; or `setErrors` restored an `accepted` error as `open`.
 - **Likely cause:** no reason was given, or only spaces; or the error is the workbook's own (author `workbook` or `file` — a validation rule or a file comment), which is not accepted this way.
 - **Fix:** pass the reason the deviation was approved, e.g. `acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' })`; keep `reason` when saving a review.
+
+### SP-3019
+
+**Layer name not valid** · warning · [SR-GRID](../records/0105_GRID.md) decision 5d
+
+- **Meaning:** a review layer (W-51) was named with something that is not a name: not a string, empty, over 64 characters, or holding a space. `setErrors(list, { layer })`, `getErrors({ layer })` and the `layers` property change nothing; an error restored or written with such a `layer` goes into `review`.
+- **Likely cause:** a display label used as the name (`'PDF check'`), or a layer read from a file that was never set.
+- **Fix:** name layers with short ids — `validation`, `pdf` — and give `<sheetpane-errors>` the words to show in `layerNames` (`{ pdf: 'PDF check' }`).
 
 ---
 
@@ -5465,8 +5499,9 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
 2. **Snapshot:** `load` (`empty` · `loading` · `ready` · `error` with the
    reader's code and `detail`), `source` (name, kind, size, the uploaded bytes
    — never modified — and the read time), `book` (the `ImportedWorkbook`),
-   `changes`, `derived`, `errors`, `selection`, `mode`, `composing`,
-   `canUndo`, `canRedo`. Selection and mode are shared (contract decision 2);
+   `changes`, `derived`, `errors`, `layers`, `visibleLayers`,
+   `visibleErrors` (W-51, decision 5d), `selection`, `mode`, `composing`,
+   `canUndo`, `canRedo`. Selection, mode and the visible layers are shared (contract decision 2);
    scroll, zoom, find and form drafts are per element.
 3. **Changes:** a map `sheet!ref → { kind, was, now }` with kinds `value`,
    `style`, `numFmt`, `formula`, `merge`, `freeze` (freeze keys are
@@ -5527,6 +5562,35 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    same way; a different finding reopens it and a pass resolves it, each
    without the acceptance (decision 19b). `ErrorDraft` cannot carry them: a
    provider never accepts.
+   **5d. Review layers (W-51):** every error the store holds carries a
+   `layer` — a name of 1–64 characters with no space (`isLayerName`;
+   `layerOf(e)` reads one); an error given without it (a review saved
+   before W-51) is in `review` (`DEFAULT_LAYER`). `setErrors(list, { layer
+   })` replaces that layer only, stamping each error with it; the other
+   layers are untouched; an id another layer holds, or a blank one, gets a
+   new id; the undo stack is kept and every step in it is rebased onto the
+   new layer, so undo neither brings back the replaced errors nor removes
+   the new ones; a layer set to `[]` stays a layer. `setErrors(list)` and
+   `setErrors(envelope)` restore the whole review as before (decision 7),
+   each error in its own layer, the envelope's `layers` — an empty one
+   included — first. `getErrors({ layer })` reads one layer, `getErrors()`
+   every layer. `snapshot.layers` lists the layers in the order first named
+   (by `setErrors`, by `setVisibleLayers`, or by an error);
+   `setVisibleLayers(names | null)` chooses the ones shown (view state,
+   never undone; `null` or `[]` is every layer; a name with no errors joins
+   `layers`), and `visibleErrors` holds their errors — the one list the
+   sheet's marks, pins, toolbar and tab counts, error stepping and card, the
+   error list and the comments export read (SR-LAW-7). A person's new error
+   goes into `review` while it is shown, else the first shown layer
+   (`defaultLayer`), so it stays in sight; `addError({ layer })` names one.
+   A `validate` draft lands in `review` unless it names a `layer`; its key
+   and the adoption after a restore include the layer, so a provider never
+   takes over another layer's error. No edit moves an error between layers:
+   `updateError` ignores `layer`. The `errors` store event carries `layers`,
+   the layers whose errors changed. `envelope(changed)` is what
+   `sheetpane-errors` carries: `{ v: 2, errors, plugins, layers, changed }`
+   (`ErrorsEnvelope`). An unusable layer name is logged as SP-3019 and
+   changes nothing — or, on an error restored or added, puts it in `review`.
 6. **Export:** `exportFile({ options })` — `options` (from the element's
    `export(options)`, e.g. `{ comments: false }`) reach every `exportPatch`
    hook as `ctx.exportOptions`; `.xlsx`: `patchXlsx(upload, value changes,
@@ -5538,7 +5602,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    entry (coalesced until Enter, Tab, Esc or blur); selection and mode are not
    undone; ids stay reserved; undo re-runs `derive` and `validate`;
    `setErrors()` is a host restore, not a user action, and clears the stack
-   with a `history` event; it then re-runs `validate`, which adopts a
+   with a `history` event (replacing one layer does not — decision 5d); it then re-runs `validate`, which adopts a
    restored error only when its sheet, range, type and author match a draft
    (ids alone never match: a restored person's error with a reused id is
    never overwritten).
@@ -5553,12 +5617,14 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    `popup`), `open`, `author`, `plugins`; properties `workbook`, `errors`,
    `errorTypes`, `file`, `mode`, `open`, `src`, `sizes` (W-47: `{ [sheet]:
    { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set),
-   `renderDetail` (W-68: the error card's host region, SR-ERRORS decision 13);
+   `renderDetail` (W-68: the error card's host region, SR-ERRORS decision 13),
+   `layers` (W-51: the attribute `layers`, space-separated, sets the pane's
+   visible layers — decision 5d; the property reads them);
    methods `load()`, `export()`,
-   `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
+   `select()`, `getErrors({ layer? })`, `setErrors(list | envelope, { layer? })`, `undo()`, `redo()`,
    `shortcuts()`, `column()`, `reveal()`, `unreveal()` (W-49); attribute `header-row` (default 1); events
    `sheetpane-load`, `-change {sheet, ref, kind, was, now}`, `-errors
-   {errors, plugins}`, `-select {sheet, ref, range, column, value}` (`range`
+   {v, errors, plugins, layers, changed}` (the v2 envelope, W-51), `-layers {visible, layers}`, `-select {sheet, ref, range, column, value}` (`range`
    when more than one cell is selected; it fires when the selection settles —
    a drag fires once, on release), `-editstart
    {…, value}` (cancellable: the cell stays read-only), `-input {…, draft,
@@ -5770,7 +5836,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     have one provider per pane (a second throws, naming both); a provided hook
     without its function throws; `decorate` providers run in `after` order,
     later winning per property, and a result naming `font-family` throws;
-    `validate` errors keyed by plugin, sheet, range and type — a
+    `validate` errors keyed by plugin, sheet, range, type and layer (W-51: `review` unless the draft names one) — a
     `workbook`- or `host`-authored error resolves itself when the cell passes
     and reopens when it fails again (W-18, W-27; people's errors never do); `file` errors never do;
     `overlay` items are placed in sheet space under the pins with a
@@ -5959,13 +6025,18 @@ listeners — the `on-invalid` attribute does its job). `test/manifest.test.ts`
 fails when the manifest, the typings or the editor data drift from the code.
 Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
-**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69).
+**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014 (SR-CODES); a dropped `meta` is SP-3016 and a throwing `renderDetail` SP-3017 (W-68); a refused acceptance SP-3018 (W-69); an unusable layer name SP-3019 (W-51).
 
 ### Consequences
 
 - **Enforced today** (`just test-pkg grid`, Chromium per push, WebKit and
   Firefox nightly): store tests (changes, undo with a fast-check property and
-  the cap, errors, export round-trip property, freeze, stale marks); element
+  the cap, errors, export round-trip property, freeze, stale marks; W-51:
+  layer names, one layer replaced, the changed layers in the event, ids
+  unique across layers, the visible layers and where a new error lands,
+  SP-3019, a provider's layer and its adoption, undo of a fix in a hidden
+  layer, the undo stack rebased onto a replaced layer, the envelope with
+  three layers and a pre-layers one); element
   tests (contract, states, edit, export, flag, keyboard, font, pop-up, axe on
   View and Edit); plugin-host tests (a fake plugin per hook, the throwing
   rules, slots, shortcuts, the no-plugin grid); undo across elements; freeze
@@ -6098,6 +6169,11 @@ There is no "linked" chip and no export footer — it is always linked.
 stays in the review and the download with who, when and the reason, but no
 longer counts as open (W-69).
 
+**Several reviews can share one pane (W-51).** Errors come in named layers —
+say *Validation* and *PDF check* — each replaced whole by the host and kept
+whole. With two or more, a switch in the header shows one layer, or all;
+the sheet shows the same.
+
 ```mermaid
 flowchart LR
     S[("the pane's workbook")] --> L["list: filter · pick · Show in sheet · Resolve · Delete"]
@@ -6133,13 +6209,14 @@ the store and the contract are the contract verdict's and
 ### Decision
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
-   `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`, `theme`, `renderDetail` (W-68, decision 13); methods `getErrors()`, `setErrors(list, { plugins? })`; events
-   `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
+   `author`, `plugins`, `theme` (SR-GRID decision 15a), `layers` (W-51, decision 15); properties `workbook`, `errors`, `errorTypes`,
+   `readOnly`, `theme`, `renderDetail` (W-68, decision 13), `layers`, `layerNames` (W-51); methods `getErrors({ layer? })`, `setErrors(list | envelope, { plugins?, layer? })`; events
+   `sheetpane-errors {v, errors, plugins, layers, changed}` (the v2 envelope, SR-GRID 5d), `sheetpane-layers {visible, layers}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it
    happened.
-2. **No private copy:** every render reads the store. Connecting registers the
+2. **No private copy:** every render reads the store — the errors in the
+   visible layers (`visibleErrors`, SR-GRID 5d). Connecting registers the
    element with the store, so Flag issue opens the form here and not in the
    sheet; disconnecting releases it.
 3. **The list:** "n open"; severity filter (All · ✕ · ! · i, each with its
@@ -6226,6 +6303,22 @@ the store and the contract are the contract verdict's and
     13); the form itself is only here. The workbook's own errors (validation,
     file comments) are not accepted here — B-029.
 
+15. **Layers (W-51, SR-GRID 5d):** with two or more layers in the pane, the
+    header shows a switch — `role="group"`, *Review layers* — of toggle
+    buttons: **All**, then each layer in the pane's order with its open
+    count (*PDF check 2*), each `aria-pressed` while shown. A layer's
+    button shows that layer alone; All shows every layer; focus stays on
+    the button pressed. The list, "n open", the severity and author filters
+    and the Accepted chip read the shown layers only; while more than one
+    is shown, each row's tags name its layer. A layer is called by
+    `layerNames[id]`, else `review` reads *Review* and any other its id.
+    The `layers` attribute or property (on this element or the sheet — the
+    pane's one setting) sets what is shown; the switch and the attribute
+    fire `sheetpane-layers {visible, layers}` on the element acted on.
+    `setErrors(envelope)` reads `plugins` from the envelope for the notice
+    (decision 8); `setErrors(list, { layer })` replaces one layer and leaves
+    the notice as it was.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
@@ -6237,7 +6330,12 @@ the store and the contract are the contract verdict's and
   order, axe; W-69: Accept… with a required reason, who / when / why, the
   counts and the Accepted chip in both elements, the pin and the card, Esc,
   Cancel and ⌘↵, one undo step, Reopen, `readonly` and a rule's row, axe with
-  the form open) and the
+  the form open; W-51: no switch with one layer, the switch's buttons and
+  counts and `layerNames`, a layer chosen in the list, the sheet's pins,
+  marks, toolbar and tab counts, `sheetpane-layers` on the element acted on,
+  keyboard, the `layers` attribute and property on either element, a new
+  error in the shown layer, the v2 envelope and its `changed`, a restore
+  from it with the plugins notice, axe with a layer chosen) and the
   L7 sync test in both mount orders with the errors element inside a
   `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
 
@@ -6489,7 +6587,8 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    as "Workbook rules", named "Workbook rule".
 7. **Skipped rules:** `skippedRules(book | store)` returns what was not
    checked and why (`custom`, `operand`, `operator`, `type`, `source`); the
-   status line shows "n validation warnings · k rules not checked". It is not
+   status line shows "n validation warnings · k rules not checked" (n counts
+   the open ones in the review layers shown — W-51, SR-GRID 5d). It is not
    in `sheetpane-load`'s detail — the plugin contract has no way to add to a
    core event (B-032).
 8. **List arrow:** in Edit, on cells a `list` rule covers — even past the data,
@@ -7048,7 +7147,10 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    its replies in file order, then the cell's note, each line led by
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
-3. **Write:** every error not authored `file`, at the top-left cell of its
+3. **Write:** every error not authored `file` in the layers shown
+   (`snapshot.visibleErrors`, W-51, SR-GRID 5d) — or, with
+   `export({ layers: [...] })` (`ctx.exportOptions.layers`), in the layers
+   named, whatever is shown; `[]` writes nothing — at the top-left cell of its
    range. An error with no cell, about a whole sheet or the workbook (W-55,
    SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
    never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
@@ -7086,14 +7188,16 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
-- **Enforced today:** `just test-pkg comments` — 30 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 31 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
   an error's `meta` (W-68, SR-GRID 5b) found in no written part;
   an accepted error's *Accepted* reply, its person and time, the thread
   done, the reply dropped once reopened and skipped when read back (W-69);
-  both switches byte-identical; export → reload → `setErrors` → export
+  both switches byte-identical; W-51: the layers shown by default, a named
+  set by option, none for `[]`, and every layer's threads skipped when read
+  back; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).
 - **Owed:** opening the exported fixture in Excel 365, Excel 2019 and
@@ -7793,7 +7897,8 @@ flowchart LR
   not by number. Example: SP-5804, from W-55, comes after SP-7007, and
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
-  refused), after them.
+  refused), after them; SP-3019, from W-51 (an unusable review-layer name),
+  after SP-3018.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

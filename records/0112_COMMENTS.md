@@ -68,7 +68,10 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    its replies in file order, then the cell's note, each line led by
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
-3. **Write:** every error not authored `file`, at the top-left cell of its
+3. **Write:** every error not authored `file` in the layers shown
+   (`snapshot.visibleErrors`, W-51, SR-GRID 5d) — or, with
+   `export({ layers: [...] })` (`ctx.exportOptions.layers`), in the layers
+   named, whatever is shown; `[]` writes nothing — at the top-left cell of its
    range. An error with no cell, about a whole sheet or the workbook (W-55,
    SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
    never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
@@ -106,14 +109,16 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
-- **Enforced today:** `just test-pkg comments` — 30 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 31 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
   an error's `meta` (W-68, SR-GRID 5b) found in no written part;
   an accepted error's *Accepted* reply, its person and time, the thread
   done, the reply dropped once reopened and skipped when read back (W-69);
-  both switches byte-identical; export → reload → `setErrors` → export
+  both switches byte-identical; W-51: the layers shown by default, a named
+  set by option, none for `[]`, and every layer's threads skipped when read
+  back; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).
 - **Owed:** opening the exported fixture in Excel 365, Excel 2019 and

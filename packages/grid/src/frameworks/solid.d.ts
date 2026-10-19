@@ -31,6 +31,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'attr:rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   'attr:flagging'?: 'on' | 'off' | undefined;
+  /** Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements. */
+  'attr:layers'?: string | undefined;
   /** The pane's store; assigning one replaces the `pane` lookup and applies this element's `mode` to it. */
   'prop:workbook'?: SheetpaneExcel['workbook'] | undefined;
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
@@ -41,6 +43,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'prop:renderDetail'?: SheetpaneExcel['renderDetail'] | undefined;
   /** Loads a file, like `load()`; `null` does nothing. */
   'prop:file'?: SheetpaneExcel['file'] | undefined;
+  /** The review layers shown (W-51) — the pane's, shared with `<sheetpane-errors>`: every layer until the `layers` attribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer. */
+  'prop:layers'?: SheetpaneExcel['layers'] | undefined;
   /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
   'prop:mode'?: SheetpaneExcel['mode'] | undefined;
   /** `light` (the default), `dark`, or `auto` (follows `prefers-color-scheme`) — colour only; the file's own colours never change (W-29). */
@@ -63,8 +67,10 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change']) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  'on:sheetpane-layers'?: ((event: SheetpaneExcelEventMap['sheetpane-layers']) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select']) => void) | undefined;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
@@ -103,6 +109,8 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'attr:plugins'?: string | undefined;
   /** `light` (the default), `dark` or `auto`. */
   'attr:theme'?: 'light' | 'dark' | 'auto' | undefined;
+  /** Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements; with two or more layers the header shows a switch. */
+  'attr:layers'?: string | undefined;
   /** The pane's store; assigning one replaces the `pane` lookup. */
   'prop:workbook'?: SheetpaneErrors['workbook'] | undefined;
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
@@ -115,8 +123,14 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'prop:theme'?: SheetpaneErrors['theme'] | undefined;
   /** The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — the sheet's error card has its own. */
   'prop:renderDetail'?: SheetpaneErrors['renderDetail'] | undefined;
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
+  /** The review layers shown (W-51) — the pane's, shared with `<sheetpane-excel>`: every layer until the `layers` attribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer. */
+  'prop:layers'?: SheetpaneErrors['layers'] | undefined;
+  /** What the switch and the rows call each layer (W-51), e.g. `{ pdf: 'PDF check' }`; a layer not named here shows its name (`review` as *Review*). */
+  'prop:layerNames'?: SheetpaneErrors['layerNames'] | undefined;
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'on:sheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors']) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  'on:sheetpane-layers'?: ((event: SheetpaneErrorsEventMap['sheetpane-layers']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   'on:sheetpane-change'?: ((event: SheetpaneErrorsEventMap['sheetpane-change']) => void) | undefined;
   /** `{ sheet, ref }` when picking a row selects its cell. */

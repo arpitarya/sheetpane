@@ -41,7 +41,7 @@ export interface PluginContext {
   readonly store: WorkbookStore;
   readonly book: ImportedWorkbook;
   snapshot(): Snapshot;
-  /** During `exportPatch`: the options the host passed to `export(options)` (e.g. `{ comments: false }`). */
+  /** During `exportPatch`: the options the host passed to `export(options)` (e.g. `{ comments: false }`, `{ layers: ['pdf'] }` — W-51). */
   readonly exportOptions?: Readonly<Record<string, unknown>>;
 }
 
@@ -54,7 +54,7 @@ export type DeriveInput =
 export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string; clear?: boolean }
 
 /** What `validate` returns: an error without the fields the store owns. */
-/** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. */
+/** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. `layer` (W-51) puts the error in that review layer; without it, `review`. */
 export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged' | 'acceptedBy' | 'acceptedAt' | 'reason'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
 
 /** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */

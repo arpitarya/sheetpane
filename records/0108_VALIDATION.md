@@ -89,7 +89,8 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
    as "Workbook rules", named "Workbook rule".
 7. **Skipped rules:** `skippedRules(book | store)` returns what was not
    checked and why (`custom`, `operand`, `operator`, `type`, `source`); the
-   status line shows "n validation warnings · k rules not checked". It is not
+   status line shows "n validation warnings · k rules not checked" (n counts
+   the open ones in the review layers shown — W-51, SR-GRID 5d). It is not
    in `sheetpane-load`'s detail — the plugin contract has no way to add to a
    core event (B-032).
 8. **List arrow:** in Edit, on cells a `list` rule covers — even past the data,

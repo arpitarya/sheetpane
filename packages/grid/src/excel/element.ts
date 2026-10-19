@@ -7,9 +7,9 @@ import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type Mode, type RenderDetail, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type ErrorsEnvelope, type Mode, type RenderDetail, type SheetpaneError, type Severity } from '../pane/types.js';
 import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
-import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
+import { ElementBase, ICON, esc, fire, layersAttr } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import type { ColumnRules, ColumnRulesConfig, OnInvalid, RuleOutcome, ValidateFn } from '../pane/rules.js';
@@ -66,9 +66,10 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * - `on-invalid` — `flag` (the default) or `block`: what a failing column rule does.
  * - `rules-src` — a URL to a rules file (read with a GET).
  * - `flagging` — `on` (the default) or `off`: no Flag issue anywhere.
+ * - `layers` — space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements.
  *
  * Properties: `workbook`, `errors`, `errorTypes`, `file`, `mode`, `theme`, `open`, `src`, `sizes`,
- * `rules`, `flagging`, `columns`, `validate`, `onInvalid`, `renderDetail`.
+ * `rules`, `flagging`, `columns`, `validate`, `onInvalid`, `renderDetail`, `layers`.
  *
  * Methods: `load()`, `export()`, `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
  * `shortcuts()`, `column()`, `renderNow()`, `geometryFor()`, `reveal()`, `unreveal()`.
@@ -78,7 +79,8 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  *
  * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` for each change, undo and redo included.
- * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change.
+ * @fires sheetpane-errors `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed.
+ * @fires sheetpane-layers `{ visible, layers }` when the visible review layers change (W-51).
  * @fires sheetpane-select `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release.
  * @fires sheetpane-visibility `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49).
  * @fires sheetpane-resize `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47).
@@ -117,7 +119,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  */
 export class SheetpaneExcel extends ElementBase {
   /** The attributes the element reacts to. */
-  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging'];
+  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging', 'layers'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -183,6 +185,7 @@ export class SheetpaneExcel extends ElementBase {
     this.unbind(); this.bind();
     const m = this.getAttribute('mode'); // the element's mode applies to the store it is given, as on connect
     if (m === 'edit' || m === 'view') this._store!.setMode(m, this);
+    if (this.hasAttribute('layers')) this._store!.setVisibleLayers(layersAttr(this.getAttribute('layers')), this);
     this.schedule();
   }
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
@@ -201,6 +204,12 @@ export class SheetpaneExcel extends ElementBase {
   set renderDetail(f: RenderDetail | undefined) { this.detailRegion.render = f; this.schedule(); }
   /** Loads a file, like `load()`; `null` does nothing. */
   set file(f: File | Blob | ArrayBuffer | Uint8Array | null) { if (f) void this.load(f); }
+  /**
+   * The review layers shown (W-51) — the pane's, shared with `<sheetpane-errors>`: every layer until the `layers`
+   * attribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer.
+   */
+  get layers(): string[] { return [...(this._store?.getSnapshot().visibleLayers ?? layersAttr(this.getAttribute('layers')) ?? [])]; }
+  set layers(v: readonly string[] | null) { if (v && v.length) this.setAttribute('layers', v.join(' ')); else this.removeAttribute('layers'); this._store?.setVisibleLayers(v, this); }
   /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
   get mode(): Mode { return this._store?.getSnapshot().mode ?? ((this.getAttribute('mode') as Mode) || 'view'); }
   set mode(m: Mode) { this.setAttribute('mode', m); }
@@ -305,10 +314,10 @@ export class SheetpaneExcel extends ElementBase {
 
   /** Selects a cell and scrolls to it. */
   select(sheet: string, ref: string): void { this.ensureStore().select({ sheet, ref }, this); this.scrollToSel = true; }
-  /** A copy of the pane's errors, to save a review. */
-  getErrors(): SheetpaneError[] { return this.errors; }
-  /** Restores a saved review; not a user action, so the undo stack is cleared. */
-  setErrors(list: SheetpaneError[]): void { this.ensureStore().setErrors(list, this); }
+  /** A copy of the pane's errors, to save a review; `{ layer }` gives one layer's (W-51). */
+  getErrors(o: { layer?: string } = {}): SheetpaneError[] { return this._store?.getErrors(o) ?? []; }
+  /** Restores a saved review — a list or the `sheetpane-errors` envelope — clearing the undo stack; `{ layer }` replaces that layer only (W-51). */
+  setErrors(list: SheetpaneError[] | ErrorsEnvelope, o: { layer?: string } = {}): void { this.ensureStore().setErrors(list, o, this); }
   /** Undoes the pane's last step. */
   undo(): void { this._store?.undo(this); }
   /** Redoes the last undone step. */
@@ -321,6 +330,7 @@ export class SheetpaneExcel extends ElementBase {
     this.bind();
     const m = this.getAttribute('mode');
     if (m === 'edit' || m === 'view') this._store!.setMode(m, this);
+    if (this.hasAttribute('layers')) this._store!.setVisibleLayers(layersAttr(this.getAttribute('layers')), this);
     const src = this.getAttribute('src');
     if (src && this._store!.getSnapshot().load.status === 'empty') void this.load(src);
     const rsrc = this.getAttribute('rules-src');
@@ -347,6 +357,7 @@ export class SheetpaneExcel extends ElementBase {
     else if (name === 'header-row' || name === 'on-invalid') this.applyRules();
     else if (name === 'rules-src') { if (val) void this.loadRules(val); else this.rules = undefined; }
     else if (name === 'flagging') this._store?.setFlagging(val !== 'off');
+    else if (name === 'layers') this._store?.setVisibleLayers(layersAttr(val), this);
     this.schedule();
   }
 
@@ -412,7 +423,8 @@ export class SheetpaneExcel extends ElementBase {
         fire(this, 'sheetpane-change', { sheet: e.sheet, ref: e.ref, kind: e.kind, was: e.was, now: e.now });
         if (e.kind === 'hidden' || e.kind === 'sheetState') this.visibilityEvent(e.sheet, e.ref, e.kind, e.was, e.now);
         break;
-      case 'errors': fire(this, 'sheetpane-errors', { errors: s.getErrors(), plugins: s.pluginIds }); break;
+      case 'errors': fire(this, 'sheetpane-errors', s.envelope(e.layers)); break;
+      case 'layers': fire(this, 'sheetpane-layers', { visible: [...s.getSnapshot().visibleLayers], layers: [...s.getSnapshot().layers] }); break;
       case 'select':
         if (e.sheet !== sheetBefore) fire(this, 'sheetpane-sheet', { sheet: e.sheet });
         fire(this, 'sheetpane-select', { sheet: e.sheet, ref: e.ref, range: s.getSnapshot().selection.range, column: this.column(e.sheet, e.ref), value: s.value(e.sheet, e.ref) });
@@ -905,7 +917,7 @@ export class SheetpaneExcel extends ElementBase {
   /** Untouched: no change, and nothing a plugin would write (a review exported as comments). */
   private untouched(): boolean {
     const s = this._store!;
-    return s.changeCount === 0 && !(s.getSnapshot().errors.length && s.plugins.some((p) => p.provides.includes('exportPatch')));
+    return s.changeCount === 0 && !(s.getSnapshot().visibleErrors.length && s.plugins.some((p) => p.provides.includes('exportPatch')));
   }
 
   // ── Download (W-31, W-34): the main part in the upload's format; ▾ for either format and plugin options ──
@@ -1233,7 +1245,7 @@ export class SheetpaneExcel extends ElementBase {
   private hiddenMarks(sheet: string, g: SheetGeometry, win: { r0: number; r1: number; c0: number; c1: number }, fr: number, fc: number): { cols: string; layer: string } {
     const z = this.zoom, HH = this.headH() * z, RW = this.rowHeadW() * z, s = this._store!;
     const X = (c: number) => g.colX[Math.min(c, g.cols)]! * z, Y = (r: number) => rowTop(g, r) * z;
-    const errs = s.getSnapshot().errors.filter((e) => e.sheet === sheet && e.status === 'open');
+    const errs = s.getSnapshot().visibleErrors.filter((e) => e.sheet === sheet && e.status === 'open');
     const inSpan = (axis: 'rows' | 'cols', a: number, b: number) => {
       let worst: Severity | undefined, n = 0;
       for (const e of errs) {
@@ -1361,7 +1373,7 @@ export class SheetpaneExcel extends ElementBase {
     const s = this._store!, snap = s.getSnapshot(), book = snap.book!;
     const hidden = book.sheets.filter((x) => s.hidden(x.name).state !== 'visible');
     if (!hidden.length) return '';
-    const errs = snap.mode === 'edit' ? snap.errors.filter((e) => e.status === 'open' && hidden.some((h) => h.name === e.sheet)).length : 0;
+    const errs = snap.mode === 'edit' ? snap.visibleErrors.filter((e) => e.status === 'open' && hidden.some((h) => h.name === e.sheet)).length : 0;
     const btn = `<button type="button" class="tab hidbtn" data-act="hidden-sheets" aria-haspopup="menu" aria-expanded="${this.hiddenMenuOpen}" title="Sheets hidden in the file">⊘ ${hidden.length} hidden ▾${errs ? `<span class="cnt" aria-label="${errs} open">${errs}</span>` : ''}</button>`;
     return btn;
   }
@@ -1844,7 +1856,7 @@ export class SheetpaneExcel extends ElementBase {
     const t = e.target as HTMLElement, s = this._store!, snap = s.getSnapshot();
     const act = t.closest<HTMLElement>('[data-act]')?.dataset.act;
     const pin = t.closest<HTMLElement>('[data-pin]');
-    if (pin) { const err = snap.errors.find((x) => x.id === pin.dataset.pin); if (err) { const r = parseRange(err.range)!; this.anchor = { row: r.top, col: r.left }; s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); } return; }
+    if (pin) { const err = snap.visibleErrors.find((x) => x.id === pin.dataset.pin); if (err) { const r = parseRange(err.range)!; this.anchor = { row: r.top, col: r.left }; s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); } return; }
     const inCtx = !!t.closest('.ctxmenu:not(.hdrmenu)');
     if (inCtx) { this.ctxOpen = false; this.schedule(); queueMicrotask(() => this.q.grid.focus({ preventScroll: true })); }
     if (!act) {
@@ -1907,7 +1919,7 @@ export class SheetpaneExcel extends ElementBase {
 
   private stepError(dir: 1 | -1): void {
     const s = this._store!, snap = s.getSnapshot();
-    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet && errorScope(e) === 'cell'); // a sheet-level error has no cell to step to (W-55)
+    const list = snap.visibleErrors.filter((e) => e.sheet === snap.selection.sheet && errorScope(e) === 'cell'); // a sheet-level error has no cell to step to (W-55)
     if (!list.length) return;
     const cur = this.errorAt(snap.selection.sheet, snap.selection.ref);
     const i = cur ? list.indexOf(cur) : -1;
@@ -1920,7 +1932,7 @@ export class SheetpaneExcel extends ElementBase {
   private errorAt(sheet: string, ref: string): SheetpaneError | undefined {
     const p = parseRef(ref);
     if (!p) return undefined;
-    const hits = this._store!.getSnapshot().errors.filter((e) => {
+    const hits = this._store!.getSnapshot().visibleErrors.filter((e) => { // W-51: the visible layers only
       if (e.sheet !== sheet) return false;
       const r = parseRange(e.range);
       return !!r && p.row >= r.top && p.row <= r.bottom && p.col >= r.left && p.col <= r.right;
@@ -2012,7 +2024,7 @@ export class SheetpaneExcel extends ElementBase {
     q.fname.title = `${src.name} · ${q.meta.textContent}`; // the meta chip is shed at narrow widths
     for (const b of Array.from(q.modeseg.querySelectorAll('button'))) b.setAttribute('aria-pressed', String(b.dataset.mode === snap.mode));
     const open = { error: 0, warning: 0, note: 0 };
-    for (const e of snap.errors) if (e.status === 'open') open[e.severity]++;
+    for (const e of snap.visibleErrors) if (e.status === 'open') open[e.severity]++;
     q.counts.innerHTML = edit ? `<span class="chip chip-fail" title="Open errors">✕ ${open.error}</span> <span class="chip chip-warn" title="Open warnings">! ${open.warning}</span> <span class="chip chip-info" title="Open notes">i ${open.note}</span>` : '';
     q.editonly.style.display = edit ? 'contents' : 'none';
     (q.undo as HTMLButtonElement).disabled = !snap.canUndo;
@@ -2101,7 +2113,7 @@ export class SheetpaneExcel extends ElementBase {
     q.tabs.hidden = src.kind === 'csv';
     // W-49: hidden sheets are not tabs — one ⊘ button lists them; one opened for viewing shows dashed
     const tabsHtml = book.sheets.filter((sh) => s.hidden(sh.name).state === 'visible' || this.openedSheets.has(sh.name) || sh.name === sheet.name).map((sh) => {
-      const mine = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open') : [];
+      const mine = edit ? snap.visibleErrors.filter((e) => e.sheet === sh.name && e.status === 'open') : [];
       const cnt = mine.length, whole = mine.filter((e) => e.range === '').length; // W-55: a whole-sheet error is counted on its tab
       const hid = s.hidden(sh.name).state !== 'visible';
       return `<button type="button" role="tab" class="tab${hid ? ' hid' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${hid ? ' title="Hidden in the file — shown for viewing"' : ''}>${hid ? '⊘ ' : ''}${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open${whole ? `, ${whole} about the whole sheet` : ''}">${cnt}</span>` : ''}</button>`;
@@ -2225,7 +2237,7 @@ export class SheetpaneExcel extends ElementBase {
     const curHit = this.findIdx >= 0 ? this.findHits[this.findIdx] : undefined;
     const marks = new Map<string, string>();
     const rowWorst = new Map<number, Severity>();
-    if (edit) for (const e of snap.errors) {
+    if (edit) for (const e of snap.visibleErrors) { // W-51: marks follow the visible layers
       if (e.sheet !== sheet.name) continue;
       const r = parseRange(e.range);
       if (!r) continue;
@@ -2427,7 +2439,7 @@ export class SheetpaneExcel extends ElementBase {
     }
     const sel = snap.selection, selP = parseRef(sel.ref)!;
     if (edit) {
-      for (const e of snap.errors) {
+      for (const e of snap.visibleErrors) {
         if (e.sheet !== sheet.name) continue;
         const r = parseRange(e.range);
         if (!r || r.top > win.r1 + 40) continue;

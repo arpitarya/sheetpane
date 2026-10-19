@@ -31,6 +31,11 @@ There is no "linked" chip and no export footer — it is always linked.
 stays in the review and the download with who, when and the reason, but no
 longer counts as open (W-69).
 
+**Several reviews can share one pane (W-51).** Errors come in named layers —
+say *Validation* and *PDF check* — each replaced whole by the host and kept
+whole. With two or more, a switch in the header shows one layer, or all;
+the sheet shows the same.
+
 ```mermaid
 flowchart LR
     S[("the pane's workbook")] --> L["list: filter · pick · Show in sheet · Resolve · Delete"]
@@ -66,13 +71,14 @@ the store and the contract are the contract verdict's and
 ### Decision
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
-   `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`, `theme`, `renderDetail` (W-68, decision 13); methods `getErrors()`, `setErrors(list, { plugins? })`; events
-   `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
+   `author`, `plugins`, `theme` (SR-GRID decision 15a), `layers` (W-51, decision 15); properties `workbook`, `errors`, `errorTypes`,
+   `readOnly`, `theme`, `renderDetail` (W-68, decision 13), `layers`, `layerNames` (W-51); methods `getErrors({ layer? })`, `setErrors(list | envelope, { plugins?, layer? })`; events
+   `sheetpane-errors {v, errors, plugins, layers, changed}` (the v2 envelope, SR-GRID 5d), `sheetpane-layers {visible, layers}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it
    happened.
-2. **No private copy:** every render reads the store. Connecting registers the
+2. **No private copy:** every render reads the store — the errors in the
+   visible layers (`visibleErrors`, SR-GRID 5d). Connecting registers the
    element with the store, so Flag issue opens the form here and not in the
    sheet; disconnecting releases it.
 3. **The list:** "n open"; severity filter (All · ✕ · ! · i, each with its
@@ -159,6 +165,22 @@ the store and the contract are the contract verdict's and
     13); the form itself is only here. The workbook's own errors (validation,
     file comments) are not accepted here — B-029.
 
+15. **Layers (W-51, SR-GRID 5d):** with two or more layers in the pane, the
+    header shows a switch — `role="group"`, *Review layers* — of toggle
+    buttons: **All**, then each layer in the pane's order with its open
+    count (*PDF check 2*), each `aria-pressed` while shown. A layer's
+    button shows that layer alone; All shows every layer; focus stays on
+    the button pressed. The list, "n open", the severity and author filters
+    and the Accepted chip read the shown layers only; while more than one
+    is shown, each row's tags name its layer. A layer is called by
+    `layerNames[id]`, else `review` reads *Review* and any other its id.
+    The `layers` attribute or property (on this element or the sheet — the
+    pane's one setting) sets what is shown; the switch and the attribute
+    fire `sheetpane-layers {visible, layers}` on the element acted on.
+    `setErrors(envelope)` reads `plugins` from the envelope for the notice
+    (decision 8); `setErrors(list, { layer })` replaces one layer and leaves
+    the notice as it was.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
@@ -170,7 +192,12 @@ the store and the contract are the contract verdict's and
   order, axe; W-69: Accept… with a required reason, who / when / why, the
   counts and the Accepted chip in both elements, the pin and the card, Esc,
   Cancel and ⌘↵, one undo step, Reopen, `readonly` and a rule's row, axe with
-  the form open) and the
+  the form open; W-51: no switch with one layer, the switch's buttons and
+  counts and `layerNames`, a layer chosen in the list, the sheet's pins,
+  marks, toolbar and tab counts, `sheetpane-layers` on the element acted on,
+  keyboard, the `layers` attribute and property on either element, a new
+  error in the shown layer, the v2 envelope and its `changed`, a restore
+  from it with the plugins notice, axe with a layer chosen) and the
   L7 sync test in both mount orders with the errors element inside a
   `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
 
