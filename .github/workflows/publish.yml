@@ -17,7 +17,7 @@ jobs:
       contents: read
       actions: read # to read ci.yml's verdict on the commit being released
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: ci.yml must have succeeded on this commit, on main
         # Create the release only after CI is green on main: while it is running, red or
@@ -33,8 +33,8 @@ jobs:
             exit 1
           }
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -63,7 +63,7 @@ jobs:
           done
           ls -l tarballs
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-tarballs
           path: tarballs/
@@ -82,13 +82,13 @@ jobs:
       name: npm
       url: https://www.npmjs.com/org/sheetpane
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
       - name: take the tarballs the build job made — never rebuild here
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: npm-tarballs
           path: tarballs/
