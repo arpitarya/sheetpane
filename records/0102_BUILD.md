@@ -282,12 +282,13 @@ pnpm and a justfile; the testing verdict chose the runner.
     installs both from `pnpm pack` tarballs (every package, the eight plugins
     included) outside the workspace and runs the same check — `just
     demo-packed`, nightly. Both share one look (2026-10-19): a host bar
-    (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
+    (Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
     dark · auto, set on every component), the components filling the window,
     and a footer of host events (the `sheetpane-export` line names the file,
     the format and the first 12 hex digits of its SHA-256, W-65);
     `examples/react/src/demo.css` is the
-    stylesheet the HTML demo inlines.
+    stylesheet the HTML demo inlines. The sheet and the error list are always
+    shown side by side; there is no view switch (decider, 2026-10-19).
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · Hide and show (W-49: `@sheetpane/visibility` — hide a row from

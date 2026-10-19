@@ -8,7 +8,6 @@ import './demo.css';
 const FONTS = { System: 'system-ui, sans-serif', Georgia: 'Georgia, serif', Courier: "'Courier New', monospace" } as const;
 const THEMES = { Light: 'light', Dark: 'dark', Auto: 'auto' } as const;
 export type Theme = (typeof THEMES)[keyof typeof THEMES];
-type View = 'both' | 'sheet' | 'errors';
 
 /** The sample's own mistakes, found by column title (W-27): a mistyped account id, a negative unit count, a missing advisor. */
 const RULES: ColumnRules = {
@@ -50,7 +49,6 @@ function ReviewStrip({ sheet, rulesOn }: { sheet: SheetRef; rulesOn: boolean }) 
 
 /** React 19 passes properties (`file`, `open`) and listens to custom events (`onsheetpane-…`) on custom elements natively. */
 export function App() {
-  const [view, setView] = useState<View>('both');
   const [font, setFont] = useState<keyof typeof FONTS>('System');
   const [theme, setTheme] = useState<Theme>('light');
   const [file, setFile] = useState<File | null>(null);
@@ -75,13 +73,6 @@ export function App() {
           <span className="crumb">Holdings review<small>React 19</small></span>
           {import.meta.env.VITE_SHEETPANE_VERSION && <span className="ver" title="sheetpane version">sheetpane {import.meta.env.VITE_SHEETPANE_VERSION}</span>}
         </div>
-        <div className="seg" role="tablist" aria-label="Views">
-          {(['both', 'sheet', 'errors'] as const).map((v) => (
-            <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}>
-              {v === 'both' ? 'Sheet + errors' : v === 'sheet' ? 'Sheet' : `Errors (${open})`}
-            </button>
-          ))}
-        </div>
         <div className="tools">
           <label className="btn" title="Open an .xlsx or .csv — read in this tab, nothing is uploaded">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16" /></svg>Open file…
@@ -101,17 +92,16 @@ export function App() {
       <div className="stage">
         <GalleryPanels active={demo} opened={opened} theme={theme} />
         <main className="review" hidden={demo !== 'review'}>
-          <section className="sheet" hidden={view === 'errors'}>
+          <section className="sheet">
             <sheetpane-excel ref={sheet} pane="react-demo" mode="edit" author="Demo reviewer" theme={theme} src={file ? undefined : src} file={file}
               header-row={!file && src.endsWith('.xlsx') ? '2' : '1'}
               onsheetpane-change={(e) => setLast(`${e.detail.sheet}!${e.detail.ref} → ${String(e.detail.now)}`)}
               onsheetpane-export={(e) => setExported(`${e.detail.name} · ${e.detail.format ?? e.detail.kind}${e.detail.converted ? ' (converted)' : ''}${e.detail.sha256 ? ` · sha256 ${e.detail.sha256.slice(0, 12)}…` : ''}`)} />
             <ReviewStrip sheet={sheet} rulesOn={rulesOn} />
           </section>
-          <aside className="side" hidden={view === 'sheet'} style={view === 'errors' ? { width: 'auto', flex: 1 } : undefined}>
+          <aside className="side">
             <sheetpane-errors pane="react-demo" author="Demo reviewer" theme={theme}
-              onsheetpane-errors={(e) => setReview(e.detail.errors)}
-              onsheetpane-reveal={() => setView('both')} />
+              onsheetpane-errors={(e) => setReview(e.detail.errors)} />
           </aside>
         </main>
       </div>

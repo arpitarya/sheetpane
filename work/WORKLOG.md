@@ -24,6 +24,24 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — the demos drop the view switch: sheet and errors always side by side  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"remove all and just keep sheet plus errors as default … since there is only one, maybe we don't need the tab at all"*
+- **Done:**
+  - Removed the *Sheet + errors · Sheet · Errors* switch from both demos: the HTML markup, its script and its `.seg` styles in both stylesheets; React's `view` state and its `sheetpane-reveal` handler.
+  - The sheet and the error list are now always shown side by side.
+  - SR-BUILD decision 11 is updated.
+- **Verified:**
+  - demo-check: 57 of 57.
+  - `plugins-in-demos`: 25 of 25.
+  - The React demo typechecks and builds.
+  - Checked by eye in Chrome (`just demo-html`).
+- **Decided / left open:** the `Host-Linked-Tabs` design board still shows a host with tabs. It documents the `sheetpane-reveal` pattern, which still works for hosts; the demos no longer show it.
+- **Mistakes:** none.
+- **Next:** commit with the other changes. Nothing has been committed, at the decider's word.
+
+---
+
 ## 2026-10-19 — the editing work and L12/L13 committed; 0.5.0 released  ·  Claude (Claude Code, claude-opus-5-5)
 
 - **Asked:** *"commit everything and push then publish a new version."*
