@@ -24,6 +24,37 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — the HTML and React demos redesigned; demo-check 51/51  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"improve the ui for example html and react it will be used for demo purpose and for test. recreate them if that will be faster"*
+- **Done:** `examples/html/index.html` rewritten; `examples/react/src/App.tsx` and `PluginGallery.tsx` rewritten, with `src/demo.css` (the same stylesheet the HTML inlines), `index.html`, and a `*.css` declaration in `vite-env.d.ts`.
+  - **The look:** Proof tokens, light and dark. A host bar (Views segmented; Open file…, the CSV sample, the pop-up, Font, a new **Theme** select that sets `theme` on every component). A *Demo* tab row with separators. A blurb showing the `plugins="…"` attribute. Components that fill the window. A footer of host events.
+  - **Kept for the tests:** every name and hook the tests use: the tablist "Plugin gallery" and its tab names, `[role=tabpanel][data-tab]`, the page-font select, the two buttons, one `input[type=file]`, the pop-up as the second `sheetpane-excel`, `review-strip`, `last-change`, and the "Check columns" label. `<span class="logo">Your app</span>` stays for `build-site.mjs`.
+  - **Verified:** `scripts/demo-check.mjs` was run in the cloud container against the HTML demo and a Vite build of the React one: 51 of 51 pass, no page errors. The React app typechecks (tsgo). The grid's toolbar shed order was changed so the file-meta chip (which demo-check reads) is dropped last.
+- **Decided / left open:** read in: default theme Light (it was the only one); no web fonts, since the demos must run offline in CI. At 1440 px the React host bar wraps its tools to a second line.
+- **Mistakes:** none.
+- **Next:** run `just demo-check` and `just test-pkg grid` on the Mac, then commit.
+
+---
+
+## 2026-10-19 — the demo checked against the design; seven fixes in `@sheetpane/grid`  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"Open the URL in the browser and check whatever is as per the design… Whatever isn't, fix it in this session itself. No work item, fix it right away."*
+- **Done:** opened the plain-HTML demo (127.0.0.1:5173) in Chrome. Review, All plugins and Hide and show were compared with the Sheetpane, Selection-And-Download and All-Plugins boards. Seven fixes in `packages/grid/src/excel/{element,styles}.ts` and `shared/dom.ts`:
+  - the toolbar is one row that sheds as it narrows, where it used to wrap Download to a second line;
+  - the Download ▾ menu no longer opens clipped off the left edge;
+  - ▾ is drawn as a chevron;
+  - the format row is one row with More ▾ (W-14), where it used to wrap;
+  - the docked plugin buttons fold when they would squeeze the value field (Hide and show had crushed it to 60 px), and greyed or header- and tab-only menu actions stay out of the bar;
+  - a stray blue frame beside the grid is gone: the focus ring now shows for the keyboard only, drawn over the cells;
+  - menu separators after Flag issue and before plugin items.
+  Typecheck clean (tsgo 7.0.2, linux), dist rebuilt, each fix re-checked in the browser. SR-GRID decisions 10 and 13 and the CHANGELOG are updated.
+- **Decided / left open:** the shed order (changes label → find width → counts → file meta → wrap only below 860 px; the meta stays longest because demo-check reads it) is read in. `just test-pkg grid` was not run here: the VM has no Playwright browser, so it is still to run on the Mac.
+- **Mistakes:** none.
+- **Next:** run `just test-pkg grid` on the Mac and commit.
+
+---
+
 ## 2026-10-19 — W-50's look (quiet, optional results), canvas v51 synced; an open-work prototype  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"what will be the best design — shouldn't be very overwhelming and should be optional — then sync the designs and update the work item on how it should look"*; then *"review the open work file and create a html prototype to test out the look and feel"*.

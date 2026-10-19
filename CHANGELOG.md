@@ -8,6 +8,11 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+### Fixed
+
+- Demos (`examples/html`, `examples/react`): redesigned in the Proof look. A host bar with Views, Open file…, the CSV sample, the pop-up, Font and a new Theme switch (light, dark, auto, applied to every component). A *Demo* row of tabs, with Review, the plugins and the combinations set apart. Each demo's blurb shows the attribute that turns it on. Both components fill the window, and a footer shows the host events (change, errors, export). Every hook the demo check uses is kept; `demo-check` passes 51 of 51.
+- `@sheetpane/grid`: the toolbar stays one row, shedding the change label, find width, counts and file meta as the element narrows, and the Download ▾ menu no longer opens off the left edge. The format row stays one row, with a More ▾ for the groups that do not fit. Docked plugin buttons fold into ⋯ before they squeeze the value field, and greyed or header- and tab-only menu actions stay out of the cell bar. The grid's focus ring shows only for the keyboard, drawn over the cells instead of as a stray frame beside them. The right-click menu separates Flag issue and plugin items. Checked against the design canvas in the plain-HTML demo.
+
 ## 0.3.0 — CI in about two minutes; no change to the packages (2026-10-19)
 
 The package code is the same as 0.1.0 and 0.2.0; this release changes how

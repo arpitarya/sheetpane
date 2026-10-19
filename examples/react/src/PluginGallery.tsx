@@ -11,26 +11,29 @@ import '@sheetpane/charts/ui';
 import '@sheetpane/comments';
 import '@sheetpane/visibility/ui';
 import type { SheetpaneExcel } from '@sheetpane/grid';
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useRef, type KeyboardEvent } from 'react';
 import showcase from '@sheetpane/fixtures/files/showcase.xlsx?url';
 import rulesDoc from '@sheetpane/fixtures/files/showcase.rules.json';
+import type { Theme } from './App';
 
 export interface GalleryTab { id: string; label: string; plugins?: string; sheet?: string; blurb?: string; rules?: boolean }
 export const TABS: readonly GalleryTab[] = [
   { id: 'review', label: 'Review' },
   { id: 'vanilla', label: 'Vanilla', plugins: '', sheet: 'Numbers', blurb: 'The grid alone: values as stored (Numbers!B6 reads 1.25), saved formula results marked stale after an edit, no fills, rules, pictures or charts.' },
-  { id: 'numfmt', label: 'Number formats', plugins: 'numfmt', sheet: 'Numbers', blurb: 'numfmt — every Excel number format: B5 is red by its sign, B6 reads 1 1/4. In Edit, the format row sets a format.' },
-  { id: 'styles', label: 'Styles', plugins: 'styles', sheet: 'Styles', blurb: 'styles — fills, fonts, borders and alignment from the file; in Edit, the format row restyles the selection.' },
-  { id: 'formulas', label: 'Formulas', plugins: 'formulas', sheet: 'Formulas', blurb: 'formulas — edit B2 and the total in B6 and B7 recalculate (IronCalc, loaded on the first formula).' },
-  { id: 'validation', label: 'Validation', plugins: 'validation', sheet: 'Validation', blurb: 'validation — the file’s own rules: B4 (Bogus) and C3 (-2) are listed as workbook-rule errors; Status cells get a list arrow.' },
-  { id: 'condfmt', label: 'Conditional formats', plugins: 'styles condfmt', sheet: 'CondFmt', blurb: 'condfmt (needs styles) — a colour scale in A, data bars in B, a red fill over 50 in C; edit a number and the colours follow.' },
-  { id: 'images', label: 'Images', plugins: 'images', sheet: 'Images', blurb: 'images — the picture anchored to B3:E9, scaled with zoom.' },
-  { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'charts (needs images) — a column and a line chart drawn at their anchors; Show source cells selects the data.' },
-  { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'comments — the note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
+  { id: 'numfmt', label: 'Number formats', plugins: 'numfmt', sheet: 'Numbers', blurb: 'Every Excel number format: B5 is red by its sign, B6 reads 1 1/4. In Edit, the format row sets a format.' },
+  { id: 'styles', label: 'Styles', plugins: 'styles', sheet: 'Styles', blurb: 'Fills, fonts, borders and alignment from the file; in Edit, the format row restyles the selection.' },
+  { id: 'formulas', label: 'Formulas', plugins: 'formulas', sheet: 'Formulas', blurb: 'Edit B2 and the total in B6 and B7 recalculate (IronCalc, loaded on the first formula).' },
+  { id: 'validation', label: 'Validation', plugins: 'validation', sheet: 'Validation', blurb: 'The file’s own rules: B4 (Bogus) and C3 (-2) are listed as workbook-rule errors; Status cells get a list arrow.' },
+  { id: 'condfmt', label: 'Conditional formats', plugins: 'styles condfmt', sheet: 'CondFmt', blurb: 'Needs styles. A colour scale in A, data bars in B, a red fill over 50 in C; edit a number and the colours follow.' },
+  { id: 'images', label: 'Images', plugins: 'images', sheet: 'Images', blurb: 'The picture anchored to B3:E9, scaled with zoom.' },
+  { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'Needs images. A column and a line chart drawn at their anchors; Show source cells selects the data.' },
+  { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'The note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
   { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
-  { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'visibility — right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
+  { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'Right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
   { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json, passed as the rules prop) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
 ];
+/** Review · the plugins one by one · together. */
+const SEP_AFTER = new Set(['review', 'comments']);
 
 /** The tab row (APG tabs: arrows move between tabs, Home/End to the ends). */
 export function GalleryTabs({ active, onOpen }: { active: string; onOpen: (id: string) => void }) {
@@ -44,19 +47,24 @@ export function GalleryTabs({ active, onOpen }: { active: string; onOpen: (id: s
     requestAnimationFrame(() => row.current?.querySelector<HTMLElement>(`#tab-${TABS[j]!.id}`)?.focus());
   };
   return (
-    <nav ref={row} role="tablist" aria-label="Plugin gallery" onKeyDown={key} style={{ display: 'flex', gap: 2, padding: '0 24px', background: '#fff', borderBottom: '1px solid #E5E7EB', overflowX: 'auto' }}>
-      {TABS.map((t) => (
-        <button key={t.id} id={`tab-${t.id}`} role="tab" aria-selected={active === t.id} tabIndex={active === t.id ? 0 : -1} onClick={() => onOpen(t.id)}
-          style={{ font: 'inherit', fontSize: 13, padding: '9px 10px', border: 0, borderBottom: `2px solid ${active === t.id ? '#2346C8' : 'transparent'}`, background: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          {t.label}
-        </button>
-      ))}
-    </nav>
+    <div className="demos">
+      <span className="demos-lbl" aria-hidden="true">Demo</span>
+      <nav ref={row} className="gallery" role="tablist" aria-label="Plugin gallery" onKeyDown={key}>
+        {TABS.map((t) => (
+          <Fragment key={t.id}>
+            <button id={`tab-${t.id}`} type="button" role="tab" aria-selected={active === t.id} tabIndex={active === t.id ? 0 : -1} onClick={() => onOpen(t.id)}>
+              {t.label}
+            </button>
+            {SEP_AFTER.has(t.id) && <span className="gsep" aria-hidden="true" />}
+          </Fragment>
+        ))}
+      </nav>
+    </div>
   );
 }
 
 /** One gallery tab: its own pane, opened on the tab's sheet. */
-function Panel({ tab, hidden }: { tab: GalleryTab; hidden: boolean }) {
+function Panel({ tab, hidden, theme }: { tab: GalleryTab; hidden: boolean; theme: Theme }) {
   const sheet = useRef<SheetpaneExcel>(null);
   useEffect(() => {
     const el = sheet.current;
@@ -68,20 +76,25 @@ function Panel({ tab, hidden }: { tab: GalleryTab; hidden: boolean }) {
   const plugins = tab.plugins ? { plugins: tab.plugins } : {};
   const rules = tab.rules ? { rules: rulesDoc, flagging: 'off' as const } : {};
   return (
-    <div role="tabpanel" data-tab={tab.id} aria-labelledby={`tab-${tab.id}`} hidden={hidden} style={{ display: hidden ? 'none' : 'flex', gap: 16, padding: '12px 24px 16px' }}>
-      <sheetpane-excel ref={sheet} pane={`gallery-${tab.id}`} mode="edit" author="Demo reviewer" src={showcase} {...plugins} {...rules} style={{ flex: 1, minWidth: 0, height: 'calc(100vh - 170px)' }} />
-      <sheetpane-errors pane={`gallery-${tab.id}`} author="Demo reviewer" {...plugins} style={{ width: 340, flex: 'none', height: 'calc(100vh - 170px)' }} />
+    <div className="pair" role="tabpanel" data-tab={tab.id} aria-labelledby={`tab-${tab.id}`} hidden={hidden}>
+      <sheetpane-excel ref={sheet} pane={`gallery-${tab.id}`} mode="edit" author="Demo reviewer" theme={theme} src={showcase} {...plugins} {...rules} />
+      <sheetpane-errors pane={`gallery-${tab.id}`} author="Demo reviewer" theme={theme} {...plugins} />
     </div>
   );
 }
 
-/** The panels opened so far; only `active` shows. */
-export function GalleryPanels({ active, opened }: { active: string; opened: ReadonlySet<string> }) {
+/** What the open demo shows and the attribute that turns it on, then the panels opened so far; only `active` shows. */
+export function GalleryPanels({ active, opened, theme }: { active: string; opened: ReadonlySet<string>; theme: Theme }) {
   const tab = TABS.find((t) => t.id === active);
   return (
     <>
-      {tab?.blurb && <p style={{ margin: '10px 24px 0', fontSize: 13, color: '#45484F' }}>{tab.blurb}</p>}
-      {TABS.filter((t) => t.id !== 'review' && opened.has(t.id)).map((t) => <Panel key={t.id} tab={t} hidden={t.id !== active} />)}
+      {tab?.blurb && (
+        <p className="blurb">
+          <code>{tab.rules ? 'rules · flagging="off"' : `plugins="${tab.plugins ?? ''}"`}</code>
+          <span>{tab.blurb}</span>
+        </p>
+      )}
+      {TABS.filter((t) => t.id !== 'review' && opened.has(t.id)).map((t) => <Panel key={t.id} tab={t} hidden={t.id !== active} theme={theme} />)}
     </>
   );
 }

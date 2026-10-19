@@ -26,6 +26,7 @@ export const ICON = {
   redo: svg('<path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>'),
   upload: svg('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>'),
   freeze: svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/>'),
+  chevron: svg('<path d="M6 9l6 6 6-6"/>'),
 };
 
 /** Fires a bubbling, composed `sheetpane-*` event (contract verdict: DOM events only). */

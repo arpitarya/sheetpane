@@ -43,7 +43,15 @@ export const EXCEL_CSS = `${BASE_CSS}
 :host([display=popup]) .sp{border:0;border-radius:var(--sp-r-xl)}
 dialog{padding:0;border:0;border-radius:var(--sp-r-xl);width:min(1240px,calc(100vw - 48px));height:min(760px,calc(100vh - 48px));max-width:none;max-height:none;box-shadow:var(--sp-shadow-lg);background:var(--sp-surface);color:inherit;font:inherit}
 dialog::backdrop{background:rgba(22,23,26,.42)}
-.bar{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--sp-line);flex-wrap:wrap}
+.sp{container:sp/inline-size}
+/* one toolbar row (design: Sheetpane board); as the element narrows it sheds, in order, the changes label (the Download badge keeps the count), find's width, the counts (the errors panel and tab counts keep them) and the file meta (kept in the name's tooltip); only below 860 px may it wrap */
+.bar{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--sp-line);flex-wrap:nowrap;white-space:nowrap}
+@container sp (max-width: 1240px){.bar .changes{display:none}}
+@container sp (max-width: 1140px){.find input{width:84px}}
+@container sp (max-width: 1040px){.bar .counts{display:none}}
+@container sp (max-width: 960px){.bar .meta{display:none}}
+@container sp (max-width: 860px){.bar{flex-wrap:wrap}}
+.dlmore svg{width:12px;height:12px}
 .bar .ico{width:18px;height:18px;color:var(--sp-ink-3);flex:none}
 .fname{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;min-width:40px;flex:0 1 auto}
 .counts{display:inline-flex;gap:4px}
@@ -53,6 +61,7 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .find input{padding-left:28px;width:112px}
 .zoom{width:70px;padding:0 2px}
 .find .cnt{font-size:11px;color:var(--sp-ink-3);margin-left:6px;min-width:44px}
+.find .cnt:empty{display:none}
 .input.cell[aria-invalid]{outline:2px solid var(--sp-fail);outline-offset:-1px}
 .ptext{display:inline-flex;align-items:center;height:24px;padding:0 8px;border:1px dashed var(--sp-line-strong);border-radius:var(--sp-r-sm);color:var(--sp-ink-2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40ch;font-variant-numeric:tabular-nums}
 .fx{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--sp-line);min-height:41px;font-size:13px;flex-wrap:wrap}
@@ -60,13 +69,24 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .fx .val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fx input.cell{flex:1;max-width:460px;border-color:var(--sp-accent)}
 .tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--sp-ink-3);border:1px solid var(--sp-line-strong);border-radius:4px;padding:3px 5px}
-.frow{display:flex;align-items:center;gap:4px;padding:4px 10px;border-bottom:1px solid var(--sp-line);flex-wrap:wrap;background:var(--sp-ground)}
+.frow{display:flex;align-items:center;gap:4px;padding:4px 10px;border-bottom:1px solid var(--sp-line);flex-wrap:nowrap;background:var(--sp-ground);position:relative;z-index:6}
+/* one row: groups that do not fit move into More ▾ from the right (W-14); Number format and Text never move */
+.fgrp{display:inline-flex;align-items:center;gap:4px;flex:none}
+.fmore{position:relative;display:inline-flex;margin-left:auto;flex:none}
+.fmore[hidden]{display:none}
+.fmore-btn svg{width:12px;height:12px}
+.fmenu{position:absolute;top:calc(100% + 4px);right:0;z-index:9;display:flex;flex-direction:column;gap:6px;padding:8px;min-width:200px}
+.fmenu[hidden]{display:none}
+.fmenu .fgrp{flex-wrap:wrap}
+.fmenu .fgrp+.fgrp{border-top:1px solid var(--sp-line);padding-top:6px}
+.fmenu .sep{display:none}
 .frow .sep{width:1px;height:20px;background:var(--sp-line-strong);margin:0 4px}
 .frow button[aria-pressed=true]{background:var(--sp-accent-soft);border-color:var(--sp-accent)}
 .body{flex:1;min-height:0;display:flex;position:relative}
 .scroller{flex:1;min-width:0;overflow:auto;position:relative;background:var(--sp-cell)}
 .grid{outline:none}
-.scroller:has(.grid:focus-visible){box-shadow:inset 0 0 0 2px var(--sp-accent)}
+/* the grid's focus ring: keyboard only (a click's focus is shown by the active cell), drawn over the cells, not under them */
+.sp[data-kbd] .body:has(.grid:focus)::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 2px var(--sp-accent);pointer-events:none;z-index:8}
 .sheet{position:relative}
 .hrow{position:sticky;top:0;z-index:5;display:flex;background:var(--sp-head)}
 .row{position:absolute;left:0;display:flex}
@@ -140,6 +160,9 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 /* plugin buttons stay in the bar while it is wide, and fold into ⋯ before Flag issue moves */
 .moremenu .fold{display:none}
 @container (max-width: 720px){.dock .plug{display:none}.moremenu .fold{display:flex}}
+/* …and also whenever they would squeeze the value field below 200 px (measured: fitDock) */
+.fx.folded .dock .plug{display:none}
+.fx.folded .moremenu .fold{display:flex}
 .warn-t{color:var(--sp-warn)}
 .export .badge-n{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--sp-sunken);color:var(--sp-ink);font-size:11px;font-weight:700;line-height:18px;text-align:center}
 .split{position:relative;display:inline-flex}

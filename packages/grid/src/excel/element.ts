@@ -432,7 +432,7 @@ export class SheetpaneExcel extends ElementBase {
    <button type="button" class="btn btn-g btn-i freeze" aria-label="Freeze panes at the selected cell" title="Freeze rows above and columns left of the selected cell">${ICON.freeze}</button>
    <span class="xs faint changes"></span>
   </span>
-  <span class="split dl"><button type="button" class="btn export" data-sp="download">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button><button type="button" class="btn btn-i dlmore" data-sp="download-menu" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="false">▾</button><span class="dlslot"></span></span>
+  <span class="split dl"><button type="button" class="btn export" data-sp="download">${ICON.download}<span class="lbl">Download</span><span class="badge-n" hidden></span></button><button type="button" class="btn btn-i dlmore" data-sp="download-menu" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="false" title="Download as .xlsx or .csv">${ICON.chevron}</button><span class="dlslot"></span></span>
   <button type="button" class="btn btn-g btn-i help" aria-label="Keyboard shortcuts" aria-expanded="false" title="Keyboard shortcuts">?</button>
   <button type="button" class="btn btn-g btn-i close" aria-label="Close (Esc)" title="Close">${ICON.close}</button>
  </div>
@@ -529,6 +529,10 @@ export class SheetpaneExcel extends ElementBase {
     q.dlslot.addEventListener('keydown', (e) => this.onMenuKey(e, '.dlmenu'));
     q.root.addEventListener('pointerdown', (e) => { if (this.dlOpen && !(e.target as Element).closest('.split')) { this.dlOpen = false; this.schedule(); } });
     q.dock.addEventListener('click', (e) => this.onDockClick(e));
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.fitDock()).observe(q.dock.parentElement!);
+    // the grid's focus ring shows for keyboard use only
+    q.root.addEventListener('keydown', () => q.root.setAttribute('data-kbd', ''), true);
+    q.root.addEventListener('pointerdown', () => q.root.removeAttribute('data-kbd'), true);
     q.dock.addEventListener('keydown', (e) => this.onMenuKey(e, '.moremenu'));
     q.help.addEventListener('click', () => { this.helpOpen = !this.helpOpen; q.help.setAttribute('aria-expanded', String(this.helpOpen)); this.schedule(); });
     q.revert.addEventListener('click', () => { const sel = s().getSnapshot().selection; s().revert(sel.sheet, sel.ref, this); });
@@ -651,7 +655,19 @@ export class SheetpaneExcel extends ElementBase {
       if (opt && e.key === 'Escape') { e.stopPropagation(); this.menu = undefined; this.schedule(); this.q.grid.focus({ preventScroll: true }); return; } if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.addFromComposer(); } if (e.key === 'Escape') { e.stopPropagation(); s().compose(null); this.q.grid.focus({ preventScroll: true }); } });
     q.overlay.addEventListener('input', (e) => this.onComposerInput(e));
     q.overlay.addEventListener('change', (e) => this.onComposerInput(e));
-    q.plugFrow.addEventListener('click', (e) => this.runControl(e));
+    q.plugFrow.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('.fmore-btn')) {
+        this.frowMoreOpen = !this.frowMoreOpen;
+        const menu = q.plugFrow.querySelector<HTMLElement>('.fmenu'), btn = q.plugFrow.querySelector<HTMLElement>('.fmore-btn');
+        if (menu) menu.hidden = !this.frowMoreOpen;
+        btn?.setAttribute('aria-expanded', String(this.frowMoreOpen));
+        return;
+      }
+      this.runControl(e);
+    });
+    q.root.addEventListener('pointerdown', (e) => { if (this.frowMoreOpen && !(e.target as Element).closest('.fmore')) { this.frowMoreOpen = false; const m = q.plugFrow.querySelector<HTMLElement>('.fmenu'); if (m) m.hidden = true; q.plugFrow.querySelector('.fmore-btn')?.setAttribute('aria-expanded', 'false'); } });
+    q.frow.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.frowMoreOpen) { e.stopPropagation(); this.frowMoreOpen = false; const m = q.plugFrow.querySelector<HTMLElement>('.fmenu'); if (m) m.hidden = true; q.plugFrow.querySelector<HTMLElement>('.fmore-btn')?.focus(); } });
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { if (!q.frow.hidden) this.fitFrow(); }).observe(q.frow);
     q.plugCellbar.addEventListener('click', (e) => this.runControl(e));
     for (const box of [q.plugFrow, q.plugCellbar, q.overlay]) box.addEventListener('change', (e) => this.chooseControl(e));
     q.frow.querySelector('slot')!.addEventListener('slotchange', () => this.schedule());
@@ -763,6 +779,8 @@ export class SheetpaneExcel extends ElementBase {
   // ── selection actions (W-31): docked in the cell bar, and on right-click ──
   private ctxOpen = false;
   private moreOpen = false;
+  /** The format row's More ▾ (W-14 narrow widths) is open. */
+  private frowMoreOpen = false;
   private notice = '';
   private noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -788,11 +806,45 @@ export class SheetpaneExcel extends ElementBase {
   }
 
   /** The actions as menu items: Flag issue (Edit), Copy ref, Copy value, then the `selbar` plugin controls. */
+  /** The format row's controls, one wrapper per group, then a More ▾ that holds the groups that do not fit (W-14). */
+  private frowHtml(list: ControlDescriptor[]): string {
+    const groups: ControlDescriptor[][] = [];
+    for (const c of list) { const g = groups[groups.length - 1]; if (g && g[0]!.group === c.group) g.push(c); else groups.push([c]); }
+    const body = groups.map((g, i) => `<span class="fgrp" data-g="${esc(g[0]!.group)}">${i ? '<span class="sep" aria-hidden="true"></span>' : ''}${this.controlsHtml(g, 'btn btn-g')}</span>`).join('');
+    return `${body}<span class="fmore" hidden><button type="button" class="btn btn-g fmore-btn" aria-haspopup="true" aria-expanded="${this.frowMoreOpen}">More<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><span class="card fmenu" role="group" aria-label="More formatting"${this.frowMoreOpen ? '' : ' hidden'}></span></span>`;
+  }
+
+  /** Narrow widths: format-row groups move into More ▾ from the right; Number format and Text never move (W-14). */
+  private fitFrow(): void {
+    const box = this.q.frow, more = this.q.plugFrow.querySelector<HTMLElement>('.fmore'), menu = more?.querySelector<HTMLElement>('.fmenu');
+    if (!more || !menu) return;
+    for (const g of Array.from(menu.children)) more.before(g);
+    more.hidden = true;
+    if (box.scrollWidth <= box.clientWidth + 1) { this.frowMoreOpen = false; return; }
+    more.hidden = false;
+    const movable = Array.from(this.q.plugFrow.querySelectorAll<HTMLElement>(':scope > .fgrp')).filter((g) => g.dataset.g !== 'number' && g.dataset.g !== 'text').reverse();
+    for (const g of movable) { if (box.scrollWidth <= box.clientWidth + 1) break; menu.prepend(g); }
+    if (!menu.children.length) more.hidden = true;
+  }
+
+  /** Fold the docked plugin buttons into ⋯ when they would squeeze the value field below 200 px (SR-GRID 13). */
+  private fitDock(): void {
+    const q = this.q, fx = q.dock.parentElement;
+    if (!fx) return;
+    fx.classList.remove('folded');
+    if (q.dock.hidden || !q.dock.querySelector('.plug')) return;
+    const field = q.cell.hidden ? q.val : q.cell;
+    if (field.getBoundingClientRect().width < 200) fx.classList.add('folded');
+  }
+
   private actionItems(edit: boolean, err: SheetpaneError | undefined, o: { flag: boolean; plugins: boolean }): string {
     const s = this._store!, snap = s.getSnapshot();
     const item = (act: string, label: string, kbd = '') => `<button type="button" role="menuitem" class="mi" data-act="${act}">${esc(label)}${kbd ? `<span class="kbd">${esc(kbd)}</span>` : ''}</button>`;
-    const out = [o.flag && edit && !err && s.flagging ? item('flag', 'Flag issue', 'F') : '', item('copy-ref', 'Copy ref'), item('copy-value', snap.selection.range ? 'Copy values' : 'Copy value', 'Ctrl/⌘+C')];
-    if (o.plugins && edit) for (const c of controlsFor(s.plugins, 'selbar', 'edit').filter((x) => !x.menus || x.menus.includes('cell'))) {
+    const flag = o.flag && edit && !err && s.flagging;
+    const out = [flag ? item('flag', 'Flag issue', 'F') + '<div role="separator" class="msep"></div>' : '', item('copy-ref', 'Copy ref'), item('copy-value', snap.selection.range ? 'Copy values' : 'Copy value', 'Ctrl/⌘+C')];
+    const plugs = o.plugins && edit ? controlsFor(s.plugins, 'selbar', 'edit').filter((x) => !x.menus || x.menus.includes('cell')) : [];
+    if (plugs.length) out.push('<div role="separator" class="msep fold"></div>');
+    for (const c of plugs) {
       const label = c.labelFor?.(snap, snap.selection) ?? c.label;
       const off = c.disabled?.(snap, snap.selection) ?? false;
       out.push(`<button type="button" role="menuitem" class="mi fold" data-control="${esc(c.id)}"${off ? ' disabled' : ''}>${esc(label)}${c.shortcut ? `<span class="kbd">${esc(c.shortcut)}</span>` : ''}</button>`);
@@ -1944,6 +1996,7 @@ export class SheetpaneExcel extends ElementBase {
     // toolbar
     q.fname.textContent = src.name;
     q.meta.textContent = `${src.kind} · ${fmtSize(src.size)} · ${src.kind === 'csv' ? delimName(book.delimiter) : `${book.sheets.length} sheet${book.sheets.length === 1 ? '' : 's'}`}`;
+    q.fname.title = `${src.name} · ${q.meta.textContent}`; // the meta chip is shed at narrow widths
     for (const b of Array.from(q.modeseg.querySelectorAll('button'))) b.setAttribute('aria-pressed', String(b.dataset.mode === snap.mode));
     const open = { error: 0, warning: 0, note: 0 };
     for (const e of snap.errors) if (e.status === 'open') open[e.severity]++;
@@ -2010,18 +2063,22 @@ export class SheetpaneExcel extends ElementBase {
     q.dock.hidden = typing || composing;
     if (!q.dock.hidden) {
       const flagBtn = edit && !err && s.flagging ? `<button type="button" class="btn btn-g" data-act="flag" data-sp="flag" title="Flag issue (F)" aria-keyshortcuts="F">${ICON.flag}Flag issue<span class="kbd" aria-hidden="true">F</span></button>` : '';
-      const plug = edit ? this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit'), 'btn btn-g') : '';
+      // the bar holds the cell's quick actions (Bold · Fill · Merge, greyed when they do not apply); a menu action (W-49 `menus`)
+      // shows here only when it joins the cell menu and applies now (Unhide with nothing hidden, Group, Hide sheet stay in their menus)
+      const plug = edit ? this.controlsHtml(controlsFor(s.plugins, 'selbar', 'edit').filter((c) => !c.menus || (c.menus.includes('cell') && !c.disabled?.(snap, snap.selection))), 'btn btn-g') : '';
       const more = `<button type="button" class="btn btn-g btn-i" data-act="more" aria-haspopup="menu" aria-expanded="${this.moreOpen}" title="More actions (Shift+F10)" aria-label="More actions (Shift+F10)">⋯</button>`;
       // the ⋯ menu: Copy ref, Copy value, and the plugin buttons, which show here only once they fold out of the bar
       const menu = this.moreOpen ? `<div class="card moremenu" role="menu" aria-label="More actions">${this.actionItems(edit, err, { flag: false, plugins: true })}</div>` : '';
       const html = `${flagBtn}${plug ? `<span class="plug">${plug}</span>` : ''}<span class="morewrap">${more}${menu}</span>`;
       if (q.dock.dataset.html !== html) { q.dock.innerHTML = html; q.dock.dataset.html = html; }
+      this.fitDock();
     } else if (this.moreOpen) this.moreOpen = false;
     // format row: Edit only, and only when a plugin or the host put something in it
     const frow = controlsFor(s.plugins, 'format-row', 'edit');
     const hostSlot = (q.frow.querySelector('slot') as HTMLSlotElement).assignedElements().length > 0;
     q.frow.hidden = !edit || (!frow.length && !hostSlot);
-    q.plugFrow.innerHTML = this.controlsHtml(frow, 'btn btn-g', true);
+    q.plugFrow.innerHTML = this.frowHtml(frow);
+    if (!q.frow.hidden) this.fitFrow();
     // find
     if (this.findText) this.computeHits();
     // W-49: find still sees hidden cells; the count says how many, and a hit there is shown when reached

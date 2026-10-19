@@ -7,3 +7,6 @@ declare module '*?url' {
 // The playground build sets the version shown in the header (W-44).
 interface ImportMetaEnv { readonly VITE_SHEETPANE_VERSION?: string }
 interface ImportMeta { readonly env: ImportMetaEnv }
+
+// The demo's stylesheet, imported for its side effect.
+declare module '*.css';
