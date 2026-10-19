@@ -26,7 +26,7 @@ export function pluginIds(): Map<string, string> {
 }
 
 /** The demo's gallery tabs: id and the `plugins` string of each. */
-function tabs(file: string): { id: string; plugins?: string }[] {
+function tabs(file: string): { id: string; plugins?: string | undefined }[] {
   const text = readFileSync(join(ROOT, file), 'utf8');
   return [...text.matchAll(/\{ id: '([a-z-]+)', label: '[^']*'(?:, plugins: '([^']*)')?/g)].map((m) => ({ id: m[1]!, plugins: m[2] }));
 }
