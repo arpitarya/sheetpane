@@ -51,7 +51,9 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
   - The SR guard asked for SR-BUILD on the demo change. Decision 11a now has *All plugins* after Review sheet, turning on every plugin, gated by `test/plugins-in-demos.test.ts`. "all eight plugins" became "every plugin".
   - CHANGELOG `## 0.5.0 — the grid edits like Excel: in the cell, fill handle, drop to open`. It is a minor version because Enter, F2 and typing changed behaviour, and the note says what to change.
   - `just release 0.5.0`, then CI, then `just publish 0.5.0`.
-- **Next:** W-70.
+  - **0.5.0 is on npm:** all 20 packages, from CI (`publish.yml`), with provenance. The release is on `3d9ae1a`, which includes Cowork's demo change (no view switch). `pages` deployed.
+- **Mistakes:** CI failed on the release commit `d494067`. `test/plugins-in-demos.test.ts` did not typecheck under `exactOptionalPropertyTypes`. The fix is `ab42f5e`. `just check` missed it because its `typecheck` recipe runs only `pnpm -r typecheck`, not the root `tsc -p tsconfig.json` that CI's lint job runs. That gap is still open.
+- **Next:** W-70. Consider having `just typecheck` run `pnpm run typecheck` (SR-BUILD), so the root `tsc` runs locally too.
 
 ---
 
