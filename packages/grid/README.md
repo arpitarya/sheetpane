@@ -215,7 +215,7 @@ committed manifest drifts from the elements.
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
+| event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
 
 ### Following an edit
 

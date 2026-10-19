@@ -57,7 +57,7 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'prop:sizes'?: SheetpaneExcel['sizes'] | undefined;
   /** The `src` attribute; `null`, `undefined` or `''` removes it. */
   'prop:src'?: SheetpaneExcel['src'] | undefined;
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change']) => void) | undefined;
@@ -83,7 +83,7 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'on:sheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange']) => void) | undefined;
   /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
   'on:sheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel']) => void) | undefined;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'on:sheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export']) => void) | undefined;
   /** `{}` when the pop-up closes. */
   'on:sheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close']) => void) | undefined;

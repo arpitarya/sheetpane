@@ -60,8 +60,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-64** `agent` · **G3** · An *Edits* view in the errors panel: every change, before → after, revert one. Filed by Arpit (Cowork). [detail](open/W-64-edits-view.md)
 
-- 🟢 **W-65** `agent` · **G3** · The file's SHA-256 on load and on export. Filed by Arpit (Cowork). [detail](open/W-65-file-fingerprint.md)
-
 - 🟢 **W-66** `agent` · **G3** · Open straight at a cell: a `ref` attribute and opt-in links in the URL. Filed by Arpit (Cowork). [detail](open/W-66-link-to-a-cell.md)
 
 - 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)

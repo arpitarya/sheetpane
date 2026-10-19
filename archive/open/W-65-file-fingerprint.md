@@ -6,7 +6,7 @@ item: W-65
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Claude Code (claude-opus-5-5), closed"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `read()` result and `sheetpane-load` detail gain `sha256` (hex) | provenance from the first moment | ⏳ |
-| 2 | `sheetpane-export` detail gains `sha256` of the blob | the saved file is identifiable | ⏳ |
-| 3 | On an insecure page `crypto.subtle` is missing: `sha256` is `undefined` with an SP warning — never a substitute hash | no false provenance | ⏳ |
+| 1 | `read()` result and `sheetpane-load` detail gain `sha256` (hex) | provenance from the first moment | ✅ |
+| 2 | `sheetpane-export` detail gains `sha256` of the blob | the saved file is identifiable | ✅ |
+| 3 | On an insecure page `crypto.subtle` is missing: `sha256` is `undefined` with an SP warning — never a substitute hash | no false provenance | ✅ |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -42,10 +42,10 @@ Web Crypto's `crypto.subtle.digest('SHA-256', …)` is in every modern browser (
 
 | DoD | what | state |
 |---|---|---|
-| 1 · import | hash in `read()` | ⏳ |
-| 2 · events | load and export details; typed; manifest | ⏳ |
-| 3 · insecure | SP code in `docs/ERRORS.md` | ⏳ |
-| 4 · tests · docs | known-vector test; SR-IMPORT, SR-GRID; CHANGELOG | ⏳ |
+| 1 · import | hash in `read()` | ✅ `read()` sets `sha256` (lowercase hex) once, after the file parsed; `sha256(bytes \| ArrayBuffer \| Blob)` exported; `fromXlsx` / `fromCsv` do not hash (SR-IMPORT decision 11) |
+| 2 · events | load and export details; typed; manifest | ✅ `Source.sha256`; `exportFile()` returns `sha256` of the blob; `sheetpane-load` (ready) and `sheetpane-export` carry `sha256` (an untouched Download reuses the load's — no re-hash); `@fires`, `custom-elements.json` and the four framework typings regenerated (SR-GRID decisions 2, 6, 9) |
+| 3 · insecure | SP code in `docs/ERRORS.md` | ✅ SP-1009 (warning) in `CODES`, the lock and `docs/ERRORS.md`; no `crypto.subtle` or a failing digest → `sha256` absent / `undefined` in both events, never a substitute |
+| 4 · tests · docs | known-vector test; SR-IMPORT, SR-GRID; CHANGELOG | ✅ `packages/import/test/hash.test.ts` (8: FIPS 180-2 vectors, read(), no Web Crypto) and `packages/grid/test/fingerprint.test.ts` (6: store, events, edits never hash, insecure page); SR-IMPORT 11, SR-GRID 2/6/9, SR-CODES, SR-BUILD 11 (the demos' export line shows the hash); both READMEs; CHANGELOG |
 
 ## Blockers
 

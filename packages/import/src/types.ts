@@ -183,6 +183,8 @@ export interface ImportedWorkbook {
   definedNames: { name: string; formula: string; localSheetId?: number }[];
   /** The CSV delimiter that was detected; undefined for `.xlsx`. */
   delimiter?: ',' | ';' | '\t';
+  /** The SHA-256 of the bytes `read()` was given, 64 lowercase hex digits (W-65). Absent from `fromXlsx` / `fromCsv`, and where Web Crypto is missing (SP-1009). */
+  sha256?: string;
   /** Reads any part of the package (media, chart XML) without re-walking the ZIP. Resolves undefined for CSV. */
   part(path: string): Promise<Uint8Array | undefined>;
 }

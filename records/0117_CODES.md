@@ -81,6 +81,9 @@ flowchart LR
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
   W-40.
+- **W-65** added SP-1009 (warning): no SHA-256 where Web Crypto is missing —
+  the file's fingerprint is `undefined`, never a substitute (SR-IMPORT
+  decision 11).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

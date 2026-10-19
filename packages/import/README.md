@@ -28,6 +28,7 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins |
 | `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
+| `sha256` | from `read()`: the SHA-256 of the bytes opened, 64 lowercase hex digits — which file this is. Absent on a page without Web Crypto (not `https` or `localhost`), with a console warning `SP-1009`; never a substitute hash. `sha256(bytes)` is exported for hashing anything else |
 
 ## CSV
 

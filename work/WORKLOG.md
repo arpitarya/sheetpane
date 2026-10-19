@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-65 closed: the file's SHA-256 on load and on export  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-65 (the file's SHA-256 on load and on export) in lane b, its own worktree, while other agents build sibling items.*
+- **Done:** `@sheetpane/import`: `hash.ts` — `sha256(bytes | ArrayBuffer | Blob)` through `crypto.subtle.digest`, lowercase hex, exported; `read()` sets `ImportedWorkbook.sha256` once after the file parsed. `@sheetpane/grid`: `Source.sha256`; `exportFile()` returns `sha256` of the blob (`buildExport` + one hash); `sheetpane-load` (ready) and `sheetpane-export` carry `sha256`; an untouched Download reuses the load's hash. No Web Crypto, or a failing digest → `undefined` with `console.warn` SP-1009 (new, warning), never a substitute. Manifest, framework typings, `llms-full.txt` and the ERRORS index regenerated; both READMEs; the demos' export line shows the first 12 hex digits (L10). Tests: `hash.test.ts` (8), `fingerprint.test.ts` (6). Records: SR-IMPORT 1, 2, 11; SR-GRID 2, 6, 9; SR-CODES; SR-BUILD 11.
+- **Decided / left open:** read in: only `read()` hashes (`fromXlsx` / `fromCsv` may be given text, not the file); a refused file is not hashed; SP-1009 warns on every unhashed load or export rather than once per page; the event key is always present (`string | undefined`). `@sheetpane/mcp` does not report the hash yet — not asked.
+- **Mistakes:** the empty-message vector was misremembered in the first test draft (`…afbe4c…` for `…afbf4c…`); `shasum -a 256` settled it before anything was committed.
+- **Next:** the queue's next agent item.
+
+---
+
 ## 2026-10-19 — the HTML and React demos redesigned; demo-check 51/51  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"improve the ui for example html and react it will be used for demo purpose and for test. recreate them if that will be faster"*

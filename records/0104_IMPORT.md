@@ -68,7 +68,7 @@ carry over unchanged; the plugins verdict added what plugins read.
    `fromXlsx(bytes | Blob)`, `fromCsv(text | Blob, { name?, delimiter? })` →
    `ImportedWorkbook`. Also exported: `detectDelimiter`, `parseCsv`,
    `sheetNameFrom`, `formatCode`, `general`, `inSubset`, `subsetCode`,
-   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, and every type.
+   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), and every type.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
    `path`, `styleIndex`, `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
@@ -79,7 +79,8 @@ carry over unchanged; the plugins verdict added what plugins read.
    `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
    `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
-   `persons`, `definedNames`, `delimiter` (CSV) and `part(path)`.
+   `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
+   decision 11) and `part(path)`.
 3. **Cells:** `t="s"` / `inlineStr` → the text, phonetic runs left out,
    `_xHHHH_` decoded; `str` → the text; `b` → a boolean shown `TRUE` /
    `FALSE`; `e` → the error text; `d` → the ISO string; otherwise a number. A
@@ -138,6 +139,19 @@ carry over unchanged; the plugins verdict added what plugins read.
     `{0, 0, true, true}`). The built-in XML reader reads the same (a parity
     test).
 
+11. **The file's fingerprint (W-65):** `read()` sets `sha256` — the SHA-256
+    of the bytes it was given, 64 lowercase hex digits — once, after the file
+    parsed (a refused file is not hashed). `fromXlsx` / `fromCsv` do not set
+    it (they may be given text or a part, not the file). The digest is Web
+    Crypto's `crypto.subtle.digest('SHA-256')` — no dependency (L2); every
+    modern browser on a secure page, Node 20 and later. Where `crypto.subtle`
+    is missing (a page that is not a secure context) or the digest fails,
+    `sha256` is absent and `console.warn` carries SP-1009 — **never a
+    substitute hash**, so nothing claims a provenance it does not have. The
+    helper is exported as `sha256(bytes | ArrayBuffer | Blob)` →
+    `Promise<string | undefined>`; the grid hashes its exports with it
+    (SR-GRID decision 6). Hashing is once per read or write, never per edit.
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -151,6 +165,10 @@ carry over unchanged; the plugins verdict added what plugins read.
   threaded comments and persons, a pivot location, a chartsheet); CSV
   dialects, a round-trip property with `toCsv`, the 250,000-row CSV (136 ms in
   Chromium on Arpit's MacBook). `test/ssr.test.ts` imports it in Node.
+  `hash.test.ts` (W-65): the FIPS 180-2 vectors (`abc`, the empty message, the
+  448-bit message) on bytes, a view, an `ArrayBuffer` and a Blob; `read()` of a
+  CSV and an `.xlsx` however passed; no `crypto` or a failing digest → absent
+  with SP-1009.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
   Until then the reader is proven on ExcelJS output and hand-written XML, and
@@ -188,7 +206,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
+- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`hash.ts`](../packages/import/src/hash.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
 
 **Project docs**
 

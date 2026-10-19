@@ -75,7 +75,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * Every event bubbles and is composed; an action's event fires once, on the element where it
  * happened. Cell payloads also carry `column: { index, letter, header }`.
  *
- * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
+ * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` for each change, undo and redo included.
  * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change.
  * @fires sheetpane-select `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release.
@@ -88,7 +88,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * @fires sheetpane-input `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed.
  * @fires sheetpane-beforechange `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused.
  * @fires sheetpane-editcancel `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it.
- * @fires sheetpane-export `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing.
+ * @fires sheetpane-export `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing.
  * @fires sheetpane-close `{}` when the pop-up closes.
  *
  * @slot format-row - Host controls for the format row (Edit only); the row shows when a plugin or this slot puts something in it.
@@ -282,11 +282,11 @@ export class SheetpaneExcel extends ElementBase {
     await store.load(data, nm!, this);
   }
 
-  /** Every change applied; the upload untouched. Also dispatches `sheetpane-export`. */
+  /** Every change applied; the upload untouched. Also dispatches `sheetpane-export`, with the blob's SHA-256 (W-65). */
   async export(options: Readonly<Record<string, unknown>> = {}, o: { format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<Blob> {
     const store = this.ensureStore();
     const r = await store.exportFile({ options, ...o, ...(o.format === 'csv' && !o.sheet ? { sheet: store.getSnapshot().selection.sheet } : {}) });
-    this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded, format: r.kind, converted: r.converted }, true), name: r.name };
+    this.lastExport = { ok: fire(this, 'sheetpane-export', { blob: r.blob, kind: r.kind, name: r.name, guarded: r.guarded, format: r.kind, converted: r.converted, sha256: r.sha256 }, true), name: r.name };
     return r.blob;
   }
   private lastExport: { ok: boolean; name: string } | undefined;
@@ -393,7 +393,7 @@ export class SheetpaneExcel extends ElementBase {
       case 'load': {
         const snap = s.getSnapshot();
         fire(this, 'sheetpane-load', snap.load.status === 'ready'
-          ? { status: 'ready', name: snap.source!.name, kind: snap.source!.kind, sheets: snap.book!.sheets.map((x) => x.name), readMs: snap.source!.readMs }
+          ? { status: 'ready', name: snap.source!.name, kind: snap.source!.kind, sheets: snap.book!.sheets.map((x) => x.name), readMs: snap.source!.readMs, sha256: snap.source!.sha256 }
           : { ...snap.load });
         break;
       }
@@ -914,7 +914,7 @@ export class SheetpaneExcel extends ElementBase {
     const fmt = format ?? src.kind;
     if (fmt === src.kind && this.untouched()) {
       const blob = new Blob([src.bytes as BlobPart], { type: src.kind === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true, format: fmt, converted: false }, true)) download(src.bytes, src.name);
+      if (fire(this, 'sheetpane-export', { blob, kind: src.kind, name: src.name, guarded: false, original: true, format: fmt, converted: false, sha256: src.sha256 }, true)) download(src.bytes, src.name);
       return;
     }
     const blob = await this.export(this.exportChoices(), { format: fmt });

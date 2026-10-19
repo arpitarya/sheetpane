@@ -3,7 +3,7 @@
 // Every mutation goes through commit(): undo (W-23), derive and validate
 // (W-14), "matches suggestion" (B-022) and one notification.
 import { cellRef, detailOf, parseRange, parseRef, patchXlsx, rangesIntersect, spError, spMessage, toCsv, toXlsx, type Cell, type Change, type ExportPatchHook, type SpCode } from '@sheetpane/export';
-import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
+import { formatCode, general, ImportError, read, sha256, subsetCode, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
@@ -188,7 +188,7 @@ export class WorkbookStore {
       return;
     }
     if (seq !== this.loadSeq) return;
-    const source: Source = { name, kind: book.source, size: bytes.length, bytes, readMs: Math.round(performance.now() - t0) };
+    const source: Source = { name, kind: book.source, size: bytes.length, bytes, readMs: Math.round(performance.now() - t0), ...(book.sha256 ? { sha256: book.sha256 } : {}) };
     this.undoStack = []; this.redoStack = []; this.textCache.clear(); this.pluginErrors.clear();
     const first = book.sheets[book.activeSheet] ?? book.sheets[0]!;
     this.set({ load: { status: 'ready' }, source, book, changes: new Map(), derived: new Map(), errors: [], composing: null, selection: { sheet: first.name, ref: 'A1' } }, [{ type: 'load', origin }]);
@@ -831,8 +831,15 @@ export class WorkbookStore {
     return Array.from(rows, (r) => Array.from(r ?? [], (v) => v ?? null));
   }
 
-  /** Every change applied; the upload never modified (SR-LAW-6). */
-  async exportFile(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>>; format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[]; converted: boolean }> {
+  /**
+   * Every change applied; the upload never modified (SR-LAW-6). `sha256` is the hash of the
+   * blob's bytes, taken once per export (W-65) — `undefined` where Web Crypto is missing (SP-1009).
+   */
+  async exportFile(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>>; format?: 'xlsx' | 'csv'; sheet?: string } = {}): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[]; converted: boolean; sha256: string | undefined }> {
+    const r = await this.buildExport(o);
+    return { ...r, sha256: await sha256(r.blob) };
+  }
+  private async buildExport(o: { extraPatch?: ExportPatchHook[]; options?: Readonly<Record<string, unknown>>; format?: 'xlsx' | 'csv'; sheet?: string }): Promise<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[]; converted: boolean }> {
     const src = this.snap.source, book = this.snap.book;
     if (!src || !book) throw spError('SP-3001', 'sheetpane: nothing is loaded to export');
     const base = src.name.replace(/\.(xlsx|csv)$/i, '');

@@ -243,7 +243,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     demo-packed`, nightly. Both share one look (2026-10-19): a host bar
     (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
     dark · auto, set on every component), the components filling the window,
-    and a footer of host events; `examples/react/src/demo.css` is the
+    and a footer of host events (the `sheetpane-export` line names the file,
+    the format and the first 12 hex digits of its SHA-256, W-65);
+    `examples/react/src/demo.css` is the
     stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·

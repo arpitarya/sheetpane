@@ -53,6 +53,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-1006](#sp-1006) | File too large | error |
 | [SP-1007](#sp-1007) | Damaged file | error |
 | [SP-1008](#sp-1008) | Reading .xlsx needs a DOM (retired) | error |
+| [SP-1009](#sp-1009) | No SHA-256 without Web Crypto | warning |
 | [SP-2001](#sp-2001) | Invalid sheet name | error |
 | [SP-2002](#sp-2002) | No visible sheet | error |
 | [SP-2003](#sp-2003) | Sheet past Excel’s limits | error |
@@ -198,6 +199,14 @@ grid shows it as "Can't open this file" (or the password state) and fires
 - **Meaning:** no longer raised. `.xlsx` once needed `DOMParser`; since W-39 the reader carries its own XML parser for runtimes without one, so `.xlsx` reads in Node, workers and server renders.
 - **Likely cause:** an older `@sheetpane/import`.
 - **Fix:** upgrade `@sheetpane/import`. The code is kept so it is never reused.
+
+### SP-1009
+
+**No SHA-256 without Web Crypto** · warning · [SR-IMPORT](../records/0104_IMPORT.md) decision 11 · a console warning, not an `ImportError`
+
+- **Meaning:** the file opened (or was exported) but has no fingerprint: `read()`'s `sha256`, and the `sha256` of `sheetpane-load` and `sheetpane-export`, are `undefined`. sheetpane never puts a substitute hash in its place.
+- **Likely cause:** `crypto.subtle` is missing — the page is not a secure context (plain `http://` other than `localhost`, some embedded webviews), or a runtime without Web Crypto (Node before 20); rarely, `crypto.subtle.digest` itself failed.
+- **Fix:** serve the page over `https://` (or from `localhost`); in Node, use version 20 or later.
 
 ---
 

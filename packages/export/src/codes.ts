@@ -29,6 +29,7 @@ const TABLE = {
   'SP-1006': { title: 'File too large', severity: 'error' },
   'SP-1007': { title: 'Damaged file', severity: 'error' },
   'SP-1008': { title: 'Reading .xlsx needs a DOM', severity: 'error', retired: true },
+  'SP-1009': { title: 'No SHA-256 without Web Crypto', severity: 'warning' },
 
   // ── 2xxx · @sheetpane/export ─────────────────────────────────────────────
   'SP-2001': { title: 'Invalid sheet name', severity: 'error' },

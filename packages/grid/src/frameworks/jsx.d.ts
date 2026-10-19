@@ -8,7 +8,7 @@ export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 
 /** `<sheetpane-excel>` in React 19 JSX: attributes, properties and `onsheetpane-…` event props (React 19 sets properties and listens to custom events). */
 export type SheetpaneExcelReactProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'onsheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'onsheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change']) => void) | undefined;
@@ -34,7 +34,7 @@ export type SheetpaneExcelReactProps = SheetpaneExcelAttributes & SheetpaneExcel
   'onsheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange']) => void) | undefined;
   /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
   'onsheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel']) => void) | undefined;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'onsheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export']) => void) | undefined;
   /** `{}` when the pop-up closes. */
   'onsheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close']) => void) | undefined;

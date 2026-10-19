@@ -2,6 +2,7 @@
 import { isZip } from '@sheetpane/export';
 import { fromCsv } from './csv.js';
 import { ImportError } from './errors.js';
+import { sha256 } from './hash.js';
 import type { ImportedWorkbook } from './types.js';
 import { cfbRefusal, fromXlsx, isCfb, toBytes, type ReadOptions } from './xlsx.js';
 
@@ -18,7 +19,8 @@ export interface ReadAnyOptions extends ReadOptions {
  *
  * @param source - A File, a Blob or the file's bytes.
  * @param o - The file name (when `source` is not a File) and the ZIP size limits.
- * @returns The workbook: raw values, display text, and the tables the plugins read.
+ * @returns The workbook: raw values, display text, the tables the plugins read, and `sha256` — the
+ *   SHA-256 of the bytes read (W-65; absent with a warning, SP-1009, where Web Crypto is missing).
  * @example
  * ```ts
  * import { read } from '@sheetpane/import';
@@ -37,10 +39,16 @@ export async function read(source: File | Blob | ArrayBuffer | Uint8Array, o: Re
   if (isCfb(bytes)) throw cfbRefusal(bytes, name);
   const zip = isZip(bytes);
   if (ext === 'csv' && zip) throw new ImportError('unsupported-format', `"${name}" is named .csv but holds a ZIP archive`);
+  let book: ImportedWorkbook;
   if (ext === 'xlsx' || (!ext && zip)) {
     if (!zip) throw new ImportError('not-workbook', `${name ? `"${name}"` : 'this file'} is not an .xlsx workbook`);
-    return fromXlsx(bytes, o);
+    book = await fromXlsx(bytes, o);
+  } else {
+    if (!ext && bytes.subarray(0, 8192).includes(0)) throw new ImportError('unsupported-format', 'this file is neither an .xlsx workbook nor CSV text');
+    book = await fromCsv(new TextDecoder('utf-8').decode(bytes), name ? { name } : {});
   }
-  if (!ext && bytes.subarray(0, 8192).includes(0)) throw new ImportError('unsupported-format', 'this file is neither an .xlsx workbook nor CSV text');
-  return fromCsv(new TextDecoder('utf-8').decode(bytes), name ? { name } : {});
+  // the fingerprint (W-65): once, of the bytes as given — a refused file is not hashed
+  const hash = await sha256(bytes);
+  if (hash) book.sha256 = hash;
+  return book;
 }

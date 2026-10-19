@@ -105,7 +105,7 @@ export function App() {
             <sheetpane-excel ref={sheet} pane="react-demo" mode="edit" author="Demo reviewer" theme={theme} src={file ? undefined : src} file={file}
               header-row={!file && src.endsWith('.xlsx') ? '2' : '1'}
               onsheetpane-change={(e) => setLast(`${e.detail.sheet}!${e.detail.ref} → ${String(e.detail.now)}`)}
-              onsheetpane-export={(e) => setExported(`${e.detail.name} · ${e.detail.format ?? e.detail.kind}${e.detail.converted ? ' (converted)' : ''}`)} />
+              onsheetpane-export={(e) => setExported(`${e.detail.name} · ${e.detail.format ?? e.detail.kind}${e.detail.converted ? ' (converted)' : ''}${e.detail.sha256 ? ` · sha256 ${e.detail.sha256.slice(0, 12)}…` : ''}`)} />
             <ReviewStrip sheet={sheet} rulesOn={rulesOn} />
           </section>
           <aside className="side" hidden={view === 'sheet'} style={view === 'errors' ? { width: 'auto', flex: 1 } : undefined}>

@@ -8,6 +8,10 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+### Added
+
+- `@sheetpane/import` and `@sheetpane/grid`: the file's SHA-256 (W-65). `read()` returns `sha256`, 64 lowercase hex digits of the bytes opened, and `sha256(bytes)` is exported. `sheetpane-load` and `sheetpane-export` carry `sha256` — the file opened and the file handed back — and so does `store.exportFile()`. On a page without Web Crypto (not `https` or `localhost`) it is `undefined` with a console warning, SP-1009, never a substitute hash. The demos' export line shows it.
+
 ### Fixed
 
 - Demos (`examples/html`, `examples/react`): redesigned in the Proof look. A host bar with Views, Open file…, the CSV sample, the pop-up, Font and a new Theme switch (light, dark, auto, applied to every component). A *Demo* row of tabs, with Review, the plugins and the combinations set apart. Each demo's blurb shows the attribute that turns it on. Both components fill the window, and a footer shows the host events (change, errors, export). Every hook the demo check uses is kept; `demo-check` passes 51 of 51.
