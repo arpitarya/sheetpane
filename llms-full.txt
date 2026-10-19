@@ -4777,7 +4777,8 @@ pnpm and a justfile; the testing verdict chose the runner.
    Conventional Commits, the decider, 2026-10-19), no tag; it refuses unless
    `CHANGELOG.md` has a `## <version>` section. After `ci.yml` is green on
    that commit, `just publish <version>` publishes the GitHub Release
-   `v<version>` with that section as its notes (`scripts/release-notes.mjs`),
+   `v<version> — <summary>` (the heading's summary) with that section as its
+   notes (`scripts/release-notes.mjs`),
    and that alone runs
    `.github/workflows/publish.yml`. Its `build` job refuses unless `ci.yml`
    concluded `success` on the commit on `main`, checks version parity and that

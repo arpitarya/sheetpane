@@ -52,6 +52,7 @@ create-check *templates: build
 release version:
     git diff --quiet && git diff --cached --quiet || (echo "commit first" && exit 1)
     node scripts/release-notes.mjs {{version}} > /dev/null
+    node scripts/release-notes.mjs {{version}} --title > /dev/null
     node scripts/release.mjs {{version}}
     node scripts/check-version-parity.mjs
     just check pack-check
@@ -60,10 +61,10 @@ release version:
     git push origin HEAD
     @echo "next: wait for ci.yml to go green on main, then: just publish {{version}}"
 
-# publish a version: the GitHub Release v<version>, its notes the CHANGELOG section; publish.yml does the rest
+# publish a version: the GitHub Release `v<version> — <summary>`, its notes the CHANGELOG section; publish.yml does the rest
 publish version:
     node scripts/release-notes.mjs {{version}} > /tmp/sheetpane-notes-{{version}}.md
-    gh release create v{{version}} --target "$(git rev-parse HEAD)" --title "v{{version}}" --notes-file /tmp/sheetpane-notes-{{version}}.md
+    gh release create v{{version}} --target "$(git rev-parse HEAD)" --title "$(node scripts/release-notes.mjs {{version}} --title)" --notes-file /tmp/sheetpane-notes-{{version}}.md
 
 # every file that holds the release version agrees (also in CI and publish.yml)
 version-parity:

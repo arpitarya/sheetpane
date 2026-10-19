@@ -1,13 +1,14 @@
 # Changelog
 
 Every package is versioned in lockstep (SR-BUILD): one version for all of
-`@sheetpane/*` and `create-sheetpane`. Each section below is also that
-version's GitHub Release note.
+`@sheetpane/*` and `create-sheetpane`. Each heading is
+`## <version> — <what this release is> (<date>)`: the summary is the GitHub
+Release title (`v0.2.0 — the first release on npm`), the section its note.
 Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
-## 0.2.0 — 2026-10-19
+## 0.2.0 — the first release on npm (2026-10-19)
 
 The first release on npm: all 17 packages at `0.2.0`. `v0.1.0` was tagged but
 never published, so this is the first version you can install.
@@ -137,7 +138,7 @@ This is the first version where you can install them.
 - A plugin gallery in both demos: Vanilla, a tab per plugin and All plugins on
   one showcase workbook (W-32).
 
-## 0.1.0 — 2026-10-19
+## 0.1.0 — tagged, never published to npm (2026-10-19)
 
 **Tagged, never published to npm.** Install
 [0.2.0](https://github.com/arpitarya/sheetpane/releases/tag/v0.2.0) instead:

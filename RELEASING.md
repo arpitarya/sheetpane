@@ -55,18 +55,22 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
 has a `BREAKING CHANGE:` footer.
 
 1. **Notes first.** In `CHANGELOG.md`, turn `## Unreleased` into
-   `## 0.2.0 — <date>`, start a new empty `## Unreleased` above it, and open
-   the section with a few lines a user needs: what is new, what to change
-   before upgrading, and how to install. This section **is** the GitHub
-   Release note; `just release` refuses without it.
+   `## 0.2.0 — <what this release is> (<date>)`, start a new empty
+   `## Unreleased` above it, and open the section with a few lines a user
+   needs: what is new, what to change before upgrading, and how to install.
+   The summary is the GitHub Release title (`v0.2.0 — the first release on
+   npm`, `v4.0.3 — version bump on all six names`), never the bare version;
+   the section **is** the release note. `just release` refuses without
+   either.
 2. **Bump.** `just release 0.2.0` sets the version on every package, then
    rebuilds what pins it: the starters, the Claude Code plugin and
    `llms.txt`. It runs `just version-parity` and `just check pack-check`,
    then commits `chore(release): v0.2.0` and pushes `main`. It does not tag.
 3. **Wait for CI.** `ci.yml` must finish green on the head of `main`: the
    full suite, the three-OS matrix and the templates.
-4. **Publish.** `just publish 0.2.0` creates the GitHub Release `v0.2.0`
-   on that commit, with the CHANGELOG section as its notes. Publishing the
+4. **Publish.** `just publish 0.2.0` creates the GitHub Release
+   `v0.2.0 — <summary>` on that commit, with the CHANGELOG section as its
+   notes. Publishing the
    release creates the tag and runs `publish.yml`, which:
    - refuses unless `ci.yml` succeeded on this commit;
    - checks version parity and that the tag is the packages' version;
