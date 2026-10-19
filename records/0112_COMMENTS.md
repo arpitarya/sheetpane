@@ -102,10 +102,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet), SP-5804 (an error with no cell not written — W-55).
-- **Enforced today:** `just test-pkg comments` — 27 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 28 tests (notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
+  an error's `meta` (W-68, SR-GRID 5b) found in no written part;
   both switches byte-identical; export → reload → `setErrors` → export
   giving the same ids and counts; every written part well-formed; package
   shape and the Node-safe boundary).

@@ -27,6 +27,7 @@ decision 5.
 | attribute | `readonly` | a sign-off screen: no form, Resolve, Delete, Undo or Redo (SR-ERRORS decision 7) |
 | attribute | `plugins`, `theme` | as on the sheet |
 | property | `errors`, `errorTypes`, `readOnly`, `workbook` | |
+| property | `renderDetail` | the host's extra detail in an open row (W-68) — see below |
 | method | `getErrors()`, `setErrors(list, { plugins })` | |
 | event | `sheetpane-errors {errors, plugins}` | the list changed — the one to persist |
 | event | `sheetpane-reveal {error}` | **Show in sheet** was pressed: switch to the sheet's tab or open the pop-up |
@@ -70,6 +71,27 @@ excel.workbook.addError({ sheet: '', range: '', type: 'other', severity: 'warnin
 - **Code that parses `range` as A1 must handle `""`.**
 - `@sheetpane/comments` does not write them (a comment needs a cell):
   `lastExport.skipped` lists each as `no-cell`, SP-5804.
+
+### The host's data and detail (W-68)
+
+`meta` is yours: any JSON (64 KiB at most, `ERROR_META_MAX`), kept by
+`getErrors()` / `setErrors()` and the `sheetpane-errors` envelope, **never
+written into the file**. `renderDetail` draws from it, after the message, in
+the panel's open row and the sheet's error card — set it on **both**:
+
+```js
+excel.workbook.addError({ sheet: 'Spec', range: 'C7', type: 'out-of-range', severity: 'error', meta: { page: 3, measured: '6.63 in' } });
+const detail = (e) => (e.meta?.measured ? `The PDF measures ${e.meta.measured}, outside ± 0.06 in` : null);
+excel.renderDetail = detail;
+panel.renderDetail = detail; // or return a Node: an <img> of the crop, a link
+```
+
+- A string is text, never HTML; a Node is yours, placed as it is. Style it
+  with `::part(detail)`.
+- It runs again only when that error changes (`meta` included).
+- A `meta` over the cap or not JSON is dropped (SP-3016); a throwing hook
+  shows nothing (SP-3017).
+- Keep a reference in `meta` (a page, a box), not the picture's pixels.
 
 ## Saving and restoring a review
 

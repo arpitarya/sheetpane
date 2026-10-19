@@ -7,8 +7,8 @@ import { formatCode, general, ImportError, read, subsetCode, type ImportedSheet,
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import type { CellContext, DeriveInput, DerivedChange, ErrorDraft, Plugin, PluginContext, StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
-import { machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
+import { ERROR_META_MAX, copyError, machineAuthored } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, LoadState, Mode, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
 /** What {@link createWorkbook} takes. */
 export interface StoreOptions {
@@ -84,6 +84,23 @@ export function parseInput(text: string, original: Cell, source: 'xlsx' | 'csv')
 
 /** A sheet's state as read: `state` (W-49), else the older `hidden` flag. */
 export const sheetStateOf = (s: ImportedSheet): SheetState => ((s as { state?: SheetState }).state ?? (s.hidden ? 'hidden' : 'visible'));
+/** An error's `meta` as kept (W-68): its JSON round trip, or `undefined` — logged as SP-3016 — when it is not JSON or weighs over ERROR_META_MAX. */
+function cleanMeta(id: string, meta: unknown): ErrorMeta | undefined {
+  let json: string | undefined;
+  try { json = JSON.stringify(meta); } catch { json = undefined; } // a cycle or a BigInt
+  if (json === undefined) { console.warn(spMessage('SP-3016', `${id || 'a new error'}: its meta is not JSON, so it was not kept`)); return undefined; }
+  // UTF-8 weighs one to three bytes per UTF-16 unit: encode only when the length cannot tell
+  const bytes = json.length * 3 <= ERROR_META_MAX ? json.length : new TextEncoder().encode(json).length;
+  if (bytes > ERROR_META_MAX) { console.warn(spMessage('SP-3016', `${id || 'a new error'}: its meta is ${bytes} bytes of JSON, over the ${ERROR_META_MAX}-byte cap, so it was not kept`)); return undefined; }
+  return JSON.parse(json) as ErrorMeta;
+}
+/** The error with `meta` set to what may be kept, or without it. */
+function withMeta(e: SheetpaneError, meta: unknown): SheetpaneError {
+  const { meta: _was, ...rest } = e;
+  const m = meta === undefined ? undefined : cleanMeta(e.id, meta);
+  return m === undefined ? rest : { ...rest, meta: m };
+}
+
 const same = (a: unknown, b: unknown) => a === b || (typeof a === 'number' && typeof b === 'number' && Object.is(a, b)) || JSON.stringify(a) === JSON.stringify(b);
 
 /**
@@ -598,13 +615,13 @@ export class WorkbookStore {
     return (this.original(e.sheet, cellRef(r.top, r.left)).text || BLANK) !== e.found;
   }
 
-  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. `range: ''` is the whole sheet, and with `sheet: ''` the workbook (W-55): no cell, so `found` is `''` and nothing is written. */
-  addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string }, origin?: Origin): SheetpaneError {
-    const e: SheetpaneError = {
+  /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. `range: ''` is the whole sheet, and with `sheet: ''` the workbook (W-55): no cell, so `found` is `''` and nothing is written. `meta` is the host's data (W-68): kept as JSON, or dropped with SP-3016. */
+  addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string; meta?: ErrorMeta }, origin?: Origin): SheetpaneError {
+    const e: SheetpaneError = withMeta({
       v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity,
       found: this.foundFor(d.sheet, d.range), expected: d.expected ?? '', message: d.message ?? '',
       cellChanged: !!d.cellChanged, status: 'open', matchesExpected: false, author: d.author ?? '', createdAt: new Date().toISOString(),
-    };
+    }, d.meta);
     let changes = this.snap.changes;
     const keys: string[] = [];
     const events: StoreEvent[] = [{ type: 'errors', origin }];
@@ -621,10 +638,18 @@ export class WorkbookStore {
     return this.snap.errors.find((x) => x.id === e.id)!;
   }
 
-  /** Changes an error's status, severity, expected value, message or type; undoable. */
-  updateError(id: string, patch: Partial<Pick<SheetpaneError, 'status' | 'severity' | 'expected' | 'message' | 'type'>>, origin?: Origin): void {
+  /** Changes an error's status, severity, expected value, message, type or `meta` (W-68: `meta: undefined` removes it; a `meta` that may not be kept is dropped with SP-3016 and the error keeps its own); undoable. */
+  updateError(id: string, patch: { status?: SheetpaneError['status']; severity?: SheetpaneError['severity']; expected?: string; message?: string; type?: string; meta?: ErrorMeta | undefined }, origin?: Origin): void {
     if (!this.snap.errors.some((e) => e.id === id)) return;
-    this.commit({ changes: this.snap.changes, errors: this.snap.errors.map((e) => (e.id === id ? { ...e, ...patch } : e)) }, [], origin, [{ type: 'errors', origin }]);
+    const { meta, ...rest } = patch;
+    const next = (e: SheetpaneError): SheetpaneError => {
+      const out = { ...e, ...rest } as SheetpaneError;
+      if (!('meta' in patch)) return out;
+      if (meta === undefined) return withMeta(out, undefined);
+      const m = cleanMeta(id, meta);
+      return m === undefined ? out : { ...out, meta: m };
+    };
+    this.commit({ changes: this.snap.changes, errors: this.snap.errors.map((e) => (e.id === id ? next(e) : e)) }, [], origin, [{ type: 'errors', origin }]);
   }
 
   /** Deletes an error; a cell it changed keeps the change (contract decision 6). */
@@ -633,12 +658,12 @@ export class WorkbookStore {
     this.commit({ changes: this.snap.changes, errors: this.snap.errors.filter((e) => e.id !== id) }, [], origin, [{ type: 'errors', origin }]);
   }
 
-  /** A copy of every error in the pane. */
-  getErrors(): SheetpaneError[] { return this.snap.errors.map((e) => ({ ...e })); }
+  /** A copy of every error in the pane, `meta` included (W-68). */
+  getErrors(): SheetpaneError[] { return this.snap.errors.map(copyError); }
 
-  /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). */
+  /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). Each `meta` is kept as JSON, or dropped with SP-3016 (W-68). */
   setErrors(list: readonly SheetpaneError[], origin?: Origin): void {
-    const errors = list.map((e) => ({ ...e, v: 1 as const, matchesExpected: false }));
+    const errors = list.map((e) => withMeta({ ...e, v: 1 as const, matchesExpected: false }, e.meta));
     for (const e of errors) { const n = /^ERR-(\d+)$/.exec(e.id); if (n) this.nextError = Math.max(this.nextError, Number(n[1]) + 1); }
     this.undoStack = []; this.redoStack = [];
     this.pluginErrors.clear(); // ids now name the restored list's errors; validate re-adopts its own by what they say, never by id

@@ -64,8 +64,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
 
-- 🟢 **W-68** `agent` · **G3** · Room in the error card for the host: `meta` on an error and a `renderDetail` hook. Filed by Arpit (Cowork). [detail](open/W-68-error-detail-slot.md)
-
 - 🟢 **W-69** `agent` · **G3** · Accepted deviations: an error accepted with a reason, kept in the review and the download. Filed by Arpit (Cowork). [detail](open/W-69-accepted-deviations.md)
 
 ### testing

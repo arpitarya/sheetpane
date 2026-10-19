@@ -61,7 +61,7 @@ the store and the contract are the contract verdict's and
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
    `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`, `theme`; methods `getErrors()`, `setErrors(list, { plugins? })`; events
+   `readOnly`, `theme`, `renderDetail` (W-68, decision 13); methods `getErrors()`, `setErrors(list, { plugins? })`; events
    `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it
@@ -119,12 +119,30 @@ the store and the contract are the contract verdict's and
 
 12. **Test hooks (W-41):** rows carry `data-sp-error` and `data-sp-ref`; Resolve `data-sp="resolve"`; the form's Add `data-sp="add-error"` (SR-GRID decision 9a lists them all).
 
+13. **The host's detail (W-68):** `renderDetail(error) → Node | string |
+    null | undefined`, a property on this element and on `<sheetpane-excel>`,
+    each its own. It is called with a copy of the error (its `meta`, SR-GRID
+    5b, included) and its result is drawn in a `part="detail"` region right
+    after the message: in the open row here, in the error card in the sheet.
+    So the host's focusable controls come after the row's button (the card's
+    previous / next) and before Show in sheet, Resolve and Delete. A string
+    is text, never parsed as HTML; a Node is trusted host code, placed as it
+    is. `null`, `undefined` or `''` leaves the region empty, and an empty
+    region takes no room. The hook runs again only when that error changes
+    (`meta` included) or the hook is replaced, so a list re-drawn for another
+    error keeps the host's node. A throw is logged as SP-3017 and shows
+    nothing. Clicks, input and keys inside the region are the host's: the
+    element does not act on them. No hook, no region.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
   filters, reveal, readonly, `errorTypes`, events, notice, font, axe; W-55:
   the groups and their order, keyboard order, the tab count, Show in sheet
-  for a sheet and disabled for the workbook, restore, axe) and the
+  for a sheet and disabled for the workbook, restore, axe; W-68: a string as
+  text in the card and the row, a Node kept until its error changes, the hook
+  replaced, a throw as SP-3017, the region's clicks left to the host, focus
+  order, axe) and the
   L7 sync test in both mount orders with the errors element inside a
   `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
 

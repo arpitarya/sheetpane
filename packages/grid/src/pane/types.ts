@@ -35,7 +35,43 @@ export interface SheetpaneError {
   createdAt: string;
   /** The stable SP code (W-40) when sheetpane itself raised the error — a rules-engine note, e.g. `"SP-6023"`; see docs/ERRORS.md. Optional: v1 stays valid without it. */
   code?: SpCode;
+  /**
+   * The host's own data about the error (W-68) — what `renderDetail` reads, e.g. a PDF page and box, a measured and an
+   * expected size. Any JSON value up to {@link ERROR_META_MAX} bytes; kept as its JSON round trip, carried by
+   * `getErrors()`, `setErrors()` and the `sheetpane-errors` envelope, and never written into the file. Optional: v1
+   * stays valid without it.
+   */
+  meta?: ErrorMeta;
 }
+
+/** A JSON value: what `SheetpaneError.meta` holds (W-68). */
+export type ErrorMeta = null | boolean | number | string | ErrorMeta[] | { [key: string]: ErrorMeta };
+
+/** The most an error's `meta` may weigh, in bytes of its JSON text (UTF-8): 64 KiB. Over it, the meta is dropped with SP-3016 (W-68). */
+export const ERROR_META_MAX = 65536;
+
+/**
+ * The host's extra detail for one error (W-68), drawn in the sheet's error card and the error list's open row, after the
+ * message, in a region the host styles as `::part(detail)`. A string is shown as text, never parsed as HTML; a Node is
+ * the host's own and is placed as it is; `null`, `undefined` or `''` shows nothing. It is called again only when the
+ * error changes (its `meta` included) or the hook is replaced. A throw is logged as SP-3017 and shows nothing.
+ *
+ * @example
+ * ```ts
+ * import '@sheetpane/grid';
+ * import type { RenderDetail } from '@sheetpane/grid';
+ * const detail: RenderDetail = (e) => {
+ *   const m = e.meta as { measured?: string; expected?: string } | null | undefined;
+ *   return m?.measured ? `The PDF measures ${m.measured}; the sheet says ${m.expected}.` : null;
+ * };
+ * document.querySelector('sheetpane-excel')!.renderDetail = detail;
+ * document.querySelector('sheetpane-errors')!.renderDetail = detail;
+ * ```
+ */
+export type RenderDetail = (error: SheetpaneError) => Node | string | null | undefined;
+
+/** A copy of an error the host may change freely: its `meta` is cloned too (W-68). */
+export const copyError = (e: SheetpaneError): SheetpaneError => (e.meta !== null && typeof e.meta === 'object' ? { ...e, meta: structuredClone(e.meta) } : { ...e });
 
 /** Plugins verdict decision 6. */
 export type ChangeKind = 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze' | 'hidden' | 'sheetState' | 'outline';

@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fc from 'fast-check';
 import { toXlsx } from '@sheetpane/export';
 import { read } from '@sheetpane/import';
-import { createWorkbook, errorScope, formulaRefs, parseInput, HISTORY_CAP, type Plugin } from '../src/index.js';
+import { createWorkbook, errorScope, formulaRefs, parseInput, ERROR_META_MAX, HISTORY_CAP, type Plugin } from '../src/index.js';
 import { sampleCsv, sampleXlsx } from './helpers.js';
 import { minimalPackage } from '../../export/test/helpers.js';
 
@@ -245,5 +245,66 @@ describe('errors with no cell (W-55)', () => {
     missing = false;
     s.setCell('Fee tiers', 'A1', 'x');
     expect(s.getErrors()).toMatchObject([{ sheet: 'Fee tiers', range: '', status: 'resolved' }]);
+  });
+});
+
+describe('the host’s data on an error (W-68)', () => {
+  const crop = { pdf: 'spec.pdf', page: 3, box: [72, 144, 288, 216], measured: '6.63 in', expected: '6.50 in ± 0.06 in', ok: false, note: null };
+  it('meta is kept as JSON: added, read as a copy, round-tripped through a saved review', async () => {
+    const s = await loaded();
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', meta: crop });
+    expect(e.meta).toEqual(crop);
+    const read = s.getErrors()[0]!;
+    (read.meta as { page: number }).page = 99; // a copy: the host may change what it reads
+    expect(s.getErrors()[0]!.meta).toEqual(crop);
+    const saved = JSON.parse(JSON.stringify({ errors: s.getErrors() })) as { errors: ReturnType<typeof s.getErrors> };
+    const t = await loaded();
+    t.setErrors(saved.errors);
+    expect(t.getErrors()).toEqual(s.getErrors());
+    (saved.errors[0]!.meta as { page: number }).page = 7; // and setErrors keeps its own copy
+    expect(t.getErrors()[0]!.meta).toEqual(crop);
+    // an error with no meta has no meta key: v1 unchanged
+    expect('meta' in s.addError({ sheet: 'Holdings', range: 'A8', type: 'other', severity: 'note' })).toBe(false);
+  });
+  it('meta is kept as its JSON round trip: a Date becomes its text, a function inside an object goes', async () => {
+    const s = await loaded();
+    const at = new Date('2026-10-19T10:00:00Z');
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'other', severity: 'note', meta: { at, f: (() => 1) as unknown as string } as never });
+    expect(e.meta).toEqual({ at: '2026-10-19T10:00:00.000Z' });
+  });
+  it('updateError sets, replaces and removes meta, as one undo step each', async () => {
+    const s = await loaded();
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'other', severity: 'note' });
+    s.updateError(e.id, { meta: crop });
+    expect(s.getErrors()[0]!.meta).toEqual(crop);
+    s.updateError(e.id, { meta: { measured: '6.70 in' } });
+    expect(s.getErrors()[0]!.meta).toEqual({ measured: '6.70 in' });
+    s.updateError(e.id, { meta: undefined });
+    expect('meta' in s.getErrors()[0]!).toBe(false);
+    s.undo();
+    expect(s.getErrors()[0]!.meta).toEqual({ measured: '6.70 in' });
+    s.undo();
+    expect(s.getErrors()[0]!.meta).toEqual(crop);
+  });
+  it('a meta over the cap, or not JSON, is dropped with SP-3016 — the error is kept', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const s = await loaded();
+      const at = { blob: 'x'.repeat(ERROR_META_MAX - 11) }; // {"blob":"…"} is exactly the cap
+      expect(JSON.stringify(at).length).toBe(ERROR_META_MAX);
+      expect(s.addError({ sheet: 'Holdings', range: 'G7', type: 'other', severity: 'note', meta: at }).meta).toEqual(at);
+      expect(warn).not.toHaveBeenCalled();
+      const over = s.addError({ sheet: 'Holdings', range: 'A8', type: 'other', severity: 'note', meta: { blob: 'é'.repeat(ERROR_META_MAX / 2) } }); // 2 bytes each in UTF-8
+      expect('meta' in over).toBe(false);
+      expect(warn).toHaveBeenLastCalledWith(expect.stringMatching(/^SP-3016: Error meta dropped — ERR-\d+: its meta is \d+ bytes of JSON, over the 65536-byte cap/));
+      const loop: Record<string, unknown> = {};
+      loop.self = loop;
+      s.setErrors([...s.getErrors(), { ...over, id: 'ERR-0100', meta: loop as never }]);
+      expect('meta' in s.getErrors().find((e) => e.id === 'ERR-0100')!).toBe(false);
+      expect(warn).toHaveBeenLastCalledWith(expect.stringMatching(/^SP-3016: .*ERR-0100: its meta is not JSON/));
+      s.updateError(s.getErrors()[0]!.id, { meta: { n: 10n } as never }); // a BigInt: refused, the error keeps its own
+      expect(s.getErrors()[0]!.meta).toEqual(at);
+      expect(warn).toHaveBeenCalledTimes(3);
+    } finally { warn.mockRestore(); }
   });
 });

@@ -212,6 +212,7 @@ committed manifest drifts from the elements.
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
+| property | `renderDetail` | your extra detail in the error card (W-68, under *Saving and restoring a review*) |
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
@@ -384,6 +385,7 @@ opens no pop-up — the errors panel is the one place errors are read.
 | attribute | `pane`, `author`, `plugins` | as above |
 | attribute | `readonly` | hides the form, Resolve and Delete — a sign-off screen |
 | property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
+| property | `renderDetail` | your extra detail in an open row — see below (W-68) |
 | event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
 
 ## Saving and restoring a review
@@ -408,6 +410,24 @@ error is counted on its tab and **Show in sheet** opens the tab; for a
 workbook-level one it is disabled. They are never placed on A1; no pin, no
 cell mark, no `found`. `errorScope(e)` says which (`cell` · `sheet` ·
 `workbook`). **If your code reads `range` as an A1 reference, handle `""`.**
+
+**Your data on an error, and your detail beside it** (W-68): `meta` holds any
+JSON of yours (64 KiB at most, `ERROR_META_MAX`); it is saved and restored
+with the error and never written into the file. `renderDetail(error)` — on
+`<sheetpane-excel>` for the error card and on `<sheetpane-errors>` for the
+open row, each its own — returns a string (shown as text, never HTML), a
+Node (yours, placed as it is) or `null`. It is drawn after the message, in
+`::part(detail)`, and runs again only when that error changes.
+
+```js
+workbook.addError({ sheet: 'Spec', range: 'C7', type: 'out-of-range', severity: 'error', meta: { page: 3, measured: '6.63 in' } });
+const detail = (e) => (e.meta?.measured ? `The PDF measures ${e.meta.measured}, outside ± 0.06 in` : null);
+excel.renderDetail = detail;
+errors.renderDetail = detail;
+```
+
+A `meta` that is not JSON or is over the cap is dropped (SP-3016); a hook
+that throws shows nothing (SP-3017).
 
 ## Plugins
 

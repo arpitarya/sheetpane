@@ -144,6 +144,15 @@
             },
             {
               "kind": "field",
+              "name": "renderDetail",
+              "privacy": "public",
+              "type": {
+                "text": "RenderDetail | undefined"
+              },
+              "description": "The host's extra detail for an error (W-68): called with a copy of the error when its card opens in the sheet, and\ndrawn after the message in a `part=\"detail\"` region. A string is text, never HTML; a Node is the host's own. Called\nagain only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on\neach element that should show it — `<sheetpane-errors>` has its own."
+            },
+            {
+              "kind": "field",
               "name": "file",
               "privacy": "public",
               "type": {
@@ -637,6 +646,10 @@
             {
               "name": "dialog",
               "description": "The modal `<dialog>` the root moves into when `display=\"popup\"`."
+            },
+            {
+              "name": "detail",
+              "description": "The host's region in the error card, after the message: what `renderDetail` returns (W-68)."
             }
           ],
           "cssProperties": [
@@ -947,6 +960,15 @@
               "reflects": true
             },
             {
+              "kind": "field",
+              "name": "renderDetail",
+              "privacy": "public",
+              "type": {
+                "text": "RenderDetail | undefined"
+              },
+              "description": "The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after\nthe message in a `part=\"detail\"` region. A string is text, never HTML; a Node is the host's own. Called again only when\nthe error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element\nthat should show it — the sheet's error card has its own."
+            },
+            {
               "kind": "method",
               "name": "getErrors",
               "privacy": "public",
@@ -1037,6 +1059,10 @@
             {
               "name": "root",
               "description": "The panel's frame: the header, the form, the filters and the list."
+            },
+            {
+              "name": "detail",
+              "description": "The host's region in an open row, after the message: what `renderDetail` returns (W-68)."
             }
           ],
           "cssProperties": [

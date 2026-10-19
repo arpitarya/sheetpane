@@ -70,6 +70,8 @@ const TABLE = {
   'SP-3013': { title: 'Plugin validate failed', severity: 'error' },
   'SP-3014': { title: 'Plugin overlay failed', severity: 'error' },
   'SP-3015': { title: 'Source could not be read', severity: 'error' },
+  'SP-3016': { title: 'Error meta dropped', severity: 'warning' },
+  'SP-3017': { title: 'renderDetail failed', severity: 'error' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

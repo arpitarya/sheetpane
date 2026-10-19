@@ -89,6 +89,8 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
+| [SP-3016](#sp-3016) | Error meta dropped | warning |
+| [SP-3017](#sp-3017) | renderDetail failed | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -501,6 +503,22 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** the `src` URL (or `load(url)`) could not be fetched; the pane shows "Can't open this file".
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
+
+### SP-3016
+
+**Error meta dropped** · warning · [SR-GRID](../records/0105_GRID.md) decision 5b
+
+- **Meaning:** an error's `meta` (W-68) was not kept: it is not JSON (a cycle, a BigInt, a function on its own), or its JSON text is over 64 KiB (`ERROR_META_MAX`). The error itself is kept, without it; `updateError` leaves the error's own `meta` as it was.
+- **Likely cause:** an image's pixels, a whole PDF page or a DOM node put in `meta`.
+- **Fix:** keep a reference in `meta` — a page number, a box, an id the host resolves — and draw the picture in `renderDetail`.
+
+### SP-3017
+
+**renderDetail failed** · error · [SR-ERRORS](../records/0106_ERRORS.md) decision 13
+
+- **Meaning:** the host's `renderDetail` threw for an error; nothing is shown in that card or row, and the rest of it works.
+- **Likely cause:** a bug in the host's hook, or an error whose `meta` it did not expect (an older review, an error without one).
+- **Fix:** read the error logged after this line; make the hook return `null` when it has nothing to show.
 
 ---
 

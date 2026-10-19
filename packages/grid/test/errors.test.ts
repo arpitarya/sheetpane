@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import axe from 'axe-core';
 import type { SheetpaneErrors, SheetpaneExcel } from '../src/index.js';
@@ -267,5 +267,135 @@ describe('errors with no cell (W-55)', () => {
     // named "All severities: 4" — and passes only by chance in the host-font test above; reported by W-55, not its change
     const r = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
     expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});
+
+describe('the host’s detail in the card and the list row (W-68)', () => {
+  const meta = { page: 3, measured: '6.63 in', expected: '6.50 in ± 0.06 in' };
+  async function withDetail() {
+    const p = await pair();
+    const s = p.excel.workbook!;
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', expected: '268.4', message: 'Price differs from the PDF', meta });
+    const other = s.addError({ sheet: 'Holdings', range: 'A8', type: 'other', severity: 'note' });
+    await frame();
+    return { ...p, s, e, other };
+  }
+  const open = async (errors: SheetpaneErrors, id: string) => { ($(errors, `[data-id="${id}"] .issue`) as HTMLButtonElement).click(); await frame(); };
+  const card = async (excel: SheetpaneExcel) => { excel.select('Holdings', 'G7'); await frame(); return $(excel, '.callout'); };
+
+  it('a string is text, never HTML, in a part="detail" region after the message — in the card and the open row', async () => {
+    const { excel, errors, e } = await withDetail();
+    const text = (x: { meta?: unknown }) => `<b>The PDF measures ${(x.meta as typeof meta).measured}</b>, outside ± 0.06 in`;
+    excel.renderDetail = text;
+    errors.renderDetail = text;
+    expect($(errors, '[part~=detail]')).toBeNull(); // no row open, no region
+    await open(errors, e.id);
+    const row = $(errors, '[part~=detail]');
+    expect(row.textContent).toBe('<b>The PDF measures 6.63 in</b>, outside ± 0.06 in');
+    expect(row.querySelector('b')).toBeNull();
+    expect(row.previousElementSibling!.textContent).toBe('Price differs from the PDF');
+    const c = await card(excel);
+    const region = c.querySelector<HTMLElement>('[part~=detail]')!;
+    expect(region.textContent).toBe(row.textContent);
+    expect(region.querySelector('b')).toBeNull();
+    expect(region.previousElementSibling!.textContent).toBe('Price differs from the PDF');
+    // without the hook there is no region; with one that returns nothing it is empty and takes no room
+    excel.renderDetail = () => null;
+    errors.renderDetail = undefined;
+    await frame();
+    expect($(errors, '[part~=detail]')).toBeNull();
+    expect(c.querySelector<HTMLElement>('[part~=detail]')!.childNodes.length).toBe(0);
+    expect(c.querySelector<HTMLElement>('[part~=detail]')!.getBoundingClientRect().height).toBe(0);
+  });
+  it('a Node is the host’s own; drawn again only when its error changes or the hook is replaced', async () => {
+    const { excel, errors, s, e, other } = await withDetail();
+    const calls: string[] = [];
+    const render = (x: { id: string; meta?: unknown }) => {
+      calls.push(x.id);
+      const fig = document.createElement('figure');
+      fig.className = 'crop';
+      fig.textContent = `page ${(x.meta as typeof meta | undefined)?.page ?? '?'}`;
+      return fig;
+    };
+    errors.renderDetail = render;
+    await open(errors, e.id);
+    const fig = $(errors, '[part~=detail] > figure.crop');
+    expect(fig.textContent).toBe('page 3');
+    expect(calls).toEqual([e.id]);
+    s.updateError(other.id, { status: 'resolved' }); // the list is drawn again for another error
+    await frame();
+    expect(calls).toEqual([e.id]);
+    expect($(errors, '[part~=detail] > figure.crop')).toBe(fig); // the same node, not a new one
+    s.updateError(e.id, { meta: { ...meta, page: 4 } }); // this error changed: drawn again
+    await frame();
+    expect(calls).toEqual([e.id, e.id]);
+    expect($(errors, '[part~=detail]').textContent).toBe('page 4');
+    errors.renderDetail = (x) => { calls.push(`b:${x.id}`); return 'replaced'; };
+    await frame();
+    expect($(errors, '[part~=detail]').textContent).toBe('replaced');
+    expect(calls.at(-1)).toBe(`b:${e.id}`);
+    // the card: the same rules, its own hook
+    excel.renderDetail = render;
+    const c = await card(excel);
+    expect(c.querySelector('[part~=detail] > figure.crop')!.textContent).toBe('page 4');
+    const n = calls.length;
+    s.updateError(e.id, { meta: { ...meta, page: 5 } });
+    await frame();
+    expect($(excel, '.callout [part~=detail]').textContent).toBe('page 5');
+    expect(calls.length).toBe(n + 2); // once for the card, once for the open row
+    // the hook gets a copy: changing it changes nothing in the pane
+    excel.renderDetail = (x) => { (x.meta as { page: number }).page = 0; x.message = 'changed'; return null; };
+    await frame();
+    expect(s.getErrors().find((x) => x.id === e.id)).toMatchObject({ message: 'Price differs from the PDF', meta: { page: 5 } });
+  });
+  it('a throw is logged as SP-3017 and shows nothing; the card and the row still work', async () => {
+    const { excel, errors, e } = await withDetail();
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      excel.renderDetail = () => { throw new Error('no PDF'); };
+      const c = await card(excel);
+      expect(log).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^SP-3017: renderDetail failed — renderDetail threw for ${e.id}`)), expect.any(Error));
+      expect(c.querySelector('[part~=detail]')!.childNodes.length).toBe(0);
+      (c.querySelector('[data-act=resolve]') as HTMLButtonElement).click();
+      expect(excel.getErrors().find((x) => x.id === e.id)!.status).toBe('resolved');
+      await frame();
+      expect(log).toHaveBeenCalledTimes(2); // the error changed, so the hook ran — and threw — once more
+      expect(errors.getErrors()).toHaveLength(2);
+    } finally { log.mockRestore(); }
+  });
+  it('clicks and keys in the region are the host’s: a host button named like an action does nothing to the pane', async () => {
+    const { excel, errors, e } = await withDetail();
+    const hostButton = () => { const b = document.createElement('button'); b.type = 'button'; b.dataset.act = 'delete'; b.textContent = 'Open the PDF'; return b; };
+    errors.renderDetail = hostButton;
+    excel.renderDetail = hostButton;
+    await open(errors, e.id);
+    ($(errors, '[part~=detail] button') as HTMLButtonElement).click();
+    const c = await card(excel);
+    (c.querySelector('[part~=detail] button') as HTMLButtonElement).click();
+    await frame();
+    expect(excel.getErrors()).toHaveLength(2);
+  });
+  it('focus order: the host’s controls come after the message, before the row’s and the card’s own; no axe violations', async () => {
+    const { excel, errors, e } = await withDetail();
+    const link = () => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pdf'; b.textContent = 'Open page 3 of the PDF'; return b; };
+    errors.renderDetail = link;
+    excel.renderDetail = link;
+    await open(errors, e.id);
+    const active = (el: Element) => shadow(el).activeElement as HTMLElement;
+    $(errors, `[data-id="${e.id}"] .issue`).focus();
+    await userEvent.tab();
+    expect(active(errors).className).toBe('pdf');
+    await userEvent.tab();
+    expect(active(errors).dataset.act).toBe('reveal');
+    const c = await card(excel);
+    (c.querySelector('[data-act=next]') as HTMLElement).focus();
+    await userEvent.tab();
+    expect(active(excel).className).toBe('pdf');
+    await userEvent.tab();
+    expect(active(excel).dataset.act).toBe('resolve');
+    // label-in-name (2.5.3) is off for the list, as in the W-55 test: a known gap in SR-ERRORS, not this change
+    const r1 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
+    const r2 = await axe.run(c);
+    expect([...r1.violations, ...r2.violations].map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   });
 });

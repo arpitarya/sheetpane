@@ -71,6 +71,8 @@ export interface SheetpaneExcelProperties {
   errors?: SheetpaneExcel['errors'] | undefined;
   /** The types offered in the Flag issue form; an empty list falls back to `DEFAULT_ERROR_TYPES`. */
   errorTypes?: SheetpaneExcel['errorTypes'] | undefined;
+  /** The host's extra detail for an error (W-68): called with a copy of the error when its card opens in the sheet, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — `<sheetpane-errors>` has its own. */
+  renderDetail?: SheetpaneExcel['renderDetail'] | undefined;
   /** Loads a file, like `load()`; `null` does nothing. */
   file?: SheetpaneExcel['file'] | undefined;
   /** The pane's mode, `view` or `edit`; setting it sets the `mode` attribute. */
@@ -133,4 +135,6 @@ export interface SheetpaneErrorsProperties {
   readOnly?: SheetpaneErrors['readOnly'] | undefined;
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   theme?: SheetpaneErrors['theme'] | undefined;
+  /** The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element that should show it — the sheet's error card has its own. */
+  renderDetail?: SheetpaneErrors['renderDetail'] | undefined;
 }

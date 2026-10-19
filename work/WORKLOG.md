@@ -24,6 +24,21 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-68 closed: `meta` on an error and a `renderDetail` hook  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-68 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** `SheetpaneError.meta` holds the host's JSON (`ErrorMeta`), up to `ERROR_META_MAX` (64 KiB of JSON, UTF-8). `addError`, `updateError` (`meta: undefined` removes it) and `setErrors` keep its JSON round trip; `getErrors()` copies it. One that is not JSON or is over the cap is dropped with the new SP-3016, and the error is kept.
+  - `renderDetail(error)` on `<sheetpane-excel>` (the error card) and `<sheetpane-errors>` (the open row), each its own. Its result goes in a `part="detail"` region after the message: a string as text, a Node as is, nothing for `null`. It runs again only when that error changes or the hook is replaced; a throw is logged as the new SP-3017. Clicks, input and keys in the region are left to the host.
+  - Records changed: SR-GRID 5b, 9, 13 and the codes line; SR-ERRORS 1, 13 and Consequences; SR-CODES and SR-COMMENTS Consequences. The skill, the grid README, `docs/ERRORS.md` and the CHANGELOG are updated; `llms-full.txt`, the plugin copy of the skill, `custom-elements.json` and the framework typings are regenerated.
+- **Decided / left open:**
+  - The region is in the **open** row of the list, not every row: the message it follows is shown only there, and a crop in every row would be heavy. The decider may want a compact form in the closed row; not done.
+  - A `validate` provider cannot set `meta` (`ErrorDraft` has no field for it). Proposed as a follow-up, not done.
+  - On `updateError`, a `meta` that may not be kept leaves the error's own `meta`, rather than removing it.
+- **Mistakes:** one TSDoc `@example` did not type-check on its own (`tsdoc.test.ts` caught it); made self-contained.
+- **Next:** the orchestrator merges lane a.
+
+---
+
 ## 2026-10-19 — W-55 closed: errors with no cell  ·  Claude Code (claude-opus-5-5, lane a)
 
 - **Asked:** *build W-55 in the lane-a worktree and close it* (the orchestrator's brief).

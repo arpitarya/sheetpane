@@ -322,3 +322,17 @@ describe('errors with no cell (W-55)', () => {
     expect([...parts.keys()].filter((n) => /threadedComment\d+\.xml$/.test(n))).toHaveLength(1); // nothing on the sheet "Other"
   });
 });
+
+describe('the host’s data on an error (W-68)', () => {
+  it('meta is never written into the file — not in a comment, not anywhere in the package — and the .csv is untouched', async () => {
+    const s = await storeOn(await plain());
+    const marker = 'pdfsuite-crop-7f3a';
+    const e = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', message: 'Fee rate', author: 'Arpit', meta: { crop: marker, page: 3 } });
+    expect(e.meta).toEqual({ crop: marker, page: 3 });
+    const parts = await unzip(await exported(s));
+    expect([...parts.values()].some((xml) => xml.includes('Fee rate'))).toBe(true); // the error itself is written
+    expect([...parts.values()].filter((xml) => xml.includes(marker) || xml.includes('"page"'))).toEqual([]);
+    const csv = new TextDecoder().decode(await blobBytes((await s.exportFile({ format: 'csv' })).blob));
+    expect(csv).not.toContain(marker);
+  });
+});

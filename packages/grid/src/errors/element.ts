@@ -6,8 +6,9 @@ import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, machineAuthored, type ErrorType, type RenderDetail, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
+import { DETAIL_CSS, DetailRegion, inDetail } from '../shared/detail.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 
 const CSS = `.grp{padding:8px 12px 2px;font-size:11px;font-weight:600;color:var(--sp-ink-3);text-transform:uppercase;letter-spacing:.04em}
@@ -51,6 +52,7 @@ ${BASE_CSS}
 .field>span{font-size:12px;font-weight:500;color:var(--sp-ink-2)}
 .ex{padding:10px;border-radius:var(--sp-r);background:var(--sp-ground);border:1px dashed var(--sp-line-strong);font-size:12px;color:var(--sp-ink-2);display:flex;flex-direction:column;gap:4px}
 .notice{margin:8px 12px 0;padding:8px 10px;border-radius:var(--sp-r);background:var(--sp-warn-soft);border:1px solid var(--sp-warn);font-size:12px}
+${DETAIL_CSS}
 `;
 
 const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
@@ -71,7 +73,7 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * - `plugins` — space-separated registered plugin ids; fixed per pane.
  * - `theme` — `light` (the default), `dark` or `auto`.
  *
- * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`.
+ * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`, `renderDetail`.
  *
  * Methods: `getErrors()`, `setErrors(list, { plugins? })`, `renderNow()`.
  *
@@ -85,6 +87,7 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55).
  *
  * @csspart root - The panel's frame: the header, the form, the filters and the list.
+ * @csspart detail - The host's region in an open row, after the message: what `renderDetail` returns (W-68).
  *
  * @example
  * ```ts
@@ -117,6 +120,7 @@ export class SheetpaneErrors extends ElementBase {
   private draft = { type: DEFAULT_ERROR_TYPES[0]!.id, message: '', expected: '', severity: DEFAULT_ERROR_TYPES[0]!.severity as Severity, change: false };
   private formKey = '';
   private savedPlugins: string[] | undefined;
+  private detailRegion = new DetailRegion();
 
   // ── properties ───────────────────────────────────────────────────────────
   /** The pane's store; assigning one replaces the `pane` lookup. */
@@ -134,6 +138,14 @@ export class SheetpaneErrors extends ElementBase {
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
   set theme(t: Theme) { this.setAttribute('theme', t); }
+  /**
+   * The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after
+   * the message in a `part="detail"` region. A string is text, never HTML; a Node is the host's own. Called again only when
+   * the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element
+   * that should show it — the sheet's error card has its own.
+   */
+  get renderDetail(): RenderDetail | undefined { return this.detailRegion.render; }
+  set renderDetail(f: RenderDetail | undefined) { this.detailRegion.render = f; this.schedule(); }
 
   /** A copy of the pane's errors, to save a review. */
   getErrors(): SheetpaneError[] { return this.errors; }
@@ -205,6 +217,7 @@ export class SheetpaneErrors extends ElementBase {
 
   // ── interactions ─────────────────────────────────────────────────────────
   private onClick(e: Event): void {
+    if (inDetail(e.target)) return; // the host's region: its clicks are the host's (W-68)
     const t = e.target as HTMLElement, s = this._store!;
     const el = t.closest<HTMLElement>('[data-act]');
     if (!el) return;
@@ -240,6 +253,7 @@ export class SheetpaneErrors extends ElementBase {
   }
 
   private onInput(e: Event): void {
+    if (inDetail(e.target)) return;
     const t = e.target as HTMLInputElement, f = t.dataset.field;
     if (f === 'message') this.draft.message = t.value;
     else if (f === 'expected') this.draft.expected = t.value;
@@ -247,6 +261,7 @@ export class SheetpaneErrors extends ElementBase {
   }
 
   private onKey(e: KeyboardEvent): void {
+    if (inDetail(e.composedPath()[0] ?? null)) return; // the host's keys in its region (W-68)
     const typing = (e.composedPath()[0] as HTMLElement | undefined)?.matches?.('input, textarea');
     if (!typing && (e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) this._store!.redo(this); else this._store!.undo(this); return; }
     if (!typing && e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this._store!.redo(this); return; }
@@ -336,11 +351,12 @@ export class SheetpaneErrors extends ElementBase {
       const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
-      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, e.code, time].filter(Boolean).join(' · '))}</span><div class="acts">${scope === 'workbook' ? '<button type="button" class="btn" data-act="reveal" disabled aria-describedby="nowhere">Show in sheet</button><span class="xs faint" id="nowhere">About the whole workbook — no sheet to show</span>' : `<button type="button" class="btn" data-act="reveal">Show in sheet</button>`}${ro ? '' : `<button type="button" class="btn" data-act="resolve" data-sp="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
+      const detail = this.expanded === e.id ? `<div class="detail">${e.message ? `<p class="why">${esc(e.message)}</p>` : ''}${this.detailRegion.html()}<span class="xs faint">${esc([e.author === 'workbook' ? 'Workbook rule' : e.author === 'file' ? 'File comment' : e.author === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rule') : e.author, e.code, time].filter(Boolean).join(' · '))}</span><div class="acts">${scope === 'workbook' ? '<button type="button" class="btn" data-act="reveal" disabled aria-describedby="nowhere">Show in sheet</button><span class="xs faint" id="nowhere">About the whole workbook — no sheet to show</span>' : `<button type="button" class="btn" data-act="reveal">Show in sheet</button>`}${ro ? '' : `<button type="button" class="btn" data-act="resolve" data-sp="resolve">${e.status === 'resolved' ? 'Reopen' : '✓ Resolve'}</button><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-d" data-act="delete">Delete</button>`}</div></div>` : '';
       return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${scope === 'workbook' ? 'whole workbook' : `${esc(e.sheet)} ${esc(place)}`}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span>${scope !== 'cell' && !e.found && !e.expected ? '' : `<span class="ba"><span class="found">${esc(scope === 'cell' ? e.found : e.found || '—')}</span> → <span class="want">${esc(e.expected || '—')}</span></span>`}<span class="m">${esc(place)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
     if (listEl.dataset.html !== html) { listEl.innerHTML = html; listEl.dataset.html = html; }
+    this.detailRegion.sync(listEl, list.find((e) => e.id === this.expanded)); // the host's region, after the message (W-68)
   }
 
   private formHtml(): string {
