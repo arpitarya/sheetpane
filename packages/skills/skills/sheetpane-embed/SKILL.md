@@ -77,7 +77,7 @@ returns focus (SR-GRID decision 14). In React, mirror it into state from
 ```
 
 - **`ref`** is the selection once the file is read, scrolled into view; set
-  later, it selects then. A ref naming no cell warns `SP-3016` and opens at
+  later, it selects then. A ref naming no cell warns `SP-3019` and opens at
   A1. **In React, Vue and Solid `ref` is the framework's** — the typings
   leave it out: `ref={(el) => el?.setAttribute('ref', 'Data!F9')}`, or call
   `select(sheet, ref)` from `sheetpane-load`.

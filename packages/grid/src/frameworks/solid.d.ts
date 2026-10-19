@@ -31,7 +31,7 @@ export type SheetpaneExcelSolidProps = Omit<SheetpaneExcelAttributes, 'ref'> & O
   'attr:rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   'attr:flagging'?: 'on' | 'off' | undefined;
-  /** The cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3016) and the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`. */
+  /** The cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3019) and the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`. */
   'attr:ref'?: string | undefined;
   /** `none` (the default) or `hash`: the selection is kept in the URL fragment as `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link* joins the cell menu. The rest of the fragment is the host's and is kept as it was. */
   'attr:link'?: 'none' | 'hash' | undefined;

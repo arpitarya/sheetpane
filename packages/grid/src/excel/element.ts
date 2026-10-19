@@ -86,7 +86,7 @@ export interface HighlightOptions {
  * - `rules-src` — a URL to a rules file (read with a GET).
  * - `flagging` — `on` (the default) or `off`: no Flag issue anywhere.
  * - `ref` — the cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`,
- *   `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3016) and
+ *   `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3019) and
  *   the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`.
  * - `link` — `none` (the default) or `hash`: the selection is kept in the URL fragment as
  *   `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link*
@@ -394,12 +394,12 @@ export class SheetpaneExcel extends ElementBase {
     const t = readLink(location.hash, this.linkPane);
     if (t !== undefined) this.goTo(t, 'link');
   };
-  /** Selects a `ref` or a link's cell or range and scrolls to it; one that names no cell is warned (SP-3016). True when it selected. */
+  /** Selects a `ref` or a link's cell or range and scrolls to it; one that names no cell is warned (SP-3019). True when it selected. */
   private goTo(text: string, from: 'ref' | 'link'): boolean {
     const s = this._store, snap = s?.getSnapshot();
     if (!s || !snap?.book) return false;
     const t = parseTarget(text), sheet = t?.sheet ?? snap.selection.sheet;
-    if (!t || !s.sheet(sheet)) { console.warn(spMessage('SP-3016', `sheetpane: ${from === 'ref' ? 'the ref attribute' : 'the link in the URL'} "${text}" names no cell in this workbook`)); return false; }
+    if (!t || !s.sheet(sheet)) { console.warn(spMessage('SP-3019', `sheetpane: ${from === 'ref' ? 'the ref attribute' : 'the link in the URL'} "${text}" names no cell in this workbook`)); return false; }
     const r = t.range, ref = cellRef(r.top, r.left);
     this.anchor = { row: r.top, col: r.left };
     s.select(r.top === r.bottom && r.left === r.right ? { sheet, ref } : { sheet, ref, range: rangeText(r) }, this);

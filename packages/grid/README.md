@@ -291,7 +291,7 @@ pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' 
 
 `ref` opens the file at a cell — the selection once it is read, scrolled into view; set later, it selects
 then. A cell or range, with or without its sheet (`B4`, `Data!B4`, `'Q3 data'!B4:D8`). One that names no
-cell warns `SP-3016` in the console and the sheet opens at A1.
+cell warns `SP-3019` in the console and the sheet opens at A1.
 
 ```html
 <sheetpane-excel pane="q3" src="/files/q3.xlsx" ref="Data!F9"></sheetpane-excel>

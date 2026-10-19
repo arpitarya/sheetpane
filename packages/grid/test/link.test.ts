@@ -75,13 +75,13 @@ describe('the ref attribute (W-66 DoD 1)', () => {
     expect(sel(el).ref).toBe('E7');
   });
 
-  it('a ref that names no cell is warned with SP-3016 and the sheet opens at A1; none says nothing', async () => {
+  it('a ref that names no cell is warned with SP-3019 and the sheet opens at A1; none says nothing', async () => {
     const warn = warnings();
     const el = await mountBook({ ref: 'Nope!B4' });
     await frame();
     expect(sel(el)).toEqual({ sheet: 'S', ref: 'A1' });
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0]![0])).toMatch(/^SP-3016: Cell to open at not found — sheetpane: the ref attribute "Nope!B4" names no cell in this workbook \(.*ERRORS\.md#sp-3016\)$/);
+    expect(String(warn.mock.calls[0]![0])).toMatch(/^SP-3019: Cell to open at not found — sheetpane: the ref attribute "Nope!B4" names no cell in this workbook \(.*ERRORS\.md#sp-3019\)$/);
     el.ref = '4B';
     expect(warn).toHaveBeenCalledTimes(2);
     expect(sel(el).ref).toBe('A1');
@@ -176,7 +176,7 @@ describe('link="hash" (W-66 DoD 2)', () => {
     history.back(); await nextHashChange();
   });
 
-  it('a link naming no cell is warned (SP-3016) and ref is used; two panes keep their own links', async () => {
+  it('a link naming no cell is warned (SP-3019) and ref is used; two panes keep their own links', async () => {
     const warn = warnings();
     setHash('sheetpane=p1:Gone!B2&sheetpane=p2:S!D4');
     const a = await mountBook({ pane: 'p1', link: 'hash', ref: 'S!C3' });
@@ -185,7 +185,7 @@ describe('link="hash" (W-66 DoD 2)', () => {
     expect(sel(a)).toEqual({ sheet: 'S', ref: 'C3' });
     expect(sel(b)).toEqual({ sheet: 'S', ref: 'D4' });
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0]![0])).toContain('SP-3016');
+    expect(String(warn.mock.calls[0]![0])).toContain('SP-3019');
     expect(String(warn.mock.calls[0]![0])).toContain('the link in the URL "Gone!B2"');
     await settle();
     // each pane writes its own, where it stood; the other's stays

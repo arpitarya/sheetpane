@@ -89,7 +89,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
-| [SP-3016](#sp-3016) | Cell to open at not found | warning |
+| [SP-3019](#sp-3019) | Cell to open at not found | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -502,7 +502,7 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
 
-### SP-3016
+### SP-3019
 
 **Cell to open at not found** · warning · [SR-GRID](../records/0105_GRID.md) decision 11d
 

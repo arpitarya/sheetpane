@@ -560,7 +560,7 @@ pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' 
 
 `ref` opens the file at a cell — the selection once it is read, scrolled into view; set later, it selects
 then. A cell or range, with or without its sheet (`B4`, `Data!B4`, `'Q3 data'!B4:D8`). One that names no
-cell warns `SP-3016` in the console and the sheet opens at A1.
+cell warns `SP-3019` in the console and the sheet opens at A1.
 
 ```html
 <sheetpane-excel pane="q3" src="/files/q3.xlsx" ref="Data!F9"></sheetpane-excel>
@@ -2503,7 +2503,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
-| [SP-3016](#sp-3016) | Cell to open at not found | warning |
+| [SP-3019](#sp-3019) | Cell to open at not found | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -2916,7 +2916,7 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
 
-### SP-3016
+### SP-3019
 
 **Cell to open at not found** · warning · [SR-GRID](../records/0105_GRID.md) decision 11d
 
@@ -5658,7 +5658,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     scrolls it into view (the status line is laid out before the grid, so
     the scroll measures its final height); set after a load, it selects
     then; one that names no cell or a sheet the workbook lacks is a
-    `console.warn` (SP-3016) and the sheet opens at A1. It is the pane's
+    `console.warn` (SP-3019) and the sheet opens at A1. It is the pane's
     shared selection, so `sheetpane-select` fires and every element of the
     pane follows. React, Vue and Solid keep `ref` for their own refs: their
     typings leave it out (Solid's `attr:ref` stays) and a host there sets it
@@ -5671,7 +5671,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     byte — after a hash router's path it goes with `?` (`#/reports/12?
     sheetpane=…`), after anything else with `&`, and another pane's link
     keeps its own parameter and place. When a file is read the fragment's
-    link wins over `ref` (a bad one is SP-3016, then `ref`, then A1). The
+    link wins over `ref` (a bad one is SP-3019, then `ref`, then A1). The
     selection is written 300 ms after it settles with `history.replaceState`
     — the host's `history.state` kept, no history entry, no `hashchange` —
     so a held arrow key is one write and a router hears nothing; `hashchange`
@@ -5953,7 +5953,7 @@ framework's — W-66). `test/manifest.test.ts`
 fails when the manifest, the typings or the editor data drift from the code.
 Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
 
-**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014; a `ref` or link naming no cell is warned as SP-3016 (W-66) (SR-CODES).
+**Codes (W-40):** `LoadState` and `sheetpane-load`'s refusal carry `spCode`; a blocked edit's `sheetpane-editcancel` carries `code: 'SP-6003'`; every rules note (22d) carries `code` (SP-60xx); a plugin hook's failure is logged as SP-3012 to SP-3014; a `ref` or link naming no cell is warned as SP-3019 (W-66) (SR-CODES).
 
 ### Consequences
 
@@ -6007,7 +6007,7 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   `link.test.ts` (W-66: `ref` selects its cell or a quoted sheet's range
   once a file is read and scrolls it inside the client area, fires
   `sheetpane-select`, waits for a file, is followed by a second element on
-  the pane, selects at once when set later; a bad one warns SP-3016 and
+  the pane, selects at once when set later; a bad one warns SP-3019 and
   opens at A1; `link` off leaves the URL alone; on, the fragment's link
   wins over `ref` beside a hash router's path, which stays; the write waits
   for the selection to settle, adds no history entry, fires no
@@ -7746,7 +7746,7 @@ flowchart LR
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
   W-40.
-- **Added since:** SP-3016 (W-66, 2026-10-19) — a warning, not a throw: the
+- **Added since:** SP-3019 (W-66, 2026-10-19) — a warning, not a throw: the
   `ref` attribute or a `#sheetpane=` link names no cell (SR-GRID decision 11d).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
