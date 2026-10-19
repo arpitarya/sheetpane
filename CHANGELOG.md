@@ -8,6 +8,24 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+## 0.4.1 — the playground deploys with each release; no change to the packages (2026-10-19)
+
+The package code is the same as 0.4.0. This release puts all 20 packages on
+one version again through CI alone, and is the first whose release tag also
+deploys the live playground.
+
+```bash
+npm i @sheetpane/grid@0.4.1
+```
+
+**Before you upgrade from 0.4.0:** nothing to change.
+
+### Release and tooling
+
+- The live playground (https://arpitarya.github.io/sheetpane/) deploys on a release tag again: the `github-pages` environment allowed the branch `main` only, so every tag's deploy had been refused; it now allows `v*` (SR-BUILD decision 8).
+- `RELEASING.md` counts 20 packages and describes a new package's first publish as it is done: `pnpm publish` in its folder, approved in the browser, then the release's publish job re-run.
+- For contributors: the fux docs index (`fux.toml`, `.fux/`) over the records, `work/` and `docs/` (SR-BUILD decision 1a).
+
 ## 0.4.0 — results, review layers, insert and delete rows, Excel tables and three new plugins (2026-10-19)
 
 The features a host's review flow needs from a spreadsheet, built together
