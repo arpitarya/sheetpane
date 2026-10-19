@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-57 closed: export writes data validation and conditional formatting  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-57 (export writes data validation and conditional formatting) in lane b, its own worktree, while other agents build sibling items.*
+- **Done:** `@sheetpane/export`: the rule and format types (`DataValidation`, `ConditionalFormat`, `CfRule`, `Cfvo`, `Dxf`, `Font`, `Fill`, `Border`, `BorderSide`, `Alignment`, `Color`) moved here from import, which re-exports them — one definition, so the round trip is exact. `Sheet.dataValidations?`, `Sheet.conditionalFormats?`, `Workbook.dxfs?`; `toXlsx` writes one `<conditionalFormatting>` per format and one `<dataValidations>` after `<mergeCells>`, and `<dxfs>` after `<cellStyles>`; a workbook with none is byte for byte as before. `patchXlsx` options `dataValidations`, `conditionalFormats` (whole set per sheet, in schema position, `[]` removes, `x14:` rules in `extLst` left alone) and `dxfs` (appended; a package without a style sheet gets one). `setDataValidations` / `setConditionalFormats` exported for W-58's `exportPatch` hook. New `rules.ts` checks first: SP-2015 (`bad-rule`). Tests: `packages/export/test/rules.test.ts` (14, ExcelJS read-back), a fast-check round trip through both of import's readers (`rules.test.ts`, `rules.node.test.ts`). Records: SR-EXPORT 1, 2, 3, 6; SR-IMPORT 2; SR-CODES. ERRORS.md, two READMEs, `llms-full.txt`, CHANGELOG; W-30 DoD 3 gains the Excel/LibreOffice check (DoD 4 → W-30); W-58 unblocked.
+- **Decided / left open:** a rule's format is a `dxfId` into `Workbook.dxfs` (import's shape), not an inline format; in `patchXlsx` the new `dxfs` are appended and numbered after the file's own, never deduplicated. `showInputMessage="1"` is written whenever a rule has a prompt (the shared shape has no flag, and Excel hides the prompt without it). Excel's limits refused rather than truncated: titles 32, messages 255, a typed-out list 255. Line breaks in attributes and a CR in a formula are written as character references (DOMParser and the built-in reader otherwise disagree). The grid's Download does not yet pass rules (not asked). No example change — the demos write no rules.
+- **Mistakes:** the first type move dropped `CellXf` from import's types (typecheck caught it); `toStrictEqual` failed on fast-check's null-prototype records — the property compares with `toEqual`.
+- **Next:** W-58 (the rules file as Excel dropdowns) can start.
+
+---
+
 ## 2026-10-19 — W-53 closed: rich text read, drawn and kept  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *build W-53 (rich text: keep a cell's formatted runs on import and draw them) in lane b, its own worktree, while other agents build sibling items.*

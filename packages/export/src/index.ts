@@ -2,6 +2,8 @@
 // No runtime dependencies. Spec: records/0103_EXPORT.md (SR-EXPORT).
 
 export type { Cell, Change, Sheet, SheetState, Workbook } from './types.js';
+// Data validation, conditional formats and the formats they apply (W-57) — the shapes @sheetpane/import reads.
+export type { Alignment, Border, BorderSide, CfRule, Cfvo, Color, ConditionalFormat, DataValidation, Dxf, Fill, Font } from './types.js';
 export { ExportError, EXPORT_SP_CODES, type ExportErrorCode } from './errors.js';
 // Stable error codes (W-40): the registry every package reads — docs/ERRORS.md.
 export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, type CodeInfo, type SpCode, type SpCoded, type SpError } from './codes.js';
@@ -14,7 +16,7 @@ export { toCsv, type ToCsvOptions } from './csv.js';
 export { readZip, inflateEntry, rawData, writeZip, isZip, DEFAULT_LIMITS, type ZipEntry, type ZipLimits, type ZipInput, type WriteOptions } from './zip.js';
 export { crc32 } from './crc32.js';
 export { escapeText, escapeAttr, unescapeXml, encodeOoxmlString, decodeOoxmlString, cleanXmlChars, utf8, fromUtf8 } from './xml.js';
-export { getAttr, setAttr, removeAttr, parseRels, resolveTarget, relsPathOf, setPane, setMergeCells, type Relationship } from './patch.js';
+export { getAttr, setAttr, removeAttr, parseRels, resolveTarget, relsPathOf, setPane, setMergeCells, setDataValidations, setConditionalFormats, type Relationship } from './patch.js';
 export { colName, colIndex, parseRef, cellRef, parseRange, rangeRef, rangesIntersect, MAX_ROWS, MAX_COLS, type CellPos, type RangePos } from './refs.js';
 export { shiftFormula } from './formula.js';
 export { checkSheetName } from './validate.js';

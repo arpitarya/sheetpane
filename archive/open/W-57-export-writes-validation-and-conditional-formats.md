@@ -6,7 +6,7 @@ item: W-57
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Claude Code (claude-opus-5-5), closed"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `Sheet.dataValidations?` and `Sheet.conditionalFormats?`, the same shapes `@sheetpane/import` reads, written by the `.xlsx` writer (dxfs into `styles.xml`) | a generated template has its dropdowns and red cells | ⏳ |
-| 2 | `patchXlsx` options `dataValidations` and `conditionalFormats`, whole-block rewrites per sheet, like `merges` | an upload can gain or lose rules | ⏳ |
-| 3 | Round-trip: `import(export(x))` equals `x` for both tables | what is written is what is read | ⏳ |
+| 1 | `Sheet.dataValidations?` and `Sheet.conditionalFormats?`, the same shapes `@sheetpane/import` reads, written by the `.xlsx` writer (dxfs into `styles.xml`) | a generated template has its dropdowns and red cells | ✅ |
+| 2 | `patchXlsx` options `dataValidations` and `conditionalFormats`, whole-block rewrites per sheet, like `merges` | an upload can gain or lose rules | ✅ |
+| 3 | Round-trip: `import(export(x))` equals `x` for both tables | what is written is what is read | ✅ |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -38,11 +38,11 @@ ball: agent
 
 | DoD | what | state |
 |---|---|---|
-| 1 · writer | both blocks in schema order (`conditionalFormatting` before `dataValidations`, after `mergeCells`); dxfs appended | ⏳ |
-| 2 · patch | options rewrite or remove each block; other sheets untouched | ⏳ |
-| 3 · round-trip | fast-check property over generated rules | ⏳ |
-| 4 · real apps | a generated file opens with working dropdowns and formats in Excel and LibreOffice (decider's check) | ⏳ |
-| 5 · tests · docs | SR-EXPORT; README; CHANGELOG | ⏳ |
+| 1 · writer | both blocks in schema order (`conditionalFormatting` before `dataValidations`, after `mergeCells`); dxfs appended | ✅ `Sheet.dataValidations?`, `Sheet.conditionalFormats?`, `Workbook.dxfs?` — import's shapes, now defined in export and re-exported by import; `toXlsx` writes one `<conditionalFormatting>` per format then `<dataValidations>` after `<mergeCells>`, the dxfs as `<dxfs>` after `<cellStyles>`; `showInputMessage` with a prompt; checked first, SP-2015 (`bad-rule`) on what Excel would repair; no rules → bytes as before (SR-EXPORT 1, 2, 6) |
+| 2 · patch | options rewrite or remove each block; other sheets untouched | ✅ `patchXlsx` options `dataValidations: [{ sheet, rules }]`, `conditionalFormats: [{ sheet, formats }]`, `dxfs` (appended; a rule's `dxfId` counts the file's first); whole-block rewrite in schema position, `[]` removes, `x14:` rules in `extLst` kept, prefixed namespaces, a package with no style sheet gets one; untouched parts byte for byte; `setDataValidations` / `setConditionalFormats` exported for an `exportPatch` hook (SR-EXPORT 3) |
+| 3 · round-trip | fast-check property over generated rules | ✅ `import(toXlsx(x))` and `import(patchXlsx(upload, x))` give the validation, conditional-format and dxf tables back — every rule type, scales, bars, icon sets, dxf fonts, fills (pattern and gradient), borders, number formats, alignment; through DOMParser (`rules.test.ts`) and the built-in XML reader (`rules.node.test.ts`) |
+| 4 · real apps | a generated file opens with working dropdowns and formats in Excel and LibreOffice (decider's check) | → W-30 (DoD 3) |
+| 5 · tests · docs | SR-EXPORT; README; CHANGELOG | ✅ `packages/export/test/rules.test.ts` (14), `packages/import/test/rules.test.ts` + `rules.node.test.ts` (100 + 100 generated workbooks each); SR-EXPORT 1, 2, 3, 6; SR-IMPORT 2; SR-CODES (SP-2015); docs/ERRORS.md; the export and import READMEs; `llms-full.txt`; CHANGELOG |
 
 ## Blockers
 

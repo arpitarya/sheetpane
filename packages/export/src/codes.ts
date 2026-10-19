@@ -46,6 +46,7 @@ const TABLE = {
   'SP-2012': { title: 'Damaged archive', severity: 'error' },
   'SP-2013': { title: 'Archive over the size limit', severity: 'error' },
   'SP-2014': { title: 'Not a workbook package', severity: 'error' },
+  'SP-2015': { title: 'Invalid validation or conditional-format rule', severity: 'error' },
   // 21xx · download()
   'SP-2101': { title: 'download() needs a file name', severity: 'error' },
   'SP-2102': { title: 'Only .xlsx or .csv can be saved', severity: 'error' },

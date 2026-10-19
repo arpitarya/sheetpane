@@ -68,6 +68,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-2012](#sp-2012) | Damaged archive | error |
 | [SP-2013](#sp-2013) | Archive over the size limit | error |
 | [SP-2014](#sp-2014) | Not a workbook package | error |
+| [SP-2015](#sp-2015) | Invalid validation or conditional-format rule | error |
 | [SP-2101](#sp-2101) | download() needs a file name | error |
 | [SP-2102](#sp-2102) | Only .xlsx or .csv can be saved | error |
 | [SP-2103](#sp-2103) | File type cannot be told | error |
@@ -327,6 +328,14 @@ plain `Error`s or `TypeError`s.
 - **Meaning:** `patchXlsx` was given a ZIP with no `xl/workbook.xml`.
 - **Likely cause:** the upload was not an `.xlsx`, or the wrong bytes were passed.
 - **Fix:** pass the original workbook's bytes.
+
+### SP-2015
+
+**Invalid validation or conditional-format rule** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'bad-rule'`
+
+- **Meaning:** a data-validation rule, conditional format or differential format given to `toXlsx` or `patchXlsx` cannot be written as Excel reads it (W-57).
+- **Likely cause:** an empty or malformed `sqref`; an unknown `type`, `operator`, `errorStyle`, `timePeriod`, cfvo type or icon set; a title over 32 or a message over 255 characters; a quoted list over 255 characters; a conditional format with no rule; a `dxfId` the workbook has no format for; a colour scale, data bar or icon set without the thresholds or colour it needs.
+- **Fix:** correct the rule the message names. Put a long list on a sheet and point `formula1` at the range; add the format to `dxfs` before naming its `dxfId`.
 
 ### SP-2101
 

@@ -5,9 +5,10 @@ import { ExportError } from './errors.js';
 import { shiftFormula } from './formula.js';
 import { CT, NS_PKG_REL, REL, XML_DECL } from './ooxml.js';
 import { MAX_COLS, MAX_ROWS, cellRef, parseRange, parseRef, rangeRef, rangesIntersect, type RangePos } from './refs.js';
-import type { Cell, Change, SheetState } from './types.js';
+import { checkConditionalFormats, checkDataValidations, checkDxfs, conditionalFormatsXml, dataValidationsXml, dxfXml } from './rules.js';
+import type { Cell, Change, ConditionalFormat, DataValidation, Dxf, SheetState } from './types.js';
 import { checkCell } from './validate.js';
-import { cellXml, paneXml } from './xlsx.js';
+import { cellXml, paneXml, stylesXml } from './xlsx.js';
 import { escapeAttr, fromUtf8, unescapeXml, utf8 } from './xml.js';
 import { DEFAULT_LIMITS, inflateEntry, readZip, writeZip, type WriteOptions, type ZipEntry, type ZipInput, type ZipLimits } from './zip.js';
 
@@ -38,7 +39,7 @@ export interface PatchContext {
 /** A plugin's `exportPatch` hook: it edits the package through the context after the core's own writes. */
 export type ExportPatchHook = (ctx: PatchContext) => void | Promise<void>;
 
-/** Options for `patchXlsx`: compression, size limits, plugin hooks, and freeze, merge and hidden-state rewrites. */
+/** Options for `patchXlsx`: compression, size limits, plugin hooks, and freeze, merge, hidden-state and rule rewrites. */
 export interface PatchOptions extends WriteOptions, ZipLimits {
   /** Plugin hooks, run in order after the core's own writes (plugins verdict, `exportPatch`). */
   exportPatch?: ExportPatchHook[];
@@ -54,6 +55,15 @@ export interface PatchOptions extends WriteOptions, ZipLimits {
    * not given are left as the file has them. Hiding every sheet is refused (`sheet-count`).
    */
   hidden?: HiddenPatch[];
+  /** A sheet's data-validation rules, whole: its `<dataValidations>` is rewritten to exactly these (removed when empty). Sheets not named keep theirs (W-57). */
+  dataValidations?: { sheet: string; rules: DataValidation[] }[];
+  /**
+   * A sheet's conditional formats, whole: its `<conditionalFormatting>` blocks are rewritten to exactly these (removed
+   * when empty). A rule's `dxfId` indexes the file's `<dxfs>` followed by `dxfs`. Sheets not named keep theirs (W-57).
+   */
+  conditionalFormats?: { sheet: string; formats: ConditionalFormat[] }[];
+  /** Differential formats appended to the file's `<dxfs>`: the first takes the id after the file's last (W-57). */
+  dxfs?: Dxf[];
 }
 
 /** One sheet's hidden state for `patchXlsx`'s `hidden` option. Indexes are 0-based; every list is the whole set after the edit. */
@@ -419,17 +429,90 @@ export function setMergeCells(xml: string, ranges: string[]): string {
   const el = ranges.length ? `<${P}mergeCells count="${ranges.length}">${ranges.map((r) => `<${P}mergeCell ref="${escapeAttr(r)}"/>`).join('')}</${P}mergeCells>` : '';
   if (cur) return xml.replace(cur[0], el);
   if (!el) return xml;
+  return insertAfterSheetData(xml, P, el, AFTER_SHEETDATA);
+}
+
+/** CT_Worksheet's elements between `<sheetData>` and `<mergeCells>`, in order. */
+const AFTER_SHEETDATA = ['sheetCalcPr', 'sheetProtection', 'protectedRanges', 'scenarios', 'autoFilter', 'sortState', 'dataConsolidate', 'customSheetViews'];
+/** … and on to `<dataValidations>`: `mergeCells`, `phoneticPr`, then the `conditionalFormatting` blocks. */
+const BEFORE_CF = [...AFTER_SHEETDATA, 'mergeCells', 'phoneticPr'];
+const BEFORE_DV = [...BEFORE_CF, 'conditionalFormatting'];
+
+/** Inserts `el` after `<sheetData>` and after every element of `before` that follows it — its schema position. */
+function insertAfterSheetData(xml: string, P: string, el: string, before: string[]): string {
   const close = xml.indexOf(`</${P}sheetData>`);
   let at = close >= 0 ? close + `</${P}sheetData>`.length : -1;
   if (close < 0) { const self = new RegExp(`<${P}sheetData\\b[^>]*/>`).exec(xml); at = self ? self.index + self[0].length : xml.lastIndexOf(`</${P}worksheet>`); }
-  // skip elements that come between sheetData and mergeCells (sheetCalcPr … customSheetViews)
-  const before = ['sheetCalcPr', 'sheetProtection', 'protectedRanges', 'scenarios', 'autoFilter', 'sortState', 'dataConsolidate', 'customSheetViews'];
   for (;;) {
     const m = new RegExp(`^\\s*<${P}(${before.join('|')})\\b[^>]*?(?:/>|>[\\s\\S]*?</${P}\\1>)`).exec(xml.slice(at));
     if (!m) break;
     at += m[0].length;
   }
   return xml.slice(0, at) + el + xml.slice(at);
+}
+
+/**
+ * Rewrites a worksheet's `<dataValidations>` to exactly these rules (removed when empty), in schema position
+ * (W-57). Rules inside `<extLst>` (Excel 2010's `x14:dataValidations`) are left as they are.
+ *
+ * @param xml - The worksheet's XML.
+ * @param rules - The sheet's whole set of rules, in `@sheetpane/import`'s shape; checked first (SP-2015).
+ * @param sheet - The sheet's name, for an error.
+ * @returns The rewritten worksheet XML.
+ */
+export function setDataValidations(xml: string, rules: DataValidation[], sheet = ''): string {
+  checkDataValidations(rules, sheet);
+  const P = rootPrefix(xml);
+  const el = dataValidationsXml(rules, P);
+  const cur = new RegExp(`<${P}dataValidations\\b[^>]*?(?:/>|>[\\s\\S]*?</${P}dataValidations>)`).exec(xml);
+  if (cur) return xml.replace(cur[0], el);
+  return el ? insertAfterSheetData(xml, P, el, BEFORE_DV) : xml;
+}
+
+/**
+ * Rewrites a worksheet's `<conditionalFormatting>` blocks to exactly these formats (all removed when empty), in
+ * schema position (W-57). Excel 2010's `x14:conditionalFormatting` inside `<extLst>` is left as it is.
+ *
+ * @param xml - The worksheet's XML.
+ * @param formats - The sheet's whole set of formats, in `@sheetpane/import`'s shape; checked first (SP-2015).
+ * @param dxfCount - How many differential formats the workbook has; every `dxfId` must be below it.
+ * @param sheet - The sheet's name, for an error.
+ * @returns The rewritten worksheet XML.
+ */
+export function setConditionalFormats(xml: string, formats: ConditionalFormat[], dxfCount: number, sheet = ''): string {
+  checkConditionalFormats(formats, sheet, dxfCount);
+  const P = rootPrefix(xml);
+  const re = new RegExp(`<${P}conditionalFormatting\\b[^>]*?(?:/>|>[\\s\\S]*?</${P}conditionalFormatting>)`, 'g');
+  // the blocks sit together (schema order): the first one's place is where the new set goes
+  const first = re.exec(xml);
+  const el = conditionalFormatsXml(formats, P);
+  if (!first) return el ? insertAfterSheetData(xml, P, el, BEFORE_CF) : xml;
+  const without = xml.replace(re, (m, offset: number) => (offset === first.index ? '\u0000' : ''));
+  return without.replace('\u0000', el);
+}
+
+/** The style sheet's `<dxfs>` block and how many `<dxf>` it holds. */
+function dxfsBlock(styles: string, P: string): { m: RegExpExecArray | null; count: number } {
+  const m = new RegExp(`<${P}dxfs\\b[^>]*?(?:/>|>([\\s\\S]*?)</${P}dxfs>)`).exec(styles);
+  return { m, count: m?.[1] ? (m[1].match(new RegExp(`<${P}dxf[\\s>/]`, 'g')) ?? []).length : 0 };
+}
+
+/** Elements that follow `<dxfs>` in CT_Stylesheet's sequence. */
+const AFTER_DXFS = ['tableStyles', 'colors', 'extLst'];
+
+/** Appends differential formats to a style sheet's `<dxfs>` (created in schema position when missing). */
+function appendDxfs(styles: string, dxfs: Dxf[]): string {
+  const P = /<(\w+:)?styleSheet\b/.exec(styles)?.[1] ?? '';
+  const { m, count } = dxfsBlock(styles, P);
+  const items = (m?.[1] ?? '') + dxfs.map((d) => dxfXml(d, P)).join('');
+  const el = `<${P}dxfs count="${count + dxfs.length}">${items}</${P}dxfs>`;
+  if (m) return styles.replace(m[0], el);
+  for (const n of AFTER_DXFS) {
+    const i = styles.search(new RegExp(`<${P}${n}\\b`));
+    if (i >= 0) return styles.slice(0, i) + el + styles.slice(i);
+  }
+  const end = styles.lastIndexOf(`</${P}styleSheet>`);
+  return styles.slice(0, end) + el + styles.slice(end);
 }
 
 /** Elements that follow `<calcPr>` in CT_Workbook's sequence. */
@@ -710,6 +793,7 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
     for (const r of m.ranges) if (!parseRange(r) || !r.includes(':')) throw new ExportError('bad-merge', `sheet "${m.sheet}" merge "${r}" is not a range`, { sheet: m.sheet, ref: r });
     parts.write(sheet.path, setMergeCells((await parts.text(sheet.path))!, m.ranges));
   }
+  await applyRules(parts, wbPath, sheets, o);
   for (const f of o.freeze ?? []) {
     const sheet = sheets.find((s) => s.name === f.sheet);
     if (!sheet) throw new ExportError('no-sheet', `no sheet named "${f.sheet}" in the workbook`, { sheet: f.sheet });
@@ -725,6 +809,36 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
   for (const hook of o.exportPatch ?? []) await hook(ctx);
   if (stripped.length) o.onStripped?.(stripped);
   return writeZip(parts.zipInputs(), o);
+}
+
+/** The `dataValidations`, `conditionalFormats` and `dxfs` options (W-57): everything checked first, then written. */
+async function applyRules(parts: Parts, wbPath: string, sheets: SheetRef[], o: PatchOptions): Promise<void> {
+  const dvs = o.dataValidations ?? [], cfs = o.conditionalFormats ?? [];
+  if (!dvs.length && !cfs.length && !o.dxfs?.length) return;
+  checkDxfs(o.dxfs);
+  const pathOf = (name: string) => {
+    const s = sheets.find((x) => x.name === name);
+    if (!s) throw new ExportError('no-sheet', `no sheet named "${name}" in the workbook`, { sheet: name });
+    return s.path;
+  };
+  const wbRels = (await parts.text(relsPathOf(wbPath))) ?? '';
+  const stylesRel = parseRels(wbRels).find((r) => r.type === REL.styles);
+  const stylesPath = stylesRel ? resolveTarget(wbPath, stylesRel.target) : undefined;
+  const styles = stylesPath ? await parts.text(stylesPath) : undefined;
+  const had = styles ? dxfsBlock(styles, /<(\w+:)?styleSheet\b/.exec(styles)?.[1] ?? '').count : 0;
+  const total = had + (o.dxfs?.length ?? 0);
+  for (const d of dvs) { pathOf(d.sheet); checkDataValidations(d.rules, d.sheet); }
+  for (const c of cfs) { pathOf(c.sheet); checkConditionalFormats(c.formats, c.sheet, total); }
+  for (const d of dvs) parts.write(pathOf(d.sheet), setDataValidations((await parts.text(pathOf(d.sheet)))!, d.rules, d.sheet));
+  for (const c of cfs) parts.write(pathOf(c.sheet), setConditionalFormats((await parts.text(pathOf(c.sheet)))!, c.formats, total, c.sheet));
+  if (!o.dxfs?.length) return;
+  if (styles !== undefined) { parts.write(stylesPath!, appendDxfs(styles, o.dxfs)); return; }
+  // no style sheet at all (a hand-made package): add sheetpane's own, with the formats
+  const path = stylesPath ?? `${dirOf(wbPath)}styles.xml`;
+  parts.write(path, stylesXml(o.dxfs));
+  const ctx = context(parts, [], wbPath, sheets);
+  if (!stylesRel) await ctx.addRelationship(wbPath, REL.styles, path.slice(dirOf(wbPath).length));
+  await ctx.setContentType(path, CT.styles);
 }
 
 /** The `hidden` option: every entry checked first, then rows, columns and outline per sheet, then the workbook's sheet states. */

@@ -75,7 +75,10 @@ carry over unchanged; the plugins verdict added what plugins read.
    `state`, `rowOutline`, `colOutline`, `outline`, `autoFilter?` (W-49;
    `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
-   `conditionalFormats`, `drawings`, `notes`, `threadedComments`,
+   `conditionalFormats` (their types, and the `Dxf` / `Font` / `Fill` /
+   `Border` / `Alignment` / `Color` shapes, are `@sheetpane/export`'s,
+   re-exported here, so `toXlsx` and `patchXlsx` write what this reads —
+   W-57), `drawings`, `notes`, `threadedComments`,
    `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
    `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),

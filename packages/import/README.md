@@ -26,7 +26,7 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `rowOutline`, `colOutline`, `outline`, `autoFilter` | outline levels per row and column (sparse `{ level, collapsed? }`), the deepest levels and summary placement, and the filter range |
 | `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
 | `runs` | rich-text cells only, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` — each run's text with its `b`, `i`, `u`, `strike`, `color`, `sz`, `vertAlign` (never the font family); phonetic runs left out; `rows` and `text` hold the joined text as before |
-| `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins |
+| `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins; the first two are `@sheetpane/export`'s shapes, so `toXlsx` / `patchXlsx` write them back unchanged |
 | `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
 | `sha256` | from `read()`: the SHA-256 of the bytes opened, 64 lowercase hex digits — which file this is. Absent on a page without Web Crypto (not `https` or `localhost`), with a console warning `SP-1009`; never a substitute hash. `sha256(bytes)` is exported for hashing anything else |
