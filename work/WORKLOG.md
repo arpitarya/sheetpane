@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-62 and W-67 merged into integration, and the cross-item wiring  ·  Claude Code (claude-opus-5-5, the orchestrator's merge lane)
+
+- **Asked:** *merge lane-e (W-62, `8fdbf88`) and lane-d (W-67, `55bd8f7`) into `integration` one at a time, renumber what collides, then wire W-62 × W-52, W-67's marks for W-50/51/53/55/69, and @sheetpane/review skipping the `compare` layer.*
+- **Done:** merges `b1e34ca` (W-62) and `8f42095` (W-67); wiring `ba79bbb` (insert and delete refused by the structure lock and, as Excel, by a protected sheet's insert/delete switches — SP-3026), `9e97699` (`renderStatic`: results at `marks` only, accepted, the visible layers, sheet and workbook errors in the footer, rich-text runs), `a4d1938` (`@sheetpane/review` leaves `compare` out unless named). Renumbered: SP-3020 *Locked in the file* → SP-3026; SP-3017 *Nothing to render* → SP-3027; SP-3018 *Cannot render that range* → SP-3028 (W-67's lane SP-3016 for `check()` is W-54's SP-3020); SR-GRID 21d (W-62) → 21e; SR-IMPORT 14 (W-62) → 15; W-30 DoD 8 (W-62) → 9 and DoD 6 (W-67) → 10. Goldens: `parity.json` gains `protected.xlsx`; `static.json` gains the showcase's Tables sheet at the merge, then its showcase entries change only by the review state the shared `edit()` adds. Stale lane duplicates (W-66 and W-54 rows with old codes) dropped from IMPLEMENTATION, CHANGELOG and archive/README.md.
+- **Decided / left open:** the structural refusal reuses SP-3026 (*Locked in the file*) rather than a new code; the structure lock refusing row and column inserts is sheetpane's reading (Excel's guards sheets only) — recorded in SR-GRID 21e; Excel's refusal to delete a row holding a locked cell when the switch allows it is not checked. A static result glyph floats before the text (mail clients drop `position`).
+- **Mistakes:** the first renumbering pass skipped lines naming W-52 beside W-62 (one W-30 DoD reference) and lines without a W-67 keyword (the record's and README's refusal lines) — found by grepping every remaining SP-3017/3018/3020 and fixed before each commit.
+- **Next:** the orchestrator reviews `integration` and decides on the push; W-30 DoD 9 and 10 wait on Arpit.
+
+---
+
 ## 2026-10-19 — W-67 closed: a range as static HTML (`@sheetpane/grid/static`)  ·  Claude Code (claude-opus-5-5, lane d)
 
 - **Asked:** the orchestrator: build W-67 in worktree lane d (branch `lane-d`), one item, commit, do not push.
