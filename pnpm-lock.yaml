@@ -45,6 +45,12 @@ importers:
         specifier: 5.0.5
         version: 5.0.5(@types/node@22.20.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(vite@8.3.4(@types/node@22.20.5))
 
+  .fux/node:
+    dependencies:
+      fux-engine:
+        specifier: 4.0.3
+        version: 4.0.3
+
   examples/html:
     dependencies:
       '@ironcalc/wasm':
@@ -993,6 +999,11 @@ packages:
 
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
+
+  fux-engine@4.0.3:
+    resolution: {integrity: sha512-FILRZyPoZ//pfJQQ/Avan3cKI4H3vvN2Q6hm0Bsv+YwPB1xbn6+bwO4KmF33leht7y/fwN0nNxrG1+/kya7Dew==}
+    engines: {node: '>=22'}
+    hasBin: true
 
   generator-function@2.0.1:
     resolution: {integrity: sha512-SFdFmIJi+ybC0vjlHN0ZGVGHc3lgE0DxPAT0djjVg+kjOnSqclqmj0KQ7ykTOLP6YxoqOvuAODGdcHJn+43q3g==}
@@ -2365,6 +2376,8 @@ snapshots:
       is-document.all: 1.0.0
 
   functions-have-names@1.2.3: {}
+
+  fux-engine@4.0.3: {}
 
   generator-function@2.0.1: {}
 

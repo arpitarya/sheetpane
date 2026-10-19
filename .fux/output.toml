@@ -1,0 +1,74 @@
+# .fux/output.toml — HOW a result is SHOWN. Never which documents come back.
+#
+# Written once by `fux setup`; fux never rewrites it. EVERY KEY IS REQUIRED
+# (law L12, records/0014_LAW-12-values-live-in-config.md): fux holds no copy of
+# these values in code, so a missing file or key stops the verb and names it.
+# `fux doctor --fix` writes a missing key back from the template this file was
+# written from, and nothing else ever writes one.
+#
+# Three roots, one per consumer:
+#   [cli]       a person reading stdout
+#   [cli.json]  a machine reading --json  (inherits [cli]; `enabled` switches it on)
+#   [mcp]       an agent over MCP          (inherits NOTHING from [cli])
+#
+# Precedence, highest first:  a CLI flag  ->  [cli.json.<verb>]  ->  [cli.json]
+#   ->  [cli.<verb>]  ->  [cli]              (and, for MCP:  tool arg  ->  [mcp])
+#
+# Per-verb overrides go under [cli.<verb>] / [cli.json.<verb>] — e.g. an
+# uncommented
+#   [cli.find]
+#   band = false        # find pipes bare paths; a band on stdout would break that
+#
+# `fux ask --no-output-config` reads the file `fux setup` would write today
+# instead of this one — the "is it me or the config?" switch.
+
+# Keys shared by more than one verb live here. A key only one verb has
+# (`explain`, `sections`, `hops`, `no_refer`, `journal`, `journal_max`, `journal_max_bytes`,
+# `port`) is refused at this level BY NAME — it lives under that
+# verb's own table, below — setting it here would read as global, and it is not.
+[cli]
+band = false       # the confidence block — SR-CONFIDENCE decision 11
+top = 5            # ask/find. ⚠ also bounds `confidence.support`,
+               #   which is a REPORTED signal — the one key here that
+               #   changes a number an agent reads, admitted rather than hidden.
+max_headings = 3   # ask/find: the matched `§ heading` lines shown under each hit
+progress_threshold = 200   # ingest/build/add/remove/inspect/identifiers/doctor/enrich: a phase paints a
+                           #   progress bar only once its total exceeds this
+
+[cli.ask]
+explain = false    # report which path answered
+sections = true    # the matched `§ heading` lines under each hit.
+               #   Text mode AND the --json `headings` field, together:
+               #   one key, one question, both renderings (decision 21).
+
+[cli.path]
+hops = 2          # max edges in a route
+
+[cli.answer]
+no_refer = false
+journal = false    # ⚠ NOT a rendering key. `true` APPENDS every answer's receipt to
+                     #   a file: .fux/runtime/provenance.jsonl, gitignored,
+                     #   never committed. Consent, either here or per-call
+                     #   with `fux answer --journal` -- both are explicit.
+journal_max = 1000   # the most receipts that journal keeps (L9: gitignored, never committed)
+journal_max_bytes = 4194304   # `fux doctor` warns above this many bytes (4 MiB: ~10x what 1000
+                     #   ordinary receipts weigh; a design default, nothing is truncated by it)
+
+[cli.serve]
+port = 7337        # `fux serve` binds 127.0.0.1 only; this is the port
+
+[cli.json]
+enabled = false   # emit --json by default; per-verb: [cli.json.<verb>] enabled = true
+
+[mcp]                # the one surface with NO command-line flags at all —
+                     # this table is the only way to configure it.
+top = 5            # ⚠ no `band` here: the MCP confidence block is
+               #   UNCONDITIONAL (SR-CONFIDENCE decision 11), refused by name.
+max_headings = 3   # the matched headings each `fux_search` hit carries
+
+[api]                # the fux.open() / Node Index library defaults a caller does not pass.
+                     # ON where [cli] ships off, deliberately: a caller in code has
+                     # already decided to read the object (W-225 stage 6).
+band = true        # the confidence block on ask/answer results
+sections = true    # the matched `§ heading` lines under each ask hit
+no_refer = false   # answer from the index alone, without fetching the source

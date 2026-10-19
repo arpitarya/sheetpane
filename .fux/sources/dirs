@@ -1,0 +1,31 @@
+# What fux indexes. One entry per line: a directory (walked recursively) or a
+# single file, relative to the repo root. `#` starts a comment at the start of
+# a line or after whitespace. The loader dedupes and sorts, so the order here
+# is for humans only and cannot change a committed byte.
+#
+# One attribute, and the set is closed: `archived=true` marks a directory whose
+# documents are history. It is DECLARED here, never derived from a path.
+#
+#   docs
+#   handbook/runbooks
+#   old/2023-platform        archived=true
+#
+# A `!` line SUBTRACTS from the walk -- a repo-relative glob, applied whatever
+# order it appears in, matching a path or any directory above it. There is no
+# un-exclude, so there is no precedence to remember:
+#
+#   !work/regression/*/evidence
+#   !**/node_modules
+#
+# See SR-DIR-LIST.
+
+README.md
+CHANGELOG.md
+RELEASING.md
+llms-full.txt
+llms.txt
+
+docs
+records
+work
+archive        archived=true

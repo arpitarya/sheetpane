@@ -1,0 +1,9 @@
+{
+  "name": "fux-reader",
+  "private": true,
+  "version": "4.0.3",
+  "description": "This repository's fux read plane, resolved from npm. Written by `fux setup`, which detected a monorepo. Run it through ../fux, never by path.",
+  "dependencies": {
+    "fux-engine": "4.0.3"
+  }
+}

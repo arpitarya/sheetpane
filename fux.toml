@@ -1,0 +1,128 @@
+# fux.toml -- POLICY, not corpus. What gets indexed is `.fux/sources/dirs` and
+# `.fux/sources/urls`, one entry per line.
+#
+# EVERY KEY, WHAT IT MEANS AND WHAT IT DEFAULTS TO IS IN ONE PLACE:
+#   https://github.com/arpitarya/fux/blob/main/records/0113_config.md
+# Ranking knobs are not here at all -- they live in .fux/tune.toml (SR-TUNE):
+#   https://github.com/arpitarya/fux/blob/main/records/0135_tuning.md
+#
+# This file does not explain its own keys, deliberately: a comment that
+# describes a key can drift from the record that decides it while both still
+# look correct (SR-LAW-0 decision 4). A key fux does not know is REFUSED by
+# name, so a typo here fails loudly instead of sitting inert.
+#
+# Every key here is REQUIRED (SR-LAW-12): fux holds no copy of these values in
+# code, so a missing key stops the run and names itself. `fux doctor --fix`
+# writes a missing key back from this template and touches nothing else.
+# The one exception is a whole table whose PRESENCE is the setting:
+# [sources.url] (delete it and nothing is fetched) and the two maps below it.
+
+# The two source lists, together: one names the directories, one names the URLs.
+[sources]
+dirs_file = ".fux/sources/dirs"
+urls_file = ".fux/sources/urls"
+
+# Presence of THIS table is what enables URL ingestion -- `urls_file` above
+# only names the list. Nothing is fetched until a URL is listed in it, and
+# only `fux add <URL>` lists one.
+[sources.url]
+keep            = true
+ttl             = "24h"
+enrich          = false
+update          = "auto"
+fetch_at_answer = true
+max_parallel    = 4
+sweep_minutes   = 60
+acquired_max_bytes = 2147483648
+thin_words           = 50
+thin_words_per_kb    = 2.0
+failing_streak       = 5
+parallel_warn_at     = 16
+
+# A host map: which fetcher retrieves which host, consulted by `fux add` when
+# no --fetch was given. fux READS every key here -- unlike [sources.url.config]
+# below, which it passes through untouched.
+#
+# Four pattern shapes. A wildcard does NOT match the apex, and two patterns
+# matching one host is a hard error naming both: there is no non-arbitrary
+# order between two regexes, and guessing one builds a plausible index with
+# the wrong fetcher.
+#
+#   [sources.url.routes]
+#   "example.com"               = "http"
+#   "*.wiki.example.com"        = "cdp"     # not example.com itself
+#   "intranet.example.com:8443" = "cdp"
+#   "re:^.*\\.sharepoint\\.com$"  = "cdp"     # compiled + anchored at load
+#
+# There is NO default fetcher (2026-09-20): every URL line states its own
+# `fetch=`, and `fux add` refuses a URL nothing resolves for.
+#
+# There is no `decoder` key here either, and there never was (2026-09-21). A
+# URL line states `decoder=<stem>` beside its `fetch=`, also mandatory: a
+# fetcher retrieves bytes and the decoder named on the line turns them into
+# Markdown. `fux add` observes the response's Content-Type once and writes the
+# stem. A decoder is a fact about one document's FORMAT, not a policy about
+# reaching a host, so there is nothing source-wide to configure.
+
+# Handed to your fetcher's configure() verbatim; fux reads no key inside.
+# A key at THIS level goes to every fetcher -- only put one here that all
+# of yours know, because each configure() refuses a key it does not.
+#
+# One sub-table per fetcher, named after its file without `.py`. The two
+# below ship with fux; add a table for any fetcher you drop into
+# .fux/fetchers/ and name on a URL line with `fetch=<name>`.
+[sources.url.config]
+
+# Only .fux/fetchers/cdp.py receives these.
+[sources.url.config.cdp]
+cdp_host             = "127.0.0.1"
+cdp_port             = 9299
+chrome_binaries      = ["google-chrome", "chromium", "chromium-browser", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/Applications/Chromium.app/Contents/MacOS/Chromium"]
+fetcher_max_parallel = 1
+launch_chrome        = false
+load_timeout_s       = 30.0
+
+# Only .fux/fetchers/http.py receives these.
+[sources.url.config.http]
+fetcher_max_parallel = 8
+timeout_s            = 30.0
+user_agent           = "fux/0.x (+https://github.com/arpitarya/fux)"
+
+[index]
+shards        = 256
+git_timeout_s = 120
+
+# false: whole documents only. true: ingest also writes the section plane,
+# .fux/index/sections/, which [ranking] section_weight in .fux/tune.toml reads;
+# set that to 1.0, the measured value (W-278). About doubles the index.
+# Flipping it changes committed bytes: run `fux ingest --full` after.
+section_records = true
+
+[observe]
+max_ms = 50
+
+# The runner's and daemon's pacing. None of these changes what is indexed.
+[maintain]
+daemon_poll_s   = 1.0
+runner_poll_s   = 0.05
+stop_timeout_s  = 30.0
+last_cited_max  = 256
+stop_every_docs = 64
+
+[refer]
+fetch_cache_max_bytes = 524288000
+timeout_seconds       = 5
+
+# Where `fux doctor`'s checks start to warn.
+[doctor]
+thin_url_share         = 0.01
+thin_url_chars         = 200
+acquired_warn_share    = 0.8
+pii_rule_budget_ms     = 100.0
+
+# Which agent vendors `fux setup` writes archived-results policy for. These
+# files land OUTSIDE .fux/ -- in .claude/, .github/, .kiro/ and AGENTS.md at the
+# repo root -- which is why the default is spelled out rather than left
+# implicit. Delete a name to stop installing it; [] installs none.
+[agents]
+install = ["claude"]

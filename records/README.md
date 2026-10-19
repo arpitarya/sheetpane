@@ -169,9 +169,12 @@ directions.
 | `.claude/hooks/stop-if-blocked.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/session-lock.sh` | SR-WORK-BLOCKERS | decision 7 |
 | `.claude/hooks/require-progress.sh` | SR-WORK-SESSION | decision 5 |
+| `.claude/hooks/fux-index-hint.sh` | SR-BUILD | decision 1a — fux's advisory grep hint, not wired |
+| `fux.toml` | SR-BUILD | decision 1a — the docs index's policy |
+| `.fux/` | SR-BUILD | decision 1a — the committed docs index, its sources and the Node reader |
 | `package.json` | SR-BUILD | the private monorepo root and its scripts |
 | `pnpm-lock.yaml` | SR-BUILD | the workspace lockfile |
-| `pnpm-workspace.yaml` | SR-BUILD | the pnpm workspace — `packages/*` |
+| `pnpm-workspace.yaml` | SR-BUILD | the pnpm workspace — `packages/*`, `examples/*`, `.fux/node` |
 | `justfile` | SR-BUILD | the one place to run install, build, test, typecheck, check, release |
 | `tsconfig.base.json` | SR-BUILD | the shared strict TypeScript settings |
 | `tsconfig.json` | SR-BUILD | the root type-check over `test/` and the Vitest config |

@@ -1,0 +1,182 @@
+# Which files are documents, and which decoder reads each one. See SR-TYPES.
+#
+# THIS FILE IS OPTIONAL. Delete it and the built-in default applies -- an
+# absent file never means "index everything" and never means "index nothing".
+# If the file IS here it REPLACES the default entirely, which is why a file
+# that admits nothing is an error rather than a silently empty index.
+#
+# WHAT IS BELOW IS THAT DEFAULT, written out at `fux setup`: prose, plus every
+# format a built-in decoder reads. It is spelled out rather than left implicit
+# so you can see what fux considers a document without reading its source
+# (SR-TYPES decision 10). From here it is YOURS -- setup never rewrites this
+# file, so the list stays exactly as you leave it.
+#
+# TWO KEYS, AND ONLY TWO. `include` lists globs that are already text.
+# `[decoders]` maps an extension to the module that reads it -- and a bound
+# extension IS a document, so it is never repeated in `include`. Any other key
+# is an error (SR-TYPES decision 12).
+#
+# NOTHING HERE SUBTRACTS. To keep files out, write the pattern in
+# .fux/.fuxignore, which is read first and outranks this file.
+#
+# NOTHING BELOW NEEDS INSTALLING. Every built-in decoder is stdlib-only and
+# works out of the box. A format that needed something installed would appear
+# under OPT-IN at the bottom, commented, with what enables it.
+#
+# What is OUT of the default, and why: source code, shell scripts and
+# extensionless files. They have no decoder, machine data is not a document,
+# and indexing it inflates `df` for exactly the terms your real documents are
+# trying to be found by. Extensionless files are LICENSE, Makefile and
+# Dockerfile far more often than they are prose.
+#
+# ADDING A DECODER DOES NOT WIDEN THIS. A decoder in .fux/decoders/ makes a
+# format READABLE; an entry here is what makes it INDEXED, and a `[decoders]`
+# binding is what makes it read by a NAMED module. All three are separate on
+# purpose -- what counts as a document stays a committed line a human wrote.
+
+# Already text: no decoder in the path. One glob per line. A glob with no `/`
+# matches the file NAME anywhere, so "*.md" means every markdown file.
+include = [
+  "*.adoc",
+  "*.markdown",
+  "*.md",
+  "*.org",
+  "*.rst",
+  "*.txt",
+]
+
+# extension = "decoder module". THIS IS THE MAP: without it, "which decoder
+# reads .csv" is a property of the code installed on a machine, and two people
+# with different .fux/decoders/ could commit different indexes from the same
+# sources with nothing saying so (SR-TYPES decision 11).
+#
+# THE BINDING IS CHECKED, NOT TRUSTED. A module that does not exist stops the
+# run, and so does taking an extension AWAY from the decoder that claims it and
+# giving it to one that does not. It is never a silent fallback: the wrong
+# decoder does not fail visibly, it produces a plausible index with different
+# postings.
+#
+# YOU CAN GIVE A DECODER A NEW EXTENSION. If nothing claims it, any decoder may
+# be bound to it -- a .geojson is JSON, so `geojson = "json"` is all it takes.
+# An extension with a dot is quoted: `"tar.gz" = "<module>"`.
+[decoders]
+csv = "csv"
+tsv = "csv"
+
+docm = "docx"
+docx = "docx"
+
+dio = "drawio"
+drawio = "drawio"
+
+htm = "html"
+html = "html"
+xhtml = "html"
+
+gif = "image"
+jpeg = "image"
+jpg = "image"
+png = "image"
+
+cfg = "ini"
+ini = "ini"
+properties = "ini"
+
+json = "json"
+
+jsonl = "jsonl"
+
+eml = "mail"
+mbox = "mail"
+
+pdf = "pdf"
+
+pptm = "pptx"
+pptx = "pptx"
+
+rtf = "rtf"
+
+svg = "svg"
+
+toml = "toml"
+
+xlsm = "xlsx"
+xlsx = "xlsx"
+
+xml = "xml"
+
+yaml = "yaml"
+yml = "yaml"
+
+# --- OPT-IN ---------------------------------------------------------------
+# Not indexed until you uncomment. Nothing here has a built-in decoder, so
+# enable it first by writing one:
+#
+#   1. drop a decoder into .fux/decoders/  (`fux setup` writes every built-in
+#      one there as a worked example; see the fux-decoder skill)
+#   2. uncomment its line and name your module
+#   3. `fux ingest`
+#
+# Listing "*.log" under `include` instead indexes it as RAW BYTES.
+#
+# log = "<your module>"
+
+# The built-in decoders' caps -- each one bounds what a decoder reads, so each
+# changes committed bytes, and a changed value re-extracts every document at
+# the next `fux ingest` (it is part of the extract-config digest). Every key is
+# REQUIRED (SR-LAW-12); `fux doctor --fix` writes a missing one. The keys are
+# decided in SR-DECODE: https://github.com/arpitarya/fux/blob/main/records/0139_decode.md
+#
+# [limits.zip] is the shared ZIP reader under docx, pptx and xlsx.
+# [limits.json] max_depth is shared by json, jsonl, toml and xml.
+# [limits.xml] is the shared XML reader under xml, svg, drawio, docx, pptx and xlsx.
+
+[limits.zip]
+max_uncompressed = 67108864
+max_members      = 4096
+max_member_bytes = 33554432
+
+[limits.csv]
+max_cell_chars = 500
+
+[limits.drawio]
+max_inflated = 16777216
+
+[limits.html]
+charset_scan_bytes = 4096
+
+[limits.image]
+max_inflated = 1048576
+
+[limits.json]
+max_depth         = 6
+max_heading_depth = 2
+min_prose_len     = 3
+max_items         = 500
+
+[limits.jsonl]
+max_records = 500
+
+[limits.mail]
+max_body_chars = 200000
+max_messages   = 500
+
+[limits.pdf]
+max_streams    = 5000
+max_inflated   = 67108864
+max_text_chars = 2000000
+
+[limits.rtf]
+max_chars = 2000000
+
+[limits.xlsx]
+max_cols = 40
+
+[limits.xml]
+min_attr_len = 12
+prolog_bytes = 8192
+
+[limits.yaml]
+max_depth     = 6
+indent_step   = 2
+min_value_len = 3

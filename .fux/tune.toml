@@ -1,0 +1,173 @@
+# .fux/tune.toml -- HOW results are ordered, plus [index]: how much of a
+# document is indexed.
+#
+# Written once by `fux setup`; fux never rewrites it. EVERY KEY IS REQUIRED
+# (law L12, records/0014_LAW-12-values-live-in-config.md): fux holds no copy of
+# these values in code, so a missing key stops the command and names it.
+# `fux doctor --fix` writes a missing key back from the template this file was
+# written from, and nothing else ever writes one.
+#
+# The rule for every table EXCEPT [index] is mechanical: changing a value
+# leaves `.fux/index/` byte-identical, and nothing in it is read by `ingest`,
+# `build` or the hooks.
+#
+# `fux ask --no-tune` reads the file `fux setup` would write today instead of
+# this one -- the "is it me or the config?" switch -- for everything EXCEPT
+# [index], which built the index and cannot be un-built at query time.
+
+[bm25f]
+k1                      = 1.2      # term-frequency saturation
+# Length normalisation, 0 = off, 1 = full. 0.15, not the literature's 0.75, and
+# MEASURED (W-144, 2026-09-16): the first value descending 0.4 -> 0.15 that
+# netted positive on both benefit families with every control holding. A table
+# inflates a document's length with tokens that say nothing about the query; a
+# high `b` punishes the document for it. One synthetic corpus, `informed`.
+b                       = 0.15
+# The five field weights, in index order. 0 means "ignore this field". body and
+# heading keep the archived engine's calibration; title, path and ctx are
+# defensible starting points, not measured optima.
+body                    = 1.0
+heading                 = 3.0
+title                   = 2.0
+path                    = 1.5
+ctx                     = 1.0
+# The sixth field is ANCHOR: what OTHER documents call this one when they link
+# to it (W-168 step 1). Folded in at read time from their edges -- it is in no
+# committed posting, so moving this needs no re-ingest. 0 = OFF. The default
+# 1.0 is MEASURED: it passed its pre-registered run on 2026-09-24.
+anchor                  = 1.0
+
+[ranking]
+# The proximity reranker's uplift: a perfect proximity match may multiply a
+# score by at most (1 + rerank_weight). 0 = OFF. When you turn it on, 1.0 is the
+# middle of the measured plateau -- the 4x5 sweep of (coverage power, weight)
+# over the 50 goldens scored 30-32 everywhere, 32 at (2, 1.0).
+rerank_weight           = 0.0
+# How far down the ranking the reranker (and the graph tier) reorders.
+rerank_depth            = 20
+# How hard a MISSING query term is punished: coverage is raised to this power.
+# At 2, a passage covering 4 of 5 terms keeps 64 % of its proximity, not 80 %.
+rerank_coverage_power   = 2
+# The proximity mix -- base + span + adjacency, each scaled by coverage.
+rerank_base             = 0.55
+rerank_span             = 0.30
+rerank_adjacency        = 0.15
+# What an agent-supplied `--expand` term is worth against a term you typed.
+# A NO-OP unless a caller passes `--expand`; 0 turns expansion off entirely.
+expand_weight           = 0.2   # Query2doc's 1:5; unmeasured on your corpus
+# A spelling the corpus supplies: when a query says MKT and some document
+# declares "Mean Kinetic Temperature (MKT)", the other side is added at this
+# weight. 0 = OFF. The default 0.5 is MEASURED: it passed its pre-registered run
+# on 2026-09-27.
+mined_weight            = 0.5
+# Prefer the kind of document a question asks for: "how do I" -> a procedure,
+# "why did we" -> a decision, "what is" -> a reference. A document whose
+# [doctype] type matches is scaled by 1 + this. 0 = OFF, and without a
+# [doctype] table it does nothing at any value. The default 0.1 is MEASURED: it
+# passed its pre-registered run on 2026-09-28.
+intent_weight           = 0.1
+# Rank a long document by its best section too: the section is scored as if it
+# were a short document of its own (with the document's title), and the
+# document moves this far toward that score when it is higher. 1 = take the
+# better of the two; above 1 is refused. A document with one section or none
+# gains nothing. 0 = OFF, and at 0 the section plane is never read.
+# MEASURED: 1.0, set together with fux.toml [index] section_records = true and
+# `fux ingest --full` (W-278, 2026-10-13). Off by default: the plane about
+# doubles the index. Above 0 with section_records = false is an error.
+section_weight          = 1.0
+
+[graph]                         # explain / graph / path
+damping      = 0.85   # restart probability is 1 - damping; PageRank's published value
+iterations   = 3      # a count, not a convergence test: 3 reach two hops of structure
+laziness     = 0.5    # mass that stays put each step -- the conventional lazy chain
+hop_decay    = 0.5    # what each extra hop costs a route's reliability
+expand_limit = 10
+seed_depth   = 5
+path_limit   = 10     # routes `fux path` returns, most reliable first
+# The graph tier on `ask` (W-161). The two booleans are separate so a failing
+# arm can be withdrawn without touching the other; both are UNMEASURED today.
+ask_boost         = true   # arm A: re-order the window by RRF(lexical, PPR)
+ask_related       = true   # arm B: the labelled `related` list
+ask_kinds         = "ref"    # `ref` alone; a `tag` edge is a hub, not a link
+ask_link_idf      = true   # hub damping, ON here and off for `fux graph`
+ask_max_hops      = 1      # one hop; a second-hop document is a guess
+ask_related_limit = 5
+
+[refer]                         # answer, and the refer plane
+budget            = 8000       # bytes of assembled passage
+per_doc_fraction  = 0.5
+min_passage_bytes = 120
+max_passage_bytes = 4000
+# Bytes charged per citation for its header line, so the budget is honest.
+citation_overhead = 80
+# Data rows per passage when refer splits a table. ONE, ruled 2026-09-06 on a
+# measurement (work/regression/2026-09-06-csv-chunk-granularity/): on 48
+# ambiguous queries over 6 998 rows, hit@1 went 0.229 (58 rows) -> 0.292
+# (11 rows) -> 0.875 (1 row). The cost: rescore is O(passages).
+table_rows_per_passage = 1
+
+[confidence]                    # the BAND -- what fux says ABOUT an answer
+# Neither key can move a score or an ordering. They move the band only, so
+# `.fux/index/` and the result list are byte-identical either way.
+#
+# separation_floor: how far ahead of the runner-up the top result must be
+#   before the band may read `grounded`. LOWERING THIS DOES NOT MAKE ANSWERS
+#   BETTER -- it makes fux quieter about not knowing. At 0.0 nothing is ever
+#   `weak`. The default is PROVISIONAL and UNMEASURED (prediction R10): it is
+#   a defensible starting point, not a calibrated one.
+# doc_coverage_floor: how much of the question the TOP-RANKED DOCUMENT must
+#   itself contain. 0.0 = OFF, and that is a measured ruling, not an omission.
+#   Measured on 50 goldens + 15 decoys: at 1.0, NINETEEN of the fifty correct
+#   answers turn `partial`, and the single decoy this clause could catch sits
+#   at 0.710 -- inside the goldens' range. There is no gap to pick a number in.
+#
+# Both floors are PUBLISHED in the confidence block, so an answer states which
+# floor judged it. `fux ask --no-tune` recomputes the band at the template's.
+separation_floor   = 0.1
+doc_coverage_floor = 0.0
+
+[enrich]                        # `fux enrich --check`
+# A generated question passes the self-retrieval check when its own document
+# ranks in the top this-many.
+self_retrieval_k = 3
+
+[index]                         # ⚠ CHANGES THE INDEX -- read by `fux ingest`
+# The one table here that changes `.fux/index/`. Changing either key
+# re-extracts every document on the next `fux ingest`, and `--no-tune` does
+# not undo it.
+#
+# max_phrases: how many of a document's headings are committed as its
+#   `phrases` -- what `fux ask` shows as sections. DISPLAY ONLY: ranking reads
+#   every heading regardless. At 12, template headings like `Context` filled the
+#   slots and 87 of 563 documents lost headings; at 32, 98.2 % keep all of them.
+# max_table_rows: data rows admitted per table (per SHEET for .xlsx), header
+#   never counted. Rows past it are not indexed and NOT CITABLE. Raising it
+#   costs query latency: refer splits a table one passage per row, and rescore
+#   is O(passages) -- ~63 ms/doc/query at 500 rows, ~2.6 s at 20 000.
+max_phrases    = 32
+max_table_rows = 20000
+
+[priority]
+# ⚠ THE ONE TABLE THAT STAYS COMMENTED, and not for consistency's sake: these
+# are not tunables with defaults. A key is a multiplicative weight per SOURCE
+# ENTRY, exactly as it appears in .fux/sources/dirs or .fux/sources/urls, so
+# an uncommented line here would silently REWEIGHT YOUR CORPUS rather than
+# restate a default. Anything unlisted is 1.0 -- an empty table IS the
+# default. When two entries both match, the LONGER one wins.
+#
+# Either direction is allowed and fux states the cost rather than clamping it.
+# Two values are refused, and neither is a preference being denied: a negative
+# weight inverts the ordering, and zero means EXCLUDE -- which already has a
+# home, the `!` prefix in .fux/sources/.
+#"docs/"   = 1.5
+#"vendor/" = 0.3
+
+[doctype]
+# Stays commented, like [priority]: a key is a pattern over YOUR file paths,
+# and fux cannot know them. It declares a document's type for intent_weight.
+# `*` matches any run of characters including `/`, `?` exactly one; a pattern
+# must match the whole path. When two match, the LONGER one wins. Types:
+# procedure, decision, reference. An empty table IS the default.
+#"*-runbook-*"  = "procedure"
+#"docs/adr/*"   = "decision"
+#"*glossary*"   = "reference"

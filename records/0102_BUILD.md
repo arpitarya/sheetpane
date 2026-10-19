@@ -64,9 +64,19 @@ pnpm and a justfile; the testing verdict chose the runner.
 ### Decision
 
 1. **Package manager:** pnpm, pinned by `packageManager` in the root
-   `package.json`; the workspace is `packages/*` (`pnpm-workspace.yaml`).
+   `package.json`; the workspace is `packages/*`, `examples/*` and
+   `.fux/node` (`pnpm-workspace.yaml`).
    Internal dependencies and peers use `workspace:*`; `pnpm publish` rewrites
    them to the exact version.
+1a. **The docs index (fux, 2026-10-19):** `fux.toml` (policy) and `.fux/`
+   (the committed index, its sources, decoders and the Node reader
+   `.fux/node`, which pulls `fux-engine` from npm — MIT, L2) index the
+   records, `work/`, `docs/` and the top-level docs, with `archive/` marked
+   archived. Agent files are Claude-only (`.claude/agents`, `commands`,
+   `rules`, `output-styles`, `skills/fux-*`). `.claude/hooks/fux-index-hint.sh`
+   is fux's advisory grep hint and is not wired. The index is not kept
+   current by any hook: a doc edit leaves it stale until `fux ingest` runs.
+   The `.fux/node` package is private and never published.
 2. **Commands:** the root `package.json` scripts are the real commands
    (`build`, `test`, `typecheck`); the `justfile` wraps them and adds
    `check`, `test-pkg`, `test-export`, `test-grid`, `test-browsers`,

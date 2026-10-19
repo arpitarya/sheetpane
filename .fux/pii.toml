@@ -1,0 +1,265 @@
+# .fux/pii.toml -- what is removed from the COMMITTED INDEX, and nowhere else.
+#
+# THIS FILE IS YOURS, AND FUX WILL NOT RUN WITHOUT IT. `fux setup` writes it
+# once if it is missing and never rewrites it; delete it and every command
+# stops with an error (SR-PII decision 17). To redact nothing, keep the file
+# and comment out every rule -- that is a choice; a missing file is an accident.
+#
+# Fux ships the matcher; the policy is yours, because what counts
+# as PII differs by jurisdiction, industry and corpus, and a floor fux imposed
+# would be wrong somewhere and impossible to switch off.
+#
+# ============================================================================
+# WHAT THIS DOES, AND WHAT IT DOES NOT
+# ============================================================================
+#
+#   .fux/index/        REDACTED    committed, cloned, travels everywhere
+#   .fux/acquired/     raw         gitignored; must stay the exact bytes the
+#                                  source returned or `as-ingested` is a lie
+#   fux answer quotes  raw         read from the source under YOUR access,
+#                                  never committed
+#
+# So `fux answer` can quote a value the index does not contain. That is the
+# design: the reader already has access to the document. What changed is that
+# the value no longer ships inside a committed artifact to everyone who clones.
+#
+# ============================================================================
+# AFTER EDITING THIS FILE
+# ============================================================================
+#
+# Nothing else needs doing. Redaction happens before extraction, so changing a
+# rule changes what should be indexed for documents whose bytes did not change
+# -- fux notices the ruleset moved and re-extracts the corpus on the next
+# `fux ingest`. That run is a full one, so it costs what a full ingest costs.
+#
+# `fux doctor` compiles every pattern here offline and names any that fail.
+#
+# ============================================================================
+# WRITING A RULE
+# ============================================================================
+#
+#   name          required.  Unique. Appears in the default replacement, so a
+#                            reader of a redacted index can see which rule fired.
+#   pattern       required.  A Python regex. Refused at load if it can match
+#                            the empty string.
+#   replacement   optional.  Defaults to "[PII:<name>]". Keep it STABLE -- it
+#                            lands in committed bytes, so changing it rewrites
+#                            every affected record.
+#   flags         optional.  Any of: ignorecase, multiline, dotall, verbose.
+#   group         optional.  Replace only this capture group and keep the rest
+#                            of the match. How a rule holds its own context:
+#                            "card ending 4242" -> "card ending [PII:card]".
+#   validate      optional.  A checksum the value must pass before it is
+#                            replaced: "luhn" (payment cards) or "verhoeff"
+#                            (Aadhaar). Runs over the ASCII digits of what
+#                            `group` names, separators ignored. A shape match
+#                            that fails the checksum is LEFT IN the index.
+#
+# Rules run TOP TO BOTTOM, each a full pass. Order is observable: a later rule
+# can match text an earlier rule inserted. Put narrow rules before broad ones.
+#
+# ============================================================================
+# A WORD ON FALSE POSITIVES
+# ============================================================================
+#
+# Redaction is IRREVERSIBLE in the index. A rule that is too broad quietly
+# removes real vocabulary and makes documents unfindable by the words that
+# would have found them -- and unlike a refusal, nothing looks wrong.
+#
+# Before adding a rule, run it over the corpus and read what it caught. The
+# probe is NOT part of the installed package -- `tools/pii-probe/` lives in the
+# fux repository, and the `fux-pii` skill `fux setup` wrote carries a short
+# standalone copy you can save and run with the interpreter fux is installed in:
+#
+#     python probe.py RULES.toml        # prints REDACT / keep per match, never the value
+#
+# Every rule below is commented with what it will over-match. Read that line
+# before you enable it. THE STARTER SHIPS WITH THE SAFE ONES ENABLED AND THE
+# RISKY ONES COMMENTED OUT, on purpose.
+
+
+# --- email -----------------------------------------------------------------
+# Safe. The shape is unambiguous and almost nothing else has it.
+# Over-matches: `noreply@`, `support@`, and example addresses in documentation.
+# If your docs are full of `user@example.com`, that vocabulary is gone -- which
+# is usually fine, and occasionally is the thing someone searched for.
+[[rule]]
+name        = "email"
+pattern     = '''[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'''
+replacement = "[PII:email]"
+
+
+# --- bearer tokens, API keys, JWTs -----------------------------------------
+# Safe, and arguably the highest-value rule here: a key committed into an index
+# is a live credential in every clone.
+[[rule]]
+name        = "jwt"
+pattern     = '''eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}'''
+replacement = "[PII:jwt]"
+
+[[rule]]
+name        = "aws-access-key"
+pattern     = '''\b(?:AKIA|ASIA|AGPA|AIDA|AROA|ANPA|ANVA)[0-9A-Z]{16}\b'''
+replacement = "[PII:aws-key]"
+
+[[rule]]
+name        = "github-token"
+pattern     = '''\bgh[pousr]_[A-Za-z0-9]{36,}\b'''
+replacement = "[PII:github-token]"
+
+# `group = 1` keeps the label. "Authorization: Bearer [PII:bearer]" still tells
+# a reader what kind of line this was, which a whole-line redaction destroys.
+[[rule]]
+name        = "bearer-token"
+pattern     = '''(?i)\b(?:authorization\s*:\s*)?bearer\s+([A-Za-z0-9._\-+/=]{20,})'''
+replacement = "[PII:bearer]"
+group       = 1
+
+
+# --- Indian identifiers ----------------------------------------------------
+# PAN is a fixed 10-character shape and rarely collides with real words.
+[[rule]]
+name        = "pan"
+pattern     = '''\b[A-Z]{5}[0-9]{4}[A-Z]\b'''
+replacement = "[PII:pan]"
+
+# ⚠ AADHAAR IS COMMENTED OUT AND SHOULD STAY THAT WAY UNTIL YOU HAVE CHECKED.
+# A bare 12-digit run is also an order id, a timestamp in milliseconds, a
+# phone number with a country code, and a row count. This regex requires the
+# conventional 4-4-4 spacing, which cuts the false-positive rate hugely and
+# misses every unspaced one.
+#
+# `validate = "verhoeff"` checks Aadhaar's last digit, which a regex cannot.
+# ⚠ It is a 1-in-10 filter, not proof: one random 12-digit run in ten still
+# passes. With it on, relaxing `\s` to `\s?` to catch unspaced numbers becomes
+# a reasonable trade -- probe it first and read what the extra matches are.
+#
+# The two guards refuse a 4-4-4 window INSIDE a longer digit group. Without
+# them this rule, which runs first, reads the first twelve digits of a spaced
+# card number -- and one card in ten passes Verhoeff there and is eaten.
+#
+# [[rule]]
+# name        = "aadhaar"
+# pattern     = '''(?<![0-9][\s-])\b[2-9][0-9]{3}\s[0-9]{4}\s[0-9]{4}\b(?![\s-][0-9])'''
+# replacement = "[PII:aadhaar]"
+# validate    = "verhoeff"
+
+
+# --- United States identifiers ---------------------------------------------
+# SSN in its written shape, 3-2-4 with one consistent separator. The pattern
+# refuses what the Social Security Administration never assigns -- area 000,
+# 666 and 900-999, group 00, serial 0000 -- and a 3-2-4 window inside a longer
+# digit group. It does NOT catch an unseparated nine-digit SSN: a bare 9-digit
+# run is also a zip+4, an order id, a row count, and no checksum exists to tell.
+# Over-matches: a part or ticket number written 3-2-4 with dashes.
+[[rule]]
+name        = "us-ssn"
+pattern     = '''(?<![0-9][\s-])\b(?!000|666|9[0-9]{2})[0-9]{3}([ -])(?!00)[0-9]{2}\1(?!0000)[0-9]{4}\b(?![\s-][0-9])'''
+replacement = "[PII:us-ssn]"
+
+# ITIN and ATIN: an area of 900-999 (which is never an SSN) and a group in the
+# ranges the IRS issues -- 50-65, 70-88, 90-92, 94-99, and 93 for an ATIN.
+# Over-matches: very little; a 9xx-NN-NNNN string is rarely anything else.
+[[rule]]
+name        = "us-itin"
+pattern     = '''(?<![0-9][\s-])\b9[0-9]{2}([ -])(?:5[0-9]|6[0-5]|7[0-9]|8[0-8]|9[0-9])\1[0-9]{4}\b(?![\s-][0-9])'''
+replacement = "[PII:us-itin]"
+
+# Medicare Beneficiary Identifier: 11 characters in a fixed digit/letter
+# layout, letters never S, L, O, I, B or Z, dashes optional ("1EG4-TE5-MK73").
+# Uppercase only -- a lowercase run of that shape is almost always something
+# else. Over-matches: an uppercase product or batch code that happens to fit.
+[[rule]]
+name        = "us-mbi"
+pattern     = '''\b[1-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9]-?[AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9]-?[AC-HJKMNP-RT-Y]{2}[0-9]{2}\b'''
+replacement = "[PII:us-mbi]"
+
+# ⚠ EIN IS COMMENTED OUT. `NN-NNNNNNN` is also a catalogue number, a document
+# reference and half the ids in an ERP export, and an EIN has no checksum.
+# An EIN identifies a business, not a person -- enable it if your policy says
+# a vendor's tax id must not travel.
+#
+# [[rule]]
+# name        = "us-ein"
+# pattern     = '''(?<![0-9-])\b[0-9]{2}-[0-9]{7}\b(?!-[0-9])'''
+# replacement = "[PII:us-ein]"
+
+# Not shipped: a bank ROUTING number (nine digits with an ABA checksum fux does
+# not implement), a US passport number (nine digits, or a letter and eight --
+# indistinguishable from any id), and driver's licences (a different shape in
+# every state).
+
+
+# --- Canadian identifiers --------------------------------------------------
+# SIN: nine digits in the written 3-3-3 shape, a first digit that is not 0 or
+# 8 (never issued to a person; 9 is a temporary resident), and a Luhn check
+# digit. The checksum removes nine shape-alikes in ten; the separator
+# requirement removes most of the rest. An unseparated SIN is NOT caught, for
+# the same reason as an unseparated SSN.
+[[rule]]
+name        = "ca-sin"
+pattern     = '''(?<![0-9][\s-])\b[1-79][0-9]{2}([ -])[0-9]{3}\1[0-9]{3}\b(?![\s-][0-9])'''
+replacement = "[PII:ca-sin]"
+validate    = "luhn"
+
+# ⚠ POSTAL CODE IS COMMENTED OUT. `A1A 1A1` identifies a neighbourhood, not a
+# person, and redacting it from an office address or a shipping runbook removes
+# something a reader needed. Enable it if an address in your corpus is itself
+# the sensitive value.
+#
+# [[rule]]
+# name        = "ca-postal-code"
+# pattern     = '''\b[ABCEGHJ-NPRSTVXY][0-9][ABCEGHJ-NPRSTV-Z][ -]?[0-9][ABCEGHJ-NPRSTV-Z][0-9]\b'''
+# replacement = "[PII:ca-postal-code]"
+
+# Not shipped: provincial health card numbers (a different format in every
+# province) and passport numbers (two letters and six digits -- the shape of
+# any id).
+
+
+# --- payment card ----------------------------------------------------------
+# ⚠ COMMENTED OUT. Same problem, worse: a 16-digit run is an order number, a
+# tracking id, a hash prefix. This pattern requires separators, which real
+# pasted card numbers often have and real order ids usually do not.
+#
+# `validate = "luhn"` checks the card's last digit. ⚠ Same caveat as Aadhaar:
+# one random 16-digit run in ten passes Luhn. The checksum narrows the rule; it
+# does not make an order-id-heavy corpus safe to redact blind.
+#
+# [[rule]]
+# name        = "card"
+# pattern     = '''\b(?:4[0-9]{3}|5[1-5][0-9]{2}|3[47][0-9]{2}|6(?:011|5[0-9]{2}))[ -][0-9]{4}[ -][0-9]{4}[ -][0-9]{4}\b'''
+# replacement = "[PII:card]"
+# validate    = "luhn"
+
+
+# --- phone numbers ---------------------------------------------------------
+# ⚠ COMMENTED OUT. Phone shapes overlap with version strings, port ranges,
+# ticket numbers and dates in most corpora. Enable it only after running the
+# probe, and prefer a pattern anchored on YOUR country code.
+#
+# [[rule]]
+# name        = "phone-in"
+# pattern     = '''\b(?:\+91[ -]?)?[6-9][0-9]{9}\b'''
+# replacement = "[PII:phone]"
+
+# United States and Canada share one numbering plan (NANP): an optional +1, a
+# 3-digit area code and exchange that never start with 0 or 1, and a separator
+# before the last four -- required, so a bare ten-digit id is left alone.
+#
+# [[rule]]
+# name        = "phone-nanp"
+# pattern     = '''(?<![0-9])(?:\+?1[ .-]?)?(?:\([2-9][0-9]{2}\)|[2-9][0-9]{2})[ .-]?[2-9][0-9]{2}[ .-][0-9]{4}\b'''
+# replacement = "[PII:phone]"
+
+
+# --- private IP addresses --------------------------------------------------
+# ⚠ COMMENTED OUT. In an infrastructure runbook an internal IP is often the
+# single most useful thing on the page, and removing it makes the runbook
+# useless while looking like it worked. Enable only if your threat model says
+# topology is the secret.
+#
+# [[rule]]
+# name        = "private-ip"
+# pattern     = '''\b(?:10\.(?:[0-9]{1,3}\.){2}[0-9]{1,3}|192\.168\.[0-9]{1,3}\.[0-9]{1,3}|172\.(?:1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3})\b'''
+# replacement = "[PII:private-ip]"

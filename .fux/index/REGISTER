@@ -1,0 +1,224 @@
+# fux.register.v2	rules=5
+# loc	sha	decoder	[k=v ...]
+CHANGELOG.md	7c2e4059030ce69187387eb3dd0ca8596131c39a	prose
+README.md	98e1de0222300191470f35e3ab6e7e1da750187b	prose
+RELEASING.md	03a8e464b28a3f3bca75f3964e9dc89566f60550	prose
+archive/README.md	179e05b4f9bb98d073c0bf657159180ce16f5352	prose	archived=true
+archive/bootstrap/WORK-SYSTEM.md	bc4e9c1a93c343d4dd125b7abd57b7cafbca4594	prose	archived=true
+archive/open/W-01-sheetpane-excel.md	f7ae3bf662f00799084a190284bc59a9a8d32c6e	prose	archived=true
+archive/open/W-02-sheetpane-errors.md	12aab7d0f741aaef9a975e58bacbc519495dacd4	prose	archived=true
+archive/open/W-03-export-package.md	7bb7ba9a66b0adb94c74a25aa3280260001eb5e2	prose	archived=true
+archive/open/W-04-monorepo-toolchain.md	b3b4a4cfb92c848ed9fa2340b44834ec310a2a7d	prose	archived=true
+archive/open/W-05-research-xlsx-csv-reading.md	fe0bb031b9587a58dfae0805e45a2d4d1df2d3df	prose	archived=true
+archive/open/W-06-research-grid-rendering.md	fea4086692f25fcf7af86fdf1a4584fe79e2f662	prose	archived=true
+archive/open/W-07-research-pane-and-error-contract.md	80c7e9fe5d373ae448639f1530712af522bedbd2	prose	archived=true
+archive/open/W-08-research-export-shape.md	c054adb4f7ab0af1acf95ba5c59bdd58dcbdeadf	prose	archived=true
+archive/open/W-09-demo-apps.md	0c7f2b94dfb5c412f0913ae0dd749d639c6480dc	prose	archived=true
+archive/open/W-10-pnpm-and-justfile.md	b7718445ec4ee764d183dbbcce243572614697bc	prose	archived=true
+archive/open/W-11-research-testing.md	38215db7488016c3d98f2ef1af2e9f71db336912	prose	archived=true
+archive/open/W-12-downloader.md	b7e16c0be0b078febdd003d207d4d84f45e74699	prose	archived=true
+archive/open/W-13-import-package.md	a6ab29015aec8d625e39c7088fc8d38cb81ec0b3	prose	archived=true
+archive/open/W-14-plugin-host.md	4265f6b1360bd64013937cb674f25730f14525a3	prose	archived=true
+archive/open/W-15-numfmt.md	ea513e63624388fceef317a26c75c8ff7b7da8eb	prose	archived=true
+archive/open/W-16-formulas.md	082918825a307478e2b770ebf808fe64d555e8d1	prose	archived=true
+archive/open/W-17-styles.md	0f23617880420c7968cf3a75aa89deb54200b94f	prose	archived=true
+archive/open/W-18-validation.md	55113c069774ce5435447161780453477dd41ee3	prose	archived=true
+archive/open/W-19-condfmt.md	9883a41ad48176a04c23f0be8c03910ef54e7026	prose	archived=true
+archive/open/W-20-images.md	dbe4f2f7c1063b0f20c264c87e5c2985768bd00f	prose	archived=true
+archive/open/W-21-charts.md	b256c233041dc8d6b953997462aa91228091f97e	prose	archived=true
+archive/open/W-22-comments.md	fed59ecbf3e2f03e9126f8a8cc64370f51f1db22	prose	archived=true
+archive/open/W-23-undo-redo.md	f2a86a9f519045d97af97d90c7b1cf39577875ba	prose	archived=true
+archive/open/W-24-freeze-panes.md	2b3e78afef594fb9fa5d733f51b7015eaa6f449c	prose	archived=true
+archive/open/W-25-research-events-rules-hooks.md	b2f0bc841ce0cfb444c49ab38d9bcb64da53d67b	prose	archived=true
+archive/open/W-26-edit-events.md	05436fcef9c3464db8c2b88a93f17f739b4a1890	prose	archived=true
+archive/open/W-27-host-column-rules.md	9e005914c7b3b8a9c11bac872e5c94e8c465d91a	prose	archived=true
+archive/open/W-28-react-hooks.md	aad23fa1551a1e764b61fafe2f256920d0d49966	prose	archived=true
+archive/open/W-29-dark-theme-and-slot-tokens.md	4ff08c103203c2c6ae1a284dc112859343f1f34e	prose	archived=true
+archive/open/W-31-docked-actions-one-download.md	7c36d8957a9bebdf192c70ba9e15a57c578f886f	prose	archived=true
+archive/open/W-32-plugin-gallery-demos.md	01e80853872734ddcaae4a0e0225c5c974d6aba4	prose	archived=true
+archive/open/W-33-rules-file.md	26b38afedc0c810a6eba48187f4cd7071a1bd9c5	prose	archived=true
+archive/open/W-34-download-split-button.md	90be505fc9c236e5f603c3359b99210fa502d5ec	prose	archived=true
+archive/open/W-35-agent-skills-package.md	11aa0248984abdaf134d4e034f90aa8c8ceaeb86	prose	archived=true
+archive/open/W-36-tsdoc-public-api.md	df5a0be662d48a1c26d3bf70a10f313928a4055f	prose	archived=true
+archive/open/W-37-custom-elements-manifest.md	b35d807b9f93d956a7cf5587895ebe7650c2dd26	prose	archived=true
+archive/open/W-38-llms-txt.md	f4a3ae2d03deb53371172a10672cc6df9bca604d	prose	archived=true
+archive/open/W-39-mcp-server.md	2f294d02c2b4cb2481db39ad1dff52d84b1d0c14	prose	archived=true
+archive/open/W-40-error-codes.md	23410c3b40c761a640356193c6aaff82f13166e8	prose	archived=true
+archive/open/W-41-testing-package.md	f0c9ae1a1c24de219ce528366becae024f60be0d	prose	archived=true
+archive/open/W-42-fixtures-package.md	7d6606941d3e85b25c4f577fec5522dade3a84f2	prose	archived=true
+archive/open/W-43-create-sheetpane.md	96589e3a38afbc88a0c2db1463af9af7b2d44725	prose	archived=true
+archive/open/W-44-live-playground.md	b166a413ae433bc6d052735ce9f2f014b4e79646	prose	archived=true
+archive/open/W-45-agent-commands-hooks-plugin.md	60d6b2f0610e4beb40894a771499a835c5d58ffe	prose	archived=true
+archive/open/W-46-smooth-range-selection.md	2ba7568d1a7bae779ad3d6aa41cf814dd3558185	prose	archived=true
+archive/open/W-47-resize-columns-rows.md	db46f7ca4a26ef044aa7045a9bd105237e435380	prose	archived=true
+archive/open/W-49-hide-and-show.md	f4352a0a73a6f86776c8637b99155bb294e9f19e	prose	archived=true
+docs/ARCHITECTURE.md	0eb7b98d93a657cb271af22862a397b6f834821e	prose
+docs/ERRORS.md	af08ba940506eb901d0814e1f944d1fc05090080	prose
+docs/GLOSSARY.md	9c686aab85a2ca69cac93fb76efa9ea186c6c55b	prose
+docs/architecture.svg	55cc0c1e79410cc88a3ecaa7c7d0dd9fd32c6631	svg@sha:8cea09b759faa3d5
+docs/readme/holdings.rules.json	60ec48f38ba8bd5204ecf56f5b04d25d1f4be61f	json@sha:474a2418b4b20433
+docs/readme/logo-dark.svg	e43da28aca047655d6286a3223065a39e30add48	svg@sha:8cea09b759faa3d5
+docs/readme/logo-light.svg	5ba17e2ba3f24b2b79c1655b8bf84fe220618638	svg@sha:8cea09b759faa3d5
+llms-full.txt	2264f2976e2924c8946a158c23bb4313bfc89679	prose
+llms.txt	baa0ad7d852161aaa4e8d5b3129f2c71dcd1ffb3	prose
+records/0001_LAWS.md	65781a95ca0f99e903bd820cc6ca39f8126a73db	prose
+records/0002_LAW-0-authority.md	207c2b64cb7661fe54b496fb6e6784217c60a6c6	prose
+records/0003_LAW-1-retired-records-archived.md	063e72b342b80419536e73c101ccd9f335e2ba7a	prose
+records/0004_LAW-2-foss-dependencies.md	957c17afd1bbe485800da84e87fb3a951cefe07f	prose
+records/0005_LAW-3-xlsx-and-csv-only.md	18fdec9ff61b67a480bc2e458ff5da421817954c	prose
+records/0006_LAW-4-web-component.md	5c9fd76f853a1ff57790402cc8e0d8c7ee7ea1f5	prose
+records/0007_LAW-5-host-font.md	aa2fe15615dfa794068cdb800ee70decbcef7768	prose
+records/0008_LAW-6-edits-in-memory-export-with-changes.md	60094922264b1c0f946cdcfea6719b117ef6431b	prose
+records/0009_LAW-7-surfaces-always-in-sync.md	5dc26903b38f875152dd8349d606aa693474165f	prose
+records/0010_LAW-8-npm-package.md	5f20ba53166c66bcbe1ee54fc6fc7e0cdc8bfde0	prose
+records/0011_LAW-9-memory-is-a-javascript-object.md	48c3cd6db53265ef02623c5f97f72aae6fe2a602	prose
+records/0012_LAW-10-examples-maintained.md	be6dd5d286e99c78d917759e10a3d24efbc4d113	prose
+records/0013_LAW-11-workbook-stays-in-the-browser.md	2ce69835849182a82beb99097596eba4f4dde1d1	prose
+records/0051_WORK-open-queue.md	4db186be0967dabb0db597ecb412eae66d816810	prose
+records/0052_WORK-backlog.md	970e94c62143582d2cfeb2f297f42fa4745ba20a	prose
+records/0053_WORK-lifecycle.md	77e5de4c0d544453c02f07834582f175f7af71de	prose
+records/0054_WORK-session.md	fad5a06abd01441c22d8b2b5e06275bcf210d365	prose
+records/0055_WORK-docs.md	6fca4b6f267459ca44b4c07d53cc237bf03d19ec	prose
+records/0056_WORK-blockers.md	b498bd6448f5a5790caee88128bdf0ba30881c7b	prose
+records/0057_WORK-archive.md	917fab70874e35e84ce2c1a96a52c0dd38ae3b27	prose
+records/0058_WORK-ownership.md	8c5651b316ee200d3c738d9f466b18da9e7018fe	prose
+records/0059_WORK-governance.md	f07554c10eca0d5bfc371e32cb8d457dde6c4ee1	prose
+records/0060_WORK-registry.md	feb07027f79f0a8ab862c3f19a45262f974e90a2	prose
+records/0101_DOWNLOAD.md	9428f8f283651a29fd9ed23f43e6d201226a789a	prose
+records/0102_BUILD.md	5ae34e1895888bccbb1c192ab647cc561185011c	prose
+records/0103_EXPORT.md	9dd1497ca518c81efab360f2e5f6b6dd77396cb8	prose
+records/0104_IMPORT.md	61dd4d07f53d93282fbffe3bea49682742f50664	prose
+records/0105_GRID.md	d562a6db3e939e285583ccd45422061c75b2dcfd	prose
+records/0106_ERRORS.md	d7eec91aa7be713c1ae85acbbc47563325e6fc6e	prose
+records/0107_IMAGES.md	6963896aa96cce989e460d3ddba01aba40aa948c	prose
+records/0108_VALIDATION.md	098eeeed72cef81bbe8f8df76e32b3c05d616b9a	prose
+records/0109_NUMFMT.md	4d0bbe8c1710725fe386b58149a13d7cc29a0bb8	prose
+records/0110_STYLES.md	087f6830bf545f5fe7de4610928b6dfc610aa425	prose
+records/0111_FORMULAS.md	418c15a7f30f81fc57b24a7ca66700ef2673b82f	prose
+records/0112_COMMENTS.md	d7753203823c59b1cfc3fc1e8222064185040068	prose
+records/0113_CHARTS.md	22e63ec96dafc34108d0684d0e1a83a70c060f77	prose
+records/0114_CONDFMT.md	ad01f22867798afc914617400ca162eceeac05f7	prose
+records/0115_FIXTURES.md	b0990381a26440d536a940286d84d6c2c8a9540c	prose
+records/0116_SKILLS.md	180381294f4e19943145ac22478fa8ab4dbf14aa	prose
+records/0117_CODES.md	c093ceb6b055f0b0ce43ae955a2cf15081f26b33	prose
+records/0118_TESTING.md	7a1f8b3c3dba9abfed9db72ffa32463c3489e9e8	prose
+records/0119_MCP.md	ea411e42c9ac4918170e5d869eb68ad4bf4cd764	prose
+records/0120_CREATE.md	3eca683c896f3c88a3d0d2d7483b7f45dabea7ec	prose
+records/0121_VISIBILITY.md	65cf9cc07adf2d3cc2295bb4e102da96d4c3e76e	prose
+records/README.md	703962dbf9d818cff921c9c181d480d236e30884	prose
+records/TEMPLATE.md	96d68a7ece27f5ba31d0edfd69b5488e79bfb3a1	prose
+work/BACKLOG.md	562da9b8b5a6f87b492830e569068c2ad9f8febb	prose
+work/BLOCKED.json	4a58f57919ca892a024bf7ca6f2482554f099cf7	json@sha:474a2418b4b20433
+work/IMPLEMENTATION.md	304b0d2ee256a4cde2493f18798526c145666082	prose
+work/INTERVIEW.md	6a0bd4ebc1d5632d9d791623392d3c6cb70db2f3	prose
+work/LESSONS.md	a043a60cff2a0b7291b13c84eb6005d28395bb47	prose
+work/MACHINE.md	e0b4495dc2f91c78ec2b95274b1e843f17b95feb	prose
+work/NOW.md	0e8cf9a057cdce6bab5f016dc6083d6cdb499419	prose
+work/OPEN-WORK.md	46c6625607ba7c42443af72efdefe4800eb11bed	prose
+work/README.md	2a8195f74c0fe0da4ee3c167f084bb1bf8e7873f	prose
+work/WORKLOG.md	95cd1f907d0a79bbf50dc3b6531e1c92e0daee98	prose
+work/compare/README.md	05a20a109a3ef544ca641c437240d730ba01d74b	prose
+work/compare/export-shape.compare.md	daa380c8233ff51fe0308ca50cea65e5f5bc1bbd	prose
+work/compare/grid-events-and-host-rules.compare.md	c0668ae9497f8745740734d0cca97125e50cf251	prose
+work/compare/grid-rendering.compare.md	2a2c05b0e99ab629ac495472f5253142621037f3	prose
+work/compare/mcp-server.compare.md	a84759bfb059eaeb1cf4c7a924d020e49c5ade96	prose
+work/compare/plugins.compare.md	9fe3262da7063babdfd1eaa72ca44152532ba145	prose
+work/compare/testing.compare.md	894ba1ded2eeed4144042267126a0af46cf65efc	prose
+work/compare/workbook-and-error-contract.compare.md	0c08afe21e1248db26bbcd4d4d64f1d345a47a39	prose
+work/compare/xlsx-csv-reading.compare.md	c261aa767c713376d553e6dd46a6c2779cf8fc53	prose
+work/open/README.md	671c84a0497eb6fb302929fab4af30df8697a6f4	prose
+work/open/W-30-real-app-fixtures.md	bd377980eb1c7e6f8e0cfc8803893962364e927c	prose
+work/open/W-48-try-skills-in-each-tool.md	09db3fa06f921aca35e75abd54811136393814c5	prose
+work/open/W-50-pass-and-not-checked.md	4b9ba7fffb293f878e538e09caf782ed63d48556	prose
+work/open/W-51-review-layers.md	bf9c72124db5085ddf583a0caf7798fa86890022	prose
+work/open/W-52-insert-delete-rows-columns.md	f3f130cb486dec085eda696bddc6ff14f59abed7	prose
+work/open/W-53-rich-text-runs.md	176b22576c18984aa5be4656121176ca83052c0e	prose
+work/open/W-54-checks-in-node.md	ed5587bd5195ee2de097c437ce6ace35e010e774	prose
+work/open/W-55-sheet-and-workbook-errors.md	bf61a2103d64afea844ae40e5cf698bcb6f9768d	prose
+work/open/W-56-hover-and-highlight.md	917380bb15c30b1d54813a55616583b7ae801a10	prose
+work/open/W-57-export-writes-validation-and-conditional-formats.md	9a0a78b74b87b2f6493d7dc49088c4cce193b44f	prose
+work/open/W-58-rules-file-as-excel-dropdowns.md	2ab70c2209738df2e13c3ee794a4f09dcc4de99c	prose
+work/open/W-59-review-sheet-plugin.md	9637651920d1315b440675edc2d6b81e461c1b77	prose
+work/open/W-60-dependent-dropdowns.md	2c0b8087ec993140320c3317145f1872ea3f1c4b	prose
+work/open/W-61-excel-tables.md	98ef027d762a6ac47a197b950485dcbed1b30ec6	prose
+work/open/W-62-locked-cells-and-protection.md	74a4129d9a2bbd59d646a8f488a1193233835c8d	prose
+work/open/W-63-compare-plugin.md	2fffcce0131d0363e084bfdb83ec99e7f0850b1e	prose
+work/open/W-64-edits-view.md	3e35816eff148881b8d53dd94272d73f7910166b	prose
+work/open/W-65-file-fingerprint.md	73da7cd780272235bc0dcd600a116a362e9e6ea8	prose
+work/open/W-66-link-to-a-cell.md	a275afa2ad90198ad16d976e732eb360f968f9b4	prose
+work/open/W-67-static-html-render.md	5df5d1f6dded2ef1bfa865555bfa2e468cb3a30f	prose
+work/open/W-68-error-detail-slot.md	c908b0fed1a30869b579b7685bfac509db4c4e88	prose
+work/open/W-69-accepted-deviations.md	117a9a2849c2ba31a1bee68f95aa44fcd828f085	prose
+work/proposals/README.md	9b5754d64ca49843916ecbe8d27a7d2faada8f60	prose
+work/proposals/dismiss-workbook-errors.md	4c52aae87f3a45601b44e36c49c5c3b6b2b4dfc2	prose
+work/proposals/pivots.md	0ffb7f71db17950d00322cbf1f0fc064380ec9af	prose
+work/reference/README.md	b460ec01e64c3e3e42b4fcb02c4a43a455cfb633	prose
+work/reference/design/README.md	2a5b969b8beb4bc02ae08e343de959a0b163dda1	prose
+work/reference/design/boards/All-Plugins.dc.html	e58d3e8fe8b0932ba61d17bb170af969c2f05d70	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Baseline-NoPlugins.dc.html	247dc04c6f6561b76830f01babd60142602fc667	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Core-FreezePanes.dc.html	fcd60bec519f96709d61ca64b99f2c4790d3a4c2	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Edit-Examples.dc.html	e164d7b2317be320fee3dac6bf28ad69f5e5a525	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Errors.dc.html	f572a451c81d5eea7517341062657b82b00d3348	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Host-Linked-Tabs.dc.html	9a2b65889ab202de79c757821261ea7f30368b1f	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Host-Popup-Edit.dc.html	05e7fcc4fc2eabd71ce973419bb10c8d2428ab04	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Host-Popup-View.dc.html	62718d5392e3248bb910e66180e0fc6200a68a26	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Host-Tab-Edit.dc.html	dfb5b8e95f240156c60f883804e6d82839303413	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Host-Tab-View.dc.html	b1d7963c6df3b414d8cbbcebda4697678232fef6	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Main.dc.html	f468902f063adf0ceca119250d7070d241b5c952	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Pane-Sync.dc.html	e1e8b8dcfccc7ae4884932e00fd0fbf3ce358f48	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Charts.dc.html	4a8474273ccacb2bfe3f0aa9844a1ecca85cfd88	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Comments.dc.html	475975168e9bcb364c0a409dad8ecdc47347da84	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-CondFmt.dc.html	9597a48f11494667ee6af6546c5d35c827dc4360	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Decisions.dc.html	288c04bdbd0849cf92d0dbdebb296fcd5f7707d0	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Formulas.dc.html	a586726d5b814edafcc32db8812d2bebaac65942	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Images.dc.html	3f905c323d5b19320ae6b4404200bedc278926c2	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Numfmt.dc.html	6122be7ad2d9bf2a6ccb3274db458ff42ed76a0b	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Styles.dc.html	5e82a295df64682e357202501c39725a19fa3525	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Plugin-Validation.dc.html	54cd066f7b8be9339c2edc3dc7253472c0016cee	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/PluginKit.dc.html	e80978cd9a50ca90cdf8b0cb8b130f721b76e686	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Results-Pass-NotChecked.dc.html	d747d8d0527543dcabe1823fe8de452549c2d3a6	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Selection-And-Download.dc.html	d55f5130f65b4c58e43547b9fdb5d1f44df869c7	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Sheetpane.dc.html	0819e8cc9ccc727d587119b1db668ebdd81e1b96	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/Slot-Map.dc.html	826c5c4eb33b64c37d0598cf093d76073140370e	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/View-Upload.dc.html	649583658aa892fcebd23837d9bee8b9f9a83077	html@sha:1ee90b4c4a29e674
+work/reference/design/boards/canvas.json	8fa95d80f00982773cf0eb9f0dbc13c20d067caa	json@sha:474a2418b4b20433
+work/reference/design/prototypes/open-work-lab.html	140c0955baec930b9a4054c7f92de13f2d00335e	html@sha:1ee90b4c4a29e674
+work/reference/specs/a11y/apg-data-grids-example.html	db61dab3bfc307f8f257f13ee5f73cce9656f7bb	html@sha:1ee90b4c4a29e674
+work/reference/specs/a11y/apg-dialog-modal-pattern.html	1e3656ced7df5308df32cc13cb604c296d4e43bc	html@sha:1ee90b4c4a29e674
+work/reference/specs/a11y/apg-grid-pattern.html	3598a115b11101b4b5c95f28aaf9f28c05e3ee6c	html@sha:1ee90b4c4a29e674
+work/reference/specs/a11y/apg-tabs-pattern.html	c88121b1d8816a5c5d88d048b24c55921595c41b	html@sha:1ee90b4c4a29e674
+work/reference/specs/a11y/apg-toolbar-pattern.html	704d454c256393b8624fad160383d243cef53528	html@sha:1ee90b4c4a29e674
+work/reference/specs/csv/owasp-csv-injection.md	636869c008b54a6d355cd1b46ca2d694194b3498	prose
+work/reference/specs/csv/rfc4180-summary.md	e9c20e918496260008f05f672ffea29dbc91bbea	prose
+work/reference/specs/csv/w3c-csvw-tabular-data-model.html	be488c1e17e0e0a61ce5bdbdc997d8c2a4c875da	html@sha:1ee90b4c4a29e674
+work/reference/specs/react/react-createPortal.md	96d73539f74a6300c832cb66ef99d0ff7a58eabc	prose
+work/reference/specs/react/react-useSyncExternalStore.md	070dbd9b5260c60f88c922d5ecc47fd9877a343e	prose
+work/reference/specs/spreadsheetml/how-to-create-a-spreadsheet-document-by-providing-a-file-name.md	e668792b7e369911d5586a6813a4d49d578cd812	prose
+work/reference/specs/spreadsheetml/how-to-get-a-column-heading-in-a-spreadsheet.md	c69bf61ca74d85126636d497aa5610156a468861	prose
+work/reference/specs/spreadsheetml/how-to-insert-text-into-a-cell-in-a-spreadsheet.md	e78e1f88dd7fcb622accc977b8bcc379e1664ba8	prose
+work/reference/specs/spreadsheetml/how-to-merge-two-adjacent-cells-in-a-spreadsheet.md	936c0854034ddc79a7bd7a14e1989008388ca567	prose
+work/reference/specs/spreadsheetml/how-to-parse-and-read-a-large-spreadsheet.md	e09c23329c2960e3bf2eccdf8fb0f2c22a0cff6d	prose
+work/reference/specs/spreadsheetml/how-to-retrieve-a-list-of-the-hidden-rows-or-columns-in-a-spreadsheet.md	258e738acef9efb5553a216ab62fcaac85e57269	prose
+work/reference/specs/spreadsheetml/how-to-retrieve-a-list-of-the-hidden-worksheets-in-a-spreadsheet.md	fc35ab3709c711219985b406ae31e6f2aeced068	prose
+work/reference/specs/spreadsheetml/how-to-retrieve-a-list-of-the-worksheets-in-a-spreadsheet.md	c2d8a4c950f699b3b1676ded761df140a0543ca4	prose
+work/reference/specs/spreadsheetml/how-to-retrieve-the-values-of-cells-in-a-spreadsheet.md	0e820a65212d0b21cc679a5f6cdb54a69abcb853	prose
+work/reference/specs/spreadsheetml/overview.md	8151de4ec05d2f8b873d9f60cb5de61f46249019	prose
+work/reference/specs/spreadsheetml/structure-of-a-spreadsheetml-document.md	5f378976df61a3d9c967345488ae4bb3d095dbbb	prose
+work/reference/specs/spreadsheetml/working-with-formulas.md	857dffe615fddae2c5321cfb939df169c9cfd277	prose
+work/reference/specs/spreadsheetml/working-with-sheets.md	37abba8a004bcec2e7e9b76034f074cda10b489a	prose
+work/reference/specs/spreadsheetml/working-with-the-shared-string-table.md	9b400ecb7dc4d15db7e26f64402e52eb2f4a523c	prose
+work/reference/specs/virtual/tanstack-virtual-introduction.md	0dcb11794fedfab45fe23fd6d2e1bdc1ee4431b2	prose
+work/reference/specs/virtual/tanstack-virtual-virtualizer-api.md	3a0823cfb3404fe0d2efe0fac0508f433dec7ae2	prose
+work/reference/specs/web/mdn-blob.md	17ae603503f5e885b7ab3991afe275f617a22358	prose
+work/reference/specs/web/mdn-compressionstream-constructor.md	271a43c1425710e115e0b3af967506581c5c217b	prose
+work/reference/specs/web/mdn-compressionstream.md	e7d7aee1b4cfc42faba21ecec8cef1760bc3926f	prose
+work/reference/specs/web/mdn-decompressionstream-constructor.md	8dcbc8400ec4021777223fb7793326dc1c6eb323	prose
+work/reference/specs/web/mdn-decompressionstream.md	0c63b6e9f77423fe59cdef6a898bbfd702936c44	prose
+work/reference/specs/web/mdn-dialog-showmodal.md	e1519425fa6aea7e506cffc8c498fc07cbadfcbb	prose
+work/reference/specs/web/mdn-domparser-parsefromstring.md	4cee9fd739e1aeda953de684b6d07eddeb62e48e	prose
+work/reference/specs/web/mdn-domparser.md	20ad67552839ea17b9f3b8c685d1b2fa828cdd79	prose
+work/reference/specs/web/mdn-textencoder.md	b8d835eb1e710e8b9f287010aec732d669ee3464	prose
+work/reference/specs/web/mdn-url-createobjecturl.md	83952e572b078a4422d30de67dab73e6c2a5c526	prose
+work/reference/specs/web/mdn-using-custom-elements.md	f7d4cdbf42f8f38054e4e5574ff339770db7a005	prose
+work/reference/specs/zip/_local/pkware-appnote-6.3.4.txt	5b036851351c217690714521ad789597457bc6c0	prose
+work/reference/specs/zip/zip-subset-notes.md	1d00e8cf92f2515dbe55966f9d05ebc741ca1fa2	prose

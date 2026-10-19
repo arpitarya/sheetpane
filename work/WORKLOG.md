@@ -24,6 +24,21 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — fux docs index set up; L11 committed  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *"setup fux-engine"*, then *"set it up using uv package manager"*, then *"commit everything"*.
+- **Done:**
+  - **Install:** fux 4.0.3 is installed with `uv tool install`, from `~/.claude/fux/engine/packages/fux-core` with the engine, reader and writer alongside. A broken pyenv copy (an entry script with no module) was removed.
+  - **Repo setup:** ran `fux setup`, Claude-only. Indexed 220 docs and recorded seven ID families (`fux identifiers --write`).
+  - **Node reader:** `.fux/node` is in the pnpm workspace, and `pnpm-lock.yaml` gains `fux-engine@4.0.3` from npm (MIT).
+  - **Record:** SR-BUILD decision 1 corrected (the workspace already held `examples/*`), and decision 1a added. Ownership rows added for `.fux/`, `fux.toml` and `.claude/hooks/fux-index-hint.sh`.
+  - **L11:** ran the Cowork session's L11 check on the Mac (`test/packages.test.ts` 73/73, repo project 191/191) and committed it as `0ddf8dd`.
+- **Decided / left open:** the decider chose Claude-only agent files (no Codex, Copilot or Kiro), kept `.fux/node` in the workspace, and set the corpus to records, work, docs and the top-level docs, with archive marked archived. Not installed, because nobody asked: `fux hooks` (keeps the index current, plus a merge driver) and `fux mcp`. Every doc edit makes the committed index stale until someone runs `fux ingest`.
+- **Mistakes:** `pnpm vitest run test/` matched every package's tests. With load average 209 (the lanes session is building alongside), it timed out in 1–5 files, different ones each run. A rerun of the repo project alone passed.
+- **Next:** decide whether to install `fux hooks`, so the index is re-ingested on commit.
+
+---
+
 ## 2026-10-19 — law L11 filed: the workbook never leaves the browser  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Create a law. Everything should be within the browser. Nothing go back to the server. Meaning when you upload a CSV or when you upload an Excel file, it does not go to the server. It just stays within the browser."*
