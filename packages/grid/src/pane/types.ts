@@ -117,6 +117,35 @@ export interface ChangeEntry {
   now: unknown;
 }
 
+/**
+ * One change-map entry as the Edits view lists it (W-64, `store.edits()`): the edit's key, its place,
+ * kind, before and after, and when it was made. A kind the view does not know is listed as it is.
+ */
+export interface Edit {
+  /** The change-map key — `Sheet1!B3`, `Sheet1!#style:B3`, `Sheet1!#freeze` — what `revertEdits()` takes. */
+  key: string;
+  sheet: string;
+  /** The cell or range the edit is about (`B3`; `A1:C1` for a merge); `''` for one about the whole sheet (freeze, hidden rows, its state). */
+  ref: string;
+  kind: ChangeKind;
+  /** What the file had (for `value`: the stored cell). */
+  was: unknown;
+  /** What it holds now. */
+  now: unknown;
+  /** When the entry was last written, ISO 8601; undo brings back the entry with its time. */
+  at: string;
+}
+
+/** What an edit did to the problems on its cells (W-64, `store.editEffects(key)`): error ids, compared with before its cell first changed. */
+export interface EditEffects {
+  /** Workbook, file or rule errors that were open and are now resolved or gone. */
+  cleared: string[];
+  /** Workbook, file or rule errors open now that were not open before. */
+  raised: string[];
+  /** A person's errors whose suggestion the cell now matches (they stay open — SR-GRID decision 5). */
+  matched: string[];
+}
+
 /** A value a plugin's `derive` hook computed (W-16): never a user change. */
 export interface DerivedCell { value: Cell; text: string }
 

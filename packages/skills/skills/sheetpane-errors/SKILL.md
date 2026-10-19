@@ -30,9 +30,10 @@ decision 5.
 | property | `errors`, `errorTypes`, `readOnly`, `workbook` | |
 | property | `renderDetail` | the host's extra detail in an open row (W-68) — see below |
 | method | `getErrors()`, `setErrors(list, { plugins })` | |
+| view | *Edits n* (W-64) | every change in the pane, newest first: cell and kind, was → now, time, links to the errors it cleared or raised; **Revert** and **Revert all**, one undo step each; Edit mode, or View mode with edits (SR-ERRORS decision 16). Store: `edits()`, `editEffects(key)` → `{ cleared, raised, matched }`, `revertEdits(keys?)` |
 | event | `sheetpane-errors {errors, plugins}` | the list changed — the one to persist |
 | event | `sheetpane-reveal {error}` | **Show in sheet** was pressed: switch to the sheet's tab or open the pop-up |
-| event | `sheetpane-change`, `sheetpane-select`, `sheetpane-history` | as on the sheet, for actions taken here |
+| event | `sheetpane-change`, `sheetpane-select`, `sheetpane-history` | as on the sheet, for actions taken here (a Revert in the Edits view fires `sheetpane-change` per cell) |
 
 ## An error
 

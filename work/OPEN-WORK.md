@@ -48,8 +48,6 @@ here. Read that record before changing anything below it.
 
 - 🟡 **W-63** `agent` · **G3** · New plugin `@sheetpane/compare`: what changed between two versions of a workbook. Waiting on W-51. Filed by Arpit (Cowork). [detail](open/W-63-compare-plugin.md)
 
-- 🟢 **W-64** `agent` · **G3** · An *Edits* view in the errors panel: every change, before → after, revert one. Filed by Arpit (Cowork). [detail](open/W-64-edits-view.md)
-
 - 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
 
 ### testing

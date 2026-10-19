@@ -43,6 +43,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-68-error-detail-slot.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5b · [SR-ERRORS](../records/0106_ERRORS.md) 1, 13 · [SR-CODES](../records/0117_CODES.md) (SP-3016, SP-3017) |
 | `W-55-sheet-and-workbook-errors.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5a · [SR-ERRORS](../records/0106_ERRORS.md) 3, 4 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 · [SR-CODES](../records/0117_CODES.md) (SP-5804) |
 | `W-56-hover-and-highlight.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9, 11c |
+| `W-64-edits-view.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9a, 24 · [SR-ERRORS](../records/0106_ERRORS.md) 16 |
 | `W-66-link-to-a-cell.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9, 11d, 13 · [SR-CODES](../records/0117_CODES.md) (SP-3019) |
 | `W-45-agent-commands-hooks-plugin.md` | 2026-10-18 | [SR-SKILLS](../records/0116_SKILLS.md) decisions 2a, 4b–4d |
 | `W-47-resize-columns-rows.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 9a, 11, 12 |
