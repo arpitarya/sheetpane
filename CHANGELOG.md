@@ -8,6 +8,20 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+## 0.5.0 — the grid edits like Excel: in the cell, fill handle, drop to open (2026-10-19)
+
+`@sheetpane/grid` now edits in the cell, has a fill handle, and opens a file
+dropped on the sheet. Menus and pop-up cards are never cut off. Every other
+package is unchanged apart from the version.
+
+```bash
+npm i @sheetpane/grid@0.5.0
+```
+
+**Before you upgrade from 0.4.x:** Enter, F2 and typing now open an editor
+in the cell instead of focusing the cell bar. A test that expected the cell
+bar's input to take focus should look for `[data-sp="cell-editor"]`.
+
 ### Added
 
 - `@sheetpane/grid`: **editing in the cell**. Typing, Enter, F2 or a double press opens an editor on the cell that grows with its text, and the cell bar keeps the same draft. Enter after a run of Tabs returns to the first column. Arrows commit when you started by typing. Ctrl/⌘+Enter fills the whole range.

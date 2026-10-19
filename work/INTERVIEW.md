@@ -24,7 +24,7 @@ entry.**
 
 ## 1 · State of play
 
-*Updated 2026-10-19.* Laws L2–L11 are filed (see §3). sheetpane is an
+*Updated 2026-10-19.* Laws L2–L13 are filed (see §3). sheetpane is an
 **pnpm-workspace monorepo** (W-10; `just` runs it) with these packages:
 
 - **`@sheetpane/export`** (`packages/export`) — a JavaScript object in, `.xlsx`
@@ -135,7 +135,9 @@ with 0.3.0.
   them), L7 (view, edit and error components always in sync), L8 (an npm
   package), L9 (memory = a JavaScript object, for now), L10 (examples
   maintained with every package change), L11 (the workbook never leaves the
-  browser: sheetpane sends nothing, reads only `src`/`rules-src`). See `records/0001_LAWS.md`.
+  browser: sheetpane sends nothing, reads only `src`/`rules-src`), L12 (every plugin
+  in both demos, and *All plugins* has them all), L13 (every dropdown wholly
+  visible, inside the viewport, on top). See `records/0001_LAWS.md`.
 - The queue is the list; a blocker is a file; nothing closed is deleted.
 - Tests are not yet in place (`BACKLOG.md` B-001–B-005); the hooks and the
   commit guard are the only mechanical enforcement.

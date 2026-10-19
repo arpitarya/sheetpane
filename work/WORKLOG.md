@@ -24,6 +24,92 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — the editing work and L12/L13 committed; 0.5.0 released  ·  Claude (Claude Code, claude-opus-5-5)
+
+- **Asked:** *"commit everything and push then publish a new version."*
+- **Done:**
+  - `just check` on the Mac: 118 files, 1530 tests pass.
+  - Committed in three parts: `feat(grid)` (the in-cell editor, fill handle, file drop, floats, and SR-GRID), `docs(laws)` (L12 and L13, the demos and the gate), and this note.
+  - The SR guard asked for SR-BUILD on the demo change. Decision 11a now has *All plugins* after Review sheet, turning on every plugin, gated by `test/plugins-in-demos.test.ts`. "all eight plugins" became "every plugin".
+  - CHANGELOG `## 0.5.0 — the grid edits like Excel: in the cell, fill handle, drop to open`. It is a minor version because Enter, F2 and typing changed behaviour, and the note says what to change.
+  - `just release 0.5.0`, then CI, then `just publish 0.5.0`.
+- **Next:** W-70.
+
+---
+
+## 2026-10-19 — laws L12 and L13 filed: every plugin in the demos; every dropdown visible, in the viewport, on top  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:**
+  - *"should plugins should always have all plugins even the new ones create an sr law for the same"*
+  - *"the drop down is getting hidden make sure it is always visible, within viewport and at the top create a law sr for the same"*
+- **Done:**
+  - **Laws filed:** [SR-LAW-12](../records/0014_LAW-12-every-plugin-in-the-demos.md) (0014) and [SR-LAW-13](../records/0015_LAW-13-popups-always-visible.md) (0015).
+  - **Rows added to:** SR-LAWS, the register (the range note and the rows), the registry row for `records/README.md`, `INTERVIEW.md` §laws, and **`CLAUDE.md` §The laws: two lines, under SR-WORK-DOCS decision 7a**.
+  - **L12:**
+    - *All plugins* moves to the end of the plugin tabs in both demos and lists all 12 plugins. visibility, tables, compare and review were missing.
+    - The tab separator now sits before *All plugins*.
+    - Gate: `test/plugins-in-demos.test.ts` reads every `registerPlugin` id from the packages. It fails if a plugin is not imported, has no tab of its own, or is missing from *All plugins*, in either demo. It also fails when one is planted.
+  - **L13:**
+    - New `packages/grid/src/excel/float.ts`. Every `.card` menu, list or pop-up is lifted into the top layer (`popover="manual"`). On every render, page scroll and resize it is placed back where its markup put it, inside the viewport: moved in from the edges, above its cell near the bottom, scrolling inside when too tall, and never over its own toggle.
+    - Esc now closes the keyboard help.
+    - Gate: `float.test.ts` (4 tests). Three of them fail with floating turned off.
+  - **Also:** the CHANGELOG (Fixed), SR-GRID 11e, and `llms-full.txt` regenerated.
+- **Verified:**
+  - **Grid:** 349 of 349 pass.
+  - **Full suite:** 1522 of 1529 pass. The 7 failures are environment-only or fixed since:
+    - `skills` links and `worklog` need `work/` and `archive/`, which the snapshot left out;
+    - `llms` freshness: regenerated on the Mac afterwards;
+    - `tsdoc`: the `@param extent` was added.
+  - **demo-check:** 57 of 57.
+  - **Chrome** (`just demo-html`): the J header menu is shown whole over the errors panel; the cell menu on row 15 opens above the cell; the download menu and the keyboard help are inside the viewport.
+- **Decided / left open:**
+  - A floated card stays in its shadow tree, so the host font and the tokens hold (L4, L5).
+  - A dropdown left out of `FLOATS` is not caught by the gate. That is judgment.
+  - *All plugins* runs `compare` without a `base`: it does what it can there, and its own tab shows it fully.
+- **Mistakes:** the first `FLOATS` matched the help *button* (class `help`), which floated it. Every entry is now `.card.<name>`, and the gate checks that only cards float.
+- **Next:**
+  - Run `just check` on the Mac.
+  - Commit with explicit pathspecs. Nothing has been committed, at the decider's word.
+
+---
+
+## 2026-10-19 — the grid edits like Excel: in the cell, fill handle, Ctrl+Enter, Ctrl+D/R, drop to open  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"test and improve the user experience like click, drag and drop, etc … create it like a ux masterpiece … more smooth than ms excel"*
+- **Found in the demo (127.0.0.1:5173, Chrome):** what was rough:
+  - editing happened only in the cell bar (the cell kept its old text while you typed);
+  - a double-click never reached the cell (Pointer Events) and the name box was left reading "1R × 1C" after a click;
+  - after Enter, a blue frame drew round the whole grid;
+  - a right-click collapsed a range;
+  - there was no fill handle, no Ctrl+Enter or Ctrl+D/R, and no way to drop a file on a loaded sheet.
+- **Done** (`packages/grid/src/excel/element.ts`, `styles.ts`, new `fill.ts`; tests `test/editing.test.ts` (14), `excel.test.ts` updated):
+  - **Editing in the cell:** an editor on the cell with the cell bar in sync; Excel's Enter and Tab moves, enter and edit modes, and Esc.
+  - **The fill handle:** series, text with numbers and formulas, a live tip, autoscroll, Ctrl/⌘ to swap, double-click to fill down, Esc to cancel.
+  - **New keys:** Ctrl+Enter, Ctrl+D and Ctrl+R.
+  - **Drop to open,** with an overlay.
+  - **Fixes:** a right-click keeps the range, the focus ring shows after Tab only, the name box is fixed, and headers react on hover.
+  - **Keyboard help:** lists the new keys.
+  - **Records:** SR-GRID 11a and a new 11e; CHANGELOG Added and Changed.
+- **Verified:**
+  - **Chrome:** each fix was checked in the demo.
+  - **Full suite:** run in the cloud container from a snapshot of the repo: 1493 of 1498 pass. The 5 failures are skills-link and worklog checks that need `work/`, which the snapshot left out.
+  - **Grid:** 343 of 343 pass.
+  - **demo-check:** 57 of 57.
+- **Decided / left open:** the decisions above are in SR-GRID 11e.
+  - **Double press:** two presses within 400 ms, since `dblclick` does not arrive after a prevented `pointerdown`.
+  - **Fill:** values only, no formats.
+  - **Not built:** Excel's "Q1→Q2" quarter lists, and drag-to-move a range by its border. Those are candidates for later.
+- **Follow-up, same day — "add column or row is not working":**
+  - **Reproduced** in headless Chromium on the HTML demo (Arpit's server was down, and this session cannot start `just demo-html` on his Mac).
+  - **What happened:** inserting in the middle worked. Inserting right of J (the last column) or below the last row changed nothing on screen. The store trims trailing empty columns and rows, and the grid is sized by the data, so the new empty column never showed and there was nowhere to type.
+  - **Fix:** `sheetGeometry` takes a `SheetExtent` floor. `followStructure` sets it to what the grid showed plus or minus the count, and a load clears it.
+  - **Tests:** 2 in `structure-ui.test.ts`; both fail without the fix. Grid: 345 of 345 pass. demo-check: all pass.
+  - **Checked in the demo:** after inserting right of J, K shows and K3 takes "Notes".
+- **Mistakes:** none.
+- **Next:** run `just check` on the Mac and commit.
+
+---
+
 ## 2026-10-19 — 0.4.0 published: all 20 packages on npm  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *"commit everything and pull the latest changes merge all branches to main and delete other branches"*, then the publish.
