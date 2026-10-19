@@ -5,8 +5,8 @@ import type { ChangeKind, Mode, SheetpaneError, SheetpaneErrors, SheetpaneExcel,
 export interface SheetpaneExcelEventMap {
   /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'sheetpane-load': CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number; sha256: string | undefined } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
-  'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>;
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
+  'sheetpane-change': CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown; op?: 'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols'; at?: number; count?: number }>;
   /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'sheetpane-errors': CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>;
   /** `{ visible, layers }` when the visible review layers change (W-51). */

@@ -1,7 +1,7 @@
 // <sheetpane-excel> — the sheet: the view and edit components as two modes of one
 // element (W-01). Plain DOM in an open shadow root (grid verdict decisions 2, 6);
 // every byte of state lives in the pane's store (L7); the contract is the DOM's (L4).
-import { cellRef, codeOf, colName, detailOf, download, parseRange, parseRef, spError, spMessage, type Cell, type RangePos } from '@sheetpane/export';
+import { cellRef, codeOf, colName, detailOf, download, parseRange, parseRef, shiftIndex, shiftRangePos, spError, spMessage, type Cell, type RangePos, type StructureOp } from '@sheetpane/export';
 import type { ImportedSheet } from '@sheetpane/import';
 import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry, Plugin } from '../plugins/types.js';
@@ -106,7 +106,7 @@ export interface HighlightOptions {
  * happened. Cell payloads also carry `column: { index, letter, header }`.
  *
  * @fires sheetpane-load `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`.
- * @fires sheetpane-change `{ sheet, ref, kind, was, now }` for each change, undo and redo included.
+ * @fires sheetpane-change `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`.
  * @fires sheetpane-errors `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed.
  * @fires sheetpane-layers `{ visible, layers }` when the visible review layers change (W-51).
  * @fires sheetpane-select `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release.
@@ -572,6 +572,7 @@ export class SheetpaneExcel extends ElementBase {
       });
     }
     if (e.type === 'load') { this._sizes = {}; this.sizesVer++; this.rz = undefined; this.hdrMenu = undefined; this.geom = undefined; this.findHits = []; this.findVersion = -1; for (const el of this.overlayCache.values()) el.remove(); this.overlayCache.clear(); }
+    if (e.type === 'change' && e.kind === 'structure') this.followStructure(e);
     const mine = e.origin === this || (e.origin === undefined && isPrimary(this._store!, this));
     if (!mine) return;
     const s = this._store!;
@@ -584,7 +585,7 @@ export class SheetpaneExcel extends ElementBase {
         break;
       }
       case 'change':
-        fire(this, 'sheetpane-change', { sheet: e.sheet, ref: e.ref, kind: e.kind, was: e.was, now: e.now });
+        fire(this, 'sheetpane-change', e.kind === 'structure' ? { sheet: e.sheet, ref: e.ref, kind: e.kind, was: e.was, now: e.now, op: e.op, at: e.at, count: e.count } : { sheet: e.sheet, ref: e.ref, kind: e.kind, was: e.was, now: e.now });
         if (e.kind === 'hidden' || e.kind === 'sheetState') this.visibilityEvent(e.sheet, e.ref, e.kind, e.was, e.now);
         break;
       case 'errors': fire(this, 'sheetpane-errors', s.envelope(e.layers)); break;
@@ -1035,6 +1036,7 @@ export class SheetpaneExcel extends ElementBase {
     const item = (act: string, label: string, kbd = '') => `<button type="button" role="menuitem" class="mi" data-act="${act}">${esc(label)}${kbd ? `<span class="kbd">${esc(kbd)}</span>` : ''}</button>`;
     const flag = o.flag && edit && !err && s.flagging;
     const out = [flag ? item('flag', 'Flag issue', 'F') + '<div role="separator" class="msep"></div>' : '', item('copy-ref', 'Copy ref'), this.link === 'hash' ? item('copy-link', 'Copy link') : '', item('copy-value', snap.selection.range ? 'Copy values' : 'Copy value', 'Ctrl/⌘+C')];
+    if (edit) out.push(this.structureItems('cell'));
     const plugs = o.plugins && edit ? controlsFor(s.plugins, 'selbar', 'edit').filter((x) => !x.menus || x.menus.includes('cell')) : [];
     if (plugs.length) out.push('<div role="separator" class="msep fold"></div>');
     for (const c of plugs) {
@@ -1081,6 +1083,7 @@ export class SheetpaneExcel extends ElementBase {
     else if (act === 'copy-ref') this.copy(this.refOf(sel));
     else if (act === 'copy-link') this.copy(this.linkUrl());
     else if (act === 'copy-value') this.copySelection();
+    else if (act && /^(ins-(above|below|left|right)|del-(rows|cols))$/.test(act)) this.runStructure(act);
     else if (t.closest('[data-control]')) this.runControl(e);
     this.schedule();
   }
@@ -1144,6 +1147,7 @@ export class SheetpaneExcel extends ElementBase {
       ['Home / End', 'Row start / end'], ['Ctrl + Home / End', 'First / last cell'],
       ['Page Up / Down', 'Move a screen'], ['Enter or F2', 'Edit the cell (Edit)'], ['Type', 'Replace the cell (Edit)'], ['Delete', 'Clear the cell or range (Edit)'],
       ['F', 'Flag issue (Edit)'], ['Esc', 'Cancel a drag or copy · close the pop-up'], ['Ctrl/⌘ + Z', 'Undo'], ['Ctrl + Y, ⌘ + Shift + Z', 'Redo'], ['Ctrl/⌘ + C', 'Copy the value or the range'], ['Shift + F10 or Menu', 'Selection actions'],
+      ['Ctrl/⌘ + Shift + =', 'Insert rows above (whole columns: columns left) (Edit)'], ['Ctrl/⌘ + −', 'Delete the selected rows or columns (Edit)'],
     ].map(([keys, what]) => ({ keys: keys!, what: what! }));
     const plug = (this._store?.plugins ?? []).flatMap((p) => p.controls ?? []).filter((c) => c.shortcut).map((c) => ({ keys: c.shortcut!, what: c.label }));
     return [...(this._store && !this._store.flagging ? own.filter((x) => x.keys !== 'F') : own), ...plug];
@@ -1744,6 +1748,99 @@ export class SheetpaneExcel extends ElementBase {
     this.q.grid.focus({ preventScroll: true });
   }
 
+  // ── rows and columns (W-52): the cell menu, the header menu and Ctrl+Shift+= / Ctrl+− ──
+  /** The rows and columns the selection spans, and whether it is whole rows or whole columns. */
+  private selSpan(): { sheet: string; top: number; bottom: number; left: number; right: number; wholeRows: boolean; wholeCols: boolean } | undefined {
+    const s = this._store, g = this.geometry();
+    if (!s || !g) return undefined;
+    const sel = s.getSnapshot().selection, p = parseRef(sel.ref);
+    const r = (sel.range ? parseRange(sel.range) : undefined) ?? (p && { top: p.row, bottom: p.row, left: p.col, right: p.col });
+    if (!r) return undefined;
+    return { sheet: sel.sheet, ...r, wholeRows: r.left === 0 && r.right >= g.g.cols - 1, wholeCols: r.top === 0 && r.bottom >= g.g.rows - 1 };
+  }
+
+  /** The operation a menu item or key names, over the selection (or the header menu's indexes). */
+  private structureOp(act: string, indexes?: readonly number[]): StructureOp | undefined {
+    const sp = this.selSpan();
+    if (!sp) return undefined;
+    const from = indexes?.length ? Math.min(...indexes) : undefined, to = indexes?.length ? Math.max(...indexes) : undefined;
+    const top = from ?? sp.top, bottom = to ?? sp.bottom, left = from ?? sp.left, right = to ?? sp.right;
+    const rows = bottom - top + 1, cols = right - left + 1;
+    switch (act) {
+      case 'ins-above': return { sheet: sp.sheet, op: 'insertRows', at: top, count: rows };
+      case 'ins-below': return { sheet: sp.sheet, op: 'insertRows', at: bottom + 1, count: rows };
+      case 'ins-left': return { sheet: sp.sheet, op: 'insertCols', at: left, count: cols };
+      case 'ins-right': return { sheet: sp.sheet, op: 'insertCols', at: right + 1, count: cols };
+      case 'del-rows': return { sheet: sp.sheet, op: 'deleteRows', at: top, count: rows };
+      case 'del-cols': return { sheet: sp.sheet, op: 'deleteCols', at: left, count: cols };
+    }
+    return undefined;
+  }
+
+  /** Insert and delete as menu items: greyed, with the reason in the tooltip, when refused. `rows` / `cols`: the header menu's axis only. */
+  private structureItems(which: 'cell' | 'rows' | 'cols', indexes?: readonly number[]): string {
+    const s = this._store;
+    if (!s || s.getSnapshot().load.status !== 'ready') return '';
+    const sp = this.selSpan();
+    if (!sp) return '';
+    const n = (a: number, b: number) => (indexes?.length ? Math.max(...indexes) - Math.min(...indexes) : b - a) + 1;
+    const nr = n(sp.top, sp.bottom), nc = n(sp.left, sp.right);
+    const rowsWord = (k: number) => (k === 1 ? 'row' : `${k} rows`), colsWord = (k: number) => (k === 1 ? 'column' : `${k} columns`);
+    const item = (act: string, label: string, kbd = '') => {
+      const o = this.structureOp(act, indexes), no = o && s.structureRefusal(o);
+      return `<button type="button" role="menuitem" class="mi" data-act="${act}"${no ? ` disabled title="${esc(no.message)}"` : ''}>${esc(label)}${kbd ? `<span class="kbd">${esc(kbd)}</span>` : ''}</button>`;
+    };
+    const rows = [item('ins-above', `Insert ${rowsWord(nr)} above`, which === 'cols' ? '' : 'Ctrl/⌘+Shift+='), item('ins-below', `Insert ${rowsWord(nr)} below`), item('del-rows', `Delete ${rowsWord(nr)}`, which === 'rows' ? 'Ctrl/⌘+−' : '')];
+    const cols = [item('ins-left', `Insert ${colsWord(nc)} left`, which === 'cols' ? 'Ctrl/⌘+Shift+=' : ''), item('ins-right', `Insert ${colsWord(nc)} right`), item('del-cols', `Delete ${colsWord(nc)}`, which === 'cols' ? 'Ctrl/⌘+−' : '')];
+    const list = which === 'rows' ? rows : which === 'cols' ? cols : [rows[0]!, rows[1]!, cols[0]!, cols[1]!, rows[2]!, cols[2]!]; // as Google Sheets lists them: inserts, then deletes
+    return `<div role="separator" class="msep"></div>${list.join('')}`;
+  }
+
+  /** Runs one insert or delete; a refusal is said in the status line, never thrown. The selection keeps its address, as in Excel. */
+  private runStructure(act: string, indexes?: readonly number[]): void {
+    const s = this._store, o = this.structureOp(act, indexes);
+    this.ctxOpen = false; this.moreOpen = false;
+    if (!s || !o || s.getSnapshot().mode !== 'edit') { this.schedule(); return; }
+    const no = s.structureRefusal(o);
+    if (no) { this.say0(no.message); return; }
+    const sel = s.getSnapshot().selection;
+    const done = o.op === 'insertRows' ? s.insertRows(o.sheet, o.at, o.count, this) : o.op === 'deleteRows' ? s.deleteRows(o.sheet, o.at, o.count, this) : o.op === 'insertCols' ? s.insertCols(o.sheet, o.at, o.count, this) : s.deleteCols(o.sheet, o.at, o.count, this);
+    if (!done) { this.schedule(); return; }
+    const g = this.geometry();
+    const clamp = (ref: string) => { const p = parseRef(ref); return p && g ? cellRef(Math.min(p.row, g.g.rows - 1), Math.min(p.col, g.g.cols - 1)) : ref; };
+    const r = sel.range ? parseRange(sel.range) : undefined;
+    const range = r && g ? rangeText({ top: Math.min(r.top, g.g.rows - 1), left: Math.min(r.left, g.g.cols - 1), bottom: Math.min(r.bottom, g.g.rows - 1), right: Math.min(r.right, g.g.cols - 1) }) : undefined;
+    s.select(range ? { sheet: sel.sheet, ref: clamp(sel.ref), range } : { sheet: sel.sheet, ref: clamp(sel.ref) }, this);
+    const what = `${o.count} ${o.op.endsWith('Rows') ? (o.count === 1 ? 'row' : 'rows') : o.count === 1 ? 'column' : 'columns'}`;
+    this.say0(`${o.op.startsWith('insert') ? 'Inserted' : 'Deleted'} ${what}`);
+  }
+
+  /** Ctrl/⌘+Shift+= inserts above (whole columns: left); Ctrl/⌘+− deletes whole rows or columns, and asks for them otherwise. */
+  private structureKey(kind: 'insert' | 'delete'): void {
+    const sp = this.selSpan();
+    if (!sp) return;
+    if (kind === 'insert') { this.runStructure(sp.wholeCols && !sp.wholeRows ? 'ins-left' : 'ins-above'); return; }
+    if (sp.wholeRows) this.runStructure('del-rows');
+    else if (sp.wholeCols) this.runStructure('del-cols');
+    else this.say0('Select whole rows (Shift+Space) or columns (Ctrl+Space) to delete them');
+  }
+
+  /** What this element keeps per row or column follows an insert or delete: sizes, what it shows of hidden rows, the highlight. */
+  private followStructure(e: Extract<StoreEvent, { type: 'change' }>): void {
+    const o: StructureOp = { sheet: e.sheet, op: e.op!, at: e.at!, count: e.count! };
+    const rows = o.op.endsWith('Rows');
+    const move = (rec: Record<number, number>) => { const out: Record<number, number> = {}; for (const [k, v] of Object.entries(rec)) { const j = shiftIndex(Number(k), o); if (j !== undefined) out[j] = v; } return out; };
+    const z = this._sizes[e.sheet];
+    if (z) this._sizes[e.sheet] = rows ? { ...z, rows: move(z.rows) } : { ...z, cols: move(z.cols) };
+    const rv = this.revealed[e.sheet];
+    if (rv) { const set = (x: Set<number>) => new Set([...x].flatMap((i) => { const j = shiftIndex(i, o); return j === undefined ? [] : [j]; })); this.revealed[e.sheet] = rows ? { ...rv, rows: set(rv.rows) } : { ...rv, cols: set(rv.cols) }; }
+    if (this.hl) this.hl = { ...this.hl, items: this.hl.items.flatMap((h) => { if (h.sheet !== e.sheet) return [h]; const m = shiftRangePos(h.range, o); return m ? [{ ...h, range: m }] : []; }) };
+    this.sizesVer++; this.revealVer++;
+    this.anchor = undefined; this.hdrMenu = undefined; this.rz = undefined; this.geom = undefined; this.findHits = []; this.findVersion = -1;
+    for (const el of this.overlayCache.values()) el.remove();
+    this.overlayCache.clear();
+  }
+
   /** The `selbar` controls that join a menu (W-49 `menus`), as menu items under a separator. */
   private pluginMenuItems(menu: 'header' | 'tab', sel?: { sheet: string; ref: string; range?: string }): string {
     const s = this._store!, snap = s.getSnapshot();
@@ -1775,7 +1872,7 @@ export class SheetpaneExcel extends ElementBase {
       return `<div class="card szpop" role="dialog" aria-label="${what}" style="top:${y}px;left:${x}px;width:220px"><div class="bd"><label class="field"><span>${what} (px)</span><input class="input" type="number" data-field="size" min="${m.axis === 'col' ? COL_MIN : ROW_MIN}" max="${m.axis === 'col' ? COL_MAX : ROW_MAX}" value="${cur}" aria-label="${what} in pixels"></label><span class="xs faint">Arrows ±1 · Shift ±10 · Enter applies${m.indexes.length > 1 ? ` to ${m.indexes.length} ${m.axis === 'col' ? 'columns' : 'rows'}` : ''}</span></div><div class="ft"><span class="spacer"></span><button type="button" class="btn btn-g" data-act="hcancel">Cancel</button><button type="button" class="btn btn-p" data-act="happly">Apply</button></div></div>`;
     }
     const item = (act: string, label: string) => `<button type="button" role="menuitem" class="mi" data-act="${act}">${esc(label)}</button>`;
-    return `<div class="card ctxmenu hdrmenu" role="menu" aria-label="${m.axis === 'col' ? 'Column' : 'Row'} menu" data-sp="header-menu" style="top:${y}px;left:${x}px">${item('hfit', 'Fit to data')}${item('hsize', `${what}…`)}${item('hreset', 'Reset to the file’s size')}${this.pluginMenuItems('header')}</div>`;
+    return `<div class="card ctxmenu hdrmenu" role="menu" aria-label="${m.axis === 'col' ? 'Column' : 'Row'} menu" data-sp="header-menu" style="top:${y}px;left:${x}px">${item('hfit', 'Fit to data')}${item('hsize', `${what}…`)}${item('hreset', 'Reset to the file’s size')}${this._store!.getSnapshot().mode === 'edit' ? this.structureItems(m.axis === 'col' ? 'cols' : 'rows', m.indexes) : ''}${this.pluginMenuItems('header')}</div>`;
   }
 
   /** A header click: the whole column, row or sheet; with Shift, out to it from the anchor. */
@@ -1886,6 +1983,8 @@ export class SheetpaneExcel extends ElementBase {
     else if (mod && (k === 'z' || k === 'Z')) { if (e.shiftKey) s.redo(this); else s.undo(this); }
     else if (mod && (k === 'y' || k === 'Y')) s.redo(this);
     else if (mod && (k === 'c' || k === 'C')) this.copySelection();
+    else if (edit && mod && !e.altKey && (k === '+' || (e.shiftKey && k === '='))) this.structureKey('insert');
+    else if (edit && mod && !e.altKey && !e.shiftKey && (k === '-' || k === '_')) this.structureKey('delete');
     else if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') {
       // a whole column or row selected: its size menu (W-47); otherwise the selection actions
       const whole = range && (range.top === 0 && range.bottom >= g.g.rows - 1 ? 'col' : range.left === 0 && range.right >= g.g.cols - 1 ? 'row' : undefined);
@@ -2080,6 +2179,13 @@ export class SheetpaneExcel extends ElementBase {
       case 'hsize': if (this.hdrMenu) { this.hdrMenu.sizing = true; this.schedule(); requestAnimationFrame(() => this.q.overlay.querySelector<HTMLInputElement>('.szpop input')?.select()); } break;
       case 'happly': this.applySizeField(); break;
       case 'hcancel': this.hdrMenu = undefined; this.schedule(); this.q.grid.focus({ preventScroll: true }); break;
+      case 'ins-above': case 'ins-below': case 'ins-left': case 'ins-right': case 'del-rows': case 'del-cols': {
+        const ix = this.hdrMenu?.indexes;
+        this.hdrMenu = undefined;
+        this.runStructure(act, ix);
+        this.q.grid.focus({ preventScroll: true });
+        break;
+      }
       case 'flag': this.flag(); break;
       case 'copy-ref': this.copy(this.refOf(sel)); break;
       case 'copy-link': this.copy(this.linkUrl()); break;

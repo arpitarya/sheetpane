@@ -7,6 +7,8 @@ import { CT, NS_PKG_REL, REL, XML_DECL } from './ooxml.js';
 import { MAX_COLS, MAX_ROWS, cellRef, parseRange, parseRef, rangeRef, rangesIntersect, type RangePos } from './refs.js';
 import { checkConditionalFormats, checkDataValidations, checkDxfs, conditionalFormatsXml, dataValidationsXml, dxfXml } from './rules.js';
 import type { Cell, Change, ConditionalFormat, DataValidation, Dxf, SheetState } from './types.js';
+import { applyStructure } from './restructure.js';
+import type { StructureOp } from './structure.js';
 import { checkCell } from './validate.js';
 import { cellXml, paneXml, stylesXml } from './xlsx.js';
 import { escapeAttr, fromUtf8, unescapeXml, utf8 } from './xml.js';
@@ -64,6 +66,13 @@ export interface PatchOptions extends WriteOptions, ZipLimits {
   conditionalFormats?: { sheet: string; formats: ConditionalFormat[] }[];
   /** Differential formats appended to the file's `<dxfs>`: the first takes the id after the file's last (W-57). */
   dxfs?: Dxf[];
+  /**
+   * Rows and columns inserted or deleted (W-52), applied to the upload first and in order: every
+   * part that names a cell is moved, so `changes`, `merges`, `freeze` and `hidden` are given as
+   * the sheet stands after them. A pivot table or its source that would move, or a table or an
+   * array formula that would be cut, is refused (`bad-structure`).
+   */
+  structure?: StructureOp[];
 }
 
 /** One sheet's hidden state for `patchXlsx`'s `hidden` option. Indexes are 0-based; every list is the whole set after the edit. */
@@ -223,10 +232,13 @@ async function locateWorkbook(parts: Parts): Promise<{ wbPath: string; sheets: S
   return { wbPath, sheets };
 }
 
-interface ParsedCell { col: number; attrs: string; body: string | undefined; xml: string }
-interface ParsedRow { num: number; open: string; body: string | undefined }
+/** One `<c>` of a row: its column, attributes, body and whole XML (with `r`). */
+export interface ParsedCell { col: number; attrs: string; body: string | undefined; xml: string }
+/** One `<row>`: its number (1-based), opening tag and body (undefined when self-closing). */
+export interface ParsedRow { num: number; open: string; body: string | undefined }
 
-function parseRows(inner: string, P: string): ParsedRow[] {
+/** The `<row>` elements of a sheetData's inner XML. */
+export function parseRows(inner: string, P: string): ParsedRow[] {
   const rows: ParsedRow[] = [];
   const re = new RegExp(`<${P}row\\b[^>]*?(/?)>`, 'g');
   const close = `</${P}row>`;
@@ -247,7 +259,8 @@ function parseRows(inner: string, P: string): ParsedRow[] {
   return rows;
 }
 
-function parseCells(body: string, rowNum: number, P: string): ParsedCell[] {
+/** The `<c>` elements of a row's body. */
+export function parseCells(body: string, rowNum: number, P: string): ParsedCell[] {
   const cells: ParsedCell[] = [];
   const re = new RegExp(`<${P}c(?=[\\s>/])([^>]*?)(?:/>|>([\\s\\S]*?)</${P}c>)`, 'g');
   let m: RegExpExecArray | null, prev = -1;
@@ -765,6 +778,11 @@ export async function patchXlsx(original: Uint8Array, changes: Change[], o: Patc
   const limits: ZipLimits = { maxEntrySize: o.maxEntrySize ?? DEFAULT_LIMITS.maxEntrySize, maxTotalSize: o.maxTotalSize ?? DEFAULT_LIMITS.maxTotalSize };
   const parts = new Parts(original, readZip(original, limits), limits);
   const { wbPath, sheets } = await locateWorkbook(parts);
+  if (o.structure?.length) {
+    await applyStructure(parts, wbPath, sheets, o.structure);
+    parts.write(wbPath, setFullCalcOnLoad((await parts.text(wbPath))!));
+    await dropCalcChain(parts, wbPath); // the chain names cells by position
+  }
   const grouped = new Map<string, Map<string, Cell>>();
   for (const c of changes) {
     const sheet = sheets.find((s) => s.name === c.sheet);

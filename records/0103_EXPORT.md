@@ -155,6 +155,10 @@ else.
      state → `bad-value`, no visible sheet left → `sheet-count`. Sheets not
      named stay byte for byte. Checked through ExcelJS and the import
      package; not yet opened in Excel or LibreOffice (W-30's files);
+   - `structure: [{ sheet, op, at, count }]` (W-52) inserts and deletes rows
+     and columns in the upload first, in order — decision 11; `changes`,
+     `merges`, `freeze` and `hidden` are then given as the sheet stands
+     after them;
    - runs each `exportPatch` hook after its own writes, with a
      `PatchContext` (`list`, `has`, `readText`, `readBytes`, `write`,
      `remove`, `workbookPath`, `sheetNames`, `sheetPath`, `relsPathOf`,
@@ -212,6 +216,38 @@ else.
     edit); moving a table's `ref` when rows are inserted is W-52's.
 10. **No runtime dependencies** (SR-LAW-2). `download()` lives in this
     package too — [SR-DOWNLOAD](0101_DOWNLOAD.md).
+11. **Rows and columns inserted or deleted (W-52):** one operation is
+    `StructureOp { sheet, op: 'insertRows' | 'deleteRows' | 'insertCols' |
+    'deleteCols', at (0-based), count }`, and **one implementation** shifts
+    for it (`structure.ts`, shared with `@sheetpane/import` and the grid):
+    an index moves or is deleted; a span widens on an insert strictly inside
+    it and is clipped by a delete, gone when wholly deleted; a leading count
+    (a frozen split) grows or shrinks; A1 text keeps its `$` signs (absolute
+    references move too, as in Excel); `restructureFormula(f, host, op)`
+    moves every reference to the sheet — qualified, or unqualified on the
+    host sheet — and writes `#REF!` (`Sheet1!#REF!`) for a deleted target,
+    leaving strings, other sheets, external (`[1]Sheet!A1`), 3-D and
+    structured references alone. `patchXlsx`'s `structure` option
+    (`restructure.ts`) rewrites, per operation: the sheet's rows and cells
+    (deleted ones go, `spans` dropped), every sheet's cell formulas (a shared
+    group that names the sheet is written out per cell; array and data-table
+    ranges move), `<dimension>`, the frozen pane's split and corner, the
+    selections, `<cols>` (a span an insert starts inside is split — new
+    columns take the default width; neighbours a delete closes up rejoin),
+    `<mergeCells>`, the autofilter (filter columns follow their column) and
+    sort state, the existing `<dataValidations>` and `<conditionalFormatting>`
+    blocks and their x14 twins (a block wholly deleted goes — its own
+    function, so whole-block options compose after it), hyperlinks,
+    protected ranges, ignored errors, cell watches and page breaks; tables
+    (range, autofilter, a deleted column's `<tableColumn>`, calculated
+    formulas), drawing anchors (a point in a deleted row is pulled to the
+    gap), legacy notes and their VML shapes, threaded comments, every chart's
+    series (`restructureChartXml`), and the defined names; then drops the
+    calculation chain and sets `fullCalcOnLoad`. **Refused, the file left
+    as it was** (`bad-structure`, SP-2016): moving a pivot table or its
+    worksheet source, cutting an array formula or a data table, and a table
+    cut it cannot follow (`tableRefusal`: all of it, its header or totals
+    row, every data row, or columns inserted inside it).
 
 **Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107. W-57 adds SP-2015 (`bad-rule`).
 
@@ -239,6 +275,13 @@ else.
 - `patchXlsx`'s `dxfs` are appended, never deduplicated or removed: a format
   no rule names any more stays in `styles.xml` (harmless, like orphaned
   shared strings).
+- **W-52 (2026-10-19):** `restructure.test.ts` (19) — every part above on a
+  hand-written workbook (`test/fixtures/structure.ts`) with ExcelJS read-back,
+  the refusals, and the fast-check property that inserting then deleting the
+  same span gives back every part byte for byte; `structure.test.ts` (9) for
+  the pure shifts; `@sheetpane/import`'s property that the moved workbook
+  reads the same as the moved file. Opening a shifted Excel-saved file in
+  Excel is the decider's (W-30).
 - Shared strings orphaned by a patch stay in the table (harmless; keeps the
   patch small); the table's `count` is not recomputed.
 

@@ -171,12 +171,12 @@ export type RenderDetail = (error: SheetpaneError) => Node | string | null | und
 export const copyError = (e: SheetpaneError): SheetpaneError => (e.meta !== null && typeof e.meta === 'object' ? { ...e, meta: structuredClone(e.meta) } : { ...e });
 
 /** Plugins verdict decision 6. */
-export type ChangeKind = 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze' | 'hidden' | 'sheetState' | 'outline';
+export type ChangeKind = 'value' | 'style' | 'numFmt' | 'formula' | 'merge' | 'freeze' | 'hidden' | 'sheetState' | 'outline' | 'structure';
 
 /** Whether Excel shows a sheet: `veryHidden` is hidden from Excel's own Unhide list (W-49). */
 export type { SheetState } from '@sheetpane/export';
 
-/** One entry of the change map, keyed `sheet!ref` (or `sheet!#freeze`). */
+/** One entry of the change map, keyed `sheet!ref` (or `sheet!#freeze`; `sheet!#structure` holds the sheet's inserts and deletes, in order, W-52). */
 export interface ChangeEntry {
   kind: ChangeKind;
   /** The uploaded value (for `value`: the stored cell; for others: the plugin's own shape). */

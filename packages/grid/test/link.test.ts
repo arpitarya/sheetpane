@@ -19,7 +19,7 @@ const selects = (el: Element) => { const got: { sheet: string; ref: string; rang
 /** Waits past the 300 ms the fragment write waits for the selection to settle. */
 const settle = () => new Promise((r) => setTimeout(r, 400));
 const nextHashChange = () => new Promise<void>((r) => addEventListener('hashchange', () => r(), { once: true }));
-const menuItems = (root: Element) => [...root.querySelectorAll('[role=menuitem]')].map((x) => x.firstChild!.textContent);
+const menuItems = (root: Element) => [...root.querySelectorAll('[role=menuitem]')].map((x) => x.firstChild!.textContent).filter((t) => !/^(Insert|Delete) /.test(t!)); // W-52's insert and delete: structure-ui.test.ts
 const openMenu = async (el: SheetpaneExcel, r: number, c: number) => {
   cellEl(el, r, c)!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true, button: 2 }));
   await frame(); await frame();

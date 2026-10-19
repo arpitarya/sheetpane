@@ -69,6 +69,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-2013](#sp-2013) | Archive over the size limit | error |
 | [SP-2014](#sp-2014) | Not a workbook package | error |
 | [SP-2015](#sp-2015) | Invalid validation or conditional-format rule | error |
+| [SP-2016](#sp-2016) | Insert or delete refused | error |
 | [SP-2101](#sp-2101) | download() needs a file name | error |
 | [SP-2102](#sp-2102) | Only .xlsx or .csv can be saved | error |
 | [SP-2103](#sp-2103) | File type cannot be told | error |
@@ -97,6 +98,10 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3019](#sp-3019) | Cell to open at not found | warning |
 | [SP-3020](#sp-3020) | Nothing to check | error |
 | [SP-3021](#sp-3021) | Layer name not valid | warning |
+| [SP-3022](#sp-3022) | Delete would split a merged range | warning |
+| [SP-3023](#sp-3023) | Insert or delete would move a pivot table | warning |
+| [SP-3024](#sp-3024) | Insert would push cells off the sheet | warning |
+| [SP-3025](#sp-3025) | Insert or delete would cut a table | warning |
 | [SP-5001](#sp-5001) | Review sheet not written | error |
 | [SP-5002](#sp-5002) | Flagged cells not coloured on a sheet | error |
 | [SP-5003](#sp-5003) | Range too large to colour whole | note |
@@ -357,6 +362,14 @@ plain `Error`s or `TypeError`s.
 - **Likely cause:** an empty or malformed `sqref`; an unknown `type`, `operator`, `errorStyle`, `timePeriod`, cfvo type or icon set; a title over 32 or a message over 255 characters; a quoted list over 255 characters; a conditional format with no rule; a `dxfId` the workbook has no format for; a colour scale, data bar or icon set without the thresholds or colour it needs.
 - **Fix:** correct the rule the message names. Put a long list on a sheet and point `formula1` at the range; add the format to `dxfs` before naming its `dxfId`.
 
+### SP-2016
+
+**Insert or delete refused** · error · [SR-EXPORT](../records/0103_EXPORT.md) decision 11 · `code: 'bad-structure'`
+
+- **Meaning:** `patchXlsx`'s `structure` option would have to move something it does not rewrite — a pivot table or its source range — or cut something Excel keeps whole: an array formula, a data table, or a table (all of it, its header or totals row, every data row, or columns inserted inside it). Nothing is written; the file is left as it was. Also thrown for an operation that is not an insert or delete of whole rows or columns.
+- **Likely cause:** the grid's store refuses these first (SP-3022 to SP-3025); a host calling `patchXlsx` directly, or a table the store could not see, reaches this.
+- **Fix:** insert or delete elsewhere — below a pivot's source, outside the table — or change the pivot or the table in Excel first.
+
 ### SP-2101
 
 **download() needs a file name** · error · [SR-DOWNLOAD](../records/0101_DOWNLOAD.md) · `TypeError`
@@ -586,6 +599,38 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** a review layer (W-51) was named with something that is not a name: not a string, empty, over 64 characters, or holding a space. `setErrors(list, { layer })`, `getErrors({ layer })` and the `layers` property change nothing; an error restored or written with such a `layer` goes into `review`.
 - **Likely cause:** a display label used as the name (`'PDF check'`), or a layer read from a file that was never set.
 - **Fix:** name layers with short ids — `validation`, `pdf` — and give `<sheetpane-errors>` the words to show in `layerNames` (`{ pdf: 'PDF check' }`).
+
+### SP-3022
+
+**Delete would split a merged range** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** deleting these rows or columns would remove part of a merged range but not all of it; nothing is deleted. The menu item is greyed with this reason; `insertRows` and the other store methods return `false`.
+- **Likely cause:** the selection crosses a merged block (a title row, a merged label).
+- **Fix:** unmerge the range first, or delete every row (column) of it.
+
+### SP-3023
+
+**Insert or delete would move a pivot table** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** the operation would move a pivot table on this sheet, or the worksheet range a pivot table summarises; sheetpane does not rewrite pivots, so nothing changes.
+- **Likely cause:** rows or columns inserted or deleted above, left of, or inside a pivot table or its source.
+- **Fix:** insert or delete below and right of them, or change the pivot in Excel.
+
+### SP-3024
+
+**Insert would push cells off the sheet** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** the sheet already uses its last row (1,048,576) or column (XFD) — inserting would push those cells off the end; nothing is inserted, as Excel refuses.
+- **Likely cause:** a value or formula at the sheet's edge.
+- **Fix:** clear the cells at the edge first.
+
+### SP-3025
+
+**Insert or delete would cut a table** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** an Excel table cannot follow the operation — it would delete all of the table, its header or totals row, or every data row, or insert columns inside it; nothing changes.
+- **Likely cause:** whole rows or columns selected across a table's edge.
+- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. Raised once the reader reads tables (W-61); until then a download that would cut a table is refused with SP-2016.
 
 ---
 

@@ -179,7 +179,7 @@ describe('flagging="off" (DoD 6, 7)', () => {
     expect(s.getSnapshot().composing).toBeNull();
     await userEvent.keyboard('{Shift>}{F10}{/Shift}');
     await frame(); await frame();
-    expect([...shadow(el).querySelectorAll('.ctxmenu [role=menuitem]')].map((x) => x.firstChild!.textContent)).toEqual(['Copy ref', 'Copy value']);
+    expect([...shadow(el).querySelectorAll('.ctxmenu [role=menuitem]')].map((x) => x.firstChild!.textContent).filter((t) => !/^(Insert|Delete) /.test(t!))).toEqual(['Copy ref', 'Copy value']);
     expect(el.shortcuts().some((x) => x.keys === 'F')).toBe(false);
     s.compose({ sheet: 'Accounts', ref: 'C3' }); // a host compose: still no form anywhere
     await frame();

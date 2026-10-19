@@ -184,6 +184,22 @@ carry over unchanged; the plugins verdict added what plugins read.
     `showColumnStripes`, default `false`). A CSV has none. The built-in XML
     reader reads the same (a parity test).
 
+14. **Rows and columns inserted or deleted (W-52):**
+    `restructureWorkbook(book, op)` returns a new `ImportedWorkbook` (the one
+    given is never changed) with every table moved by SR-EXPORT decision
+    11's shift: `rows` and `text` spliced (a row or sheet ends at its last
+    value, as a read leaves it), `styleIndex` and `formulas` rekeyed, every
+    sheet's formulas, validation and conditional-format formulas and the
+    defined names rewritten, `merges`, `freeze`, `hiddenRows` / `hiddenCols`,
+    `rowOutline` / `colOutline`, `rowHeights`, `columnWidths`, `autoFilter`,
+    `dataValidations` / `conditionalFormats` sqrefs, drawing anchors, notes,
+    threaded comments and pivot tables moved, and `part()` serving chart
+    parts with their series moved. It refuses nothing — the grid's store
+    checks first. `PivotTable.source` (W-52) is the cache's `worksheetSource`
+    (`{ sheet, ref }`), read so a move of it can be refused. **W-61:**
+    `shiftTables(sheet, op)` is the hook where `ImportedSheet.tables` will
+    move; until W-61 lands it returns the sheet as given.
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -204,6 +220,10 @@ carry over unchanged; the plugins verdict added what plugins read.
   `runs.test.ts` (W-53): runs of shared and inline strings, every run
   property, phonetic runs left out, a lone run listed only when formatted,
   shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
+- **W-52:** `shift.test.ts` (7) — each table moved by an insert and a
+  delete on both axes, chart parts served moved, the upload untouched, and
+  the fast-check property `restructureWorkbook(read(file), ops)` ≡
+  `read(patchXlsx(file, [], { structure: ops }))` over random operations.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
   A rich-text cell saved by Excel is part of it (W-30 DoD 3).

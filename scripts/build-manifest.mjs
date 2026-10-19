@@ -47,7 +47,7 @@ const FIELD = {
   sheets: 'string[]', readMs: 'number', sha256: 'string | undefined', code: 'string', spCode: 'SpCode', message: 'string', detail: 'string',
   layers: 'string[]', changed: 'string[]', visible: 'string[]',
 };
-const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" }, 'sheetpane-errors': { v: '2' } };
+const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind', op: "'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols'", at: 'number', count: 'number' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" }, 'sheetpane-errors': { v: '2' } };
 /** The type names payloads use, all exported by `@sheetpane/grid`. */
 const PAYLOAD_TYPES = ['ChangeKind', 'Mode', 'SheetpaneError', 'SpCode'];
 const LIFECYCLE = new Set(['connectedCallback', 'disconnectedCallback', 'attributeChangedCallback', 'adoptedCallback']);

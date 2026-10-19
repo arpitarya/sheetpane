@@ -18,6 +18,9 @@ export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, ERROR_META_MAX, SEVERITY, SEVE
 export { shiftFormula } from '@sheetpane/export';
 // W-61: a table's structured reference (`Units[Name]`) as cells — for plugins that read list sources.
 export { resolveStructuredRef, type StructuredRef, type TableShape } from '@sheetpane/export';
+// inserting and deleting rows and columns (W-52): the shift every plugin's own references follow
+export { restructureFormula, shiftRefText, shiftSqref, shiftIndex, inverseOp, type StructureOp, type StructureOpName } from '@sheetpane/export';
+export type { StructureRefusal } from './pane/structure.js';
 // Stable error codes (W-40), re-exported for plugins that do not depend on @sheetpane/export.
 export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, type CodeInfo, type SpCode, type SpCoded, type SpError } from '@sheetpane/export';
 export type { SheetpaneError, Severity, ProblemSeverity, ResultSeverity, ResultsLevel, Mode, ChangeKind, ChangeEntry, Edit, EditEffects, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType, ErrorScope, ErrorMeta, ErrorStatus, RenderDetail, ErrorsEnvelope } from './pane/types.js';

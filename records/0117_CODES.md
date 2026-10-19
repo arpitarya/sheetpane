@@ -115,6 +115,11 @@ flowchart LR
   decisions 8–9). Issued as SP-5901 – SP-5905 in its lane; renumbered at the
   merge, as the 5900 hundred is @sheetpane/compare's (W-63, SP-5901);
   appended to the lock after SP-3021.
+- **W-52** added SP-2016 (`bad-structure`, an error) and SP-3022 – SP-3025
+  (warnings: a merge cut, a pivot moved, cells pushed off the sheet, a table
+  cut) (SR-EXPORT decision 11, SR-GRID decision 21d). Issued as SP-2015 and
+  SP-3017 – SP-3020 in its lane; renumbered at the merge, as W-57, W-68,
+  W-69, W-66 and W-54 had taken them; appended to the lock after SP-5005.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

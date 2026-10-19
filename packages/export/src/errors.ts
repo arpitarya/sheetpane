@@ -6,7 +6,7 @@ import { spMessage, type SpCode, type SpCoded } from './codes.js';
 /** Why an `ExportError` was thrown — the typed reason hosts switch on. */
 export type ExportErrorCode =
   | 'sheet-name' | 'sheet-count' | 'too-large' | 'bad-ref' | 'bad-value' | 'no-sheet' | 'bad-merge' | 'bad-rule'
-  | 'not-zip' | 'zip64' | 'encrypted' | 'unsupported-compression' | 'corrupt' | 'over-limit' | 'not-workbook';
+  | 'not-zip' | 'zip64' | 'encrypted' | 'unsupported-compression' | 'corrupt' | 'over-limit' | 'not-workbook' | 'bad-structure';
 
 /** One SP code per typed reason (docs/ERRORS.md). */
 export const EXPORT_SP_CODES: Readonly<Record<ExportErrorCode, SpCode>> = {
@@ -14,6 +14,7 @@ export const EXPORT_SP_CODES: Readonly<Record<ExportErrorCode, SpCode>> = {
   'no-sheet': 'SP-2006', 'bad-merge': 'SP-2007', 'not-zip': 'SP-2008', zip64: 'SP-2009', encrypted: 'SP-2010',
   'unsupported-compression': 'SP-2011', corrupt: 'SP-2012', 'over-limit': 'SP-2013', 'not-workbook': 'SP-2014',
   'bad-rule': 'SP-2015',
+  'bad-structure': 'SP-2016',
 };
 
 /**

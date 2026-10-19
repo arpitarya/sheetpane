@@ -203,6 +203,10 @@ plugins verdict put them on the `validate` hook as workbook-authored errors
 
 ### Consequences
 
+- **W-52 (2026-10-19):** rows and columns inserted or deleted move
+  `dataValidations` in the workbook the plugin reads (SR-IMPORT decision 14);
+  `structure.test.ts` checks a rule and its error follow their cells — no
+  code here changed.
 - **Enforced today:** `just test-pkg validation` — 59 tests (every type and
   operator, list sources (a table column by structured reference, W-61), dependent
   `INDIRECT` lists — names per parameter, sheet-scoped first, tables, A1 text, a parent
