@@ -38,7 +38,7 @@ const resolve = { conditions: ['source'] };
 const ssr = { resolve: { conditions: ['source'], externalConditions: ['source'] } };
 // Workbook fixtures load in browser tests as assets (`?inline` data URLs).
 const assetsInclude = ['**/*.xlsx', '**/*.csv'];
-const browserPackages = ['export-browser', 'import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'compare', 'fixtures', 'testing'];
+const browserPackages = ['export-browser', 'import', 'grid', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'compare', 'review', 'fixtures', 'testing'];
 // the React hook recipes (W-28) run against the demo's own React 19
 const testDirs: Record<string, string> = { 'export-browser': 'packages/export/test/**/*.browser.test.ts', 'react-recipes': 'examples/react/test/**/*.test.ts' };
 

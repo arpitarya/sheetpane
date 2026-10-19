@@ -276,7 +276,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     `@sheetpane/compare` — the fixtures' `compare/now.xlsx` against
     `compare/base.xlsx`, which the host fetches and hands to `compareWith`;
     `demo-check` reads the status line's 4 sheets · 7 rows · 2 cells, the
-    amber price, the 7 listed changes and Alt+F5 to D4) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    amber price, the 7 listed changes and Alt+F5 to D4) · Review sheet (W-59:
+    `@sheetpane/review` — the download gains a Review sheet listing the
+    review, flagged cells coloured) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a

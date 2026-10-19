@@ -10,6 +10,7 @@
     "@sheetpane/tables": "workspace:*",
     "@sheetpane/visibility": "workspace:*",
     "@sheetpane/compare": "workspace:*",
+    "@sheetpane/review": "workspace:*",
     "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/export": "workspace:*",
     "@sheetpane/fixtures": "workspace:*",

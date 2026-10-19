@@ -5,7 +5,7 @@
 // lives in the docs (bundle size).
 //
 // Ranges: 1xxx import · 2xxx export · 3xxx grid · 4xxx errors element ·
-// 5xxx plugins (5100 numfmt · 5200 formulas · 5300 styles · 5400 validation ·
+// 5xxx plugins (5000 review · 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation ·
 // 5500 condfmt · 5600 images · 5700 charts · 5800 comments · 5900 compare) ·
 // 6xxx rules ·
 // 7xxx mcp.
@@ -83,6 +83,12 @@ const TABLE = {
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 
   // ── 5xxx · plugins ───────────────────────────────────────────────────────
+  // 5000 · @sheetpane/review (W-59: its own hundred — 5100 to 5900 are taken)
+  'SP-5001': { title: 'Review sheet not written', severity: 'error' },
+  'SP-5002': { title: 'Flagged cells not coloured on a sheet', severity: 'error' },
+  'SP-5003': { title: 'Range too large to colour whole', severity: 'note' },
+  'SP-5004': { title: 'No styles part to colour cells', severity: 'note' },
+  'SP-5005': { title: 'Review fill is not a colour', severity: 'error' },
   // 5100 · @sheetpane/numfmt
   'SP-5101': { title: 'Selection too large to format', severity: 'warning' },
   'SP-5102': { title: 'Not a style sheet', severity: 'error' },

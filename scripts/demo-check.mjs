@@ -93,6 +93,12 @@ async function gallery(page, name) {
   const stepped = await t.x.evaluate((el) => el.workbook.getSnapshot().selection.ref);
   const listed = await t.x.evaluate((el) => el.workbook.getErrors().filter((x) => x.type === 'compare').length);
   check(amber === 'rgba(191, 135, 0, 0.3)' && stepped === 'D4' && listed === 7, `${name}: Compare tints the changed price, sums up 4 sheets · 7 rows · 2 cells, lists 7 changes, and Alt+F5 steps to D4 (${amber}, ${stepped}, ${listed})`);
+  // W-59: Review sheet — flag a cell, download: the file carries a Review sheet listing it, linked to its cell
+  t = await tab('Review sheet', 'review-sheet', 'Numbers');
+  const flagged = await t.x.evaluate((el) => el.workbook.addError({ sheet: 'Numbers', range: 'B6', type: 'wrong-value', severity: 'error', message: 'demo-check' }).id);
+  const reviewed = await t.x.evaluate(async (el) => Array.from(new Uint8Array(await (await el.export({ reviewFills: true })).arrayBuffer())));
+  const rv = await readValues(new Uint8Array(reviewed), 'showcase.xlsx');
+  check(rv.names.at(-1) === 'Review' && valueAt(rv, 'Review!A2') === flagged && valueAt(rv, 'Review!C2') === 'B6' && valueAt(rv, 'Numbers!B6') === 1.25, `${name}: Review sheet — the download lists the flagged cell on a Review sheet, its own cells unchanged`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

@@ -202,6 +202,7 @@ packages/
   charts/                 @sheetpane/charts — W-21; peer: @sheetpane/images
   comments/               @sheetpane/comments — W-22
   tables/                 @sheetpane/tables — W-61; Excel tables drawn (read by import, Table[Column] resolved by export)
+  review/                 @sheetpane/review — W-59; export-only (the Review sheet, flagged-cell fills)
     (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls;
      validation also src/plugin.ts — the plugin, unregistered — and src/check.ts, its /check entry)
 examples/                 W-09 — html/ (one index.html) and react/ (Vite + React 19)

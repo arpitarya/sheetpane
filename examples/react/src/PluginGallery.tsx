@@ -12,6 +12,7 @@ import '@sheetpane/comments';
 import '@sheetpane/visibility/ui';
 import '@sheetpane/tables';
 import { compareWith } from '@sheetpane/compare/ui';
+import '@sheetpane/review';
 import type { SheetpaneExcel } from '@sheetpane/grid';
 import { Fragment, useEffect, useRef, type KeyboardEvent } from 'react';
 import showcase from '@sheetpane/fixtures/files/showcase.xlsx?url';
@@ -36,6 +37,7 @@ export const TABS: readonly GalleryTab[] = [
   { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'Right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
   { id: 'tables', label: 'Tables', plugins: 'tables validation', sheet: 'Tables', blurb: 'Excel tables drawn by their own style — Units in blue (Medium 2), Readings in green (Medium 7) with its first column and totals row. Readings’ Unit column is a list over Units[Unit] (the defined name UnitList): type “furlong” in C9 and it fails; add it to Units and it passes.' },
   { id: 'compare', label: 'Compare', plugins: 'compare', sheet: 'Holdings', src: compareNow, base: compareBase, blurb: 'This file against its earlier version (base.xlsx, read in the page), keyed by Account: the changed price is amber, the added row green, the moved row blue, a red line where a row was removed; the status line sums it up and each change is in the errors list. Alt+F5 / Alt+Shift+F5 step through them; Compare… picks another base.' },
+  { id: 'review-sheet', label: 'Review sheet', plugins: 'review', sheet: 'Numbers', blurb: 'Flag an issue (press F on a cell, or use the error list), then Download: the file gains a Review sheet listing every error with a link to its cell, and a hidden name marks it so a host can skip it on re-upload. Tick Colour flagged cells in the Download ▾ menu to fill each flagged cell by severity, its own format kept.' },
   { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json, passed as the rules prop) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
 ];
 /** Review · the plugins one by one · together. */

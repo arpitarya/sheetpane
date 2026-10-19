@@ -79,8 +79,8 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    switch for it — the host asks. An error with no cell, about a whole sheet or the workbook (W-55,
    SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
    never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
-   reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
-   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>` (`Passed`, `Not checked` for results),
+   reason: 'no-cell', code: 'SP-5804' }`. `@sheetpane/review` (SR-REVIEW) is
+   where these errors go into the file: listed on its Review sheet. First comment `<id> · <Severity> · <Type name> · Found: <found>` (`Passed`, `Not checked` for results),
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved or accepted. **An accepted error (W-69, SR-GRID 5c)** gets one

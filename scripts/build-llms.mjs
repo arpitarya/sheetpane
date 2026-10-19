@@ -16,8 +16,8 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 const url = (p) => `${BASE}/${p}`;
 const titleOf = (p) => (/^#\s+(.+)$/m.exec(read(p))?.[1] ?? p).replace(/[`*]/g, '');
 const descOf = (p) => (/^description:\s*"?([^"\n]+)"?$/m.exec(read(p))?.[1] ?? '').trim();
-const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'compare', 'fixtures', 'testing', 'skills', 'mcp']; // create-sheetpane is internal — not listed (the decider, 2026-10-19)
-const PLUGINS = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'compare'];
+const PKGS = ['grid', 'export', 'import', 'numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'compare', 'review', 'fixtures', 'testing', 'skills', 'mcp']; // create-sheetpane is internal — not listed (the decider, 2026-10-19)
+const PLUGINS = ['numfmt', 'formulas', 'styles', 'validation', 'condfmt', 'images', 'charts', 'comments', 'visibility', 'tables', 'compare', 'review'];
 const records = readdirSync(join(root, 'records')).filter((f) => /^\d{4}_.*\.md$/.test(f)).sort();
 const LAWS = records.filter((f) => /^000\d_|^0010_|^0011_/.test(f));
 const COMPONENTS = records.filter((f) => /^01\d\d_/.test(f) && !f.includes('CREATE')); // SR-CREATE: internal (the decider, 2026-10-19)

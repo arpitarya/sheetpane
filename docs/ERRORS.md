@@ -36,7 +36,7 @@ code's title and severity; this page holds the long text. The repo test
 | 2xxx | `@sheetpane/export` — writing a file, the ZIP walk, `download()` (21xx) |
 | 3xxx | `@sheetpane/grid` — the store, the plugin host, `<sheetpane-excel>` |
 | 4xxx | `<sheetpane-errors>` — none raised yet |
-| 5xxx | plugins — 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation · 5500 condfmt · 5600 images · 5700 charts · 5800 comments |
+| 5xxx | plugins — 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation · 5500 condfmt · 5600 images · 5700 charts · 5800 comments · 5900 review |
 | 6xxx | column rules and the rules file |
 | 7xxx | `@sheetpane/mcp` — reserved |
 
@@ -97,6 +97,11 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3019](#sp-3019) | Cell to open at not found | warning |
 | [SP-3020](#sp-3020) | Nothing to check | error |
 | [SP-3021](#sp-3021) | Layer name not valid | warning |
+| [SP-5001](#sp-5001) | Review sheet not written | error |
+| [SP-5002](#sp-5002) | Flagged cells not coloured on a sheet | error |
+| [SP-5003](#sp-5003) | Range too large to colour whole | note |
+| [SP-5004](#sp-5004) | No styles part to colour cells | note |
+| [SP-5005](#sp-5005) | Review fill is not a colour | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -592,6 +597,46 @@ The store, the plugin host and `<sheetpane-excel>`.
 
 ## 5xxx · plugins
 
+### SP-5001
+
+**Review sheet not written** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** the workbook part could not be read or extended, so no Review sheet was added; the export goes on, with any fills already written. `lastExport.sheet` is `undefined`.
+- **Likely cause:** a damaged `xl/workbook.xml`, or one with no `<sheets>`.
+- **Fix:** read the error logged after this line; re-save the workbook in Excel and export again.
+
+### SP-5002
+
+**Flagged cells not coloured on a sheet** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** a sheet part (or the styles part) could not be read, so that sheet's flagged cells were left exactly as they were. Each error is in `lastExport.skipped` with `reason: 'unreadable-part'` and this code.
+- **Likely cause:** a sheet part with no `<sheetData>`, a chart sheet, or a damaged part.
+- **Fix:** read the error logged after this line; the Review sheet still lists the errors.
+
+### SP-5003
+
+**Range too large to colour whole** · note · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** an error's range covers more than 10,000 cells (`MAX_FILL_CELLS`), so only the cells the file already has inside it were coloured; no empty cells were added. It is in `lastExport.skipped` with `reason: 'range-capped'` and this code, and in `filled`.
+- **Likely cause:** an error raised on whole columns or a very large block.
+- **Fix:** nothing to fix; narrow the error's range if every cell should be coloured.
+
+### SP-5004
+
+**No styles part to colour cells** · note · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** the file has no readable styles part, so no cell was coloured; the Review sheet is still written, with an unstyled header. Each error is in `lastExport.skipped` with `reason: 'no-styles'` and this code.
+- **Likely cause:** a minimal workbook written by a script.
+- **Fix:** re-save the workbook in Excel, which adds the part.
+
+### SP-5005
+
+**Review fill is not a colour** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 8 · `TypeError`
+
+- **Meaning:** `review({ fills })` was given a value that is not a hex colour; the plugin is not created.
+- **Likely cause:** a colour name (`'red'`) or a short hex (`'#f00'`).
+- **Fix:** pass `#RRGGBB`, `RRGGBB` or ARGB `AARRGGBB`, or `null` to colour none.
+
 ### SP-5101
 
 **Selection too large to format** · warning · [SR-NUMFMT](../records/0109_NUMFMT.md)
@@ -734,7 +779,7 @@ The store, the plugin host and `<sheetpane-excel>`.
 
 - **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
 - **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
-- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
+- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, add `@sheetpane/review`, which lists it on a Review sheet of its own.
 ### SP-5901
 
 **Compare key is not a column** · error · [SR-COMPARE](../records/0124_COMPARE.md)

@@ -55,7 +55,8 @@ flowchart LR
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
    5800 comments, 5900 compare — W-63: SP-5901, a per-sheet key that is
-   not a column) · 6xxx column rules and the rules file · 7xxx mcp
+   not a column; 5000 review — W-59: SP-5001 – SP-5005, its own hundred, the
+   5100 – 5900 hundreds being taken) · 6xxx column rules and the rules file · 7xxx mcp
    (W-39: SP-7001…7007, the MCP server's tool errors — SR-MCP decision 7;
    `@sheetpane/mcp` also reports the 60xx rules notes `check_rules` finds).
 3. **Never reuse:** a code is never renumbered or removed; a dead one stays in
@@ -108,6 +109,12 @@ flowchart LR
 - **W-51** added SP-3021 (warning): a review-layer name that is not one
   (SR-GRID decision 5d). Issued as SP-3019 in its lane; renumbered at the
   merge, as W-66 had taken SP-3019.
+- **W-59** added SP-5001 – SP-5005, the 5000 hundred (`@sheetpane/review`:
+  the Review sheet not written, a sheet's cells not coloured, a range too
+  large to colour whole, no styles part, a fill that is not a colour — SR-REVIEW
+  decisions 8–9). Issued as SP-5901 – SP-5905 in its lane; renumbered at the
+  merge, as the 5900 hundred is @sheetpane/compare's (W-63, SP-5901);
+  appended to the lock after SP-3021.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

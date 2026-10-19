@@ -1,0 +1,55 @@
+{
+  "name": "@sheetpane/review",
+  "version": "0.3.0",
+  "description": "The review written into the download as a sheet of its own — every error with a link to its cell — and, optionally, each flagged cell filled by severity. An export-only plugin for sheetpane.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/review"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./dist/index.js",
+    "./src/index.ts"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "dependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/skills": "workspace:*"
+  },
+  "devDependencies": {
+    "@sheetpane/comments": "workspace:*",
+    "@sheetpane/grid": "workspace:*",
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/testing": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  }
+}
