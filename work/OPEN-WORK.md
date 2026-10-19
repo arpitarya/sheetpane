@@ -31,6 +31,8 @@ here. Read that record before changing anything below it.
 
 ### build
 
+- 🟢 **W-70** `agent` · The nightly Firefox + WebKit run, green: it has never passed (paste and range Delete in Firefox, font-name quoting, fit-to-data widths, an axe rule in WebKit). Filed by Claude Code. [detail](open/W-70-nightly-cross-browser-green.md)
+
 ### testing
 
 - 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13); also the static HTML of W-67 opened in mail clients (DoD 10). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)

@@ -30,7 +30,8 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Done:** committed the other session's fux setup (`6c95735`; SR-BUILD 1a written — its record text was missing), merged `origin/main` (`22d2d2b`), removed the ten lane worktrees and branches (all already in `main`). The first `publish.yml` run refused without publishing: the three new packages did not exist on npm. The decider would not type an OTP, but published them with `pnpm publish` in each folder (browser approval); the failed job was re-run and CI published the other 17. A clean install of the new packages from npm works. RELEASING.md: 20 packages, and the first-publish step as it was done.
 - **Decided / left open:** a trusted publisher on tables, review and compare is owed before the next release (OPEN-WORK's next gate). Registry lag: a fresh version took 1–5 min to be served.
 - **Mistakes:** I first told the decider "19 others" and "all 22" — it is 17 and 20; an agent started holding the three back as private before the decider's own publish made it moot (stopped before editing).
-- **Next:** the decider's trusted publishers; then W-30 / W-48.
+- **Filed:** W-70 — the nightly Firefox + WebKit run has never been green (runs 39124283729, 39225723693).
+- **Next:** the decider's trusted publishers; then W-70 (agent), W-30 / W-48.
 
 ---
 
