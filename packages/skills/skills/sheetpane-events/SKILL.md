@@ -46,9 +46,9 @@ Each is one `sheetpane-change` with `kind: 'structure'`, `op`
 (`insertRows` · `deleteRows` · `insertCols` · `deleteCols`), `at`, `count`
 and `ref` the span (`5:6`, `C:D`); undo fires the inverse. Nothing else fires
 per moved cell: whatever a host keyed by address — saved errors excepted, they
-move — it moves itself. A refusal (a merge cut, a pivot moved, a table cut,
-cells pushed off the sheet) is `false` from the method, a greyed menu item with
-its reason, and an `SP-3022`…`SP-3025` warning; `workbook.structureRefusal(op)`
+move — it moves itself. A refusal (the file's protection, a merge cut, a pivot
+moved, a table cut, cells pushed off the sheet) is `false` from the method, a
+greyed menu item with its reason, and an `SP-3026` or `SP-3022`…`SP-3025` warning; `workbook.structureRefusal(op)`
 asks first.
 
 ```js

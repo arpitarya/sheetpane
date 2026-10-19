@@ -13,7 +13,7 @@ export type { HighlightOptions, HighlightRange, HighlightTone } from './excel/el
 export { WorkbookStore, createWorkbook, parseInput, formulaRefs, key as cellKey, splitKey, kindRef, baseRef, editRef, SLOTTED_KINDS, HISTORY_CAP, type StoreOptions, type StoreEvent, type Origin, type ResultCounts } from './pane/store.js';
 export { acquirePane, releasePane, paneStore } from './pane/registry.js';
 // W-62: what the file's protection locks, asked from a snapshot (a plugin control's `disabled`) or the store
-export { LOCKED_MESSAGE, PROTECTION_MODES, STRUCTURE_LOCKED_MESSAGE, formulaHiddenIn, lockedIn, protectionModeOf, sheetProtectionIn, structureLockedIn } from './pane/protection.js';
+export { LOCKED_MESSAGE, PROTECTION_MODES, STRUCTURE_LOCKED_MESSAGE, formulaHiddenIn, lockedIn, protectionModeOf, sheetProtectionIn, structureLockedIn, structureProtectionIn } from './pane/protection.js';
 export { checkDocument, describeRule, RULE_TYPE, CELL_RULE_TYPE, type RulesDocument, type DocProblem, type ColumnRule, type ColumnRules, type ColumnRulesConfig, type OnInvalid, type RuleContext, type RuleOutcome, type RulePhase, type RuleResult, type ValidateFn } from './pane/rules.js';
 export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, ERROR_META_MAX, SEVERITY, SEVERITY_ORDER, RESULTS_LEVELS, DEFAULT_LAYER, errorScope, isResult, isLayerName, layerOf, resultsLevelOf, machineAuthored } from './pane/types.js';
 // for plugins whose rules are written against a range's top-left (validation, condfmt): the one implementation

@@ -282,7 +282,9 @@ selected); Ctrl/⌘+− deletes whole rows or columns. Everything that points at
 errors, formulas on every sheet (`#REF!` for a deleted target), merges, validations, conditional formats,
 notes, pictures and charts, hidden and grouped rows, freeze, sizes — and the download carries it. Each is one
 undo step and one `sheetpane-change` with `kind: 'structure'`, `op`, `at` (0-based) and `count`. What Excel
-refuses is refused, greyed with its reason: a delete that splits a merged range (`SP-3022`), anything that
+refuses is refused, greyed with its reason: the file's protection — a protected structure, or a protected
+sheet without *Insert rows* / *Delete rows* / *Insert columns* / *Delete columns* (`SP-3026`) — a delete that
+splits a merged range (`SP-3022`), anything that
 would move a pivot table or its source (`SP-3023`), cells pushed off the sheet (`SP-3024`), a table cut
 (`SP-3025`). A host drives the same through the store:
 
@@ -656,8 +658,10 @@ cell bar; typing, paste and Delete there are refused with
 `sheetpane-beforechange`. Unlocked cells edit as usual, and a paste or a
 range Delete writes those only, saying how many locked cells it left. A
 formula marked *Hidden* shows its value, never its formula. A workbook whose
-structure is protected keeps its sheets: Hide and Unhide sheet are disabled
-with the reason.
+structure is protected keeps its sheets and its rows and columns: Hide and
+Unhide sheet, and every insert and delete, are disabled with the reason; a
+protected sheet refuses the inserts and deletes it does not allow, as Excel
+does (`SP-3026`).
 
 ```js
 const wb = excel.workbook;

@@ -124,7 +124,9 @@ flowchart LR
   W-69, W-66 and W-54 had taken them; appended to the lock after SP-5005.
 - **W-62** added SP-3026 (warning, *Locked in the file*): an edit refused on a
   locked cell of a protected sheet, carried by `sheetpane-editcancel`
-  `{ reason: 'locked', code: 'SP-3026' }` (SR-GRID decision 21e). Issued as
+  `{ reason: 'locked', code: 'SP-3026' }` (SR-GRID decision 21e); since the
+  merge, also W-52's insert or delete refused by the structure lock or a
+  sheet's insert/delete switch (decision 21d). Issued as
   SP-3020 in its lane; renumbered at the merge, as W-54 had taken it;
   appended to the lock after SP-3025.
 - **W-67** added SP-3027 (error, `TypeError`: `renderStatic()` given no

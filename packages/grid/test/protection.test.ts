@@ -2,11 +2,11 @@
 // its unlocked cells stay editable; a hidden formula shows its value only; `protection="ignore"` is the host's call.
 // The structure lock (DoD 3) in the store; its controls are tested in @sheetpane/visibility. The download keeps the
 // file's protection untouched (Hazards).
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
-import { fromUtf8, inflateEntry, readZip } from '@sheetpane/export';
+import { fromUtf8, inflateEntry, readZip, utf8, writeZip } from '@sheetpane/export';
 import protectedXlsx from '../../fixtures/files/protected.xlsx?inline';
-import { createWorkbook, lockedIn, structureLockedIn, type Plugin, type SheetpaneExcel, type WorkbookStore } from '../src/index.js';
+import { STRUCTURE_LOCKED_MESSAGE, createWorkbook, lockedIn, structureLockedIn, structureProtectionIn, type Plugin, type SheetpaneExcel, type WorkbookStore } from '../src/index.js';
 import { cellEl, cleanup, frame, mountExcel, shadow } from './helpers.js';
 
 afterEach(cleanup);
@@ -179,5 +179,86 @@ describe('<sheetpane-excel> refuses edits to locked cells (W-62 DoD 2)', () => {
       expect(tag(await part(out, n), t)).toContain('="CC7D"');
     }
     expect(await part(out, 'xl/styles.xml')).toBe(await part(src, 'xl/styles.xml'));
+  });
+});
+
+// W-62 × W-52: inserting and deleting rows and columns asks the file's protection first — the workbook's structure
+// lock, then (as Excel does) the protected sheet's insertRows / deleteRows / insertColumns / deleteColumns switches.
+/** protected.xlsx with the structure open and Spec allowing inserted rows and deleted columns only. */
+async function sheetOnlyBytes(): Promise<Uint8Array> {
+  const src = bytes();
+  const files = await Promise.all(readZip(src).map(async (e) => {
+    let text = fromUtf8(await inflateEntry(src, e));
+    if (e.name === 'xl/workbook.xml') text = text.replace(/<workbookProtection\b[^>]*\/>/, '');
+    else if (e.name === 'xl/worksheets/sheet1.xml') text = text.replace(/<sheetProtection\b([^>]*)\/>/, '<sheetProtection$1 insertRows="0" deleteColumns="0"/>');
+    else return { name: e.name, copy: e, from: src };
+    return { name: e.name, data: utf8(text) };
+  }));
+  return writeZip(files);
+}
+
+describe('insert and delete honour the file’s protection (W-62 × W-52)', () => {
+  it('the structure lock refuses every insert and delete with SP-3026 and the structure reason; ignore lets them through', async () => {
+    const s = await store();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (const sheet of ['Spec', 'Notes']) {
+        for (const op of ['insertRows', 'deleteRows', 'insertCols', 'deleteCols'] as const) {
+          expect(s.structureRefusal({ sheet, op, at: 1, count: 1 }), `${sheet} ${op}`).toEqual({ code: 'SP-3026', message: STRUCTURE_LOCKED_MESSAGE });
+        }
+      }
+      expect(s.insertRows('Notes', 1)).toBe(false);
+      expect(s.deleteCols('Notes', 0)).toBe(false);
+      expect(warn).toHaveBeenLastCalledWith(expect.stringMatching(/^SP-3026: Locked in the file — sheetpane: Locked in the file — the workbook’s structure is protected/));
+      expect([s.changeCount, s.getSnapshot().canUndo, s.value('Notes', 'A2')]).toEqual([0, false, 'This sheet is not protected: every cell edits.']);
+      expect(structureProtectionIn(s.getSnapshot(), { sheet: 'Notes', op: 'insertRows', at: 0, count: 1 })?.code).toBe('SP-3026');
+      s.setProtection('ignore');
+      expect(s.structureRefusal({ sheet: 'Notes', op: 'insertRows', at: 1, count: 1 })).toBeUndefined();
+      expect(s.insertRows('Notes', 1)).toBe(true);
+      expect(s.value('Notes', 'A3')).toBe('This sheet is not protected: every cell edits.');
+    } finally { warn.mockRestore(); }
+  });
+  it('a protected sheet without the structure lock: each switch, as Excel reads it; an unprotected sheet is open', async () => {
+    const s = createWorkbook();
+    await s.load(await sheetOnlyBytes(), 'protected.xlsx');
+    expect(s.structureLocked()).toBe(false);
+    expect(s.sheetProtection('Spec')).toMatchObject({ insertRows: false, deleteRows: true, insertColumns: true, deleteColumns: false });
+    const why = (op: 'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols', sheet = 'Spec') => s.structureRefusal({ sheet, op, at: 1, count: 1 });
+    expect(why('deleteRows')).toEqual({ code: 'SP-3026', message: 'Locked in the file — the sheet is protected and does not allow deleting rows' });
+    expect(why('insertCols')).toEqual({ code: 'SP-3026', message: 'Locked in the file — the sheet is protected and does not allow inserting columns' });
+    expect(why('insertRows')).toBeUndefined();
+    expect(why('deleteCols')).toBeUndefined();
+    expect(why('deleteRows', 'Lists')?.message).toContain('deleting rows'); // Lists keeps every default: nothing structural allowed
+    expect(why('insertRows', 'Lists')?.message).toContain('inserting rows');
+    expect(why('deleteRows', 'Notes')).toBeUndefined();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try { expect(s.deleteRows('Spec', 1)).toBe(false); } finally { warn.mockRestore(); }
+    expect(s.value('Spec', 'A2')).toBe('Lead');
+    expect(s.insertRows('Spec', 1)).toBe(true);
+    expect(s.value('Spec', 'A3')).toBe('Lead');
+  });
+  it('the menus grey insert and delete with the reason; Ctrl+Shift+= says it in the status line and changes nothing', async () => {
+    const el = await mountExcel({ mode: 'edit' }, bytes(), 'protected.xlsx');
+    el.select('Notes', 'A2');
+    await frame();
+    cellEl(el, 1, 0)!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true, button: 2 }));
+    await frame();
+    const menu = shadow(el).querySelector<HTMLElement>('.overlay .ctxmenu')!;
+    for (const act of ['ins-above', 'ins-below', 'ins-left', 'ins-right', 'del-rows', 'del-cols']) {
+      const b = menu.querySelector<HTMLButtonElement>(`[data-act=${act}]`)!;
+      expect(b.disabled, act).toBe(true);
+      expect(b.title, act).toBe(STRUCTURE_LOCKED_MESSAGE);
+    }
+    document.body.click();
+    await frame();
+    shadow(el).querySelector('.grid')!.dispatchEvent(new KeyboardEvent('keydown', { key: '+', ctrlKey: true, shiftKey: true, bubbles: true, composed: true, cancelable: true }));
+    await frame();
+    expect(shadow(el).textContent).toContain(STRUCTURE_LOCKED_MESSAGE);
+    expect(el.workbook!.changeCount).toBe(0);
+    el.protection = 'ignore';
+    await frame();
+    cellEl(el, 1, 0)!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true, button: 2 }));
+    await frame();
+    expect(shadow(el).querySelector<HTMLButtonElement>('.overlay .ctxmenu [data-act=ins-above]')!.disabled).toBe(false);
   });
 });

@@ -6,7 +6,7 @@ import { cellRef, detailOf, inverseOp, isRowOp, parseRange, parseRef, patchXlsx,
 import { formatCode, general, ImportError, read, restructureWorkbook, sha256, subsetCode, type ImportedSheet, type ImportedWorkbook, type SheetProtection, type TextRun } from '@sheetpane/import';
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import { STYLE_PROPS, type CellContext, type DeriveInput, type DerivedChange, type ErrorDraft, type Plugin, type PluginContext, type RunStyle, type StyleSubset } from '../plugins/types.js';
-import { formulaHiddenIn, lockedIn, protectionModeOf, sheetProtectionIn, structureLockedIn } from './protection.js';
+import { formulaHiddenIn, lockedIn, protectionModeOf, sheetProtectionIn, structureLockedIn, structureProtectionIn } from './protection.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
 import { DEFAULT_LAYER, ERROR_META_MAX, RESULTS_LEVELS, SEVERITY_ORDER, copyError, isLayerName, isResult, layerOf, machineAuthored } from './types.js';
 import type { ChangeEntry, ChangeKind, Composing, DerivedCell, Edit, EditEffects, ErrorMeta, ErrorsEnvelope, LoadState, Mode, ProtectionMode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
@@ -1161,14 +1161,15 @@ export class WorkbookStore {
   deleteCols(sheet: string, at: number, count = 1, origin?: Origin): boolean { return this.restructure({ sheet, op: 'deleteCols', at, count }, origin); }
 
   /**
-   * Why an insert or delete would be refused — a merge cut (SP-3022), a pivot moved (SP-3023),
-   * cells pushed off the sheet (SP-3024), a table cut (SP-3025) — or `undefined` when it may go ahead.
+   * Why an insert or delete would be refused — the file's protection first (SP-3026, W-62: the workbook's structure
+   * is protected, or the sheet is protected without the matching permission), then a merge cut (SP-3022), a pivot
+   * moved (SP-3023), cells pushed off the sheet (SP-3024), a table cut (SP-3025) — or `undefined` when it may go ahead.
    * @param o - The operation.
    * @returns The SP code and a sentence for the person, or `undefined`.
    */
   structureRefusal(o: StructureOp): StructureRefusal | undefined {
     const book = this.snap.book;
-    return book ? structureRefusal(book, this.merges(o.sheet), o) : undefined;
+    return book ? structureProtectionIn(this.snap, o) ?? structureRefusal(book, this.merges(o.sheet), o) : undefined;
   }
 
   /** Every insert and delete made since the file was read, in order per sheet — what the download replays first. */

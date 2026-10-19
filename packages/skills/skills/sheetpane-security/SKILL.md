@@ -32,8 +32,10 @@ A file's protection is honoured in Edit, with no plugin
   and Delete — `sheetpane-editcancel` with `reason: 'locked'` and SP-3026,
   *Locked in the file*; its unlocked cells edit as usual. A formula marked
   hidden shows its value only.
-- A protected workbook structure keeps its sheets: hide and unhide are
-  disabled with the reason. Ask `store.structureLocked()` before a
+- A protected workbook structure keeps its sheets and its rows and columns:
+  hide, unhide, insert and delete are disabled with the reason; a protected
+  sheet refuses the inserts and deletes its switches do not allow (SP-3026).
+  Ask `store.structureRefusal(op)` (or `store.structureLocked()`) before a
   structural edit of your own.
 - sheetpane **never reads, checks or removes a protection password** — it
   knows only that one is stored (`hasPassword`). Protection in a file is a

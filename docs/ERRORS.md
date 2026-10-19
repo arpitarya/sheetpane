@@ -639,8 +639,8 @@ The store, the plugin host and `<sheetpane-excel>`.
 
 **Locked in the file** · warning · [SR-GRID](../records/0105_GRID.md) decision 21e
 
-- **Meaning:** an edit — typing, paste, Delete — was refused because the cell is locked on a protected sheet. `sheetpane-editcancel` carries `{ reason: 'locked', code: 'SP-3026', message: 'Locked in the file' }` and nothing is stored.
-- **Likely cause:** the file's sheet is protected (Excel: Review › Protect Sheet) and the cell's format is *Locked* — Excel's default for every cell until it is unlocked.
+- **Meaning:** an edit — typing, paste, Delete — was refused because the cell is locked on a protected sheet. `sheetpane-editcancel` carries `{ reason: 'locked', code: 'SP-3026', message: 'Locked in the file' }` and nothing is stored. Inserting or deleting rows or columns is refused with the same code when the workbook's structure is protected, or the sheet is protected without that permission (*Insert rows*, *Delete columns*, …): the menu item is greyed with the reason, `insertRows` and the other store methods return `false` (SR-GRID decision 21d).
+- **Likely cause:** the file's sheet is protected (Excel: Review › Protect Sheet) and the cell's format is *Locked* — Excel's default for every cell until it is unlocked; for an insert or delete, Protect Workbook (structure) or a sheet protected with *Insert rows* / *Delete rows* / *Insert columns* / *Delete columns* left unticked.
 - **Fix:** edit the cells the file leaves unlocked; or unlock the cells (Format Cells › Protection) or unprotect the sheet in Excel and open the file again. A host that rules otherwise sets `protection="ignore"` on `<sheetpane-excel>` — its own decision. sheetpane never checks or removes a protection password.
 
 ### SP-3027
