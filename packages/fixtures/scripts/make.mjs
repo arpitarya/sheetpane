@@ -201,6 +201,19 @@ const EDGE = [
   { name: 'edge/formula-errors.xlsx', spec: { sheets: [{ name: 'Errors', cells: { A1: 0, B1: { f: '1/A1', v: '#DIV/0!' }, C1: { f: '#REF!+1', v: '#REF!' }, D1: { f: 'NA()', v: '#N/A' } } }] }, features: ['cached formula errors'] },
 ];
 for (const e of EDGE) out(e.name, await book(e.spec));
+
+// ── a compare pair (W-63): two versions of one spec workbook ─────────────────────
+// Holdings, keyed by Account: AC-10037's price changed, AC-10044 removed, AC-10099 added,
+// AC-10052 moved to the top; Fees renamed Fee schedule (one rate changed); Notes removed;
+// Summary added. diffWorkbooks(base, now, { key: 'Account' }) finds exactly these.
+const HOLDINGS = [['AC-10021', 'Priya Shah', 1200, 268.4], ['AC-10037', 'Tom Reyes', 430, 74.85], ['AC-10044', 'Ana Ruiz', 75, 12.1], ['AC-10052', 'Lee Wong', 900, 33.5], ['AC-10068', 'Sam Park', 310, 102.25]];
+const holdings = (rows) => ({ name: 'Holdings', cols: [12, 14, 8, 10], cells: Object.fromEntries([['Account', 'Name', 'Units', 'Price'], ...rows].flatMap((r, i) => r.map((v, j) => [`${'ABCD'[j]}${i + 1}`, i ? v : { v, s: XF.bold }]))) });
+const fees = (name, rates) => ({ name, cells: Object.fromEntries([['Tier', 'Rate'], ...rates].flatMap((r, i) => r.map((v, j) => [`${'AB'[j]}${i + 1}`, i ? v : { v, s: XF.bold }]))) });
+const COMPARE = [
+  { name: 'compare/base.xlsx', spec: { sheets: [holdings(HOLDINGS), fees('Fees', [['Bronze', 0.75], ['Silver', 0.5], ['Gold', 0.35], ['Platinum', 0.2]]), { name: 'Notes', cells: { A1: 'Draft — not for release' } }] }, features: ['the older version of a compare pair (W-63)'] },
+  { name: 'compare/now.xlsx', spec: { sheets: [holdings([HOLDINGS[3], HOLDINGS[0], [HOLDINGS[1][0], HOLDINGS[1][1], HOLDINGS[1][2], 76.1], HOLDINGS[4], ['AC-10099', 'Mia Chen', 50, 18.75]]), fees('Fee schedule', [['Bronze', 0.75], ['Silver', 0.45], ['Gold', 0.35], ['Platinum', 0.2]]), { name: 'Summary', cells: { A1: 'Accounts', B1: 5 } }] }, features: ['the newer version of a compare pair (W-63): one price changed, a row removed, added and moved; a sheet renamed, one removed, one added'] },
+];
+for (const c of COMPARE) out(c.name, await book(c.spec));
 // refused on purpose (SR-LAW-3: .xlsx and .csv only)
 out('edge/legacy.xls', new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, ...new Array(504).fill(0)]));
 out('edge/not-a-zip.xlsx', 'this is not a workbook');
@@ -226,6 +239,7 @@ const manifest = {
     { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread'] },
     { name: 'showcase.rules.json', kind: 'rules', appSaved: null, for: 'showcase.xlsx', errors: ['Validation!C3', 'Validation!B4', 'Formulas!B3', 'Formulas!B6', 'Formulas!B7', 'Numbers!B3'] },
     ...EDGE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: e.features })),
+    ...COMPARE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: false, headers: headersOf(s.cells) })), features: e.features })),
     { name: 'edge/legacy.xls', kind: 'refused', appSaved: null, features: ['a legacy .xls (compound file) header'] },
     { name: 'edge/not-a-zip.xlsx', kind: 'refused', appSaved: null, features: ['not a ZIP package'] },
     ...Object.keys(CSV).map((name) => ({ name, kind: 'csv', appSaved: null, sheets: [{ name: name.slice(4, -4), headers: name === 'csv/quoted.csv' ? ['Name', 'Note'] : name === 'csv/formula-guard.csv' ? ['Cell', 'Text'] : ROWS[0] }], features: [name.slice(4, -4)] })),

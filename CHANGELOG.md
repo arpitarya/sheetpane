@@ -10,6 +10,9 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ### Added
 
+- **`@sheetpane/compare` — what changed between two versions of a workbook** ([SR-COMPARE](records/0124_COMPARE.md)). `diffWorkbooks(a, b, { key })` runs in Node or the browser: sheets added, removed and renamed; rows added, removed, changed and — with key columns — moved; cells changed by value, display text or formula (a formula that only moved with its row is not a change); merges, hidden rows and columns, rule counts. `@sheetpane/compare/ui` (`plugins="compare"`) compares the open file with a base the user picks (Compare…) or the host passes (`compareWith`), both read in the page: changed cells amber, added rows green, moved rows blue, a red line where rows were removed, *n sheets · n rows · n cells changed* in the status line, Alt+F5 / Alt+Shift+F5 to step through, and each change in the errors list. 50,000 rows diff in about 0.1 s. New code SP-5901 (a per-sheet key that is not a column). The demos gain a *Compare* tab.
+- `@sheetpane/mcp`: a seventh tool, `diff_workbooks(base, path, key?)`, on the same diff.
+- `@sheetpane/fixtures`: `compare/base.xlsx` and `compare/now.xlsx`, two versions of one spec workbook.
 - **Law L11 — the workbook never leaves the browser** ([SR-LAW-11](records/0013_LAW-11-workbook-stays-in-the-browser.md)). sheetpane reads, edits, checks and exports a file inside the page and sends nothing to any server: no file bytes, cells, edits, errors, exports or telemetry. Its only network calls are the GETs for the `src` and `rules-src` the host sets. A test in `test/packages.test.ts` fails if any package adds another. The `sheetpane-backend`, `sheetpane-load-export` and `sheetpane-security` skills now say that a server save is the host's own code and choice.
 
 ### Fixed

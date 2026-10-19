@@ -28,6 +28,8 @@
   "@sheetpane/comments": "./node_modules/@sheetpane/comments/dist/index.js",
   "@sheetpane/visibility": "./node_modules/@sheetpane/visibility/dist/index.js",
   "@sheetpane/visibility/ui": "./node_modules/@sheetpane/visibility/dist/ui.js",
+  "@sheetpane/compare": "./node_modules/@sheetpane/compare/dist/index.js",
+  "@sheetpane/compare/ui": "./node_modules/@sheetpane/compare/dist/ui.js",
   "numfmt": "./node_modules/numfmt/dist/index.mjs",
   "@ironcalc/wasm": "./node_modules/@ironcalc/wasm/wasm.js"
 } }
@@ -218,7 +220,9 @@ sheetpane-excel[display="popup"] { min-height: 0; flex: none; } /* its dialog si
   import '@sheetpane/charts/ui';
   import '@sheetpane/comments';
   import '@sheetpane/visibility/ui';
+  import { compareWith } from '@sheetpane/compare/ui';
 
+  const FIX = './node_modules/@sheetpane/fixtures/files/'; // @sheetpane/fixtures (W-42)
   const TABS = [
     { id: 'review', label: 'Review' },
     { id: 'vanilla', label: 'Vanilla', plugins: '', sheet: 'Numbers', blurb: 'The grid alone: values as stored (Numbers!B6 reads 1.25), saved formula results marked stale after an edit, no fills, rules, pictures or charts.' },
@@ -232,6 +236,7 @@ sheetpane-excel[display="popup"] { min-height: 0; flex: none; } /* its dialog si
     { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'The note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
     { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
     { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'Right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
+    { id: 'compare', label: 'Compare', plugins: 'compare', sheet: 'Holdings', src: 'compare/now.xlsx', base: 'compare/base.xlsx', blurb: 'This file against its earlier version (base.xlsx, read in the page), keyed by Account: the changed price is amber, the added row green, the moved row blue, a red line where a row was removed; the status line sums it up and each change is in the errors list. Alt+F5 / Alt+Shift+F5 step through them; Compare… picks another base.' },
     { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
   ];
   const SEP_AFTER = new Set(['review', 'comments']); // Review · the plugins one by one · together
@@ -253,8 +258,12 @@ sheetpane-excel[display="popup"] { min-height: 0; flex: none; } /* its dialog si
     for (const el of [x, e]) { el.setAttribute('pane', `gallery-${t.id}`); el.setAttribute('author', 'Demo reviewer'); dressUp(el); if (t.plugins) el.setAttribute('plugins', t.plugins); }
     x.setAttribute('mode', 'edit');
     if (t.rules) { x.setAttribute('rules-src', './node_modules/@sheetpane/fixtures/files/showcase.rules.json'); x.setAttribute('flagging', 'off'); }
-    x.addEventListener('sheetpane-load', () => x.select(t.sheet, 'A1'), { once: true });
-    x.setAttribute('src', './node_modules/@sheetpane/fixtures/files/showcase.xlsx'); // @sheetpane/fixtures (W-42)
+    x.addEventListener('sheetpane-load', () => {
+      x.select(t.sheet, 'A1');
+      // W-63: the host hands the plugin the earlier version — fetched by the host, read in the page
+      if (t.base) fetch(FIX + t.base).then((r) => r.arrayBuffer()).then((b) => compareWith(x.workbook, b, { name: 'base.xlsx', key: 'Account' }));
+    }, { once: true });
+    x.setAttribute('src', FIX + (t.src ?? 'showcase.xlsx'));
     div.append(x, e);
     panels.append(div);
     opened.set(t.id, div);

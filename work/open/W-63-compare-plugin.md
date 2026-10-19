@@ -6,7 +6,7 @@ item: W-63
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Claude Code (lane g, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,10 +16,10 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `diffWorkbooks(a, b, { key })`: sheets matched by name (renames by content similarity), rows by key columns when given, else aligned by longest common subsequence; cells by value, text and formula; merges, hidden state and rule counts | a precise list of differences, in Node or the browser | ⏳ |
-| 2 | `/ui`: load a base file; changes become a `compare` layer (W-51) with was → now, and `decorate` tints changed cells | the reader sees the changes on the sheet | ⏳ |
-| 3 | Summary in the `status` slot: *n sheets · n rows · n cells changed* | the size of the change at a glance | ⏳ |
-| 4 | An MCP tool `diff_workbooks` on the same function | agents can ask too | ⏳ |
+| 1 | `diffWorkbooks(a, b, { key })`: sheets matched by name (renames by content similarity), rows by key columns when given, else aligned by longest common subsequence; cells by value, text and formula; merges, hidden state and rule counts | a precise list of differences, in Node or the browser | ✅ |
+| 2 | `/ui`: load a base file; changes become a `compare` layer (W-51) with was → now, and `decorate` tints changed cells | the reader sees the changes on the sheet | ✅ tints and the errors-list entries; ⏳ the `compare` layer waits on W-51 |
+| 3 | Summary in the `status` slot: *n sheets · n rows · n cells changed* | the size of the change at a glance | ✅ |
+| 4 | An MCP tool `diff_workbooks` on the same function | agents can ask too | ✅ |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -43,15 +43,15 @@ Excel's own *Spreadsheet Compare* runs only on Windows with certain enterprise O
 
 | DoD | what | state |
 |---|---|---|
-| 1 · diff | pure function, typed result; property tests (diff of x with x is empty; applying the diff to a gives b's values) | ⏳ |
-| 2 · ui | layer, decorations, status; keyboard to next/previous change | ⏳ |
-| 3 · perf | budget on 50,000 rows recorded on a named machine | ⏳ |
-| 4 · package | `packages/compare`, README, skill, demo (L10), new record SR-COMPARE | ⏳ |
-| 5 · tests · docs | fixtures pair; CHANGELOG | ⏳ |
+| 1 · diff | pure function, typed result; property tests (diff of x with x is empty; applying the diff to a gives b's values) | ✅ `diff.node.test.ts` (4 fast-check properties, 12 cases) |
+| 2 · ui | layer, decorations, status; keyboard to next/previous change | ✅ decorations, status, Alt+F5 / Alt+Shift+F5, the changes listed through `publishChanges` (`compare.test.ts`) · ⏳ waits on W-51 (layer): `publishChanges` in `packages/compare/src/ui.ts` writes through `setErrors` until then |
+| 3 · perf | budget on 50,000 rows recorded on a named machine | ✅ 500 ms budget; 120 / 119 / 138 ms (unkeyed / keyed / every row changed) on an Apple M4, load average 14–17 (`perf.node.test.ts`, SR-COMPARE 7) |
+| 4 · package | `packages/compare`, README, skill, demo (L10), new record SR-COMPARE | ✅ SR-COMPARE (0124); `sheetpane-plugins` skill row; gallery tab *Compare* in both demos, demo-check 53 ✓ |
+| 5 · tests · docs | fixtures pair; CHANGELOG | ✅ `@sheetpane/fixtures` `compare/base.xlsx` · `compare/now.xlsx` (`fixtures.node.test.ts`, the MCP golden); CHANGELOG |
 
 ## Blockers
 
-🟡 W-51 (layers) for the view; the headless diff can start now.
+🟡 W-51 (layers): only the `compare` layer is left — switch `publishChanges` (`packages/compare/src/ui.ts`, marked `// W-51: layer 'compare'`) to `setErrors(list, { layer: 'compare' })` once W-51 lands, then close.
 
 ## Record affected
 

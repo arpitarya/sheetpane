@@ -1,0 +1,145 @@
+{
+  "base": "packages/fixtures/files/compare/base.xlsx",
+  "path": "packages/fixtures/files/compare/now.xlsx",
+  "summary": {
+    "sheets": 4,
+    "rows": 7,
+    "cells": 2,
+    "sheetsAdded": 1,
+    "sheetsRemoved": 1,
+    "sheetsRenamed": 1
+  },
+  "text": "4 sheets · 7 rows · 2 cells changed",
+  "sheets": [
+    {
+      "status": "changed",
+      "was": "Holdings",
+      "now": "Holdings",
+      "keyed": true,
+      "key": [
+        "Account"
+      ],
+      "columnsBy": "header",
+      "counts": {
+        "rowsAdded": 1,
+        "rowsRemoved": 1,
+        "rowsChanged": 1,
+        "rowsMoved": 1,
+        "cells": 1
+      },
+      "rows": {
+        "added": [
+          6
+        ],
+        "removed": [
+          4
+        ],
+        "changed": [
+          4
+        ],
+        "moved": [
+          {
+            "from": 5,
+            "to": 2
+          }
+        ]
+      },
+      "cells": [
+        {
+          "ref": "D4",
+          "wasRef": "D3",
+          "was": {
+            "value": 74.85,
+            "text": "74.85"
+          },
+          "now": {
+            "value": 76.1,
+            "text": "76.1"
+          },
+          "what": [
+            "value",
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "status": "changed",
+      "was": "Fees",
+      "now": "Fee schedule",
+      "renamed": 0.667,
+      "keyed": false,
+      "note": "no key column \"Account\" in both versions — rows aligned without a key",
+      "columnsBy": "header",
+      "counts": {
+        "rowsAdded": 0,
+        "rowsRemoved": 0,
+        "rowsChanged": 1,
+        "rowsMoved": 0,
+        "cells": 1
+      },
+      "rows": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          3
+        ],
+        "moved": []
+      },
+      "cells": [
+        {
+          "ref": "B3",
+          "was": {
+            "value": 0.5,
+            "text": "0.5"
+          },
+          "now": {
+            "value": 0.45,
+            "text": "0.45"
+          },
+          "what": [
+            "value",
+            "text"
+          ]
+        }
+      ]
+    },
+    {
+      "status": "added",
+      "now": "Summary",
+      "counts": {
+        "rowsAdded": 1,
+        "rowsRemoved": 0,
+        "rowsChanged": 0,
+        "rowsMoved": 0,
+        "cells": 0
+      },
+      "columns": {
+        "added": [
+          "A",
+          "B"
+        ],
+        "removed": [],
+        "moved": []
+      }
+    },
+    {
+      "status": "removed",
+      "was": "Notes",
+      "counts": {
+        "rowsAdded": 0,
+        "rowsRemoved": 1,
+        "rowsChanged": 0,
+        "rowsMoved": 0,
+        "cells": 0
+      },
+      "columns": {
+        "added": [],
+        "removed": [
+          "A"
+        ],
+        "moved": []
+      }
+    }
+  ]
+}

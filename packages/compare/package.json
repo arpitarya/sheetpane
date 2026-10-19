@@ -1,0 +1,68 @@
+{
+  "name": "@sheetpane/compare",
+  "version": "0.3.0",
+  "description": "What changed between two versions of a workbook, for sheetpane — a headless diffWorkbooks (sheets, rows by key or alignment, cells by value, text and formula) and a grid plugin that tints the changes, sums them up and steps through them.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arpitarya/sheetpane.git",
+    "directory": "packages/compare"
+  },
+  "type": "module",
+  "sideEffects": [
+    "./dist/ui.js",
+    "./src/ui.ts"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./ui": {
+      "source": "./src/ui.ts",
+      "types": "./dist/ui.d.ts",
+      "import": "./dist/ui.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@sheetpane/grid": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@sheetpane/grid": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@sheetpane/export": "workspace:*",
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/skills": "workspace:*"
+  },
+  "devDependencies": {
+    "@sheetpane/fixtures": "workspace:*",
+    "@sheetpane/grid": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./ui": {
+        "types": "./dist/ui.d.ts",
+        "import": "./dist/ui.js"
+      }
+    }
+  }
+}

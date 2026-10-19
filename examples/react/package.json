@@ -13,6 +13,7 @@
     "@sheetpane/charts": "workspace:*",
     "@sheetpane/comments": "workspace:*",
     "@sheetpane/visibility": "workspace:*",
+    "@sheetpane/compare": "workspace:*",
     "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/fixtures": "workspace:*",
     "@sheetpane/formulas": "workspace:*",

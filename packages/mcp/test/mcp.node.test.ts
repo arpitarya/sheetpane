@@ -49,7 +49,7 @@ describe('the protocol over stdio (DoD 2)', () => {
     expect(init.result.resultType).toBeUndefined();
     expect(list.result).toMatchObject({ resultType: 'complete', cacheScope: 'public' });
     expect(list.result.ttlMs).toBeGreaterThan(0);
-    expect(list.result.tools.map((t: any) => t.name)).toEqual(['describe_api', 'inspect_workbook', 'draft_rules', 'check_rules', 'explain_code', 'find_skill']);
+    expect(list.result.tools.map((t: any) => t.name)).toEqual(['describe_api', 'inspect_workbook', 'draft_rules', 'check_rules', 'explain_code', 'find_skill', 'diff_workbooks']);
     expect(call.result.resultType).toBe('complete');
     expect(JSON.parse(call.result.content[0].text).code).toBe('SP-1007');
     expect(unknownTool.error.code).toBe(-32602);
@@ -57,7 +57,7 @@ describe('the protocol over stdio (DoD 2)', () => {
     expect(version.error).toEqual({ code: -32022, message: 'Unsupported protocol version 1999-01-01', data: { supported: ['2026-07-28', '2025-11-25', '2025-06-18'], requested: '1999-01-01' } });
     expect(parse.error.code).toBe(-32700);
     expect(batch.error.code).toBe(-32600);
-    expect(legacyList.result.tools).toHaveLength(6);
+    expect(legacyList.result.tools).toHaveLength(7);
     expect(legacyList.result.resultType).toBeUndefined();
   });
 });
@@ -138,6 +138,22 @@ describe('each tool on the showcase and the rules sample — golden outputs (DoD
   });
 });
 
+describe('diff_workbooks (W-63) — the fixtures pair', () => {
+  it('keyed by Account: golden', () => golden('diff-compare-keyed', 'diff_workbooks', { base: `${F}/compare/base.xlsx`, path: `${F}/compare/now.xlsx`, key: 'Account' }));
+  it('unkeyed, a limit of one: the moved row is removed + added, the lists cut, the counts whole', async () => {
+    const r = JSON.parse((await callTool('diff_workbooks', { base: `${F}/compare/base.xlsx`, path: `${F}/compare/now.xlsx`, limit: 1 })).content[0]!.text);
+    const h = r.sheets[0];
+    expect(h).toMatchObject({ now: 'Holdings', keyed: false, counts: { rowsMoved: 0 } });
+    expect(h.counts.rowsAdded).toBe(2);
+    expect(h.rows.added).toHaveLength(1);
+    expect(h.truncated).toMatch(/limit/);
+  });
+  it('a workbook against itself: no changes', async () => {
+    const r = JSON.parse((await callTool('diff_workbooks', { base: `${F}/showcase.xlsx`, path: `${F}/showcase.xlsx` })).content[0]!.text);
+    expect(r).toMatchObject({ text: 'No changes', sheets: [] });
+  });
+});
+
 describe('bad input is a tool error, never a crash (DoD 10)', () => {
   const err = async (name: string, args: Record<string, unknown>) => {
     const r = await callTool(name, args);
@@ -150,6 +166,10 @@ describe('bad input is a tool error, never a crash (DoD 10)', () => {
     expect(await err('inspect_workbook', { path: `${F}/nope.xlsx` })).toMatch(/^SP-7002: No file at that path — No file at /);
     expect(await err('inspect_workbook', {})).toMatch(/^SP-7001: .*“path” must be/);
     expect(await err('draft_rules', { path: `${F}/showcase.xlsx`, sheet: 'Nope' })).toMatch(/^SP-7005: .*No sheet is named “Nope”/);
+    expect(await err('diff_workbooks', { base: `${F}/compare/base.xlsx` })).toMatch(/^SP-7001: .*“path” must be/);
+    expect(await err('diff_workbooks', { base: `${F}/compare/base.xlsx`, path: `${F}/compare/now.xlsx`, key: 3 })).toMatch(/^SP-7001: .*“key”/);
+    expect(await err('diff_workbooks', { base: `${F}/compare/base.xlsx`, path: `${F}/compare/now.xlsx`, limit: 0 })).toMatch(/^SP-7001: .*“limit”/);
+    expect(await err('diff_workbooks', { base: `${F}/nope.xlsx`, path: `${F}/compare/now.xlsx` })).toMatch(/^SP-7002: /);
   });
   it('codes, rules and tasks', async () => {
     expect(await err('explain_code', { code: 'SP-9999' })).toMatch(/^SP-7006: .*not a sheetpane code/);

@@ -53,7 +53,8 @@ flowchart LR
 2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
-   5800 comments) · 6xxx column rules and the rules file · 7xxx mcp
+   5800 comments, 5900 compare — W-63: SP-5901, a per-sheet key that is
+   not a column) · 6xxx column rules and the rules file · 7xxx mcp
    (W-39: SP-7001…7007, the MCP server's tool errors — SR-MCP decision 7;
    `@sheetpane/mcp` also reports the 60xx rules notes `check_rules` finds).
 3. **Never reuse:** a code is never renumbered or removed; a dead one stays in

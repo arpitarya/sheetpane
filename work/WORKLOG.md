@@ -24,6 +24,20 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-63 built: `@sheetpane/compare` (layer pending W-51)  ·  Claude Code (lane g, claude-opus-5-5)
+
+- **Asked:** *build W-63 in its own worktree (lane g of seven); W-51's layers are being built in another lane, so write the changes through the existing errors API in one function and leave the item open.*
+- **Done:** the new package `@sheetpane/compare` and record SR-COMPARE (0124).
+  - **Headless:** `diffWorkbooks` matches sheets by name, then renames by content; columns by header title; rows by key (moved) or by patience anchors plus Myers inside the gaps, with alike rows paired as changed; cells by value, text and relative formula. Also `applyDiff`, `summaryText`. fast-check checks that a workbook diffed with itself is empty and that the diff applied to *a* gives *b*'s values.
+  - **`/ui`:** tints through `decorate`, the status summary, Alt+F5 / Alt+Shift+F5, and Compare… / Stop comparing in the cell bar. Each change is listed in the errors list by `publishChanges` (type `compare`, *found → expected* = now → base).
+  - **Around it:** SP-5901; the fixtures pair `compare/`; the MCP tool `diff_workbooks`; the gallery tab *Compare* in both demos and its demo-check step (53 ✓); package lists, lockfile, vitest project, skill row, llms and the plugin regenerated.
+  - **Speed:** 50,000 rows × 8 columns in 120 ms unkeyed, 119 keyed, 138 with every row changed (budget 500 ms). Measured on an Apple M4 at load average 14–17 while six other lanes built.
+- **Decided / left open:** the comparison is the file as loaded against the base, never the pane's edits (edits are W-64's edits view). A removed sheet's rows count in the summary, and the status line names the sheet. Without a key a reordered row is removed and added, never moved. Of two equally long in-order runs, the one nearer the old places wins. **Left:** the `compare` layer: switch `publishChanges` once W-51 lands. Until then it goes through `setErrors`, which clears undo.
+- **Mistakes:** the MCP tool first re-threw an uncoded error (the code scan caught it), so `callTool` now passes any coded error through. The README and SR-MCP first claimed the tool could raise SP-5901, which a key for every sheet never does; both were corrected before commit.
+- **Next:** when W-51 merges, switch `publishChanges` to `setErrors(list, { layer: 'compare' })`, drop the `keep` filter, and close W-63.
+
+---
+
 ## 2026-10-19 — law L11 filed: the workbook never leaves the browser  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Create a law. Everything should be within the browser. Nothing go back to the server. Meaning when you upload a CSV or when you upload an Excel file, it does not go to the server. It just stays within the browser."*

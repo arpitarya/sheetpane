@@ -74,6 +74,15 @@ async function gallery(page, name) {
   await t.x.locator('.hmk[data-hid="rows:2-2"]').click();
   await t.x.locator('#c2_0').waitFor();
   check(gone && (await t.x.evaluate((el) => el.workbook.hidden('Numbers').rows.length)) === 0, `${name}: Hide and show hides row 3 from its header menu, marks it, and a marker click unhides it`);
+  // W-63: Compare — the fixtures' newer spec against its base (read in the page), keyed by Account
+  t = await tab('Compare', 'compare', 'Holdings');
+  await t.x.locator('.status').filter({ hasText: 'Compared with base.xlsx: 4 sheets · 7 rows · 2 cells changed' }).waitFor({ timeout: 15000 });
+  const amber = await t.x.locator('#c3_3').evaluate((el) => getComputedStyle(el).backgroundColor);
+  await t.x.locator('#c1_1').click();
+  await t.x.locator('.grid').press('Alt+F5');
+  const stepped = await t.x.evaluate((el) => el.workbook.getSnapshot().selection.ref);
+  const listed = await t.x.evaluate((el) => el.workbook.getErrors().filter((x) => x.type === 'compare').length);
+  check(amber === 'rgba(191, 135, 0, 0.3)' && stepped === 'D4' && listed === 7, `${name}: Compare tints the changed price, sums up 4 sheets · 7 rows · 2 cells, lists 7 changes, and Alt+F5 steps to D4 (${amber}, ${stepped}, ${listed})`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

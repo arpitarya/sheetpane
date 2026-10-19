@@ -99,6 +99,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5801](#sp-5801) | Comment part has no container | error |
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
+| [SP-5901](#sp-5901) | Compare key is not a column | error |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -590,6 +591,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** writing one sheet's comments failed; the export goes on without them.
 - **Likely cause:** SP-5801 or SP-5802 on that sheet, or an unexpected part.
 - **Fix:** read the error logged after this line; the export report lists the skipped ids.
+
+### SP-5901
+
+**Compare key is not a column** · error · [SR-COMPARE](../records/0124_COMPARE.md)
+
+- **Meaning:** `diffWorkbooks` was given a key for one sheet that is not a column of both versions, so it cannot tell which rows are the same row.
+- **Likely cause:** a header title spelled differently, a key column renamed or deleted in one version, or a `headerRow` that is not the row with the titles.
+- **Fix:** name the key by its title in the header row (or by its column letter) as both versions have it; a key given for every sheet (a string, a list or `'*'`) is used only where it exists.
 
 ---
 
