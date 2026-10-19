@@ -10,6 +10,16 @@ afterEach(() => document.body.replaceChildren());
 const frame = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 const sh = (el: Element) => el.shadowRoot!;
 const key = (el: Element, k: string, code: string, o: KeyboardEventInit = {}) => sh(el).querySelector('.grid')!.dispatchEvent(new KeyboardEvent('keydown', { key: k, code, bubbles: true, composed: true, cancelable: true, ...o }));
+// a greyed menu action stays out of the cell bar (SR-GRID 13): read it from the ⋯ menu
+async function menuItem(el: Element, id: string): Promise<HTMLButtonElement> {
+  const more = () => sh(el).querySelector<HTMLElement>('[data-act=more]')!;
+  more().click();
+  await frame();
+  const item = sh(el).querySelector<HTMLButtonElement>(`.moremenu [data-control=${id}]`)!;
+  more().click();
+  await frame();
+  return item;
+}
 const grid = (r: number, c: number) => Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => (i === 0 ? `T${j}` : i * 10 + j)));
 
 async function mount(bytes: Uint8Array, name = 'v.xlsx'): Promise<SheetpaneExcel> {
@@ -51,7 +61,7 @@ describe('@sheetpane/visibility (W-49 DoD 8)', () => {
     const wb = el.workbook!;
     wb.select({ sheet: 'S', ref: 'A1' });
     await frame();
-    expect(sh(el).querySelector<HTMLButtonElement>('[data-control=visibility-unhide-cols]')!.disabled).toBe(true);
+    expect((await menuItem(el, 'visibility-unhide-cols')).disabled).toBe(true);
     wb.select({ sheet: 'S', ref: 'B1', range: 'B1:D1' });
     await frame();
     const un = sh(el).querySelector<HTMLButtonElement>('[data-control=visibility-unhide-cols]')!;
@@ -91,7 +101,6 @@ describe('@sheetpane/visibility (W-49 DoD 8)', () => {
     const el = await mount(new TextEncoder().encode('a,b\n1,2\n3,4'), 'v.csv');
     el.workbook!.select({ sheet: el.workbook!.getSnapshot().selection.sheet, ref: 'A2', range: 'A2:B3' });
     await frame();
-    const hide = sh(el).querySelector<HTMLButtonElement>('[data-control=visibility-hide-rows]')!;
-    expect(hide.disabled).toBe(true);
+    expect((await menuItem(el, 'visibility-hide-rows')).disabled).toBe(true);
   });
 });
