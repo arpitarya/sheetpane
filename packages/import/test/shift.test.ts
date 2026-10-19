@@ -6,6 +6,7 @@ import fc from 'fast-check';
 import { patchXlsx, type StructureOp } from '@sheetpane/export';
 import { read, restructureWorkbook, shiftTables, type ImportedWorkbook } from '../src/index.js';
 import { structureBook } from '../../export/test/fixtures/structure.js';
+import { tablesPkg } from './helpers.js';
 
 const op = (o: Partial<StructureOp> & Pick<StructureOp, 'op' | 'at'>): StructureOp => ({ sheet: 'Data', count: 1, ...o });
 const text = async (book: ImportedWorkbook, path: string) => new TextDecoder().decode((await book.part(path))!);
@@ -61,9 +62,36 @@ describe('restructureWorkbook (W-52 DoD 2)', async () => {
     expect(await text(next, 'xl/charts/chart1.xml')).toContain('<c:f>Data!$A$3:$A$6</c:f>');
     expect(await text(book, 'xl/charts/chart1.xml')).toContain('<c:f>Data!$A$2:$A$5</c:f>');
   });
-  it('W-61: the tables hook returns the sheet as given until tables are read', () => {
+  it('W-61: a sheet with no table is returned as given', () => {
     const s = book.sheets[0]!;
     expect(shiftTables(s, op({ op: 'insertRows', at: 0 }))).toBe(s);
+  });
+});
+
+describe('W-52 × W-61: Excel tables move as patchXlsx moves their parts', async () => {
+  const lists = await read(tablesPkg(), { name: 'tables.xlsx' });
+  const tables = (b: ImportedWorkbook) => b.sheets[0]!.tables.map(({ path: _p, ...t }) => t);
+  it('ref and autoFilter follow their rows; a column deleted inside a table takes its column', () => {
+    const down = restructureWorkbook(lists, op({ sheet: 'Lists', op: 'insertRows', at: 2, count: 2 })).sheets[0]!;
+    expect(down.tables.map((t) => [t.name, t.ref, t.autoFilter ?? null])).toEqual([['Units', 'A1:B7', 'A1:B7'], ['Readings', 'D1:F8', null]]);
+    const narrow = restructureWorkbook(lists, op({ sheet: 'Lists', op: 'deleteCols', at: 4 })).sheets[0]!;
+    expect(narrow.tables[1]).toMatchObject({ ref: 'D1:E6', columns: [{ name: 'Parameter', totalsRowLabel: 'Total' }, { name: 'Unit #' }] });
+    expect(narrow.tables[0]!.ref).toBe('A1:B5');
+    expect(lists.sheets[0]!.tables[1]!.ref).toBe('D1:F6'); // the workbook given is not changed
+  });
+  it('refuses what tableRefusal refuses, as patchXlsx does (bad-structure, SP-2016)', async () => {
+    for (const o of [op({ sheet: 'Lists', op: 'insertCols', at: 4 }), op({ sheet: 'Lists', op: 'deleteRows', at: 0 }), op({ sheet: 'Lists', op: 'deleteRows', at: 1, count: 4 })]) {
+      let thrown: unknown;
+      try { restructureWorkbook(lists, o); } catch (e) { thrown = e; }
+      expect(thrown).toMatchObject({ code: 'bad-structure', spCode: 'SP-2016' });
+      await expect(patchXlsx(tablesPkg(), [], { structure: [o] })).rejects.toMatchObject({ code: 'bad-structure' });
+    }
+  });
+  it('the moved workbook’s tables read as the moved file’s', async () => {
+    for (const o of [op({ sheet: 'Lists', op: 'insertRows', at: 0 }), op({ sheet: 'Lists', op: 'insertRows', at: 3, count: 3 }), op({ sheet: 'Lists', op: 'deleteRows', at: 2 }), op({ sheet: 'Lists', op: 'deleteCols', at: 4 }), op({ sheet: 'Lists', op: 'insertCols', at: 0, count: 2 }), op({ sheet: 'Lists', op: 'deleteCols', at: 2 })]) {
+      const file = await read(await patchXlsx(tablesPkg(), [], { structure: [o] }), { name: 'out.xlsx' });
+      expect(tables(restructureWorkbook(lists, o)), `${o.op} ${o.at}`).toEqual(tables(file));
+    }
   });
 });
 

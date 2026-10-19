@@ -194,11 +194,16 @@ carry over unchanged; the plugins verdict added what plugins read.
     `rowOutline` / `colOutline`, `rowHeights`, `columnWidths`, `autoFilter`,
     `dataValidations` / `conditionalFormats` sqrefs, drawing anchors, notes,
     threaded comments and pivot tables moved, and `part()` serving chart
-    parts with their series moved. It refuses nothing — the grid's store
-    checks first. `PivotTable.source` (W-52) is the cache's `worksheetSource`
-    (`{ sheet, ref }`), read so a move of it can be refused. **W-61:**
-    `shiftTables(sheet, op)` is the hook where `ImportedSheet.tables` will
-    move; until W-61 lands it returns the sheet as given.
+    parts with their series moved. `PivotTable.source` (W-52) is the cache's
+    `worksheetSource` (`{ sheet, ref }`), read so a move of it can be
+    refused. **Tables (W-61, decision 13):** `shiftTables(sheet, op)` moves
+    each table's `ref` and its own `autoFilter` with their cells, and a delete
+    of columns inside a table drops those `columns` — as `patchXlsx` moves
+    the table parts (SR-EXPORT decision 11). A cut a table cannot follow
+    (`tableRefusal`: all of it, its header or totals row, every data row, or
+    columns inserted inside it) is the one thing it refuses, as `patchXlsx`
+    does: `ExportError` `bad-structure` (SP-2016). Everything else — a merge
+    cut, a pivot moved — it does not check; the grid's store asks first.
 
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
@@ -220,7 +225,8 @@ carry over unchanged; the plugins verdict added what plugins read.
   `runs.test.ts` (W-53): runs of shared and inline strings, every run
   property, phonetic runs left out, a lone run listed only when formatted,
   shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
-- **W-52:** `shift.test.ts` (7) — each table moved by an insert and a
+- **W-52:** `shift.test.ts` (10; with W-61, the tables moved, the refusals, and each
+  operation's tables read as the moved file's) — each table moved by an insert and a
   delete on both axes, chart parts served moved, the upload untouched, and
   the fast-check property `restructureWorkbook(read(file), ops)` ≡
   `read(patchXlsx(file, [], { structure: ops }))` over random operations.

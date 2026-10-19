@@ -2,7 +2,7 @@
 // `structure`, one undo step, every table moved (changes, errors, derived values, the selection,
 // merges, hidden and outline state), the refusals, and the download that carries it.
 import { describe, expect, it } from 'vitest';
-import { read } from '@sheetpane/import';
+import { read, type Table } from '@sheetpane/import';
 import { createWorkbook, type Plugin, type StoreEvent } from '../src/index.js';
 import { structureBook } from '../../export/test/fixtures/structure.js';
 import { sampleCsv } from './helpers.js';
@@ -107,9 +107,9 @@ describe('refusals (W-52 DoD 5)', () => {
     expect(s.deleteCols('Data', 0, 3)).toBe(true); // the whole merge goes with its columns
     expect(s.merges('Data')).toEqual([]);
   });
-  it('a pivot that would move (SP-3023), a table cut (SP-3025, once tables are read), cells off the sheet (SP-3024)', async () => {
+  it('a pivot that would move (SP-3023), a table cut (SP-3025, W-61’s tables), cells off the sheet (SP-3024)', async () => {
     const s = await loaded();
-    const data = s.sheet('Data')! as { pivotTables: { name: string; ref: string; source?: { sheet: string; ref: string } }[]; tables?: unknown };
+    const data = s.sheet('Data')! as { pivotTables: { name: string; ref: string; source?: { sheet: string; ref: string } }[]; tables: Table[] };
     data.pivotTables.push({ name: 'P', ref: 'H20:J30' });
     expect(s.structureRefusal({ sheet: 'Data', op: 'insertRows', at: 4, count: 1 })).toMatchObject({ code: 'SP-3023' });
     expect(s.structureRefusal({ sheet: 'Data', op: 'insertRows', at: 31, count: 1 })).toBeUndefined();
@@ -119,10 +119,12 @@ describe('refusals (W-52 DoD 5)', () => {
     expect(s.structureRefusal({ sheet: 'Data', op: 'deleteRows', at: 0, count: 1 })?.message).toContain('the source of the pivot table P');
     expect(s.structureRefusal({ sheet: 'Data', op: 'deleteRows', at: 7, count: 1 })).toBeUndefined();
     other.pivotTables.length = 0;
-    data.tables = [{ name: 'Items', ref: 'A1:D5' }];
+    data.tables = [{ name: 'Items', id: 1, ref: 'A1:D5', headerRowCount: 1, totalsRowCount: 0, columns: [], style: { showFirstColumn: false, showLastColumn: false, showRowStripes: true, showColumnStripes: false }, path: 'xl/tables/table1.xml' }];
     expect(s.structureRefusal({ sheet: 'Data', op: 'deleteRows', at: 0, count: 1 })).toMatchObject({ code: 'SP-3025', message: 'This deletes the header row of table Items.' });
     expect(s.structureRefusal({ sheet: 'Data', op: 'insertRows', at: 3, count: 1 })).toBeUndefined();
-    delete data.tables;
+    data.tables[0]!.headerRowCount = 0; // no header row: the top row is a data row
+    expect(s.structureRefusal({ sheet: 'Data', op: 'deleteRows', at: 0, count: 1 })).toBeUndefined();
+    data.tables = [];
     const wide = s.sheet('Other')!.rows[0]!;
     wide[16_383] = 'edge';
     expect(s.structureRefusal({ sheet: 'Other', op: 'insertCols', at: 0, count: 1 })).toMatchObject({ code: 'SP-3024' });

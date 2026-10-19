@@ -3627,7 +3627,7 @@ The store, the plugin host and `<sheetpane-excel>`.
 
 - **Meaning:** an Excel table cannot follow the operation — it would delete all of the table, its header or totals row, or every data row, or insert columns inside it; nothing changes.
 - **Likely cause:** whole rows or columns selected across a table's edge.
-- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. Raised once the reader reads tables (W-61); until then a download that would cut a table is refused with SP-2016.
+- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. The tables are the ones `@sheetpane/import` reads (W-61); a host calling `restructureWorkbook` or `patchXlsx` directly meets SP-2016 instead.
 
 ---
 
@@ -6320,11 +6320,16 @@ carry over unchanged; the plugins verdict added what plugins read.
     `rowOutline` / `colOutline`, `rowHeights`, `columnWidths`, `autoFilter`,
     `dataValidations` / `conditionalFormats` sqrefs, drawing anchors, notes,
     threaded comments and pivot tables moved, and `part()` serving chart
-    parts with their series moved. It refuses nothing — the grid's store
-    checks first. `PivotTable.source` (W-52) is the cache's `worksheetSource`
-    (`{ sheet, ref }`), read so a move of it can be refused. **W-61:**
-    `shiftTables(sheet, op)` is the hook where `ImportedSheet.tables` will
-    move; until W-61 lands it returns the sheet as given.
+    parts with their series moved. `PivotTable.source` (W-52) is the cache's
+    `worksheetSource` (`{ sheet, ref }`), read so a move of it can be
+    refused. **Tables (W-61, decision 13):** `shiftTables(sheet, op)` moves
+    each table's `ref` and its own `autoFilter` with their cells, and a delete
+    of columns inside a table drops those `columns` — as `patchXlsx` moves
+    the table parts (SR-EXPORT decision 11). A cut a table cannot follow
+    (`tableRefusal`: all of it, its header or totals row, every data row, or
+    columns inserted inside it) is the one thing it refuses, as `patchXlsx`
+    does: `ExportError` `bad-structure` (SP-2016). Everything else — a merge
+    cut, a pivot moved — it does not check; the grid's store asks first.
 
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
@@ -6346,7 +6351,8 @@ carry over unchanged; the plugins verdict added what plugins read.
   `runs.test.ts` (W-53): runs of shared and inline strings, every run
   property, phonetic runs left out, a lone run listed only when formatted,
   shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
-- **W-52:** `shift.test.ts` (7) — each table moved by an insert and a
+- **W-52:** `shift.test.ts` (10; with W-61, the tables moved, the refusals, and each
+  operation's tables read as the moved file's) — each table moved by an insert and a
   delete on both axes, chart parts served moved, the upload untouched, and
   the fast-check property `restructureWorkbook(read(file), ops)` ≡
   `read(patchXlsx(file, [], { structure: ops }))` over random operations.
@@ -7184,7 +7190,7 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     range (SP-3022), anything that would move a pivot table or its worksheet
     source (SP-3023; pivots are not rewritten), an insert that would push
     cells off the sheet (SP-3024), a table cut it cannot follow (SP-3025 —
-    read from `ImportedSheet.tables` once W-61 reads tables). **Element:**
+    from `ImportedSheet.tables`, W-61). **Element:**
     the cell menu and the ⋯ menu (Edit) list *Insert row above · below ·
     column left · right · Delete row · column* (counts for a range), the
     header menu its axis's three; a refused item is greyed with its reason
@@ -9977,8 +9983,11 @@ flowchart LR
   `<sheetpane-excel>`; a cell's own fill over the table's in both plugin
   orders; registration. The demos' gallery tab "Tables" and its `demo-check`
   step (both tables in their colours; C9's list is `Units[Unit]`).
-- **Not done:** inserting or deleting rows moves no table `ref` until W-52
-  shifts it; a table's own `<autoFilter>` buttons, `[#This Row]`, totals-row
+- **Rows and columns inserted or deleted (W-52):** each table's `ref`, its
+  `autoFilter` and, on a column delete, its `columns` move in memory as in
+  the download, and a cut a table cannot follow is refused (SR-IMPORT
+  decision 14, SR-GRID 21d's SP-3025) — so this plugin draws the moved table.
+- **Not done:** a table's own `<autoFilter>` buttons, `[#This Row]`, totals-row
   formulas recalculated by the table and custom table styles are not drawn
   or evaluated. Opening a sheetpane download with tables in Excel is W-30's.
 

@@ -5,10 +5,10 @@
 // notes, threaded comments, pivot tables, and the chart parts `part()` returns. The
 // workbook given is never changed (SR-LAW-6: the upload stays as read).
 import {
-  cellRef, isInsertOp, isRowOp, parseRange, parseRef, rangeRef, restructureChartXml, restructureFormula, shiftCount, shiftIndex, shiftRangePos, shiftRefText, shiftSqref,
-  fromUtf8, utf8, type StructureOp,
+  ExportError, cellRef, isInsertOp, isRowOp, movesRange, parseRange, parseRef, rangeRef, restructureChartXml, restructureFormula, shiftCount, shiftIndex, shiftRangePos, shiftRefText, shiftSqref,
+  tableRefusal, fromUtf8, utf8, type StructureOp,
 } from '@sheetpane/export';
-import type { AnchorPoint, CfRule, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, OutlineEntry } from './types.js';
+import type { AnchorPoint, CfRule, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, OutlineEntry, Table } from './types.js';
 
 /** A cell key (`B3`) moved by the operation; undefined when deleted. */
 function moveKey(ref: string, o: StructureOp): string | undefined {
@@ -97,16 +97,36 @@ function movePivotSource<P extends { source?: { sheet: string; ref: string } }>(
 }
 
 /**
- * W-61: shift ImportedSheet.tables — the Excel tables @sheetpane/import reads once W-61 lands.
- * Until then a sheet has no `tables` field and this returns it as given; the orchestrator wires
- * the shift (each table's `ref` and autofilter through `shiftRangePos`, its columns on a column
- * operation) here after the merge.
+ * The sheet's Excel tables (W-61) after the operation, as `patchXlsx` moves their parts (W-52): each
+ * table's `ref` and its own `autoFilter` follow their cells; a delete of columns inside a table drops
+ * those `columns`. A cut a table cannot follow — what `tableRefusal` names: all of it, its header or
+ * totals row, every data row, or columns inserted inside it — is refused as `patchXlsx` refuses it
+ * (`bad-structure`, SP-2016), so the workbook in memory never holds a table the download could not.
  * @param s - The sheet, already shifted.
- * @param _o - The operation.
- * @returns The sheet with its tables moved.
+ * @param o - The operation.
+ * @returns The sheet with its tables moved (the same sheet when it has none in the way).
+ * @throws ExportError `bad-structure` when a table cannot follow the operation.
  */
-export function shiftTables(s: ImportedSheet, _o: StructureOp): ImportedSheet {
-  return s;
+export function shiftTables(s: ImportedSheet, o: StructureOp): ImportedSheet {
+  if (!s.tables?.length) return s;
+  const rows = isRowOp(o), end = o.at + o.count - 1;
+  let changed = false;
+  const tables = s.tables.map((t) => {
+    const r = parseRange(t.ref);
+    if (!r || !movesRange(r, o)) return t;
+    const why = tableRefusal(r, o, { name: t.name, header: t.headerRowCount > 0, totals: t.totalsRowCount > 0 });
+    if (why) throw new ExportError('bad-structure', `${isInsertOp(o) ? 'inserting' : 'deleting'} ${rows ? 'rows' : 'columns'} on sheet "${o.sheet}" ${why}`, { sheet: o.sheet });
+    changed = true;
+    const out: Table = { ...t, ref: rangeRef(shiftRangePos(r, o)!) };
+    if (!rows && !isInsertOp(o)) out.columns = t.columns.filter((_, i) => { const abs = r.left + i; return abs < o.at || abs > end; });
+    if (t.autoFilter !== undefined) {
+      const f = parseRange(t.autoFilter), moved = f && shiftRangePos(f, o);
+      if (moved) out.autoFilter = rangeRef(moved);
+      else delete out.autoFilter;
+    }
+    return out;
+  });
+  return changed ? { ...s, tables } : s;
 }
 
 /** The operation's own sheet, every table moved. */
@@ -151,8 +171,9 @@ function targetSheet(s: ImportedSheet, o: StructureOp): ImportedSheet {
  * deleted target), and `part()` returning chart parts with their series references moved. The
  * workbook given is not changed.
  *
- * It does not refuse anything: a caller that must not split a merge, a table or a pivot checks
- * first (the grid's store does, W-52).
+ * It refuses only a cut an Excel table cannot follow (`bad-structure`, as `patchXlsx` does — see
+ * {@link shiftTables}); a caller that must not split a merge or move a pivot checks first (the
+ * grid's store does, W-52).
  *
  * @param book - The workbook as it is now.
  * @param o - The operation; `o.sheet` must name one of the workbook's sheets.

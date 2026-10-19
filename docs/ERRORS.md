@@ -630,7 +630,7 @@ The store, the plugin host and `<sheetpane-excel>`.
 
 - **Meaning:** an Excel table cannot follow the operation — it would delete all of the table, its header or totals row, or every data row, or insert columns inside it; nothing changes.
 - **Likely cause:** whole rows or columns selected across a table's edge.
-- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. Raised once the reader reads tables (W-61); until then a download that would cut a table is refused with SP-2016.
+- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. The tables are the ones `@sheetpane/import` reads (W-61); a host calling `restructureWorkbook` or `patchXlsx` directly meets SP-2016 instead.
 
 ---
 

@@ -88,8 +88,11 @@ flowchart LR
   `<sheetpane-excel>`; a cell's own fill over the table's in both plugin
   orders; registration. The demos' gallery tab "Tables" and its `demo-check`
   step (both tables in their colours; C9's list is `Units[Unit]`).
-- **Not done:** inserting or deleting rows moves no table `ref` until W-52
-  shifts it; a table's own `<autoFilter>` buttons, `[#This Row]`, totals-row
+- **Rows and columns inserted or deleted (W-52):** each table's `ref`, its
+  `autoFilter` and, on a column delete, its `columns` move in memory as in
+  the download, and a cut a table cannot follow is refused (SR-IMPORT
+  decision 14, SR-GRID 21d's SP-3025) — so this plugin draws the moved table.
+- **Not done:** a table's own `<autoFilter>` buttons, `[#This Row]`, totals-row
   formulas recalculated by the table and custom table styles are not drawn
   or evaluated. Opening a sheetpane download with tables in Excel is W-30's.
 

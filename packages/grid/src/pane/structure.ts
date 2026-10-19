@@ -7,7 +7,7 @@ import {
   MAX_COLS, MAX_ROWS, cellRef, isInsertOp, isRowOp, movesRange, parseRange, parseRef, rangeRef, restructureFormula, shiftCount, shiftIndex, shiftRangePos, shiftRefText, splitsRange, tableRefusal,
   type SpCode, type StructureOp,
 } from '@sheetpane/export';
-import type { ImportedSheet, ImportedWorkbook } from '@sheetpane/import';
+import type { ImportedSheet, ImportedWorkbook, Table } from '@sheetpane/import';
 import type { ChangeEntry, Composing, DerivedCell, Selection, SheetpaneError } from './types.js';
 
 /** The change-map ref that holds a sheet's operations, in order: `Sheet1!#structure`. */
@@ -19,14 +19,9 @@ export interface StructureRefusal { code: SpCode; message: string }
 const splitKey = (k: string) => { const i = k.lastIndexOf('!'); return { sheet: k.slice(0, i), ref: k.slice(i + 1) }; };
 const what = (o: StructureOp) => `${o.count} ${isRowOp(o) ? 'row' : 'column'}${o.count === 1 ? '' : 's'}`;
 
-/**
- * W-61: the Excel tables of a sheet, once @sheetpane/import reads them into `ImportedSheet.tables`.
- * Read defensively until then (the field does not exist yet), so the refusal below already applies
- * when it does.
- */
-function tablesOf(s: ImportedSheet): { name?: string; ref: string; headerRowCount?: number; totalsRowCount?: number }[] {
-  const t = (s as { tables?: unknown }).tables;
-  return Array.isArray(t) ? (t as { name?: string; ref: string }[]).filter((x) => x && typeof x.ref === 'string') : [];
+/** The sheet's Excel tables as `@sheetpane/import` reads them (W-61); none on a hand-made sheet. */
+function tablesOf(s: ImportedSheet): readonly Table[] {
+  return s.tables ?? [];
 }
 
 /**
@@ -57,7 +52,7 @@ export function structureRefusal(book: ImportedWorkbook, merges: readonly string
   }
   for (const t of tablesOf(s)) {
     const r = parseRange(t.ref);
-    const why = r && tableRefusal(r, o, { name: t.name ?? t.ref, header: (t.headerRowCount ?? 1) > 0, totals: (t.totalsRowCount ?? 0) > 0 });
+    const why = r && tableRefusal(r, o, { name: t.name, header: t.headerRowCount > 0, totals: t.totalsRowCount > 0 });
     if (why) return { code: 'SP-3025', message: `This ${why}.` };
   }
   return undefined;
