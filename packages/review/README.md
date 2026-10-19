@@ -45,7 +45,7 @@ plugin.lastExport;                                // { sheet, listed, counts, fi
 | `fill` | `false` | Colour each flagged cell. `export({ reviewFills: true })` colours one export. |
 | `sheetName` | `'Review'` | The sheet's name. Characters Excel forbids are dropped, and the name is cut to 31 characters. |
 | `severities` | `['error', 'warning', 'note']` | The severities listed and coloured. Results such as `pass` and `skipped` are written only when you name them. `export({ reviewSeverities })` overrides it for one export. |
-| `layers` | every layer | The layers listed and coloured. An error with no `layer` belongs to `review`. `export({ reviewLayers })` overrides it for one export. |
+| `layers` | every layer but `compare` | The layers listed and coloured. An error with no `layer` belongs to `review`. `@sheetpane/compare`'s `compare` layer is a comparison, not the review: it is listed only when named, as `@sheetpane/comments` writes it. `export({ reviewLayers })` overrides it for one export. |
 | `fills` | pale red, yellow, blue | A fill per severity, as `#RRGGBB`, `RRGGBB` or ARGB. `null` turns a severity's fill off. A value that is not a colour throws SP-5005. |
 
 ## The Review sheet

@@ -2457,7 +2457,8 @@ d.sheets[0].cells;         // { ref: 'D4', was: { value, text, formula? }, now: 
   part of it. Loading another file into the pane compares it with the same base.
 - The changes are listed as the `compare` review layer (`COMPARE_LAYER`): the review is left as
   it is and undo is kept; the errors panel's layer switch shows them apart. `@sheetpane/comments`
-  writes them into a download only when `export({ layers: [..., 'compare'] })` names the layer.
+  writes them into a download only when `export({ layers: [..., 'compare'] })` names the layer;
+  `@sheetpane/review` lists them on its Review sheet only when `reviewLayers` names it.
 - The tints are `--sp-compare-added`, `--sp-compare-changed`, `--sp-compare-moved` and
   `--sp-compare-removed`; set them to restyle.
 
@@ -2515,7 +2516,7 @@ plugin.lastExport;                                // { sheet, listed, counts, fi
 | `fill` | `false` | Colour each flagged cell. `export({ reviewFills: true })` colours one export. |
 | `sheetName` | `'Review'` | The sheet's name. Characters Excel forbids are dropped, and the name is cut to 31 characters. |
 | `severities` | `['error', 'warning', 'note']` | The severities listed and coloured. Results such as `pass` and `skipped` are written only when you name them. `export({ reviewSeverities })` overrides it for one export. |
-| `layers` | every layer | The layers listed and coloured. An error with no `layer` belongs to `review`. `export({ reviewLayers })` overrides it for one export. |
+| `layers` | every layer but `compare` | The layers listed and coloured. An error with no `layer` belongs to `review`. `@sheetpane/compare`'s `compare` layer is a comparison, not the review: it is listed only when named, as `@sheetpane/comments` writes it. `export({ reviewLayers })` overrides it for one export. |
 | `fills` | pale red, yellow, blue | A fill per severity, as `#RRGGBB`, `RRGGBB` or ARGB. `null` turns a severity's fill off. A value that is not a colour throws SP-5005. |
 
 ## The Review sheet
@@ -9564,7 +9565,9 @@ flowchart LR
    on a server or in a worker — `sheetpane-setup` and `sheetpane-backend`
    point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f), and
    `sheetpane-backend` at `@sheetpane/grid/static` for a report or an email
-   showing the sheet (W-67, SR-GRID decision 22g).
+   showing the sheet (W-67, SR-GRID decision 22g) — the visible layers'
+   errors by default, sheet and workbook errors in its footer, results only
+   at `marks`, an accepted deviation with its reason.
 2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
     in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
     (`$ARGUMENTS` where filled). Three are written as commands:
@@ -10454,7 +10457,10 @@ review as comments. This plugin writes the same review as a table. W-59.
    comments (`author: 'file'`). Only the severities in `severities` are
    listed: the default is `error`, `warning` and `note`, and results such as
    `pass` and `skipped` (W-50) appear only when named. Only the layers in
-   `layers` are listed (W-51): the default is every layer, and an error with
+   `layers` are listed (W-51): the default is every layer but `compare` —
+   `@sheetpane/compare`'s layer (W-63) is a comparison, not the review, so
+   it is listed and coloured only when `layers` (or `reviewLayers`) names
+   it, as `@sheetpane/comments` writes it (SR-COMMENTS) — and an error with
    no `layer` is `review`. `export({ reviewSeverities, reviewLayers })`
    overrides both for one export. **An empty selection writes nothing.**
    The types are the grid's: `severities` is `Severity[]` (a
@@ -10526,7 +10532,8 @@ review as comments. This plugin writes the same review as a table. W-59.
     and marker (all well-formed), the order, the text, the links, every
     other part byte-identical to a plain export, the `Review (2)` collision,
     name cleaning, an apostrophe in a link, export twice → one sheet, the
-    switches, the severity and layer filters, accepted rows and counts, and
+    switches, the severity and layer filters (the `compare` layer left out
+    unless named), accepted rows and counts, and
     the read-back through `@sheetpane/import` (`reviewSheetOf`) and
     `@sheetpane/testing` (`readFile`, `valueAt`).
   - `fills.test.ts` covers the cloned formats (number format, font, border
@@ -10697,7 +10704,8 @@ no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-
     previous comparison's and leaves every other layer — a person's review included — and undo
     as they are; ids are the pane's next `ERR-n`. With two layers the errors panel's switch
     shows the review and the comparison apart. `@sheetpane/comments` leaves the layer out of a
-    download unless `export({ layers })` names it (SR-COMMENTS 3). A removed sheet has no place in the workbook: the status
+    download unless `export({ layers })` names it (SR-COMMENTS 3), and `@sheetpane/review` leaves
+    it off the Review sheet unless `layers` / `reviewLayers` names it (SR-REVIEW 2). A removed sheet has no place in the workbook: the status
     line names it.
 13. **MCP:** `@sheetpane/mcp`'s `diff_workbooks(base, path, key?, headerRow?, limit?)` runs
     `diffWorkbooks` on two local files, the key for every sheet (SR-MCP).

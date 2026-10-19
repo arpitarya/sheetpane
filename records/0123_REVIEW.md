@@ -78,7 +78,10 @@ review as comments. This plugin writes the same review as a table. W-59.
    comments (`author: 'file'`). Only the severities in `severities` are
    listed: the default is `error`, `warning` and `note`, and results such as
    `pass` and `skipped` (W-50) appear only when named. Only the layers in
-   `layers` are listed (W-51): the default is every layer, and an error with
+   `layers` are listed (W-51): the default is every layer but `compare` —
+   `@sheetpane/compare`'s layer (W-63) is a comparison, not the review, so
+   it is listed and coloured only when `layers` (or `reviewLayers`) names
+   it, as `@sheetpane/comments` writes it (SR-COMMENTS) — and an error with
    no `layer` is `review`. `export({ reviewSeverities, reviewLayers })`
    overrides both for one export. **An empty selection writes nothing.**
    The types are the grid's: `severities` is `Severity[]` (a
@@ -150,7 +153,8 @@ review as comments. This plugin writes the same review as a table. W-59.
     and marker (all well-formed), the order, the text, the links, every
     other part byte-identical to a plain export, the `Review (2)` collision,
     name cleaning, an apostrophe in a link, export twice → one sheet, the
-    switches, the severity and layer filters, accepted rows and counts, and
+    switches, the severity and layer filters (the `compare` layer left out
+    unless named), accepted rows and counts, and
     the read-back through `@sheetpane/import` (`reviewSheetOf`) and
     `@sheetpane/testing` (`readFile`, `valueAt`).
   - `fills.test.ts` covers the cloned formats (number format, font, border

@@ -126,7 +126,8 @@ no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-
     previous comparison's and leaves every other layer — a person's review included — and undo
     as they are; ids are the pane's next `ERR-n`. With two layers the errors panel's switch
     shows the review and the comparison apart. `@sheetpane/comments` leaves the layer out of a
-    download unless `export({ layers })` names it (SR-COMMENTS 3). A removed sheet has no place in the workbook: the status
+    download unless `export({ layers })` names it (SR-COMMENTS 3), and `@sheetpane/review` leaves
+    it off the Review sheet unless `layers` / `reviewLayers` names it (SR-REVIEW 2). A removed sheet has no place in the workbook: the status
     line names it.
 13. **MCP:** `@sheetpane/mcp`'s `diff_workbooks(base, path, key?, headerRow?, limit?)` runs
     `diffWorkbooks` on two local files, the key for every sheet (SR-MCP).

@@ -58,7 +58,8 @@ d.sheets[0].cells;         // { ref: 'D4', was: { value, text, formula? }, now: 
   part of it. Loading another file into the pane compares it with the same base.
 - The changes are listed as the `compare` review layer (`COMPARE_LAYER`): the review is left as
   it is and undo is kept; the errors panel's layer switch shows them apart. `@sheetpane/comments`
-  writes them into a download only when `export({ layers: [..., 'compare'] })` names the layer.
+  writes them into a download only when `export({ layers: [..., 'compare'] })` names the layer;
+  `@sheetpane/review` lists them on its Review sheet only when `reviewLayers` names it.
 - The tints are `--sp-compare-added`, `--sp-compare-changed`, `--sp-compare-moved` and
   `--sp-compare-removed`; set them to restyle.
 

@@ -23,7 +23,8 @@ export interface ReviewOptions {
    */
   severities?: readonly Severity[];
   /**
-   * The layers listed and coloured (W-51); an error with no `layer` is `review`. Default every layer.
+   * The layers listed and coloured (W-51); an error with no `layer` is `review`. Default every layer but `compare`
+   * (W-63: a comparison is not the review), which is listed only when named.
    * `export({ reviewLayers: […] })` overrides it for one export.
    */
   layers?: readonly string[];

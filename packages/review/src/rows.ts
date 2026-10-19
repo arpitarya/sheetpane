@@ -26,7 +26,7 @@ export interface ReviewRow {
 export interface Selection {
   /** The severities listed; default {@link PROBLEM_SEVERITIES}. */
   severities?: readonly Severity[] | undefined;
-  /** The layers listed (an error with no `layer` is `review`); default every layer. */
+  /** The layers listed (an error with no `layer` is `review`); default every layer but `compare` (W-63), which is listed only when named. */
   layers?: readonly string[] | undefined;
 }
 
@@ -45,9 +45,12 @@ export function when(iso: string | undefined): string {
   return Number.isNaN(d.getTime()) ? iso : `${d.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }
 
+/** `@sheetpane/compare`'s layer (W-63): a comparison is not the review, so it is listed only when `layers` names it — as `@sheetpane/comments` writes it. */
+export const COMPARE_LAYER = 'compare';
+
 /**
  * The errors one export lists: not the file's own comments (`author: 'file'`), only the severities and layers
- * asked for; the workbook's errors first, then each sheet in the file's order — its whole-sheet errors, then its
+ * asked for (by default every layer but `compare`); the workbook's errors first, then each sheet in the file's order — its whole-sheet errors, then its
  * cells top to bottom, left to right.
  *
  * @param errors - The store's errors.
@@ -58,7 +61,7 @@ export function when(iso: string | undefined): string {
 export function selectErrors(errors: readonly SheetpaneError[], sel: Selection, sheetOrder: readonly string[]): SheetpaneError[] {
   const sev = new Set(sel.severities ?? PROBLEM_SEVERITIES);
   const layers = sel.layers ? new Set(sel.layers) : undefined;
-  const picked = errors.filter((e) => e.author !== 'file' && sev.has(e.severity) && (!layers || layers.has(layerOf(e))));
+  const picked = errors.filter((e) => e.author !== 'file' && sev.has(e.severity) && (layers ? layers.has(layerOf(e)) : layerOf(e) !== COMPARE_LAYER));
   const sheetIx = (s: string) => { const i = sheetOrder.indexOf(s); return i < 0 ? sheetOrder.length : i; };
   const key = (e: SheetpaneError): number[] => {
     const scope = errorScope(e);

@@ -3,7 +3,7 @@ import { createWorkbook, layerOf, type Severity, type SheetpaneError, type Workb
 import { read } from '@sheetpane/import';
 import { readFile, valueAt } from '@sheetpane/testing';
 import { COLUMNS, REVIEW_NAME, review, reviewSheetOf, type ReviewPlugin } from '../src/index.js';
-import { selectErrors } from '../src/rows.js';
+import { COMPARE_LAYER, selectErrors } from '../src/rows.js';
 import { cleanSheetName, uniqueSheetName } from '../src/sheet.js';
 import { blobBytes, parseXml, unzip, workbook } from './helpers.js';
 
@@ -161,6 +161,23 @@ describe('the Review sheet (DoD 2)', () => {
     parts = await unzip(await exported(s, { reviewSeverities: ['warning', 'fatal'] }));
     expect(grid(parts.get('xl/worksheets/sheet3.xml')!).A4).toBeUndefined();
     expect(selectErrors(list, { layers: ['review'] }, ['S']).every((x) => layerOf(x) === 'review')).toBe(true);
+  });
+
+  it('the compare layer (W-63) is a comparison, not the review: left out unless named, as @sheetpane/comments does', async () => {
+    const e = (id: string, layer?: string): SheetpaneError => ({ v: 1, id, sheet: 'S', range: 'A1', type: 'other', severity: 'note', found: '', expected: '', message: '', cellChanged: false, status: 'open', matchesExpected: false, author: '', createdAt: '', ...(layer ? { layer } : {}) });
+    const list = [e('E1'), e('E2', 'compare'), e('E3', 'pdf')];
+    expect(COMPARE_LAYER).toBe('compare');
+    expect(selectErrors(list, {}, ['S']).map((x) => x.id)).toEqual(['E1', 'E3']);
+    expect(selectErrors(list, { layers: ['review', 'compare'] }, ['S']).map((x) => x.id)).toEqual(['E1', 'E2']);
+
+    const s = await storeOn(await plain(), review({ fill: true }));
+    s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', message: 'In the review' });
+    s.addError({ sheet: 'Holdings', range: 'B2', type: 'other', severity: 'note', message: 'Price changed since the base file', author: 'compare', layer: 'compare' });
+    const listed = async (options: Record<string, unknown> = {}) => Object.entries(grid((await unzip(await exported(s, options))).get('xl/worksheets/sheet3.xml')!)).map(([, v]) => v).join(' | ');
+    expect(await listed()).toContain('In the review');
+    expect(await listed()).not.toContain('Price changed');
+    expect(await listed({ reviewLayers: ['compare'] })).toContain('Price changed');
+    expect(await listed({ reviewLayers: ['compare'] })).not.toContain('In the review');
   });
 });
 
