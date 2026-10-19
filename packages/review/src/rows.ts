@@ -1,13 +1,10 @@
 // Which errors the review lists, in which order, and the text of each row
 // (W-59 DoD 1, 5). Pure functions over the store's errors: no XML here.
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, type SheetpaneError } from '@sheetpane/grid';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, errorScope, layerOf, type ProblemSeverity, type Severity, type SheetpaneError } from '@sheetpane/grid';
 import { parseRange } from '@sheetpane/export';
 
 /** The severities that are problems — what the review lists and colours unless `severities` names others. */
-export const PROBLEM_SEVERITIES: readonly string[] = ['error', 'warning', 'note'];
-
-/** The layer an error with none belongs to, for the `layers` filter. */
-export const DEFAULT_LAYER = 'review';
+export const PROBLEM_SEVERITIES: readonly ProblemSeverity[] = ['error', 'warning', 'note'];
 
 /** The Review sheet's columns, left to right. */
 export const COLUMNS = ['ID', 'Sheet', 'Cell', 'Severity', 'Type', 'Found', 'Expected', 'Message', 'Author', 'Status', 'Accepted', 'Accepted by', 'Accepted at'] as const;
@@ -28,22 +25,18 @@ export interface ReviewRow {
 /** What the export lists. */
 export interface Selection {
   /** The severities listed; default {@link PROBLEM_SEVERITIES}. */
-  severities?: readonly string[] | undefined;
+  severities?: readonly Severity[] | undefined;
   /** The layers listed (an error with no `layer` is `review`); default every layer. */
   layers?: readonly string[] | undefined;
 }
-
-// W-51 adds `layer` to SheetpaneError; until then it is read defensively (the orchestrator tightens this after the merge).
-/** An error's layer — `review` when it names none. */
-export const layerOf = (e: SheetpaneError): string => (e as { layer?: string }).layer ?? DEFAULT_LAYER;
 
 /** A sheet name quoted for a reference: `'Q3 ''final'''!`. */
 export const quoteSheet = (name: string): string => `'${name.replace(/'/g, "''")}'`;
 
 const typeName = (id: string) => DEFAULT_ERROR_TYPES.find((t) => t.id === id)?.name ?? BUILTIN_TYPE_NAMES[id] ?? id;
 const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
-// W-50 adds `pass` and `skipped`; a severity SEVERITY does not name is written capitalised.
-const severityName = (s: string) => (SEVERITY as Record<string, { name: string } | undefined>)[s]?.name ?? cap(s);
+/** A severity's name as the panel shows it — `Passed` and `Not checked` for W-50's results; one from an old saved review that is no severity, capitalised. */
+const severityName = (s: Severity): string => SEVERITY[s]?.name ?? cap(s);
 
 /** `2026-10-19T09:12:00.000Z` → `2026-10-19 09:12 UTC`; anything unreadable as it is. */
 export function when(iso: string | undefined): string {

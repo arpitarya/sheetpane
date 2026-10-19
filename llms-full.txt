@@ -10089,8 +10089,9 @@ review as comments. This plugin writes the same review as a table. W-59.
    `layers` are listed (W-51): the default is every layer, and an error with
    no `layer` is `review`. `export({ reviewSeverities, reviewLayers })`
    overrides both for one export. **An empty selection writes nothing.**
-   *Until W-50 and W-51 merge, `layer` is read defensively and `severities`
-   is `string[]`; the orchestrator tightens the types after the merge.*
+   The types are the grid's: `severities` is `Severity[]` (a
+   `reviewSeverities` naming anything else is ignored) and an error's layer
+   is the grid's `layerOf`.
 3. **The sheet:** a new worksheet part (`xl/worksheets/sheetN.xml`, the first
    free N), a worksheet relationship from the workbook, an `<Override>`
    content type, and a `<sheet>` added last (`sheetId` = max + 1). The

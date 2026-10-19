@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createWorkbook, type SheetpaneError, type WorkbookStore } from '@sheetpane/grid';
+import { createWorkbook, layerOf, type Severity, type SheetpaneError, type WorkbookStore } from '@sheetpane/grid';
 import { read } from '@sheetpane/import';
 import { readFile, valueAt } from '@sheetpane/testing';
 import { COLUMNS, REVIEW_NAME, review, reviewSheetOf, type ReviewPlugin } from '../src/index.js';
@@ -143,8 +143,8 @@ describe('the Review sheet (DoD 2)', () => {
     expect(review({ sheet: false }).exportOptions![0]!.default).toBe(false);
   });
 
-  it('the file’s own comments are not listed; severities and layers filter (pass/skipped and layer from W-50/W-51 read defensively)', async () => {
-    const e = (id: string, severity: string, extra: Record<string, unknown> = {}) => ({ v: 1, id, sheet: 'S', range: 'A1', type: 'other', severity, found: '', expected: '', message: '', cellChanged: false, status: 'open', matchesExpected: false, author: '', createdAt: '', ...extra }) as unknown as SheetpaneError;
+  it('the file’s own comments are not listed; severities and layers filter (W-50’s pass/skipped, W-51’s layer)', async () => {
+    const e = (id: string, severity: Severity, extra: Partial<SheetpaneError> = {}): SheetpaneError => ({ v: 1, id, sheet: 'S', range: 'A1', type: 'other', severity, found: '', expected: '', message: '', cellChanged: false, status: 'open', matchesExpected: false, author: '', createdAt: '', ...extra });
     const list = [e('E1', 'error'), e('E2', 'pass'), e('E3', 'note', { author: 'file' }), e('E4', 'warning', { layer: 'spec' }), e('E5', 'skipped', { layer: 'spec' })];
     expect(selectErrors(list, {}, ['S']).map((x) => x.id)).toEqual(['E1', 'E4']);
     expect(selectErrors(list, { severities: ['error', 'pass', 'skipped'] }, ['S']).map((x) => x.id)).toEqual(['E1', 'E2', 'E5']);
@@ -157,6 +157,10 @@ describe('the Review sheet (DoD 2)', () => {
     expect(grid(parts.get('xl/worksheets/sheet3.xml')!).A4).toBeUndefined(); // two errors listed: rows 2 and 3
     parts = await unzip(await exported(s, { reviewSeverities: ['warning'] }));
     expect(Object.keys(grid(parts.get('xl/worksheets/sheet3.xml')!)).filter((k) => k.startsWith('A'))).toEqual(['A1', 'A2', 'A3']);
+    // a list naming something that is not a severity is ignored: the plugin's own `severities` stand
+    parts = await unzip(await exported(s, { reviewSeverities: ['warning', 'fatal'] }));
+    expect(grid(parts.get('xl/worksheets/sheet3.xml')!).A4).toBeUndefined();
+    expect(selectErrors(list, { layers: ['review'] }, ['S']).every((x) => layerOf(x) === 'review')).toBe(true);
   });
 });
 

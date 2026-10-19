@@ -4,7 +4,7 @@
 // beyond the Download menu's two switches. String XML only, so it runs in Node.
 // Nothing leaves the page (SR-LAW-11): the parts are written into the bytes the
 // browser saves.
-import { registerPlugin, spError, type Plugin } from '@sheetpane/grid';
+import { SEVERITY, registerPlugin, spError, type Plugin, type Severity } from '@sheetpane/grid';
 import { DEFAULT_FILLS, argb } from './fills.js';
 import { PROBLEM_SEVERITIES, selectErrors } from './rows.js';
 import { writeReview, type ReviewReport } from './write.js';
@@ -21,7 +21,7 @@ export interface ReviewOptions {
    * The severities listed and coloured. Default the problems — `error`, `warning`, `note`; results such as `pass`
    * and `skipped` (W-50) only when listed. `export({ reviewSeverities: […] })` overrides it for one export.
    */
-  severities?: readonly string[];
+  severities?: readonly Severity[];
   /**
    * The layers listed and coloured (W-51); an error with no `layer` is `review`. Default every layer.
    * `export({ reviewLayers: […] })` overrides it for one export.
@@ -41,6 +41,8 @@ export interface ReviewPlugin extends Plugin {
 }
 
 const strings = (v: unknown): string[] | undefined => (Array.isArray(v) && v.every((x) => typeof x === 'string') ? (v as string[]) : undefined);
+/** `export({ reviewSeverities })` as the grid's severities: a list of names, each one SEVERITY knows (W-50). */
+const severitiesOf = (v: unknown): Severity[] | undefined => (strings(v)?.every((s) => Object.hasOwn(SEVERITY, s)) ? (v as Severity[]) : undefined);
 const flag = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback);
 
 /**
@@ -97,7 +99,7 @@ export function review(options: ReviewOptions = {}): ReviewPlugin {
       const x = ctx.exportOptions ?? {};
       const sheet = flag(x.review, options.sheet !== false), fill = flag(x.reviewFills, options.fill === true);
       if (!sheet && !fill) return;
-      const severities = strings(x.reviewSeverities) ?? options.severities ?? PROBLEM_SEVERITIES;
+      const severities = severitiesOf(x.reviewSeverities) ?? options.severities ?? PROBLEM_SEVERITIES;
       const layers = strings(x.reviewLayers) ?? options.layers;
       const errors = selectErrors(ctx.snapshot().errors, { severities, layers }, patch.sheetNames());
       if (!errors.length) return;

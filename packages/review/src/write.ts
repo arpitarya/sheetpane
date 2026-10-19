@@ -2,7 +2,7 @@
 // cells), then the Review sheet, then the styles part once with every fill and
 // cloned format appended. A part that cannot be read is left as it was, and
 // what was not written is reported (W-59 DoD 2, 3, 5).
-import { errorScope, spMessage, type SheetpaneError, type SpCode } from '@sheetpane/grid';
+import { errorScope, spMessage, type Severity, type SheetpaneError, type SpCode } from '@sheetpane/grid';
 import { parseRange, spError } from '@sheetpane/export';
 import { HEADER_FILL, StyleBook, fillSheet, planRange, type FillPlan } from './fills.js';
 import { rowOf } from './rows.js';
@@ -42,7 +42,7 @@ export interface WriteOptions {
   /** Severity → ARGB fill; a severity not named is not coloured. */
   fills: Readonly<Record<string, string>>;
   /** Severities, worst first: on a cell flagged twice, the worse one's fill wins. */
-  order: readonly string[];
+  order: readonly Severity[];
 }
 
 /**
@@ -55,7 +55,7 @@ export interface WriteOptions {
  */
 export async function writeReview(patch: PatchContext, errors: readonly SheetpaneError[], o: WriteOptions): Promise<ReviewReport> {
   const report: ReviewReport = { sheet: undefined, listed: [], filled: [], skipped: [], counts: { open: 0, accepted: 0, resolved: 0 } };
-  const rank = (s: string) => { const i = o.order.indexOf(s); return i < 0 ? o.order.length : i; };
+  const rank = (s: string) => { const i = o.order.findIndex((x) => x === s); return i < 0 ? o.order.length : i; };
 
   const sp = await stylesPath(patch);
   let book: StyleBook | undefined;
