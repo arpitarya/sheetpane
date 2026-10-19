@@ -70,12 +70,15 @@ describe('the store’s edits (W-64 DoD 1, SR-GRID 24)', () => {
     expect(list).toHaveLength(s.changeCount); // one entry per change-map key: derived cells are not edits
     expect([editRef('#numFmt:C4'), editRef('#hiddenRows'), editRef('#merge:A1:C1'), editRef('D9')]).toEqual(['C4', '', 'A1:C1', 'D9']);
   });
-  it('a kind the store does not know is listed as it is, one entry per key (W-52’s structure edits)', async () => {
+  it('W-52’s inserts and deletes on a sheet are one entry, its operations in order; reverting it reverts them all', async () => {
     const s = await book();
-    s.setChange('Holdings', '#structure:rows', 'structure' as never, { insert: 5, count: 2 }, undefined);
-    expect(s.edits()).toMatchObject([{ key: 'Holdings!#structure:rows', ref: 'rows', kind: 'structure', now: { insert: 5, count: 2 } }]);
-    expect(s.revertEdits(['Holdings!#structure:rows'])).toBe(1);
+    const rowsRead = s.sheet('Holdings')!.rows.length;
+    expect(s.insertRows('Holdings', 4, 2)).toBe(true);
+    expect(s.insertRows('Holdings', 20, 1)).toBe(true);
+    expect(s.edits()).toMatchObject([{ key: 'Holdings!#structure', ref: '', kind: 'structure', was: [], now: [{ op: 'insertRows', at: 4, count: 2 }, { op: 'insertRows', at: 20, count: 1 }] }]);
+    expect(s.revertEdits(['Holdings!#structure'])).toBe(1);
     expect(s.edits()).toEqual([]);
+    expect(s.sheet('Holdings')!.rows.length).toBe(rowsRead);
   });
 });
 
@@ -268,6 +271,28 @@ describe('the Edits view (W-64 DoD 1)', () => {
     expect(s.getSnapshot().selection).toEqual({ sheet: 'Holdings', ref: 'F5' });
     await userEvent.keyboard('{Tab}');
     expect(shadow(errors).activeElement).toBe($(errors, '[data-sp-edit="Holdings!F5"] [data-sp=revert-edit]'));
+  });
+  it('W-52: a sheet’s inserts and deletes are one row — Rows and columns, what was done — and its Revert is one undo step', async () => {
+    const { excel, errors, s } = await pair();
+    const before = s.sheet('Holdings')!.rows.length;
+    s.setCell('Holdings', 'F5', '440');
+    expect(s.insertRows('Holdings', 2, 2)).toBe(true);
+    expect(s.insertCols('Holdings', 10, 1)).toBe(true);
+    await frame();
+    await openEdits(errors);
+    expect(rows(errors)).toEqual(['Holdings!#structure', 'Holdings!F7']);
+    const row = $(errors, '[data-sp-edit="Holdings!#structure"]');
+    expect(row.querySelector('.ty')!.textContent).toBe('Holdings · whole sheet · Rows and columns');
+    expect(row.querySelector('.ba')!.textContent).toBe('was as read → now 2 rows inserted at 3, 1 column inserted at K');
+    expect(row.querySelector('time')).not.toBeNull();
+    row.querySelector<HTMLElement>('[data-sp=revert-edit]')!.click();
+    await frame();
+    expect(rows(errors)).toEqual(['Holdings!F5']);
+    expect(excel.workbook!.sheet('Holdings')!.rows.length).toBe(before);
+    expect(s.value('Holdings', 'F5')).toBe(440);
+    s.undo();
+    await frame();
+    expect(rows(errors)).toEqual(['Holdings!#structure', 'Holdings!F7']);
   });
   it('a page at a time: 250 edits draw 100 rows and Show more', async () => {
     const { errors, s } = await pair();

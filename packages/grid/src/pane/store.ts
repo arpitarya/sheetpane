@@ -39,7 +39,8 @@ export type StoreEvent =
 interface Undoable { changes: ReadonlyMap<string, ChangeEntry>; errors: readonly SheetpaneError[] }
 /** What a structural step (W-52) also restores: the moved workbook, derived values and the plugin-error index. */
 interface StructureState { book: ImportedWorkbook; derived: ReadonlyMap<string, DerivedCell>; pluginErrors: ReadonlyMap<string, string> }
-interface HistoryEntry { before: Undoable; after: Undoable; keys: string[]; coalesce: string | undefined; structure?: { op: StructureOp; before: StructureState; after: StructureState } }
+/** `structure.ops`: the operations the step applied, in order — one for an insert or delete, several for a reverted `structure` edit (W-64). */
+interface HistoryEntry { before: Undoable; after: Undoable; keys: string[]; coalesce: string | undefined; structure?: { ops: StructureOp[]; before: StructureState; after: StructureState } }
 
 /** The undo stack's depth per pane; the oldest entry goes first (W-23, SR-GRID decision 7). */
 export const HISTORY_CAP = 500;
@@ -238,6 +239,10 @@ export class WorkbookStore {
   private readonly editMeta = new WeakMap<ChangeEntry, { seq: number; at: number; base: Baseline | undefined }>();
   private readonly effects = new WeakMap<ChangeEntry, { errors: readonly SheetpaneError[]; fx: EditEffects }>();
   private editSeq = 0;
+  /** The workbook as read, before any insert or delete (W-52); undefined before a load. */
+  private baseBook: ImportedWorkbook | undefined;
+  /** A moved or rewritten change-map entry keeps its edit's time and baseline (W-52 × W-64). */
+  private readonly carryEdit = (from: ChangeEntry, to: ChangeEntry): void => { const m = this.editMeta.get(from); if (m && !this.editMeta.has(to)) this.editMeta.set(to, m); };
   private problemIdx: { errors: readonly SheetpaneError[]; sheets: Map<string, ProblemSheet>; byId: Map<string, SheetpaneError> } | undefined;
   /** The host's column rules (W-27): a built-in `validate` provider, never part of the frozen plugin set. */
   private readonly rules: HostRules = new HostRules({
@@ -319,6 +324,7 @@ export class WorkbookStore {
     this.undoStack = []; this.redoStack = []; this.textCache.clear(); this.pluginErrors.clear(); this.focus = undefined;
     this.known = []; this.layersDirty = true; // W-51: a new workbook starts with the visible layers named, and no others
     const first = book.sheets[book.activeSheet] ?? book.sheets[0]!;
+    this.baseBook = book; // the workbook as read: a reverted `structure` edit replays what still stands on it (W-52 × W-64)
     this.set({ load: { status: 'ready' }, source, book, changes: new Map(), derived: new Map(), errors: [], composing: null, selection: { sheet: first.name, ref: 'A1' } }, [{ type: 'load', origin }]);
     this.rules.reset(); // column rules: the `load` phase (time-sliced; it re-runs validate when done)
     this.runValidate(book.sheets.map((s) => s.name), origin);
@@ -663,16 +669,19 @@ export class WorkbookStore {
   }
 
   /**
-   * Reverts edits to the file as one undo step (W-64): each key's change-map entry goes, whatever its kind. Undo brings
-   * them back, each with its time.
+   * Reverts edits to the file as one undo step (W-64): each key's change-map entry goes, whatever its kind. A sheet's
+   * `structure` entry (W-52) takes every insert and delete on that sheet back with it — the workbook as read, the other
+   * edits moved back. Undo brings them back, each with its time.
    * @param keys - Change-map keys (`Edit.key`); omitted, every edit in the pane (*Revert all*).
    * @param origin - The element that asked.
    * @returns How many edits were reverted.
    */
   revertEdits(keys?: readonly string[], origin?: Origin): number {
+    const all = keys ?? [...this.snap.changes.keys()];
+    if (all.some((k) => this.snap.changes.get(k)?.kind === 'structure')) return this.revertStructure(all, origin);
     const changes = new Map(this.snap.changes);
     const done: string[] = [], events: StoreEvent[] = [];
-    for (const k of keys ?? [...changes.keys()]) {
+    for (const k of all) {
       const prev = changes.get(k);
       if (!prev) continue;
       changes.delete(k); done.push(k);
@@ -1173,34 +1182,83 @@ export class WorkbookStore {
     const before: StructureState = { book, derived: this.snap.derived, pluginErrors: new Map(this.pluginErrors) };
     const moved = shiftErrors(this.snap.errors, o);
     const after: StructureState = { book: restructureWorkbook(book, o), derived: shiftDerived(this.snap.derived, o), pluginErrors: shiftPluginErrors(this.pluginErrors, this.snap.errors, moved.errors, moved.gone) };
-    const changes = shiftChanges(this.snap.changes, o);
+    const changes = shiftChanges(this.snap.changes, o, this.carryEdit);
     const k = key(o.sheet, STRUCTURE_REF);
-    this.undoStack.push({ before: { changes: this.snap.changes, errors: this.snap.errors }, after: { changes, errors: moved.errors }, keys: [k], coalesce: undefined, structure: { op: o, before, after } });
+    this.editMeta.set(changes.get(k)!, { seq: ++this.editSeq, at: Date.now(), base: undefined }); // the sheet's one Edits row, newest (W-64)
+    this.undoStack.push({ before: { changes: this.snap.changes, errors: this.snap.errors }, after: { changes, errors: moved.errors }, keys: [k], coalesce: undefined, structure: { ops: [o], before, after } });
     if (this.undoStack.length > HISTORY_CAP) this.undoStack.shift();
     this.redoStack = [];
-    this.applyStructure(o, after, changes, moved.errors, origin, [{ type: 'errors', origin }]);
+    this.applyStructure([o], after, changes, moved.errors, origin, [{ type: 'errors', origin }]);
     return true;
   }
 
-  private travelStructure(h: HistoryEntry, side: 'before' | 'after', origin: Origin, reason: 'undo' | 'redo'): void {
-    const s = h.structure!, o = side === 'before' ? inverseOp(s.op) : s.op;
-    this.applyStructure(o, s[side], h[side].changes, h[side].errors, origin, [{ type: 'history', origin, reason }, { type: 'errors', origin }]);
+  /**
+   * Reverts edits that include a sheet's `structure` entry (W-52 × W-64) as one undo step: the other edits named go,
+   * then each named sheet's inserts and deletes are undone, newest first — the changes, errors, derived values and
+   * selection moved back — and the workbook is the one as read with every operation still standing replayed on it, so
+   * deleted rows come back as the file had them. An edit made inside a deleted row was dropped with it and stays gone.
+   */
+  private revertStructure(all: readonly string[], origin: Origin): number {
+    const book0 = this.snap.book;
+    if (!book0 || !this.baseBook) return 0;
+    let changes = new Map(this.snap.changes);
+    const struct: string[] = [], done: string[] = [], events: StoreEvent[] = [];
+    for (const k of all) {
+      const prev = changes.get(k);
+      if (!prev) continue;
+      if (prev.kind === 'structure') { struct.push(k); continue; }
+      changes.delete(k); done.push(k);
+      const { sheet, ref } = splitKey(k);
+      events.push({ type: 'change', origin, sheet, ref: baseRef(ref), kind: prev.kind, was: prev.now, now: prev.was });
+    }
+    const opsOf = (c: ChangeEntry | undefined): StructureOp[] => (Array.isArray(c?.now) ? (c.now as StructureOp[]) : []);
+    const ops = struct.flatMap((k) => [...opsOf(this.snap.changes.get(k))].reverse().map(inverseOp));
+    let errors = this.snap.errors, derived = this.snap.derived, plugin: ReadonlyMap<string, string> = new Map(this.pluginErrors);
+    for (const o of ops) {
+      const moved = shiftErrors(errors, o);
+      plugin = shiftPluginErrors(plugin, errors, moved.errors, moved.gone);
+      errors = moved.errors;
+      changes = shiftChanges(changes, o, this.carryEdit);
+      derived = shiftDerived(derived, o);
+    }
+    for (const k of struct) changes.delete(k); // the undoing operations were appended to the entry: it goes whole
+    let book = this.baseBook;
+    for (const [, c] of changes) if (c.kind === 'structure') for (const o of opsOf(c)) book = restructureWorkbook(book, o);
+    const before: StructureState = { book: book0, derived: this.snap.derived, pluginErrors: new Map(this.pluginErrors) };
+    const after: StructureState = { book, derived, pluginErrors: plugin };
+    this.undoStack.push({ before: { changes: this.snap.changes, errors: this.snap.errors }, after: { changes, errors }, keys: [...done, ...struct], coalesce: undefined, structure: { ops, before, after } });
+    if (this.undoStack.length > HISTORY_CAP) this.undoStack.shift();
+    this.redoStack = [];
+    this.applyStructure(ops, after, changes, errors, origin, [{ type: 'errors', origin }], events);
+    return done.length + struct.length;
   }
 
-  /** Puts a structural state in place: the moved book first (formatting reads it), then one notification, then validate and derive. */
-  private applyStructure(o: StructureOp, st: StructureState, changes: ReadonlyMap<string, ChangeEntry>, errors: readonly SheetpaneError[], origin: Origin, events: StoreEvent[]): void {
+  private travelStructure(h: HistoryEntry, side: 'before' | 'after', origin: Origin, reason: 'undo' | 'redo'): void {
+    const s = h.structure!, ops = side === 'before' ? [...s.ops].reverse().map(inverseOp) : s.ops;
+    this.applyStructure(ops, s[side], h[side].changes, h[side].errors, origin, [{ type: 'history', origin, reason }, { type: 'errors', origin }]);
+  }
+
+  /**
+   * Puts a structural state in place: the moved book first (formatting reads it), then one notification — a `structure`
+   * change event per operation, after `events[0]`, then `extra` — then validate and derive.
+   */
+  private applyStructure(ops: readonly StructureOp[], st: StructureState, changes: ReadonlyMap<string, ChangeEntry>, errors: readonly SheetpaneError[], origin: Origin, events: StoreEvent[], extra: StoreEvent[] = []): void {
     this.textCache.clear();
     this.pluginErrors.clear();
     this.focus = undefined; // W-50: Show ▸'s range named cells that have moved
     for (const [k, v] of st.pluginErrors) this.pluginErrors.set(k, v);
     this.snap = { ...this.snap, book: st.book, changes, derived: st.derived };
-    const rows = isRowOp(o), last = o.at + o.count - 1;
-    const ref = rows ? `${o.at + 1}:${last + 1}` : `${cellRef(0, o.at).replace(/\d+$/, '')}:${cellRef(0, last).replace(/\d+$/, '')}`;
-    const change: StoreEvent = { type: 'change', origin, sheet: o.sheet, ref, kind: 'structure', was: null, now: null, op: o.op, at: o.at, count: o.count };
-    this.set({ book: st.book, changes, derived: st.derived, errors: this.withMatches(errors, changes), selection: shiftSelection(this.snap.selection, o), composing: shiftComposing(this.snap.composing, o) }, [events[0]!, change, ...events.slice(1)]);
+    const moves: StoreEvent[] = ops.map((o) => {
+      const last = o.at + o.count - 1;
+      const ref = isRowOp(o) ? `${o.at + 1}:${last + 1}` : `${cellRef(0, o.at).replace(/\d+$/, '')}:${cellRef(0, last).replace(/\d+$/, '')}`;
+      return { type: 'change', origin, sheet: o.sheet, ref, kind: 'structure', was: null, now: null, op: o.op, at: o.at, count: o.count };
+    });
+    const selection = ops.reduce(shiftSelection, this.snap.selection), composing = ops.reduce(shiftComposing, this.snap.composing);
+    this.set({ book: st.book, changes, derived: st.derived, errors: this.withMatches(errors, changes), selection, composing }, [events[0]!, ...moves, ...extra, ...events.slice(1)]);
     this.rules.reset();
     this.runValidate(this.allSheets(), origin);
-    void this.runDerive({ kind: 'restructure', sheet: o.sheet, op: o.op, at: o.at, count: o.count });
+    const o = ops[ops.length - 1];
+    if (o) void this.runDerive({ kind: 'restructure', sheet: o.sheet, op: o.op, at: o.at, count: o.count }); // the whole derived set comes back
   }
 
   // ── plugin hooks: derive, validate ───────────────────────────────────────

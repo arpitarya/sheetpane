@@ -86,16 +86,17 @@ const moveFreeze = (v: unknown, o: StructureOp) => {
  * outline) moved, and the operation appended to the sheet's `#structure` entry.
  * @param changes - The change map now.
  * @param o - The operation.
+ * @param carry - Told of each entry rewritten into a new object (a formula, a freeze), so its edit keeps its time (W-64).
  * @returns A new change map.
  */
-export function shiftChanges(changes: ReadonlyMap<string, ChangeEntry>, o: StructureOp): Map<string, ChangeEntry> {
+export function shiftChanges(changes: ReadonlyMap<string, ChangeEntry>, o: StructureOp, carry?: (from: ChangeEntry, to: ChangeEntry) => void): Map<string, ChangeEntry> {
   const out = new Map<string, ChangeEntry>();
   const rows = isRowOp(o);
   for (const [k, c] of changes) {
     const { sheet, ref } = splitKey(k);
     let next: ChangeEntry = c;
     if (isFormula(c)) { const f = String(c.now); const g = `=${restructureFormula(f.slice(1), sheet, o)}`; if (g !== f) next = { ...c, now: g }; }
-    if (sheet !== o.sheet) { out.set(k, next); continue; }
+    if (sheet !== o.sheet) { if (next !== c) carry?.(c, next); out.set(k, next); continue; }
     let key = ref;
     const slot = /^#(style|numFmt):(.+)$/.exec(ref);
     if (slot) { const m = moveCell(slot[2]!, o); if (m === undefined) continue; key = `#${slot[1]}:${m}`; }
@@ -104,6 +105,7 @@ export function shiftChanges(changes: ReadonlyMap<string, ChangeEntry>, o: Struc
     else if (ref === (rows ? '#hiddenRows' : '#hiddenCols')) next = { ...next, now: moveIndexes(next.now, o), was: moveIndexes(next.was, o) };
     else if (ref === (rows ? '#outlineRows' : '#outlineCols')) next = { ...next, now: moveLevels(next.now, o), was: moveLevels(next.was, o) };
     else if (!ref.startsWith('#')) { const m = moveCell(ref, o); if (m === undefined) continue; key = m; }
+    if (next !== c) carry?.(c, next);
     out.set(`${sheet}!${key}`, next);
   }
   const sk = `${o.sheet}!${STRUCTURE_REF}`, prev = out.get(sk);

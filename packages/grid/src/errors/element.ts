@@ -1,7 +1,7 @@
 // <sheetpane-errors> — the error component (W-02): the list and the New error
 // form, on the same store as <sheetpane-excel> (SR-LAW-7). It keeps no private
 // copy of errors or workbook data; no "linked" chip, no export footer.
-import { cellRef, colName, parseRange, parseRef, rangeRef } from '@sheetpane/export';
+import { cellRef, colName, parseRange, parseRef, rangeRef, type StructureOp } from '@sheetpane/export';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
@@ -745,6 +745,7 @@ function kindName(e: Edit): string {
     case 'hidden': return e.key.endsWith('!#hiddenCols') ? 'Hidden columns' : 'Hidden rows';
     case 'sheetState': return 'Sheet visibility';
     case 'outline': return e.key.endsWith('!#outlineCols') ? 'Column groups' : 'Row groups';
+    case 'structure': return 'Rows and columns'; // W-52: every insert and delete on the sheet, one row
     default: { const k = String(e.kind); return k ? k[0]!.toUpperCase() + k.slice(1) : 'Change'; }
   }
 }
@@ -752,6 +753,7 @@ function kindName(e: Edit): string {
 /** One side of an edit as text (W-64): a cell value as the cell shows it, `(blank)` for none; other kinds in a few words. */
 function editText(s: WorkbookStore, e: Edit, v: unknown): string {
   if (v === undefined || v === null || v === '') return e.kind === 'value' || e.kind === 'formula' ? '(blank)' : '—';
+  if (e.kind === 'structure' && Array.isArray(v)) return v.length ? clip((v as StructureOp[]).map(opText).join(', ')) : 'as read';
   const r = parseRange(e.ref);
   if ((e.kind === 'value' || e.kind === 'formula') && r && (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string')) return s.format(e.sheet, cellRef(r.top, r.left), v);
   if (e.kind === 'merge') return v ? 'merged' : 'not merged';
@@ -765,5 +767,12 @@ function editText(s: WorkbookStore, e: Edit, v: unknown): string {
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
   let json: string;
   try { json = JSON.stringify(v); } catch { json = String(v); }
-  return json.length > 60 ? `${json.slice(0, 59)}…` : json;
+  return clip(json);
+}
+const clip = (t: string) => (t.length > 60 ? `${t.slice(0, 59)}…` : t);
+/** One insert or delete in a few words (W-52): `2 rows inserted at 3`, `column C deleted`. */
+function opText(o: StructureOp): string {
+  const rows = o.op.endsWith('Rows'), n = o.count, end = o.at + n - 1;
+  const where = rows ? (n === 1 ? `row ${o.at + 1}` : `rows ${o.at + 1}–${end + 1}`) : n === 1 ? `column ${colName(o.at)}` : `columns ${colName(o.at)}–${colName(end)}`;
+  return o.op.startsWith('insert') ? `${n} ${rows ? 'row' : 'column'}${n === 1 ? '' : 's'} inserted at ${rows ? o.at + 1 : colName(o.at)}` : `${where} deleted`;
 }

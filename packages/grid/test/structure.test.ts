@@ -158,3 +158,44 @@ describe('the download carries it (W-52 DoD 4, 5)', () => {
     expect(lines[1]!.replace(/,/g, '')).toBe('');
   });
 });
+
+describe('W-52 × W-64: a sheet’s inserts and deletes are one Edits row, reverted as one step', () => {
+  const colA = (s: ReturnType<typeof createWorkbook>) => s.sheet('Data')!.rows.map((r) => r[0] ?? null);
+  it('one row per sheet, timed; Revert undoes every operation (deleted rows back as read), moves the other edits back, and is one undo step', async () => {
+    const s = await loaded();
+    const t0 = Date.now();
+    s.setCell('Data', 'B5', '7'); // row "d"
+    expect(s.insertRows('Data', 1, 2)).toBe(true);
+    expect(s.deleteRows('Data', 4, 1)).toBe(true); // row "b", now at 5
+    expect(colA(s)).toEqual(['Name', null, null, 'a', 'c', 'd', 'Sum']);
+    const list = s.edits();
+    expect(list.map((e) => [e.key, e.kind])).toEqual([['Data!#structure', 'structure'], ['Data!B6', 'value']]);
+    expect(Date.parse(list[0]!.at)).toBeGreaterThanOrEqual(t0 - 1);
+    expect(list[0]!.now).toEqual([{ sheet: 'Data', op: 'insertRows', at: 1, count: 2 }, { sheet: 'Data', op: 'deleteRows', at: 4, count: 1 }]);
+    const moves = changeEvents(s);
+    expect(s.revertEdits(['Data!#structure'])).toBe(1);
+    expect(moves.map((e) => e.type === 'change' && [e.kind, e.op, e.at, e.count])).toEqual([['structure', 'insertRows', 4, 1], ['structure', 'deleteRows', 1, 2]]);
+    expect(colA(s)).toEqual(['Name', 'a', 'b', 'c', 'd', 'Sum']);
+    expect(s.edits().map((e) => e.key)).toEqual(['Data!B5']);
+    expect(s.value('Data', 'B5')).toBe(7);
+    expect(s.structureOps()).toEqual([]);
+    s.undo(); // one step: both operations and the moved edit come back
+    expect(colA(s)).toEqual(['Name', null, null, 'a', 'c', 'd', 'Sum']);
+    expect(s.edits().map((e) => e.key)).toEqual(['Data!#structure', 'Data!B6']);
+    expect(Date.parse(s.edits()[0]!.at)).toBeGreaterThanOrEqual(t0 - 1);
+    s.redo();
+    expect(colA(s)).toEqual(['Name', 'a', 'b', 'c', 'd', 'Sum']);
+    expect(s.edits().map((e) => e.key)).toEqual(['Data!B5']);
+  });
+  it('Revert all with a structure row: every edit goes, the workbook is the one as read', async () => {
+    const s = await loaded();
+    const read = s.sheet('Data')!.rows.map((r) => [...r]);
+    s.setCell('Data', 'B2', '4');
+    s.insertCols('Data', 0, 1);
+    s.setCell('Data', 'A1', 'x'); // inside the inserted column: gone with it
+    expect(s.revertEdits()).toBe(3);
+    expect(s.edits()).toEqual([]);
+    expect(s.sheet('Data')!.rows).toEqual(read);
+    expect(s.changeCount).toBe(0);
+  });
+});

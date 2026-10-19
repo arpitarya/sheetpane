@@ -226,10 +226,13 @@ the store and the contract are the contract verdict's and
     **row** per change-map entry (`data-sp-edit="<key>"`, `data-sp-ref`):
     its place (`Sheet!B3`, `Sheet!A1:J1`, or *Sheet · whole sheet*) and kind
     (*Value*, *Formula*, *Style*, *Number format*, *Merge*, *Freeze panes*,
-    *Hidden rows* / *columns*, *Sheet visibility*, *Row* / *Column groups*;
-    any other kind by its own name — so W-52's structure edits list as one
-    row each), **was → now** (a cell's value as the cell shows it,
-    *(blank)* for none; other kinds in a few words), the time, and how many
+    *Hidden rows* / *columns*, *Sheet visibility*, *Row* / *Column groups*,
+    *Rows and columns* — a sheet's inserts and deletes, W-52, one row per
+    sheet; any other kind by its own name), **was → now** (a cell's value as
+    the cell shows it, *(blank)* for none; *as read → 2 rows inserted at 3,
+    column C deleted* for rows and columns; other kinds in a few words; its
+    Revert takes every insert and delete on the sheet back as one undo step,
+    SR-GRID 24), the time, and how many
     errors it cleared or raised. Under it, one link per error from
     `store.editEffects(key)` — *✓ Cleared error 3: Out of range*, *✕
     Raised …*, *= Matches the suggestion of …* — which opens that error in
@@ -275,8 +278,9 @@ the store and the contract are the contract verdict's and
   opened group drawing fewer than 20 rows as it scrolls; with W-55 and
   W-69, the Problems view keeping the scope groups and the Accepted chip,
   and every count leaving out results and accepted errors alike);
-  `edits.test.ts` (W-64: `edits()` newest first, one step's edits in map
-  order, a kind it does not know as one entry; `revertEdits` one and all as
+  `edits.test.ts` (W-64: with W-52, a sheet's inserts and deletes as one
+  *Rows and columns* row and its Revert one undo step; `edits()` newest first, one step's edits in map
+  order, a sheet's W-52 operations as one entry; `revertEdits` one and all as
   one undo step each, undo bringing the times back; `editEffects` cleared,
   raised and matched, compared with before the cell first changed; with
   W-51, an error in a layer not shown named but not linked; the view
