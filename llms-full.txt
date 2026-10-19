@@ -6048,7 +6048,7 @@ else.
     `<mergeCells>`, the autofilter (filter columns follow their column) and
     sort state, the existing `<dataValidations>` and `<conditionalFormatting>`
     blocks and their x14 twins (a block wholly deleted goes — its own
-    function, so whole-block options compose after it), hyperlinks,
+    function, `restructureRuleBlocks`), hyperlinks,
     protected ranges, ignored errors, cell watches and page breaks; tables
     (range, autofilter, a deleted column's `<tableColumn>`, calculated
     formulas), drawing anchors (a point in a deleted row is pulled to the
@@ -6058,7 +6058,13 @@ else.
     as it was** (`bad-structure`, SP-2016): moving a pivot table or its
     worksheet source, cutting an array formula or a data table, and a table
     cut it cannot follow (`tableRefusal`: all of it, its header or totals
-    row, every data row, or columns inserted inside it).
+    row, every data row, or columns inserted inside it). **Order (W-57):**
+    the structure is applied to the upload first; every other option
+    (`changes`, `merges`, `dataValidations`, `conditionalFormats`, `dxfs`,
+    `freeze`, `hidden`) is then written as given, against the sheet as it
+    stands after it — so a sheet's rules given whole land where the caller
+    put them and are never moved again, and a block not named is the file's
+    own, shifted.
 
 **Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107. W-57 adds SP-2015 (`bad-rule`).
 
@@ -6086,7 +6092,8 @@ else.
 - `patchXlsx`'s `dxfs` are appended, never deduplicated or removed: a format
   no rule names any more stays in `styles.xml` (harmless, like orphaned
   shared strings).
-- **W-52 (2026-10-19):** `restructure.test.ts` (19) — every part above on a
+- **W-52 (2026-10-19):** `restructure.test.ts` (21; with W-57, rules given whole written
+  after the shift, as given, and a block not named shifted) — every part above on a
   hand-written workbook (`test/fixtures/structure.ts`) with ExcelJS read-back,
   the refusals, and the fast-check property that inserting then deleting the
   same span gives back every part byte for byte; `structure.test.ts` (9) for

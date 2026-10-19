@@ -3,7 +3,7 @@
 // property: inserting then deleting the same span gives back the same values, merges and rules.
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { ExportError, patchXlsx, type StructureOp } from '../src/index.js';
+import { ExportError, patchXlsx, type ConditionalFormat, type DataValidation, type StructureOp } from '../src/index.js';
 import { structureBook, structureParts } from './fixtures/structure.js';
 import { readBack, unzipText } from './helpers.js';
 
@@ -186,5 +186,27 @@ describe('property: insert then delete the same span is a byte-stable round trip
       for (const p of Object.keys(before)) if (p !== 'xl/workbook.xml') expect(after[p], p).toBe(before[p]);
       expect(strip(after['xl/workbook.xml']!)).toBe(before['xl/workbook.xml']);
     }), { numRuns: 60 });
+  });
+});
+
+describe('W-52 × W-57: a sheet\'s rules given whole are written after the shift, as given', async () => {
+  const rule: DataValidation = { sqref: ['B4:B9'], type: 'list', allowBlank: true, showErrorMessage: true, showDropDown: false, formula1: '"kg,m"' };
+  const cf: ConditionalFormat = { sqref: ['D4:D9'], rules: [{ type: 'expression', priority: 1, stopIfTrue: false, dxfId: 0, formulas: ['D4>10'] }] };
+  const insert = [op({ op: 'insertRows', at: 2, count: 2 })];
+  it('the structure moves the file first; dataValidations and conditionalFormats then land where the caller put them', async () => {
+    const z = unzipText(await patchXlsx(await structureBook(), [], { structure: insert, dataValidations: [{ sheet: 'Data', rules: [rule] }], conditionalFormats: [{ sheet: 'Data', formats: [cf] }], dxfs: [{ font: { b: true } }] }));
+    const sheet = z['xl/worksheets/sheet1.xml']!;
+    expect(sheet.match(/<dataValidation /g)).toHaveLength(1);
+    expect(sheet).toMatch(/<dataValidation type="list"[^>]*sqref="B4:B9"><formula1>(&quot;|")kg,m(&quot;|")<\/formula1>/); // not moved again
+    expect(sheet).not.toContain('sqref="B2:B7"'); // the file's own rule, shifted, then replaced whole
+    expect(sheet.match(/<conditionalFormatting /g)).toHaveLength(1);
+    expect(sheet).toContain('<conditionalFormatting sqref="D4:D9"><cfRule type="expression" dxfId="0" priority="1"><formula>D4&gt;10</formula>');
+    expect(sheet).toContain('<c r="D8"><f>SUM(D2:D7)</f>'); // the rows moved underneath them all the same
+    expect(sheet.indexOf('<conditionalFormatting')).toBeLessThan(sheet.indexOf('<dataValidations')); // schema order kept
+  });
+  it('a block the options do not name is the file\'s own, shifted', async () => {
+    const sheet = unzipText(await patchXlsx(await structureBook(), [], { structure: insert, dataValidations: [{ sheet: 'Data', rules: [rule] }] }))['xl/worksheets/sheet1.xml']!;
+    expect(sheet).toContain('<conditionalFormatting sqref="D2:D7"><cfRule type="expression" priority="1"><formula>D2&gt;$B$2*2</formula>');
+    expect(sheet).toMatch(/sqref="B4:B9"/);
   });
 });
