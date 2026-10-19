@@ -1,6 +1,6 @@
 ---
 name: sheetpane-backend
-description: Use when a host saves the reviewed file and the review on a server and restores them later, or checks a file on the server with check() - the blob, getErrors()/setErrors() JSON, restoring after load. Not for client-only use.
+description: Use when a host saves the reviewed file and review on a server and restores them, checks a file there with check(), or draws it into a report with renderStatic() - the blob, getErrors()/setErrors() JSON. Not for client-only use.
 license: MIT
 metadata:
   audience: host
@@ -81,6 +81,26 @@ bytes your server already holds and sends nothing
 ([SR-LAW-11](https://github.com/arpitarya/sheetpane/blob/main/records/0013_LAW-11-workbook-stays-in-the-browser.md)
 decision 2). `@sheetpane/formulas` in Node needs `formulas({ wasm })` with
 the engine's `.wasm` bytes (no URL fetch there).
+
+## The sheet in a report or an email
+
+`@sheetpane/grid/static` draws a range as one self-contained `<table>` — the
+text, formats, fills, merges and the error marks the pane shows — with no
+page ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) decision 22g):
+
+```js
+import { loadWorkbook, renderStatic } from '@sheetpane/grid/static';
+import { numfmt } from '@sheetpane/numfmt';
+import { styles } from '@sheetpane/styles';
+
+const book = await loadWorkbook(await readFile(path), { name: 'q3.xlsx', rules, plugins: [numfmt(), styles()] });
+const html = renderStatic(book, { sheet: 'Holdings', range: 'A1:F20', errors: saved });
+```
+
+`errors` defaults to the workbook's own; pass a restored review to mark it.
+`theme: 'dark'` for a dark report. The table carries no script, class,
+stylesheet or URL, so it pastes into any page or mail. Pictures and charts
+are not drawn — its footer says so.
 
 ## Pitfalls
 

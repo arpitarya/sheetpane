@@ -24,6 +24,29 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-67 closed: a range as static HTML (`@sheetpane/grid/static`)  ·  Claude Code (claude-opus-5-5, lane d)
+
+- **Asked:** the orchestrator: build W-67 in worktree lane d (branch `lane-d`), one item, commit, do not push.
+- **Done:**
+  - **The entry:** `packages/grid/src/static.ts` — `renderStatic(book, options)` reads a loaded store (`text()`, `value()`, `decorate()`, `merges()`, `hidden()`, changes, derived, `mayBeStale()`) and writes one `<table>`: inline CSS mirroring the grid's cell, header and merge rules, the tokens as hex (light or dark), `decorate` values allow-listed and sanitised, hidden rows and columns skipped, merges as `rowspan`/`colspan` clipped to the range. Marks through `STATIC_MARKS` + `markOf()` (status, then severity): ring, tint flattened over the fill, numbered glyph badge, row-header glyph, a footer line per error. Overlay plugins are named, not run. `check()` split into `loadWorkbook()` + the sort. SP-3027, SP-3028.
+  - **Proof:** the graph test covers `/static`; a browser test compares every cell and header with the grid's computed style on six fixtures in both themes, and the HTML equals a golden that Node renders; the grid's static tests and a fast-check escaping fuzz (mutation-checked); smoke-built renders the built entry.
+  - **Records:** SR-GRID 22f/22g, SR-BUILD 5a/8, SR-FIXTURES 6a, SR-CODES 2, SR-SKILLS 2; registry rows; skill `sheetpane-backend`, grid README, ARCHITECTURE, GLOSSARY, ERRORS.md, CHANGELOG; `llms*.txt` and `plugins/sheetpane` regenerated. W-30 gained DoD 10 (mail clients, the decider's).
+- **Decided / left open:** read in: `book` is a store, not bytes (`loadWorkbook()` gives one), so a host renders many ranges from one load; inline hex, no `auto` theme (mail has no stylesheet); a shared cell takes the highest-ranked mark (the grid takes the last error's — the fidelity test met no shared cell); the changed corner is a background layer, the tint a flattened colour; text is clipped to the row as the grid clips it; no `tokens` override, no rich-text runs (not on this base), no condfmt icon sets or cell controls.
+- **Mistakes:** a first test cut compared `start` with `left` and the selected header's highlight; the first render let wrapped text grow its row — fixed by clipping the text span to the row.
+- **Next:** the orchestrator merges lane d (SP-3017/3018 may need renumbering; W-50/W-55/W-69 marks join `STATIC_MARKS`).
+
+---
+
+## 2026-10-19 — W-62 locked cells and sheet protection honoured in Edit  ·  Claude Code (claude-opus-5-5, lane e)
+
+- **Asked:** *build W-62 in lane e (worktree `sheetpane-lanes/e`, branch `lane-e`, on the integration branch at `5007023`), beside other lanes; W-52 is not on this base, so expose one predicate its insert/delete can call.*
+- **Done:** `@sheetpane/import` reads `<sheetProtection>` (fifteen switches with the schema defaults, `hasPassword` — never the hash), `<workbookProtection>`, each xf's `<protection>`, row (`customFormat`) and column formats, and exports `cellProtection()` (SR-IMPORT 15). The grid: `store.isLocked` / `isFormulaHidden` / `structureLocked` / `sheetProtection` / `setProtection`, `snapshot.protection`, snapshot helpers for plugin controls; a locked cell refuses typing, Enter/F2, Delete, paste and a range clear before `beforechange` with `sheetpane-editcancel` `reason: 'locked'`, SP-3026, a cell-bar chip and a status-line count; the store refuses `setCell` / `setCells` / "Also change the cell" there; no value picker on a locked cell; hidden formulas show their value (`input()`, the formulas plugin's `fx` and outlines); `setSheetState` refused under the structure lock, the banner's Unhide disabled; `protection="ignore"` (SR-GRID 21e). `@sheetpane/visibility`: Hide sheet disabled with the reason (`sheetBlockedReason`). `@sheetpane/fixtures`: `protected.xlsx` (password `sheetpane`, legacy hash `CC7D`). Skills `sheetpane-security`, `sheetpane-events`. Tests: import 8, grid 12, visibility, formulas and fixtures +1 each; all projects 1262 of 1263 (the SSR import test timed out at 5.2 s under a full parallel run and passes alone — load); demo-check 53 ✓.
+- **Decided / left open:** read in: an empty cell takes its row's format (`customFormat`), else its column's, else the default — Excel's rule, so a column unlocked whole stays open below the data; the store refuses a locked write too (not only the element), so the errors panel's "Also change the cell" and a plugin's `choose` cannot get round it; `ignore` is a pane view setting, never a change. Not honoured yet (backlog candidates): the sheet switches for formatting, sorting, filtering and hiding rows or columns. Excel ties inserting and deleting rows to the sheet's `insertRows` / `deleteRows` switches, not to `lockStructure` — W-52 should ask `sheetProtection(sheet)` as well as `structureLocked()`. Handed on: the Excel-saved check to W-30 DoD 9; W-52's wiring to the orchestrator at merge.
+- **Mistakes:** none.
+- **Next:** the orchestrator merges lane e and wires W-52's insert/delete to `structureLocked()`.
+
+---
+
 ## 2026-10-19 — W-63 closed: the `compare` layer, wired at the integration merge  ·  Claude Code (claude-opus-5-5, the orchestrator's merge lane)
 
 - **Asked:** *merge lanes a, f, h and c (W-51, W-64, W-59, W-52) into `integration`, then wire what each left for the merge — first W-63's `compare` layer.*
@@ -41,16 +64,6 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** read *hidden in View mode with no edits* literally — in Edit mode the *Problems · Edits* switch is always there, so other lanes' tests that list the view chips in Edit mode meet *Edits 0*. Unknown change kinds (W-52's `structure`) list as one row by name; reverting removes the entry.
 - **Mistakes:** the skill section first went over the 200-line cap (`skills.test.ts`); folded into one table row.
 - **Next:** the orchestrator merges lane f; W-52 checks its `structure` entry reads well in the Edits row.
-
----
-
-## 2026-10-19 — W-62 locked cells and sheet protection honoured in Edit  ·  Claude Code (claude-opus-5-5, lane e)
-
-- **Asked:** *build W-62 in lane e (worktree `sheetpane-lanes/e`, branch `lane-e`, on the integration branch at `5007023`), beside other lanes; W-52 is not on this base, so expose one predicate its insert/delete can call.*
-- **Done:** `@sheetpane/import` reads `<sheetProtection>` (fifteen switches with the schema defaults, `hasPassword` — never the hash), `<workbookProtection>`, each xf's `<protection>`, row (`customFormat`) and column formats, and exports `cellProtection()` (SR-IMPORT 15). The grid: `store.isLocked` / `isFormulaHidden` / `structureLocked` / `sheetProtection` / `setProtection`, `snapshot.protection`, snapshot helpers for plugin controls; a locked cell refuses typing, Enter/F2, Delete, paste and a range clear before `beforechange` with `sheetpane-editcancel` `reason: 'locked'`, SP-3026, a cell-bar chip and a status-line count; the store refuses `setCell` / `setCells` / "Also change the cell" there; no value picker on a locked cell; hidden formulas show their value (`input()`, the formulas plugin's `fx` and outlines); `setSheetState` refused under the structure lock, the banner's Unhide disabled; `protection="ignore"` (SR-GRID 21e). `@sheetpane/visibility`: Hide sheet disabled with the reason (`sheetBlockedReason`). `@sheetpane/fixtures`: `protected.xlsx` (password `sheetpane`, legacy hash `CC7D`). Skills `sheetpane-security`, `sheetpane-events`. Tests: import 8, grid 12, visibility, formulas and fixtures +1 each; all projects 1262 of 1263 (the SSR import test timed out at 5.2 s under a full parallel run and passes alone — load); demo-check 53 ✓.
-- **Decided / left open:** read in: an empty cell takes its row's format (`customFormat`), else its column's, else the default — Excel's rule, so a column unlocked whole stays open below the data; the store refuses a locked write too (not only the element), so the errors panel's "Also change the cell" and a plugin's `choose` cannot get round it; `ignore` is a pane view setting, never a change. Not honoured yet (backlog candidates): the sheet switches for formatting, sorting, filtering and hiding rows or columns. Excel ties inserting and deleting rows to the sheet's `insertRows` / `deleteRows` switches, not to `lockStructure` — W-52 should ask `sheetProtection(sheet)` as well as `structureLocked()`. Handed on: the Excel-saved check to W-30 DoD 9; W-52's wiring to the orchestrator at merge.
-- **Mistakes:** none.
-- **Next:** the orchestrator merges lane e and wires W-52's insert/delete to `structureLocked()`.
 
 ---
 

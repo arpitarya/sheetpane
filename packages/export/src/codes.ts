@@ -85,6 +85,8 @@ const TABLE = {
   'SP-3024': { title: 'Insert would push cells off the sheet', severity: 'warning' },
   'SP-3025': { title: 'Insert or delete would cut a table', severity: 'warning' },
   'SP-3026': { title: 'Locked in the file', severity: 'warning' },
+  'SP-3027': { title: 'Nothing to render', severity: 'error' },
+  'SP-3028': { title: 'Cannot render that range', severity: 'error' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

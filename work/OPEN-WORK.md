@@ -30,11 +30,9 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
-
 ### testing
 
-- 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
+- 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13); also the static HTML of W-67 opened in mail clients (DoD 10). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
 
 - 🟢 **W-48** `arpit` · Try the skills package in Claude Code, Kiro and Codex: install from the tarballs into a scratch host, one real prompt each, note the result (split from W-35 DoD 8). Filed by Arpit (Cowork). [detail](open/W-48-try-skills-in-each-tool.md)
 

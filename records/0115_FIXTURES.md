@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: testing a host against known files
 owns: [packages/fixtures/]
 laws: [L2, L3, L8]
-timestamp: 2026-10-19T13:30:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-42
 ---
@@ -102,6 +102,17 @@ helpers to become one package any runner can load (W-32 made the showcase).
    `createdAt`, in one order), so the browser and Node agree.
    `UPDATE_GOLDEN=1` rewrites it from Node. Those four plugins and
    `@sheetpane/validation` are this package's devDependencies for it.
+6a. **The static pair (W-67):** `test/static.ts` names the cases — the
+   showcase, `merged`, `hidden-sheet`, `unicode-names`, `date1904` and
+   `comma.csv`, with the rules sample, plugins numfmt, styles, condfmt,
+   validation and comments, and one edit on the showcase (a changed and a
+   stale cell). `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
+   Chromium) and, for every sheet in both themes, compares each cell and
+   header of `renderStatic()`'s table with the grid's — computed text,
+   colours, weight, style, size, alignment, borders, padding, the mark's ring
+   and tint, the changed corner, width and height; `static.node.test.ts`
+   renders the same in Node; both equal `test/golden/static.json`.
+   `@sheetpane/styles` and `@sheetpane/condfmt` are devDependencies for it.
 
 ### Consequences
 
@@ -109,7 +120,8 @@ helpers to become one package any runner can load (W-32 made the showcase).
   node` — every listed file read in Chromium matches its sheets and titles;
   refused files are refused; the hidden sheet and 1904 read as listed; the
   rules sample on the showcase fails exactly the listed cells; `path()` and
-  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6). `pack-check` checks the `./files/*` folder.
+  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6); the static
+  pair (decision 6a). `pack-check` checks the `./files/*` folder.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers,
   with `appSaved` naming the app and version — W-30 (DoD 5). The import
   package's ExcelJS fixtures stay with their generator (ExcelJS is that

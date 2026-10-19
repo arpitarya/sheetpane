@@ -28,6 +28,11 @@
       "types": "./dist/check.d.ts",
       "import": "./dist/check.js"
     },
+    "./static": {
+      "source": "./src/static.ts",
+      "types": "./dist/static.d.ts",
+      "import": "./dist/static.js"
+    },
     "./style.css": "./dist/style.css",
     "./rules.schema.json": "./dist/rules.schema.json",
     "./llms.txt": "./dist/llms.txt",
@@ -81,6 +86,10 @@
       "./check": {
         "types": "./dist/check.d.ts",
         "import": "./dist/check.js"
+      },
+      "./static": {
+        "types": "./dist/static.d.ts",
+        "import": "./dist/static.js"
       },
       "./style.css": "./dist/style.css",
       "./rules.schema.json": "./dist/rules.schema.json",

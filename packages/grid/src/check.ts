@@ -65,9 +65,30 @@ export interface CheckOptions {
  * @see https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md
  */
 export async function check(file: Uint8Array | ArrayBuffer | Blob, options: CheckOptions = {}): Promise<SheetpaneError[]> {
+  return sorted(await loadWorkbook(file, options));
+}
+
+/**
+ * The workbook {@link check} reads, returned instead of its errors: a {@link WorkbookStore} holding
+ * the file, every `derive` landed and every check finished — what a DOM-free host hands to
+ * `renderStatic` (`@sheetpane/grid/static`, W-67), or reads with `getErrors()`, `text()` and `value()`.
+ * @param file - The `.xlsx` or `.csv` bytes.
+ * @param options - The same options as {@link check}.
+ * @returns The loaded store; its errors are `check()`'s, unsorted.
+ * @throws SP-3020 when `file` is not bytes; the reader's own code (SP-10xx) when the file cannot be read.
+ * @example
+ * ```ts
+ * import { loadWorkbook } from '@sheetpane/grid/check';
+ * import { numfmt } from '@sheetpane/numfmt';
+ *
+ * const book = await loadWorkbook(bytes, { name: 'q3.xlsx', plugins: [numfmt()] });
+ * book.text('Holdings', 'C4'); // "1,250.00" — as the pane shows it
+ * ```
+ */
+export async function loadWorkbook(file: Uint8Array | ArrayBuffer | Blob, options: CheckOptions = {}): Promise<WorkbookStore> {
   const isBlob = typeof Blob !== 'undefined' && file instanceof Blob;
   if (!(file instanceof Uint8Array || file instanceof ArrayBuffer || isBlob)) {
-    throw spError('SP-3020', `check() takes the file's bytes — a Uint8Array, an ArrayBuffer or a Blob, not ${file === null ? 'null' : typeof file}`, TypeError);
+    throw spError('SP-3020', `check() and loadWorkbook() take the file's bytes — a Uint8Array, an ArrayBuffer or a Blob, not ${file === null ? 'null' : typeof file}`, TypeError);
   }
   const deriving = new Set<Promise<unknown>>();
   const plugins = (options.plugins ?? []).flatMap((p) => (typeof p === 'string' ? pluginsFromIds([p]) : [p])).map((p) => tracked(p, deriving));
@@ -78,7 +99,7 @@ export async function check(file: Uint8Array | ArrayBuffer | Blob, options: Chec
   const load = store.getSnapshot().load;
   if (load.status === 'error') throw spError(load.spCode, load.message);
   await settled(store, deriving);
-  return sorted(store);
+  return store;
 }
 
 /** The element's `applyRules()`, from options: undefined when none is given (a pane with no rules has none). */

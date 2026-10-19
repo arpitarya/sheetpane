@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: errors a host and an agent can look up
 owns: [packages/export/src/codes.ts, docs/ERRORS.md, test/error-codes.test.ts, test/error-codes.lock.json]
 laws: [L0, L8]
-timestamp: 2026-10-19T13:30:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-40
 ---
@@ -51,7 +51,9 @@ flowchart LR
    thrown errors, `console.warn` / `console.error`, rules-engine `note`
    errors, refused loads, event details that carry a reason.
 2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid
-   (SP-3020, W-54: `check()` given something other than bytes) ·
+   (SP-3020, W-54: `check()` given something other than bytes; SP-3027 and
+   SP-3028, W-67: `renderStatic()` given no loaded workbook, or a sheet or
+   range it cannot draw) ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
    5800 comments, 5900 compare — W-63: SP-5901, a per-sheet key that is
@@ -122,8 +124,15 @@ flowchart LR
   W-69, W-66 and W-54 had taken them; appended to the lock after SP-5005.
 - **W-62** added SP-3026 (warning, *Locked in the file*): an edit refused on a
   locked cell of a protected sheet, carried by `sheetpane-editcancel`
-  `{ reason: 'locked', code: 'SP-3026' }` (SR-GRID decision 21e). Appended
-  to the lock after SP-3019.
+  `{ reason: 'locked', code: 'SP-3026' }` (SR-GRID decision 21e). Issued as
+  SP-3020 in its lane; renumbered at the merge, as W-54 had taken it;
+  appended to the lock after SP-3025.
+- **W-67** added SP-3027 (error, `TypeError`: `renderStatic()` given no
+  loaded workbook) and SP-3028 (error, `RangeError`: a sheet it does not
+  hold, a range that is not A1, or more than 200,000 cells) (SR-GRID
+  decision 22g). Issued as SP-3017 and SP-3018 in its lane; renumbered at
+  the merge, as W-68 and W-69 had taken them; appended to the lock after
+  SP-3026.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool
