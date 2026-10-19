@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-63 closed: the `compare` layer, wired at the integration merge  ·  Claude Code (claude-opus-5-5, the orchestrator's merge lane)
+
+- **Asked:** *merge lanes a, f, h and c (W-51, W-64, W-59, W-52) into `integration`, then wire what each left for the merge — first W-63's `compare` layer.*
+- **Done:** `publishChanges` (`packages/compare/src/ui.ts`) writes only its entries with `setErrors(list, { layer: 'compare' })` (`COMPARE_LAYER`); the `keep` filter is gone, the review and undo are kept, ids are the pane's. `@sheetpane/comments` leaves the `compare` layer out of a download unless `export({ layers })` names it. Tests: `compare.test.ts` (the layer, the review apart, undo kept, the visible layers), comments `write.test.ts` (left out while shown, written when named). SR-COMPARE 12 and Consequences, SR-COMMENTS 3, the register row, the compare README, the `sheetpane-plugins` skill, CHANGELOG *Changed*. The item moves to `archive/open/`.
+- **Decided / left open:** a comparison is not the review, so comments skip the layer by default; `@sheetpane/review` still lists every layer by default (W-59's choice) — whether it should skip `compare` too is the decider's.
+- **Mistakes:** none.
+- **Next:** the remaining merge wiring (W-59's types, W-52 × W-61, W-52 × W-57, W-52 × W-64).
+
+---
+
 ## 2026-10-19 — W-64 closed: the Edits view in the errors panel  ·  Claude Code (claude-opus-5-5, lane f)
 
 - **Asked:** *build W-64 in its own worktree lane, alongside the other lanes.*

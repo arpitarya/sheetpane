@@ -10,6 +10,8 @@ import { diffWorkbooks, summaryText, type CellChange, type DiffOptions, type She
 
 /** The error type every change is listed under. */
 export const COMPARE_TYPE = 'compare';
+/** The review layer the changes are listed in (W-51): shown beside the review, switched with it, never mixed into it. */
+export const COMPARE_LAYER = 'compare';
 /** The most changes listed as errors; past it one note says how many more (the status line counts all). */
 export const MAX_LISTED = 2000;
 
@@ -131,28 +133,23 @@ function changeDrafts(store: WorkbookStore, diff: WorkbookDiff): Draft[] {
 }
 
 /**
- * Writes the comparison's changes into the pane's errors list (type `compare`, severity `note`,
- * author `compare`), replacing the previous comparison's and keeping every other error. Pass
- * `undefined` to remove them.
- *
- * Until review layers (W-51) land this goes through `setErrors`, which also clears undo; with them
- * it becomes the `compare` layer and leaves the review alone.
+ * Writes the comparison's changes into the pane's errors list as the `compare` review layer (W-51;
+ * type `compare`, severity `note`, author `compare`), replacing the previous comparison's. Every
+ * other layer is left as it is, and undo is kept. Pass `undefined` to empty the layer.
  * @param store - The pane's workbook.
  * @param diff - The comparison, or undefined to clear it.
  * @returns False when there was nothing to write (no change listed, none to remove).
  */
 export function publishChanges(store: WorkbookStore, diff: WorkbookDiff | undefined): boolean {
-  // W-51: layer 'compare' — becomes `store.setErrors(list, { layer: 'compare' })` with only the
-  // compare entries, and the `keep` filter goes; nothing else in this package writes errors.
-  const keep = store.getErrors().filter((e) => e.type !== COMPARE_TYPE);
-  let next = keep.reduce((m, e) => Math.max(m, Number(/^ERR-(\d+)$/.exec(e.id)?.[1] ?? 0)), 0) + 1;
+  const had = store.getErrors({ layer: COMPARE_LAYER }).length;
   const now = new Date().toISOString();
+  // ids are left to the store: a layer's new errors get the pane's next `ERR-n`
   const list: SheetpaneError[] = (diff ? changeDrafts(store, diff) : []).map((d) => ({
-    v: 1, id: `ERR-${String(next++).padStart(4, '0')}`, sheet: d.sheet, range: d.range, type: COMPARE_TYPE, severity: 'note',
+    v: 1, id: '', sheet: d.sheet, range: d.range, type: COMPARE_TYPE, severity: 'note', layer: COMPARE_LAYER,
     found: store.foundFor(d.sheet, d.range), expected: d.expected ?? '', message: d.message, cellChanged: false, status: 'open', matchesExpected: false, author: COMPARE_TYPE, createdAt: now,
   }));
-  if (!list.length && keep.length === store.getSnapshot().errors.length) return false; // nothing of ours to add or take away
-  store.setErrors([...keep, ...list]);
+  if (!list.length && !had) return false; // nothing of ours to add or take away
+  store.setErrors(list, { layer: COMPARE_LAYER });
   return true;
 }
 

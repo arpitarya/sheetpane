@@ -425,4 +425,17 @@ describe('review layers (W-51)', () => {
     back.setErrors(s.envelope());
     expect(back.getErrors().filter((e) => e.author === 'file')).toEqual([]);
   });
+  it('W-63: the compare layer is not the review — left out while shown, written when named', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const mine = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    s.setErrors([{ v: 1, id: 'C-1', sheet: 'Holdings', range: 'B2', type: 'compare', severity: 'note', found: '', expected: '', message: 'was 3 → now 3.25', cellChanged: false, status: 'open', matchesExpected: false, author: 'compare', createdAt: '2026-10-19T09:00:00.000Z' }], { layer: 'compare' });
+    await exported(s);
+    expect(written(plugin)).toEqual([mine.id]);
+    s.setVisibleLayers(['compare']);
+    await exported(s); // shown alone, still not the review
+    expect(plugin.lastExport).toBeUndefined();
+    await exported(s, { layers: ['review', 'compare'] });
+    expect(written(plugin)).toEqual([mine.id, 'C-1'].sort());
+  });
 });

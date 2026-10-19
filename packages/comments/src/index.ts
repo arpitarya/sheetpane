@@ -29,16 +29,19 @@ const typeName = (id: string) => DEFAULT_ERROR_TYPES.find((t) => t.id === id)?.n
 
 /** The review in the store: every error not read from the file, in every layer, results included — what reading the file back skips. */
 const reviewOf = (ctx: PluginContext): SheetpaneError[] => ctx.snapshot().errors.filter((e) => e.author !== 'file');
+/** `@sheetpane/compare`'s layer (W-63): a comparison is not the review, so it is written only when named. */
+const COMPARE_LAYER = 'compare';
 /**
- * The review one export writes (W-51): the errors not read from the file in the layers shown — or, with
- * `export({ layers: ['validation', 'pdf'] })`, in the layers named — its results (`pass`, `skipped`) only when
- * `results` (W-50).
+ * The review one export writes (W-51): the errors not read from the file in the layers shown — `compare` left out
+ * (W-63) — or, with `export({ layers: ['validation', 'pdf'] })`, in the layers named; its results (`pass`,
+ * `skipped`) only when `results` (W-50).
  */
 function writtenOf(ctx: PluginContext, results = false): SheetpaneError[] {
   const named = ctx.exportOptions?.layers;
   const snap = ctx.snapshot();
   const pick = Array.isArray(named) ? new Set(named.filter((l): l is string => typeof l === 'string')) : undefined;
-  return (pick ? snap.errors.filter((e) => pick.has(layerOf(e))) : snap.visibleErrors).filter((e) => e.author !== 'file' && (results || !isResult(e)));
+  const shown = pick ? snap.errors.filter((e) => pick.has(layerOf(e))) : snap.visibleErrors.filter((e) => layerOf(e) !== COMPARE_LAYER);
+  return shown.filter((e) => e.author !== 'file' && (results || !isResult(e)));
 }
 
 /**

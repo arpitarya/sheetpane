@@ -6,8 +6,10 @@ item: W-63
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Claude Code (lane g, claude-opus-5-5)"
+updated_by: "Claude Code (claude-opus-5-5), the integration merge"
 ball: agent
+closed: 2026-10-19
+closed_by: "Claude Code (claude-opus-5-5), the integration merge"
 ---
 
 # W-63 — New plugin `@sheetpane/compare`: what changed between two versions of a workbook
@@ -17,7 +19,7 @@ ball: agent
 | step | what we do | what it gives us | state |
 |---|---|---|---|
 | 1 | `diffWorkbooks(a, b, { key })`: sheets matched by name (renames by content similarity), rows by key columns when given, else aligned by longest common subsequence; cells by value, text and formula; merges, hidden state and rule counts | a precise list of differences, in Node or the browser | ✅ |
-| 2 | `/ui`: load a base file; changes become a `compare` layer (W-51) with was → now, and `decorate` tints changed cells | the reader sees the changes on the sheet | ✅ tints and the errors-list entries; ⏳ the `compare` layer waits on W-51 |
+| 2 | `/ui`: load a base file; changes become a `compare` layer (W-51) with was → now, and `decorate` tints changed cells | the reader sees the changes on the sheet | ✅ tints, and the changes as the `compare` layer |
 | 3 | Summary in the `status` slot: *n sheets · n rows · n cells changed* | the size of the change at a glance | ✅ |
 | 4 | An MCP tool `diff_workbooks` on the same function | agents can ask too | ✅ |
 
@@ -44,14 +46,14 @@ Excel's own *Spreadsheet Compare* runs only on Windows with certain enterprise O
 | DoD | what | state |
 |---|---|---|
 | 1 · diff | pure function, typed result; property tests (diff of x with x is empty; applying the diff to a gives b's values) | ✅ `diff.node.test.ts` (4 fast-check properties, 12 cases) |
-| 2 · ui | layer, decorations, status; keyboard to next/previous change | ✅ decorations, status, Alt+F5 / Alt+Shift+F5, the changes listed through `publishChanges` (`compare.test.ts`) · ⏳ waits on W-51 (layer): `publishChanges` in `packages/compare/src/ui.ts` writes through `setErrors` until then |
+| 2 · ui | layer, decorations, status; keyboard to next/previous change | ✅ decorations, status, Alt+F5 / Alt+Shift+F5 (`compare.test.ts`); the changes are the `compare` layer — `publishChanges` calls `setErrors(list, { layer: 'compare' })` with only its entries, the review and undo kept (`compare.test.ts`); `@sheetpane/comments` leaves the layer out of a download unless named (`write.test.ts`) — SR-COMPARE 12, SR-COMMENTS 3 |
 | 3 · perf | budget on 50,000 rows recorded on a named machine | ✅ 500 ms budget; 120 / 119 / 138 ms (unkeyed / keyed / every row changed) on an Apple M4, load average 14–17 (`perf.node.test.ts`, SR-COMPARE 7) |
 | 4 · package | `packages/compare`, README, skill, demo (L10), new record SR-COMPARE | ✅ SR-COMPARE (0124); `sheetpane-plugins` skill row; gallery tab *Compare* in both demos, demo-check 53 ✓ |
 | 5 · tests · docs | fixtures pair; CHANGELOG | ✅ `@sheetpane/fixtures` `compare/base.xlsx` · `compare/now.xlsx` (`fixtures.node.test.ts`, the MCP golden); CHANGELOG |
 
 ## Blockers
 
-🟡 W-51 (layers): only the `compare` layer is left — switch `publishChanges` (`packages/compare/src/ui.ts`, marked `// W-51: layer 'compare'`) to `setErrors(list, { layer: 'compare' })` once W-51 lands, then close.
+None. (W-51's layers landed in the integration merge; the `compare` layer was wired there.)
 
 ## Record affected
 

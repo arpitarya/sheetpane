@@ -69,7 +69,9 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file` in the layers shown
-   (`snapshot.visibleErrors`, W-51, SR-GRID 5d) — or, with
+   (`snapshot.visibleErrors`, W-51, SR-GRID 5d) but `@sheetpane/compare`'s
+   `compare` layer — a comparison is not the review (W-63, SR-COMPARE 12) —
+   or, with
    `export({ layers: [...] })` (`ctx.exportOptions.layers`), in the layers
    named, whatever is shown; `[]` writes nothing — at the top-left cell of its
    range — except results (`pass`, `skipped`; SR-GRID decision 23), which
@@ -118,7 +120,7 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
   keep their ids; a deleted row's note is resolved "row deleted". The file's
   parts are moved by `patchXlsx` before this plugin extends them.
   `structure.test.ts` checks it — no code here changed.
-- **Enforced today:** `just test-pkg comments` — 33 tests (results left out unless `includeResults`, W-50; the layers written, W-51; notes and threads
+- **Enforced today:** `just test-pkg comments` — 34 tests (results left out unless `includeResults`, W-50; the layers written, W-51; the `compare` layer only when named, W-63; notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;

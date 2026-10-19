@@ -59,8 +59,8 @@ it on per element. Import `@sheetpane/x` for the headless plugin, or
   is read by `@sheetpane/validation` without it.
 - `@sheetpane/compare` compares the file **as loaded** with a base the user
   picks (Compare…) or the host passes — `compareWith(excel.workbook, bytes,
-  { name, key })`; both are read in the page, nothing is sent. Until review
-  layers land, its changes replace the undo history when they are listed.
+  { name, key })`; both are read in the page, nothing is sent. Its changes
+  are the `compare` review layer — the review and undo are kept.
 - `@sheetpane/review` writes only into an `.xlsx` download of an `.xlsx`.
   On re-upload, skip its sheet with `reviewSheetOf(book)` (a defined name
   marks it); a user's own *Review* sheet is never overwritten (`Review (2)`).

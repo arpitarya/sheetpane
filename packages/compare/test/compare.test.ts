@@ -84,6 +84,14 @@ describe('@sheetpane/compare/ui (W-63 DoD 2)', () => {
     await frame();
     expect(wb.getErrors().map((e) => e.type)).toContain('wrong-value');
     expect(wb.getErrors().filter((e) => e.type === 'compare').length).toBeGreaterThan(0);
+    // W-51: the changes are the `compare` layer — the review is its own layer, and undo is kept
+    expect(wb.getErrors({ layer: 'compare' }).map((e) => e.type)).toEqual(wb.getErrors().filter((e) => e.type === 'compare').map(() => 'compare'));
+    expect(wb.getErrors({ layer: 'review' }).map((e) => e.type)).toEqual(['wrong-value']);
+    expect(wb.getSnapshot().layers).toEqual(['review', 'compare']);
+    expect(wb.getSnapshot().canUndo).toBe(true);
+    wb.setVisibleLayers(['review']);
+    expect(wb.getSnapshot().visibleErrors.map((e) => e.type)).toEqual(['wrong-value']);
+    wb.setVisibleLayers(null);
     sh(el).querySelector<HTMLButtonElement>('[data-control=compare-stop]')!.click();
     await frame();
     expect(wb.getErrors().map((e) => e.type)).toEqual(['wrong-value']);

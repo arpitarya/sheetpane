@@ -2377,9 +2377,9 @@ d.sheets[0].cells;         // { ref: 'D4', was: { value, text, formula? }, now: 
 
 - The comparison is the file **as loaded** against the base; edits made in the pane since are not
   part of it. Loading another file into the pane compares it with the same base.
-- Until review layers (W-51) land, listing the changes
-  replaces the errors list's contents through `setErrors` (a person's own errors are kept), which
-  clears undo; with `@sheetpane/comments` a download also writes the changes as comments.
+- The changes are listed as the `compare` review layer (`COMPARE_LAYER`): the review is left as
+  it is and undo is kept; the errors panel's layer switch shows them apart. `@sheetpane/comments`
+  writes them into a download only when `export({ layers: [..., 'compare'] })` names the layer.
 - The tints are `--sp-compare-added`, `--sp-compare-changed`, `--sp-compare-moved` and
   `--sp-compare-removed`; set them to restyle.
 
@@ -8627,7 +8627,9 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file` in the layers shown
-   (`snapshot.visibleErrors`, W-51, SR-GRID 5d) — or, with
+   (`snapshot.visibleErrors`, W-51, SR-GRID 5d) but `@sheetpane/compare`'s
+   `compare` layer — a comparison is not the review (W-63, SR-COMPARE 12) —
+   or, with
    `export({ layers: [...] })` (`ctx.exportOptions.layers`), in the layers
    named, whatever is shown; `[]` writes nothing — at the top-left cell of its
    range — except results (`pass`, `skipped`; SR-GRID decision 23), which
@@ -8676,7 +8678,7 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
   keep their ids; a deleted row's note is resolved "row deleted". The file's
   parts are moved by `patchXlsx` before this plugin extends them.
   `structure.test.ts` checks it — no code here changed.
-- **Enforced today:** `just test-pkg comments` — 33 tests (results left out unless `includeResults`, W-50; the layers written, W-51; notes and threads
+- **Enforced today:** `just test-pkg comments` — 34 tests (results left out unless `includeResults`, W-50; the layers written, W-51; the `compare` layer only when named, W-63; notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell and no-cell (W-55) skips;
@@ -10321,9 +10323,12 @@ no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-
     row below them), a changed cell (`was … → now …`, formulas named) — at most 2,000 and one note
     for the rest. `found` is the file's text (as for every error) and `expected` what the base
     holds there — the base's text, its formula when only the formula changed, a moved row's old
-    row — so the list reads *now → base*. They are written by one function, `publishChanges`, which today replaces the
-    list through `setErrors` keeping every other error (it clears undo) and with review layers
-    (W-51) becomes the `compare` layer. A removed sheet has no place in the workbook: the status
+    row — so the list reads *now → base*. They are written by one function, `publishChanges`, as the `compare` review layer
+    (W-51, SR-GRID 5d; `COMPARE_LAYER`): `setErrors(list, { layer: 'compare' })` replaces the
+    previous comparison's and leaves every other layer — a person's review included — and undo
+    as they are; ids are the pane's next `ERR-n`. With two layers the errors panel's switch
+    shows the review and the comparison apart. `@sheetpane/comments` leaves the layer out of a
+    download unless `export({ layers })` names it (SR-COMMENTS 3). A removed sheet has no place in the workbook: the status
     line names it.
 13. **MCP:** `@sheetpane/mcp`'s `diff_workbooks(base, path, key?, headerRow?, limit?)` runs
     `diffWorkbooks` on two local files, the key for every sheet (SR-MCP).
@@ -10337,7 +10342,10 @@ no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-
   (SR-FIXTURES `compare/`); `compare.test.ts` (Chromium) the tints, the status line, the errors
   list, the keys and buttons, Stop comparing and a second file; `packages/mcp/test` the tool's
   golden; the demos' gallery tab *Compare* and its `demo-check` step (SR-BUILD 11a).
-- **Not done:** the `compare` layer — `publishChanges` writes through `setErrors` until W-51; a
+- **The layer (W-51, closed with W-63):** `compare.test.ts` checks the changes are the
+  `compare` layer, the review its own, undo kept, and the visible layers filtering them;
+  comments' `write.test.ts` that the layer is left out unless named.
+- **Not done:** a
   removed sheet's changes have no place to be listed (W-55's sheet-level errors would give them
   one); comparing the pane's edits, not the file, is W-64's edits view.
 
@@ -10348,7 +10356,7 @@ no sheets or merges — a reference for row alignment, not a dependency (SR-LAW-
 - Report a reordered row as moved without a key — rejected: equal rows make it a guess (W-63's
   hazard).
 - Compare the pane's live values (edits included) — rejected for now: every edit would rewrite the
-  errors list and clear undo until layers land; the file against the file is the question asked.
+  errors list; the file against the file is the question asked.
 
 ### Reference (required)
 

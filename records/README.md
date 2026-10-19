@@ -146,7 +146,7 @@ Start from `TEMPLATE.md`.
 | [0120](0120_CREATE.md) | **SR-CREATE** | `create-sheetpane` — a working app in one command | accepted | yes |
 | [0121](0121_VISIBILITY.md) | **SR-VISIBILITY** | `@sheetpane/visibility` — hide and unhide as changes | accepted | yes |
 | [0122](0122_TABLES.md) | **SR-TABLES** | `@sheetpane/tables` — Excel tables, drawn | accepted | yes |
-| [0124](0124_COMPARE.md) | **SR-COMPARE** | `@sheetpane/compare` — what changed between two versions of a workbook | accepted | yes — the `compare` layer waits on W-51 |
+| [0124](0124_COMPARE.md) | **SR-COMPARE** | `@sheetpane/compare` — what changed between two versions of a workbook | accepted | yes |
 | [0123](0123_REVIEW.md) | **SR-REVIEW** | `@sheetpane/review` — the review as a sheet of its own, flagged cells filled | accepted | yes |
 | [0117](0117_CODES.md) | **SR-CODES** | stable `SP-xxxx` error codes, one registry, `docs/ERRORS.md` | accepted | yes |
 
