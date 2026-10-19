@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/fixtures",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Known workbooks for testing a sheetpane host: the showcase, its rules sample, CSV dialects and edge cases, with a manifest of what each holds.",
   "license": "MIT",
   "repository": {
