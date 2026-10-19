@@ -4,7 +4,7 @@
 // every other error is written as an Excel threaded comment at its cell, with
 // the legacy comment and VML parts older Excel needs. Headless; no runtime
 // dependency; `@sheetpane/grid` is a peer.
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, registerPlugin, type Plugin, type PluginContext, type SheetpaneError } from '@sheetpane/grid';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, isResult, registerPlugin, type Plugin, type PluginContext, type SheetpaneError } from '@sheetpane/grid';
 import { errorGuids } from './guid.js';
 import { readComments } from './read.js';
 import { writeReview, type WriteReport } from './write.js';
@@ -27,8 +27,8 @@ export interface CommentsPlugin extends Plugin {
 /** Names for the types the core and the plugins write; the host's own `errorTypes` live on the element, not the store. */
 const typeName = (id: string) => DEFAULT_ERROR_TYPES.find((t) => t.id === id)?.name ?? BUILTIN_TYPE_NAMES[id] ?? id;
 
-/** The review in the store this plugin writes: every error not read from the file. */
-const reviewOf = (ctx: PluginContext): SheetpaneError[] => ctx.snapshot().errors.filter((e) => e.author !== 'file');
+/** The review in the store: every error not read from the file — its results (`pass`, `skipped`) only when `results` (W-50). */
+const reviewOf = (ctx: PluginContext, results = true): SheetpaneError[] => ctx.snapshot().errors.filter((e) => e.author !== 'file' && (results || !isResult(e)));
 
 /**
  * The comments plugin, both ways. On load (`validate`), the file's notes and threaded comments become read-only
@@ -37,7 +37,8 @@ const reviewOf = (ctx: PluginContext): SheetpaneError[] => ctx.snapshot().errors
  * existing parts, never replacing them. A cell holding someone's note is left alone and reported in `lastExport`.
  * String XML only, so it runs in Node. Importing this module registers it as `comments`.
  *
- * @param options - `write: false` never writes the review; `export({ comments: false })` skips one export.
+ * @param options - `write: false` never writes the review; `export({ comments: false })` skips one export;
+ * `export({ includeResults: true })` also writes the `pass` and `skipped` results (W-50), which are left out otherwise.
  * @returns The plugin (`id: 'comments'`) with `lastExport`.
  * @see https://github.com/arpitarya/sheetpane/blob/main/records/0112_COMMENTS.md
  * @example
@@ -72,7 +73,7 @@ export function comments(options: CommentsOptions = {}): CommentsPlugin {
     async exportPatch(patch, ctx) {
       last = undefined;
       if (options.write === false || ctx.exportOptions?.comments === false) return;
-      const review = reviewOf(ctx);
+      const review = reviewOf(ctx, ctx.exportOptions?.includeResults === true); // a downloaded review stays a list of problems (W-50)
       if (!review.length) return;
       last = await writeReview(patch, review, { typeName });
     },

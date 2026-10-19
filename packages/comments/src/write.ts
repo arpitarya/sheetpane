@@ -72,8 +72,11 @@ function excelDate(iso: string): string {
 const authorOf = (e: SheetpaneError) => e.author.trim() || DEFAULT_AUTHOR;
 const nl = (s: string) => cleanXml(s.replace(/\r\n?/g, '\n'));
 
+/** The severity as the comment names it; `pass` and `skipped` are written only when the host asks (W-50). */
+const SEV_NAME: Record<SheetpaneError['severity'], string> = { error: 'Error', warning: 'Warning', note: 'Note', pass: 'Passed', skipped: 'Not checked' };
+
 function rootText(e: SheetpaneError, o: WriteOptions): string {
-  const sev = e.severity === 'error' ? 'Error' : e.severity === 'warning' ? 'Warning' : 'Note';
+  const sev = SEV_NAME[e.severity];
   const head = [e.id, sev, o.typeName(e.type), `Found: ${e.found}`].filter(Boolean).join(' · ');
   return nl(e.message ? `${head}\n${e.message}` : head);
 }

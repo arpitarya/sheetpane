@@ -7,7 +7,7 @@ import { controlsFor } from '../plugins/host.js';
 import type { ControlDescriptor, Geometry } from '../plugins/types.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, parseInput, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type Mode, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, SEVERITY_ORDER, isResult, machineAuthored, resultsLevelOf, type ErrorType, type Mode, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
@@ -17,7 +17,7 @@ import { cellCount, clipOf, dataEdge, growForMerges, rangeText, refLabel, spanOf
 import { EXCEL_CSS } from './styles.js';
 
 const ZOOMS = [0.75, 1, 1.25, 1.5];
-type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'hidlayer' | 'hidbar' | 'hidmenuslot' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
+type Refs = Record<'help' | 'grid' | 'root' | 'dialog' | 'fname' | 'meta' | 'counts' | 'findin' | 'findcnt' | 'zoom' | 'editonly' | 'undo' | 'redo' | 'freeze' | 'changes' | 'export' | 'dlmore' | 'dlslot' | 'close' | 'ref' | 'cell' | 'cellname' | 'val' | 'merge' | 'changed' | 'revert' | 'issue' | 'result' | 'hint' | 'rulemsg' | 'dock' | 'plugCellbar' | 'frow' | 'plugFrow' | 'body' | 'scroller' | 'sheet' | 'hrow' | 'frozen' | 'rows' | 'sellayer' | 'hidlayer' | 'hidbar' | 'hidmenuslot' | 'selsay' | 'overlay' | 'state' | 'tabs' | 'status' | 'picker' | 'modeseg', HTMLElement>;
 const MAX_BYTES = 50 * 2 ** 20;
 /** A size kept inside the limits (W-47 DoD 1): columns 16–1,200 px, rows 12–600 px, at 100 %. */
 const clampSize = (axis: 'col' | 'row', px: number) => Math.round(axis === 'col' ? Math.min(COL_MAX, Math.max(COL_MIN, px)) : Math.min(ROW_MAX, Math.max(ROW_MIN, px)));
@@ -43,7 +43,7 @@ export async function bytesFromSrc(src: string): Promise<{ bytes: Uint8Array; na
 
 /** The text the cell bar shows for a value: raw, as Excel's formula bar does. */
 const rawText = (v: unknown) => (v === null || v === undefined ? '' : typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : String(v));
-const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
+const sevOrder: Record<Severity, number> = SEVERITY_ORDER;
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 /**
@@ -65,9 +65,10 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  * - `on-invalid` — `flag` (the default) or `block`: what a failing column rule does.
  * - `rules-src` — a URL to a rules file (read with a GET).
  * - `flagging` — `on` (the default) or `off`: no Flag issue anywhere.
+ * - `results` — `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).
  *
  * Properties: `workbook`, `errors`, `errorTypes`, `file`, `mode`, `theme`, `open`, `src`, `sizes`,
- * `rules`, `flagging`, `columns`, `validate`, `onInvalid`.
+ * `rules`, `flagging`, `results`, `columns`, `validate`, `onInvalid`.
  *
  * Methods: `load()`, `export()`, `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
  * `shortcuts()`, `column()`, `renderNow()`, `geometryFor()`, `reveal()`, `unreveal()`.
@@ -115,7 +116,7 @@ const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
  */
 export class SheetpaneExcel extends ElementBase {
   /** The attributes the element reacts to. */
-  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging'];
+  static observedAttributes = ['pane', 'src', 'mode', 'display', 'open', 'author', 'plugins', 'header-row', 'on-invalid', 'rules-src', 'flagging', 'results'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -216,6 +217,9 @@ export class SheetpaneExcel extends ElementBase {
   /** `flagging="off"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read. */
   get flagging(): 'on' | 'off' { return this.getAttribute('flagging') === 'off' ? 'off' : 'on'; }
   set flagging(v: 'on' | 'off') { this.setAttribute('flagging', v); }
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  get results(): ResultsLevel { return this._store?.results ?? resultsLevelOf(this.getAttribute('results')); }
+  set results(v: ResultsLevel) { this.setAttribute('results', v); }
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   get columns(): ColumnRules | undefined { return this.rulesCfg?.columns; }
   set columns(c: ColumnRules | undefined) { this.rulesCfg = { ...this.rulesCfg, columns: c ?? {} }; this.applyRules(); }
@@ -336,6 +340,7 @@ export class SheetpaneExcel extends ElementBase {
     else if (name === 'header-row' || name === 'on-invalid') this.applyRules();
     else if (name === 'rules-src') { if (val) void this.loadRules(val); else this.rules = undefined; }
     else if (name === 'flagging') this._store?.setFlagging(val !== 'off');
+    else if (name === 'results' && val !== null) this._store?.setResults(resultsLevelOf(val));
     this.schedule();
   }
 
@@ -356,6 +361,7 @@ export class SheetpaneExcel extends ElementBase {
     this.unsub.push(s.subscribe(() => this.schedule()), s.on((e) => this.onStoreEvent(e)), () => detach(s, this));
     this.applyRules();
     if (this.hasAttribute('flagging')) s.setFlagging(this.getAttribute('flagging') !== 'off');
+    if (this.hasAttribute('results')) s.setResults(resultsLevelOf(this.getAttribute('results')));
   }
 
   private unbind(): void {
@@ -443,6 +449,7 @@ export class SheetpaneExcel extends ElementBase {
   <span class="tag merge"></span>
   <span class="chip chip-info changed"></span><button type="button" class="btn btn-g revert">Revert</button>
   <span class="chip issue"></span>
+  <span class="chip result"></span>
   <span class="chip chip-info hint">Describe it in the Errors panel</span>
   <span class="chip rulemsg" role="status"></span>
   <span class="plug-cellbar" style="display:contents"></span>
@@ -466,7 +473,7 @@ export class SheetpaneExcel extends ElementBase {
     this.q = {
       root: $('.sp'), dialog: $('dialog'), fname: $('.fname'), meta: $('.meta'), counts: $('.counts'), findin: $('.findin'), findcnt: $('.find .cnt'), zoom: $('.zoom'),
       editonly: $('.editonly'), undo: $('.undo'), redo: $('.redo'), freeze: $('.freeze'), changes: $('.changes'), export: $('.export'), dlmore: $('.dlmore'), dlslot: $('.dlslot'), close: $('.close'), dock: $('.dock'),
-      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), hint: $('.hint'), rulemsg: $('.rulemsg'),
+      help: $('.help'), ref: $('.ref'), cell: $('.cell'), cellname: $('.cellname'), val: $('.val'), merge: $('.merge'), changed: $('.changed'), revert: $('.revert'), issue: $('.issue'), result: $('.result'), hint: $('.hint'), rulemsg: $('.rulemsg'),
       plugCellbar: $('.plug-cellbar'), frow: $('.frow'), plugFrow: $('.plug-frow'), body: $('.body'), scroller: $('.scroller'), sheet: $('.sheet'), hrow: $('.hrow'),
       grid: $('.grid'), frozen: $('.frozenrows'), rows: $('.rows'), sellayer: $('.sellayer'), hidlayer: $('.hidlayer'), hidbar: $('.hidbar'), hidmenuslot: $('.hidmenuslot'), selsay: $('.selsay'), overlay: $('.overlay'), state: $('.state'), tabs: $('.tabs'), status: $('.status'), picker: $('.picker'), modeseg: $('.modeseg'),
     } as Refs;
@@ -894,7 +901,7 @@ export class SheetpaneExcel extends ElementBase {
   /** Untouched: no change, and nothing a plugin would write (a review exported as comments). */
   private untouched(): boolean {
     const s = this._store!;
-    return s.changeCount === 0 && !(s.getSnapshot().errors.length && s.plugins.some((p) => p.provides.includes('exportPatch')));
+    return s.changeCount === 0 && !(s.resultCounts().problems && s.plugins.some((p) => p.provides.includes('exportPatch'))); // results never make a review (W-50)
   }
 
   // ── Download (W-31, W-34): the main part in the upload's format; ▾ for either format and plugin options ──
@@ -1222,7 +1229,7 @@ export class SheetpaneExcel extends ElementBase {
   private hiddenMarks(sheet: string, g: SheetGeometry, win: { r0: number; r1: number; c0: number; c1: number }, fr: number, fc: number): { cols: string; layer: string } {
     const z = this.zoom, HH = this.headH() * z, RW = this.rowHeadW() * z, s = this._store!;
     const X = (c: number) => g.colX[Math.min(c, g.cols)]! * z, Y = (r: number) => rowTop(g, r) * z;
-    const errs = s.getSnapshot().errors.filter((e) => e.sheet === sheet && e.status === 'open');
+    const errs = s.getSnapshot().errors.filter((e) => e.sheet === sheet && e.status === 'open' && !isResult(e));
     const inSpan = (axis: 'rows' | 'cols', a: number, b: number) => {
       let worst: Severity | undefined, n = 0;
       for (const e of errs) {
@@ -1350,7 +1357,7 @@ export class SheetpaneExcel extends ElementBase {
     const s = this._store!, snap = s.getSnapshot(), book = snap.book!;
     const hidden = book.sheets.filter((x) => s.hidden(x.name).state !== 'visible');
     if (!hidden.length) return '';
-    const errs = snap.mode === 'edit' ? snap.errors.filter((e) => e.status === 'open' && hidden.some((h) => h.name === e.sheet)).length : 0;
+    const errs = snap.mode === 'edit' ? snap.errors.filter((e) => e.status === 'open' && !isResult(e) && hidden.some((h) => h.name === e.sheet)).length : 0;
     const btn = `<button type="button" class="tab hidbtn" data-act="hidden-sheets" aria-haspopup="menu" aria-expanded="${this.hiddenMenuOpen}" title="Sheets hidden in the file">⊘ ${hidden.length} hidden ▾${errs ? `<span class="cnt" aria-label="${errs} open">${errs}</span>` : ''}</button>`;
     return btn;
   }
@@ -1894,7 +1901,7 @@ export class SheetpaneExcel extends ElementBase {
 
   private stepError(dir: 1 | -1): void {
     const s = this._store!, snap = s.getSnapshot();
-    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet);
+    const list = snap.errors.filter((e) => e.sheet === snap.selection.sheet && !isResult(e));
     if (!list.length) return;
     const cur = this.errorAt(snap.selection.sheet, snap.selection.ref);
     const i = cur ? list.indexOf(cur) : -1;
@@ -1904,11 +1911,14 @@ export class SheetpaneExcel extends ElementBase {
     s.select({ sheet: nx.sheet, ref: cellRef(r.top, r.left) }, this);
   }
 
+  /** A result's check — its message, else its type's name: what its mark, chip and group say (W-50). */
+  private checkOf(e: SheetpaneError): string { return e.message || (this._errorTypes.find((t) => t.id === e.type)?.name ?? BUILTIN_TYPE_NAMES[e.type] ?? e.type); }
+
   private errorAt(sheet: string, ref: string): SheetpaneError | undefined {
     const p = parseRef(ref);
     if (!p) return undefined;
     const hits = this._store!.getSnapshot().errors.filter((e) => {
-      if (e.sheet !== sheet) return false;
+      if (e.sheet !== sheet || isResult(e)) return false; // a result is never the cell's error (W-50)
       const r = parseRange(e.range);
       return !!r && p.row >= r.top && p.row <= r.bottom && p.col >= r.left && p.col <= r.right;
     });
@@ -1999,7 +2009,7 @@ export class SheetpaneExcel extends ElementBase {
     q.fname.title = `${src.name} · ${q.meta.textContent}`; // the meta chip is shed at narrow widths
     for (const b of Array.from(q.modeseg.querySelectorAll('button'))) b.setAttribute('aria-pressed', String(b.dataset.mode === snap.mode));
     const open = { error: 0, warning: 0, note: 0 };
-    for (const e of snap.errors) if (e.status === 'open') open[e.severity]++;
+    for (const e of snap.errors) if (e.status === 'open' && !isResult(e)) open[e.severity as keyof typeof open]++;
     q.counts.innerHTML = edit ? `<span class="chip chip-fail" title="Open errors">✕ ${open.error}</span> <span class="chip chip-warn" title="Open warnings">! ${open.warning}</span> <span class="chip chip-info" title="Open notes">i ${open.note}</span>` : '';
     q.editonly.style.display = edit ? 'contents' : 'none';
     (q.undo as HTMLButtonElement).disabled = !snap.canUndo;
@@ -2045,6 +2055,10 @@ export class SheetpaneExcel extends ElementBase {
     const err = edit ? this.errorAt(sel.sheet, sel.ref) : undefined;
     q.issue.hidden = !err;
     if (err) { q.issue.className = `chip ${err.status === 'resolved' ? 'chip-pass' : err.severity === 'error' ? 'chip-fail' : err.severity === 'warning' ? 'chip-warn' : 'chip-info'}`; q.issue.textContent = `${err.status === 'resolved' ? '✓' : SEVERITY[err.severity].glyph} Error ${errNum(err)}`; }
+    // a result cell (W-50): the one place its mark is explained in words — "✓ Passed · Fee rate 0.00%–2.00%"
+    const res = s.results !== 'off' ? s.resultAt(sel.sheet, p.row, p.col) : undefined;
+    q.result.hidden = !res;
+    if (res) { q.result.className = `chip result ${res.severity === 'pass' ? 'chip-pass' : 'chip-skip'}`; q.result.textContent = `${SEVERITY[res.severity].glyph} ${SEVERITY[res.severity].name} · ${this.checkOf(res)}`; }
     q.hint.hidden = !(composing && s.hasErrorsView);
     // column rules: the draft's failure as typed, or a refused value (W-27)
     const rm = this.ruleMsg && this.ruleMsg.sheet === sel.sheet && this.ruleMsg.ref === sel.ref ? this.ruleMsg : undefined;
@@ -2088,7 +2102,7 @@ export class SheetpaneExcel extends ElementBase {
     q.tabs.hidden = src.kind === 'csv';
     // W-49: hidden sheets are not tabs — one ⊘ button lists them; one opened for viewing shows dashed
     const tabsHtml = book.sheets.filter((sh) => s.hidden(sh.name).state === 'visible' || this.openedSheets.has(sh.name) || sh.name === sheet.name).map((sh) => {
-      const cnt = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open').length : 0;
+      const cnt = edit ? snap.errors.filter((e) => e.sheet === sh.name && e.status === 'open' && !isResult(e)).length : 0;
       const hid = s.hidden(sh.name).state !== 'visible';
       return `<button type="button" role="tab" class="tab${hid ? ' hid' : ''}" data-sheet="${esc(sh.name)}" data-sp-sheet="${esc(sh.name)}" aria-selected="${sh.name === sheet.name}"${hid ? ' title="Hidden in the file — shown for viewing"' : ''}>${hid ? '⊘ ' : ''}${esc(sh.name)}${cnt ? `<span class="cnt" aria-label="${cnt} open">${cnt}</span>` : ''}</button>`;
     }).join('');
@@ -2112,6 +2126,13 @@ export class SheetpaneExcel extends ElementBase {
       `<span>${esc(sheet.name)} · ${dataRows} row${dataRows === 1 ? '' : 's'} × ${dataCols} column${dataCols === 1 ? '' : 's'}${g.g.merges.length ? ` · ${g.g.merges.length} merged range${g.g.merges.length === 1 ? '' : 's'}` : ''}</span>`,
       n ? `<span>· ${n} cell change${n === 1 ? '' : 's'} kept in memory until you export</span>` : '',
       (() => { const t = this.totalsFor(g.g); return t ? `<span class="totals" data-sp="totals">· ${esc(t)}</span>` : ''; })(),
+      // the host's coverage line (W-50): "186 of 214 checked · 6 problems" — only when the pane holds results
+      (() => {
+        const rc = s.resultCounts();
+        if (s.results === 'off' || !(rc.pass + rc.skipped)) return '';
+        const checked = rc.pass + rc.problems;
+        return `<span class="checked">· ${checked} of ${checked + rc.skipped} checked · ${rc.open} problem${rc.open === 1 ? '' : 's'}</span>`;
+      })(),
       (() => {
         const h = s.hidden(sheet.name);
         if (!h.rows.length && !h.cols.length) return '';
@@ -2212,13 +2233,15 @@ export class SheetpaneExcel extends ElementBase {
     const marks = new Map<string, string>();
     const rowWorst = new Map<number, Severity>();
     if (edit) for (const e of snap.errors) {
-      if (e.sheet !== sheet.name) continue;
+      if (e.sheet !== sheet.name || isResult(e)) continue; // results: a corner glyph, never a fill or a row glyph (W-50)
       const r = parseRange(e.range);
       if (!r) continue;
       const m = e.status === 'resolved' ? 'm-pass' : `m-${e.severity}`;
       for (let rr = r.top; rr <= Math.min(r.bottom, r.top + 2000); rr++) for (let cc = r.left; cc <= r.right; cc++) marks.set(`${rr},${cc}`, m);
       if (e.status === 'open') for (let rr = r.top; rr <= Math.min(r.bottom, r.top + 2000); rr++) { const w = rowWorst.get(rr); if (!w || sevOrder[e.severity] > sevOrder[w]) rowWorst.set(rr, e.severity); }
     }
+    // result marks (W-50): every result cell at `marks`; at `summary` only the range Show ▸ asked for
+    const markAll = s.results === 'marks', focus = s.results !== 'off' && s.resultFocus?.sheet === sheet.name ? parseRange(s.resultFocus.range) : undefined;
     const cellControls = controlsFor(s.plugins, 'cell', mode);
     const decorating = s.plugins.some((p) => p.provides.includes('decorate'));
     const covered = (r: number, c: number) => { const m = mergeAt(g, r, c); return m && !(m.top === r && m.left === c) ? m : undefined; };
@@ -2256,6 +2279,10 @@ export class SheetpaneExcel extends ElementBase {
       if (cellControls.length) {
         const ctx = s.cellContext(sheet.name, ref);
         for (const cc of cellControls) if (ctx && cc.appliesTo?.(ctx)) extra += `<button type="button" class="mk" data-control="${esc(cc.id)}" aria-label="${esc(cc.label)}" tabindex="-1">${cc.icon ?? '▾'}</button>`;
+      }
+      if (markAll || (focus && r >= focus.top && r <= focus.bottom && c >= focus.left && c <= focus.right)) {
+        const rs = s.resultAt(sheet.name, r, c); // a problem always wins: none there
+        if (rs) extra += `<span class="rmk ${rs.severity}" role="img" aria-label="${SEVERITY[rs.severity].name}: ${esc(this.checkOf(rs))}">${SEVERITY[rs.severity].glyph}</span>`;
       }
       const title = stale ? ' title="May be stale — Excel recalculates on open"' : text.length > 24 ? ` title="${esc(text)}"` : '';
       return `<div id="c${r}_${c}" role="gridcell" class="${cls.join(' ')}" data-r="${r}" data-c="${c}" data-sp-ref="${cellRef(r, c)}" aria-colindex="${c + 2}" aria-selected="false" style="${style}"${title}><span class="v">${esc(text)}</span>${extra}</div>`;
@@ -2414,7 +2441,7 @@ export class SheetpaneExcel extends ElementBase {
     const sel = snap.selection, selP = parseRef(sel.ref)!;
     if (edit) {
       for (const e of snap.errors) {
-        if (e.sheet !== sheet.name) continue;
+        if (e.sheet !== sheet.name || isResult(e)) continue; // a result has no pin (W-50)
         const r = parseRange(e.range);
         if (!r || r.top > win.r1 + 40) continue;
         const p = at(r.top, r.left);

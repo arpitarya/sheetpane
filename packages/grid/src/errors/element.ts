@@ -1,12 +1,12 @@
 // <sheetpane-errors> — the error component (W-02): the list and the New error
 // form, on the same store as <sheetpane-excel> (SR-LAW-7). It keeps no private
 // copy of errors or workbook data; no "linked" chip, no export footer.
-import { cellRef, colName, parseRange, parseRef } from '@sheetpane/export';
+import { cellRef, colName, parseRange, parseRef, rangeRef } from '@sheetpane/export';
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored, type ErrorType, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, SEVERITY_ORDER, isResult, machineAuthored, resultsLevelOf, type ErrorType, type ResultSeverity, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
 import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
 
@@ -51,12 +51,32 @@ ${BASE_CSS}
 .field>span{font-size:12px;font-weight:500;color:var(--sp-ink-2)}
 .ex{padding:10px;border-radius:var(--sp-r);background:var(--sp-ground);border:1px dashed var(--sp-line-strong);font-size:12px;color:var(--sp-ink-2);display:flex;flex-direction:column;gap:4px}
 .notice{margin:8px 12px 0;padding:8px 10px;border-radius:var(--sp-r);background:var(--sp-warn-soft);border:1px solid var(--sp-warn);font-size:12px}
+.summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--sp-line);font-size:12px;color:var(--sp-ink-2)}
+.summary b{color:var(--sp-ink);font-weight:600}.summary .p{color:var(--sp-pass)}.summary .sk{color:var(--sp-ink-3)}
+.sumtext{display:inline-flex;gap:8px;flex-wrap:wrap}
+.sw{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:2px 0;color:var(--sp-ink-2);font:inherit;font-size:12px;cursor:pointer}
+.sw .tg{width:26px;height:15px;border-radius:8px;background:var(--sp-line-strong);position:relative;flex:none}
+.sw .tg::after{content:"";position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--sp-surface)}
+.sw[aria-checked=true] .tg{background:var(--sp-ink)}.sw[aria-checked=true] .tg::after{left:13px}
+.rg{font-weight:700;min-width:22px;line-height:20px;text-align:center;flex:none}.rg.pass{color:var(--sp-pass)}.rg.skipped{color:var(--sp-skip)}
+.rgrp .grow{display:flex;align-items:center}.rgrp .grow .issue{flex:1;min-width:0}
+.lnk{flex:none;margin-right:8px;color:var(--sp-accent-ink)}
+.cells{overflow:auto;border-top:1px solid var(--sp-line);background:var(--sp-ground)}
+.cells .vsp{position:relative}
+.cellrow{position:absolute;left:0;right:0;height:28px;display:flex;align-items:center;gap:8px;padding:0 12px 0 44px;border:0;background:none;color:var(--sp-ink);font:inherit;font-size:12px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden}
+.cellrow:hover{background:var(--sp-surface)}.cellrow .m{color:var(--sp-ink-3);overflow:hidden;text-overflow:ellipsis}
 `;
+/** A result group's cell rows (W-50): 28 px each, drawn only where its box scrolls to. */
+const CELL_ROW = 28, CELLS_MAX = 280;
 
-const sevOrder: Record<Severity, number> = { error: 3, warning: 2, note: 1 };
+const sevOrder: Record<Severity, number> = SEVERITY_ORDER;
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 type Filter = 'all' | Severity;
+/** The list's view (W-50): the problems, or one kind of result, grouped. */
+type View = 'problems' | ResultSeverity;
+/** A result group: one check (passes) or one reason (not checked), with its entries. */
+interface Group { key: string; label: string; sev: ResultSeverity; entries: SheetpaneError[]; cells: number; where: string }
 type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
 
 /**
@@ -70,8 +90,9 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * - `author` — written into the errors this element's user adds.
  * - `plugins` — space-separated registered plugin ids; fixed per pane.
  * - `theme` — `light` (the default), `dark` or `auto`.
+ * - `results` — `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).
  *
- * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`.
+ * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`, `results`.
  *
  * Methods: `getErrors()`, `setErrors(list, { plugins? })`, `renderNow()`.
  *
@@ -82,7 +103,7 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo).
  * @fires sheetpane-select `{ sheet, ref }` when picking a row selects its cell.
  * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
- * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up.
+ * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry.
  *
  * @csspart root - The panel's frame: the header, the form, the filters and the list.
  *
@@ -102,7 +123,7 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  */
 export class SheetpaneErrors extends ElementBase {
   /** The attributes the element reacts to. */
-  static observedAttributes = ['pane', 'readonly', 'author', 'plugins'];
+  static observedAttributes = ['pane', 'readonly', 'author', 'plugins', 'results'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -117,6 +138,11 @@ export class SheetpaneErrors extends ElementBase {
   private draft = { type: DEFAULT_ERROR_TYPES[0]!.id, message: '', expected: '', severity: DEFAULT_ERROR_TYPES[0]!.severity as Severity, change: false };
   private formKey = '';
   private savedPlugins: string[] | undefined;
+  private view: View = 'problems';
+  private openGroups = new Set<string>();
+  private groupEntries = new Map<string, SheetpaneError[]>();
+  /** A control to focus again once the list is redrawn (a group toggled). */
+  private refocus: string | undefined;
 
   // ── properties ───────────────────────────────────────────────────────────
   /** The pane's store; assigning one replaces the `pane` lookup. */
@@ -134,6 +160,9 @@ export class SheetpaneErrors extends ElementBase {
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   get theme(): Theme { const t = this.getAttribute('theme'); return t === 'dark' || t === 'auto' ? t : 'light'; }
   set theme(t: Theme) { this.setAttribute('theme', t); }
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  get results(): ResultsLevel { return this._store?.results ?? resultsLevelOf(this.getAttribute('results')); }
+  set results(v: ResultsLevel) { this.setAttribute('results', v); }
 
   /** A copy of the pane's errors, to save a review. */
   getErrors(): SheetpaneError[] { return this.errors; }
@@ -147,11 +176,13 @@ export class SheetpaneErrors extends ElementBase {
   connectedCallback(): void {
     if (!this.shadow) {
       this.shadow = this.attachShadow({ mode: 'open' });
-      this.shadow.innerHTML = `<style>${CSS}</style><div class="spe" part="root"><div class="hd"><span class="t">Errors</span><span class="chip opencount"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-i" data-act="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button><button type="button" class="btn btn-g btn-i" data-act="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button></div><div class="scrollarea"><div class="noticebox"></div><div class="formbox"></div><div class="filters" role="toolbar" aria-label="Filter errors"></div><div class="list" role="list"></div></div></div>`;
+      this.shadow.innerHTML = `<style>${CSS}</style><div class="spe" part="root"><div class="hd"><span class="t">Errors</span><span class="chip opencount"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-i" data-act="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button><button type="button" class="btn btn-g btn-i" data-act="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button></div><div class="summary" hidden><span class="sumtext"></span><button type="button" class="sw" role="switch" aria-checked="false" data-act="onsheet"><span class="tg" aria-hidden="true"></span>On sheet</button></div><div class="scrollarea"><div class="noticebox"></div><div class="formbox"></div><div class="filters" role="toolbar" aria-label="Filter errors"></div><div class="list" role="list"></div></div></div>`;
       this.shadow.addEventListener('click', (e) => this.onClick(e));
       this.shadow.addEventListener('input', (e) => this.onInput(e));
       this.shadow.addEventListener('change', (e) => this.onInput(e));
       this.shadow.addEventListener('keydown', (e) => this.onKey(e as KeyboardEvent));
+      // a result group's cells scroll in their own box: draw the rows it shows (scroll does not bubble — capture)
+      this.shadow.addEventListener('scroll', (e) => { const t = e.target as HTMLElement; if (t.classList?.contains('cells')) this.fillCells(t); }, true);
     }
     this.bind();
     this.schedule();
@@ -162,6 +193,7 @@ export class SheetpaneErrors extends ElementBase {
   attributeChangedCallback(name: string, old: string | null, val: string | null): void {
     if (!this.isConnected || old === val) return;
     if (name === 'pane' || name === 'plugins') { this.unbind(); this.bind(); }
+    else if (name === 'results' && val !== null) this._store?.setResults(resultsLevelOf(val));
     this.schedule();
   }
 
@@ -175,6 +207,7 @@ export class SheetpaneErrors extends ElementBase {
     else this._store = createWorkbook({ plugins: pluginsFromIds(plugins) });
     const s = this._store;
     attach(s, this);
+    if (this.hasAttribute('results')) s.setResults(resultsLevelOf(this.getAttribute('results')));
     const detachView = s.attachErrorsView();
     this.unsub.push(s.subscribe(() => this.schedule()), s.on((e) => this.onStoreEvent(e)), () => detach(s, this), detachView);
   }
@@ -213,6 +246,16 @@ export class SheetpaneErrors extends ElementBase {
     switch (el.dataset.act) {
       case 'filter': this.filter = el.dataset.v as Filter; this.schedule(); break;
       case 'author': this.authorFilter = el.dataset.v as AuthorFilter; this.schedule(); break;
+      case 'view': this.view = el.dataset.v as View; this.schedule(); break;
+      case 'onsheet': s.setResults(s.results === 'marks' ? 'summary' : 'marks'); break;
+      case 'group': {
+        const g = el.closest<HTMLElement>('[data-g]')!.dataset.g!;
+        if (!this.openGroups.delete(g)) this.openGroups.add(g);
+        this.refocus = `[data-g="${globalThis.CSS.escape(g)}"] [data-act=group]`;
+        this.schedule();
+        break;
+      }
+      case 'show-group': this.showGroup(el.closest<HTMLElement>('[data-g]')!.dataset.g!); break;
       case 'pick':
         if (!err) return;
         this.expanded = this.expanded === err.id ? undefined : err.id;
@@ -222,6 +265,7 @@ export class SheetpaneErrors extends ElementBase {
       case 'reveal':
         if (!err) return;
         { const r = parseRange(err.range)!; s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); }
+        if (isResult(err)) s.focusResults(err.sheet, err.range); // a result shown from its group is marked, even at `summary` (W-50)
         fire(this, 'sheetpane-reveal', { error: { ...err } });
         break;
       case 'resolve': if (err && !this.readOnly) s.updateError(err.id, { status: err.status === 'open' ? 'resolved' : 'open' }, this); break;
@@ -269,6 +313,18 @@ export class SheetpaneErrors extends ElementBase {
     this.formKey = '';
   }
 
+  /** Show ▸ (W-50): selects the group's range on its first sheet and marks that range's results, even at `summary`. */
+  private showGroup(key: string): void {
+    const s = this._store!, entries = this.groupEntries.get(key);
+    if (!entries?.length) return;
+    const sheet = entries[0]!.sheet, box = boxOf(entries.filter((e) => e.sheet === sheet));
+    if (!box) return;
+    const range = rangeRef(box), ref = cellRef(box.top, box.left);
+    s.select(range === ref ? { sheet, ref } : { sheet, ref, range }, this);
+    s.focusResults(sheet, range);
+    fire(this, 'sheetpane-reveal', { error: { ...entries[0]! } });
+  }
+
   // ── rendering ────────────────────────────────────────────────────────────
   private authorKind(e: SheetpaneError): AuthorFilter { return e.author === 'workbook' ? 'workbook' : e.author === 'host' ? 'host' : e.author === 'file' ? 'file' : 'person'; }
 
@@ -277,9 +333,19 @@ export class SheetpaneErrors extends ElementBase {
     if (!s || !this.shadow) return;
     const snap = s.getSnapshot();
     const q = (sel: string) => this.shadow.querySelector(sel) as HTMLElement;
-    const errors = snap.errors;
+    // counts that ask for action count problems only; results are counted apart (W-50)
+    const errors = snap.errors.filter((e) => !isResult(e));
     const open = errors.filter((e) => e.status === 'open');
     q('.opencount').textContent = `${open.length} open`;
+    const rc = s.resultCounts(), hasResults = s.results !== 'off' && rc.pass + rc.skipped > 0;
+    if ((this.view === 'pass' && !(hasResults && rc.pass)) || (this.view === 'skipped' && !(hasResults && rc.skipped))) this.view = 'problems';
+    q('.summary').hidden = !hasResults;
+    if (hasResults) {
+      const sum = `<span><b>${rc.open}</b> problem${rc.open === 1 ? '' : 's'}</span><span class="p">✓ ${rc.pass} passed</span><span class="sk">— ${rc.skipped} not checked</span>`;
+      const st = q('.sumtext');
+      if (st.dataset.html !== sum) { st.innerHTML = sum; st.dataset.html = sum; }
+      q('.sw').setAttribute('aria-checked', String(s.results === 'marks'));
+    }
     (q('[data-act=undo]') as HTMLButtonElement).disabled = !snap.canUndo || this.readOnly;
     (q('[data-act=redo]') as HTMLButtonElement).disabled = !snap.canRedo || this.readOnly;
     q('[data-act=undo]').hidden = q('[data-act=redo]').hidden = this.readOnly || snap.mode !== 'edit';
@@ -288,13 +354,19 @@ export class SheetpaneErrors extends ElementBase {
     q('.noticebox').innerHTML = differ ? `<div class="notice" role="status">This review was saved with ${this.savedPlugins!.length ? esc(this.savedPlugins!.join(', ')) : 'no plugins'}; this pane runs ${s.pluginIds.length ? esc(s.pluginIds.join(', ')) : 'none'} — cells may be formatted differently.</div>` : '';
     // filters: severity, and author once more than people write errors (W-18 DoD 5)
     const counts = { all: errors.length, error: errors.filter((e) => e.severity === 'error').length, warning: errors.filter((e) => e.severity === 'warning').length, note: errors.filter((e) => e.severity === 'note').length };
+    // Problems · Passed · Not checked — the result chips only when results exist; Problems is the default (W-50)
+    const viewBtns = hasResults
+      ? `${([['problems', `Problems ${errors.length}`, `Problems: ${errors.length}`], ['pass', `✓ Passed ${rc.pass}`, `Passed: ${rc.pass} cells`], ['skipped', `— Not checked ${rc.skipped}`, `Not checked: ${rc.skipped} cells`]] as const)
+        .filter(([v]) => v === 'problems' || rc[v] > 0)
+        .map(([v, label, name]) => `<button type="button" data-act="view" data-v="${v}" aria-pressed="${this.view === v}" aria-label="${name}">${label}</button>`).join('')}${this.view === 'problems' ? '<span class="sep" aria-hidden="true"></span>' : ''}`
+      : '';
     const authors = new Set(errors.map((e) => this.authorKind(e)));
     const sevBtns = ([['all', `All ${counts.all}`, 'All severities'], ['error', `✕ ${counts.error}`, 'Errors'], ['warning', `! ${counts.warning}`, 'Warnings'], ['note', `i ${counts.note}`, 'Notes']] as const)
       .map(([v, label, name]) => `<button type="button" data-act="filter" data-v="${v}" aria-pressed="${this.filter === v}" aria-label="${name}: ${counts[v]}">${label}</button>`).join('');
     const authorBtns = authors.size > 1 || (authors.size === 1 && !authors.has('person'))
       ? `<span class="sep" aria-hidden="true"></span>${(['all', 'person', 'workbook', 'host', 'file'] as const).filter((a) => a === 'all' || authors.has(a)).map((a) => `<button type="button" data-act="author" data-v="${a}" aria-pressed="${this.authorFilter === a}">${a === 'all' ? 'Anyone' : a === 'person' ? 'People' : a === 'workbook' ? 'Workbook rules' : a === 'host' ? (s.hasRulesDocument ? 'Rules file' : 'Column rules') : 'File comments'}</button>`).join('')}`
       : '';
-    q('.filters').innerHTML = sevBtns + authorBtns;
+    q('.filters').innerHTML = viewBtns + (this.view === 'problems' ? sevBtns + authorBtns : '');
     // the form (contract decision 4: this element shows it whenever it is connected to the pane)
     const formbox = q('.formbox');
     const c = snap.composing;
@@ -325,7 +397,50 @@ export class SheetpaneErrors extends ElementBase {
       return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${esc(e.sheet)} ${esc(e.range)}, ${sv.name}${e.status === 'resolved' ? ', resolved' : ''}"><span class="n ${e.status === 'resolved' ? 'resolved' : e.severity}" aria-hidden="true">${e.status === 'resolved' ? '✓' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span><span class="ba"><span class="found">${esc(e.found)}</span> → <span class="want">${esc(e.expected || '—')}</span></span><span class="m">${esc(e.range)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
-    if (listEl.dataset.html !== html) { listEl.innerHTML = html; listEl.dataset.html = html; }
+    const shown = this.view === 'problems' ? html : this.groupsHtml(snap.errors, this.view, types);
+    if (listEl.dataset.html !== shown) {
+      listEl.innerHTML = shown; listEl.dataset.html = shown;
+      if (this.refocus) (listEl.querySelector(this.refocus) as HTMLElement | null)?.focus();
+    }
+    this.refocus = undefined;
+    for (const box of Array.from(listEl.querySelectorAll<HTMLElement>('.cells'))) this.fillCells(box);
+  }
+
+  /** The Passed or Not checked view (W-50): one row per check (passes, by type + message) or reason (not checked, by message). */
+  private groupsHtml(all: readonly SheetpaneError[], sev: ResultSeverity, types: Map<string, string>): string {
+    const groups = new Map<string, Group>();
+    for (const e of all) {
+      if (e.severity !== sev) continue;
+      const key = sev === 'pass' ? `${e.type}|${e.message}` : e.message ? `|${e.message}` : `${e.type}|`;
+      let g = groups.get(key);
+      if (!g) groups.set(key, (g = { key, label: e.message || (types.get(e.type) ?? e.type), sev, entries: [], cells: 0, where: '' }));
+      g.entries.push(e);
+      const r = parseRange(e.range);
+      g.cells += r ? (r.bottom - r.top + 1) * (r.right - r.left + 1) : 1;
+    }
+    this.groupEntries.clear();
+    const list = [...groups.values()].sort((a, b) => b.cells - a.cells || a.label.localeCompare(b.label));
+    return list.map((g) => {
+      this.groupEntries.set(g.key, g.entries);
+      const open = this.openGroups.has(g.key), sv = SEVERITY[sev];
+      const n = g.entries.length;
+      const cells = open ? `<div class="cells" role="group" aria-label="${esc(g.label)}: ${g.cells} cell${g.cells === 1 ? '' : 's'}" style="height:${Math.min(n * CELL_ROW, CELLS_MAX)}px"><div class="vsp" style="height:${n * CELL_ROW}px"></div></div>` : '';
+      return `<div class="item rgrp" role="listitem" data-g="${esc(g.key)}"><div class="grow"><button type="button" class="issue" data-act="group" aria-expanded="${open}"><span class="rg ${sev}" aria-hidden="true">${sv.glyph}</span><span class="bd"><span class="ty"><span class="vh">${sv.name}: </span>${esc(g.label)}</span><span class="m">${g.cells} cell${g.cells === 1 ? '' : 's'} · ${esc(whereOf(g.entries))}</span></span></button><button type="button" class="btn btn-g lnk" data-act="show-group" aria-label="Show ${esc(g.label)} in sheet">Show ▸</button></div>${cells}</div>`;
+    }).join('');
+  }
+
+  /** Draws the cell rows an opened group's box shows, and a few either side — never all of them (W-50, virtualised). */
+  private fillCells(box: HTMLElement): void {
+    const entries = this.groupEntries.get(box.closest<HTMLElement>('[data-g]')?.dataset.g ?? '') ?? [];
+    const top = box.scrollTop, h = box.clientHeight || CELLS_MAX;
+    const a = Math.max(0, Math.floor(top / CELL_ROW) - 4), b = Math.min(entries.length, Math.ceil((top + h) / CELL_ROW) + 4);
+    let html = '';
+    for (let i = a; i < b; i++) {
+      const e = entries[i]!, sv = SEVERITY[e.severity];
+      html += `<button type="button" class="cellrow" data-act="reveal" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}" style="top:${i * CELL_ROW}px" title="Show in sheet"><span class="rg ${e.severity}" aria-hidden="true">${sv.glyph}</span><span class="vh">${sv.name}: </span>${esc(e.range)} <span class="m">${esc(e.sheet)}${e.found ? ` · ${esc(e.found)}` : ''}</span></button>`;
+    }
+    const sp = box.firstElementChild as HTMLElement;
+    if (sp.dataset.html !== html) { sp.innerHTML = html; sp.dataset.html = html; }
   }
 
   private formHtml(): string {
@@ -361,6 +476,28 @@ export function headerFor(text: string[][], row: number, col: number): string {
 }
 
 export { sevOrder };
+
+/** The bounding range of entries on one sheet, or undefined when none parses. */
+function boxOf(entries: readonly SheetpaneError[]): { top: number; left: number; bottom: number; right: number } | undefined {
+  let box: { top: number; left: number; bottom: number; right: number } | undefined;
+  for (const e of entries) {
+    const r = parseRange(e.range);
+    if (!r) continue;
+    box = box ? { top: Math.min(box.top, r.top), left: Math.min(box.left, r.left), bottom: Math.max(box.bottom, r.bottom), right: Math.max(box.right, r.right) } : { ...r };
+  }
+  return box;
+}
+
+/** Where a result group sits (W-50): one range when its cells fill it ("H3:H214"), else the first three ("H6, H31, H44 …"). */
+function whereOf(entries: readonly SheetpaneError[]): string {
+  const sheets = new Set(entries.map((e) => e.sheet));
+  if (sheets.size > 1) return `${sheets.size} sheets`;
+  const box = boxOf(entries);
+  let cells = 0;
+  for (const e of entries) { const r = parseRange(e.range); if (r) cells += (r.bottom - r.top + 1) * (r.right - r.left + 1); }
+  if (box && cells === (box.bottom - box.top + 1) * (box.right - box.left + 1)) return rangeRef(box);
+  return entries.slice(0, 3).map((e) => e.range).join(', ') + (entries.length > 3 ? ' …' : '');
+}
 
 /** Where an error sits out of sight: a hidden sheet, row or column (W-49). Selecting it shows it in the sheet. */
 function hiddenTags(s: { hidden(sheet: string): { rows: number[]; cols: number[]; state: string } }, e: SheetpaneError): string[] {

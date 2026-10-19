@@ -80,7 +80,7 @@ export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneEr
   'on:sheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry. */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
   'onsheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
@@ -90,7 +90,7 @@ export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneEr
   'onsheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry. */
   'onsheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
 };
 

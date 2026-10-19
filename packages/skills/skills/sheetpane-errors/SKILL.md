@@ -26,6 +26,7 @@ decision 5.
 | attribute | `author` | written on errors added here |
 | attribute | `readonly` | a sign-off screen: no form, Resolve, Delete, Undo or Redo (SR-ERRORS decision 7) |
 | attribute | `plugins`, `theme` | as on the sheet |
+| attribute | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide (W-50) |
 | property | `errors`, `errorTypes`, `readOnly`, `workbook` | |
 | method | `getErrors()`, `setErrors(list, { plugins })` | |
 | event | `sheetpane-errors {errors, plugins}` | the list changed — the one to persist |
@@ -90,6 +91,21 @@ Types written by plugins and rules (`validation`, `comment`, `column-rule`,
 `cell-rule`) are named from `BUILTIN_TYPE_NAMES` when your catalog does not
 name them.
 
+## Results: passed and not checked
+
+`severity` may also be `pass` (✓) or `skipped` (— not checked; `message`
+says why): results, not problems. Give them with `setErrors()` or from a
+plugin's `validate`. At `results="summary"` (the default) the panel shows one
+line of counts with an *On sheet* switch and *Passed* / *Not checked* chips;
+the sheet marks nothing and its status line says *n of m checked*. At
+`marks` each result cell gets a 9 px ✓ or — in its bottom-left corner; at
+`off` results are dropped on arrival. Passes list grouped by check (`type` +
+`message`), not-checked cells by reason; **Show ▸** selects a group's range
+and marks it. Counts that ask for action — tab counts, *n open*, the
+severity filters — count problems only, and `@sheetpane/comments` writes
+results into a download only with `export({ includeResults: true })`
+(SR-ERRORS decision 13, SR-GRID decision 23).
+
 ## Show in sheet
 
 ```js
@@ -107,6 +123,8 @@ sheet visible (SR-ERRORS decision 4).
   it opens inline in the sheet (SR-GRID decision 13).
 - **With `flagging="off"`** nobody can add errors by hand; the panel is then
   where rule errors are read ([sheetpane-rules-file](../sheetpane-rules-file/SKILL.md)).
+- **A `switch` on `severity` meets `pass` and `skipped` too** — use
+  `isResult(e)` to keep results out of a count of problems.
 - **Undo is shared:** Ctrl/⌘+Z in the panel undoes the pane's last action,
   cell edits included (SR-ERRORS decision 9).
 - Errors travel inside an `.xlsx` as comments only with

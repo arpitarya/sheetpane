@@ -31,6 +31,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'attr:rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   'attr:flagging'?: 'on' | 'off' | undefined;
+  /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
+  'attr:results'?: 'summary' | 'marks' | 'off' | undefined;
   /** The pane's store; assigning one replaces the `pane` lookup and applies this element's `mode` to it. */
   'prop:workbook'?: SheetpaneExcel['workbook'] | undefined;
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
@@ -47,6 +49,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'prop:rules'?: SheetpaneExcel['rules'] | undefined;
   /** `flagging="off"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read. */
   'prop:flagging'?: SheetpaneExcel['flagging'] | undefined;
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  'prop:results'?: SheetpaneExcel['results'] | undefined;
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   'prop:columns'?: SheetpaneExcel['columns'] | undefined;
   /** `validate(ctx, signal)`, sync or async: `null`, or `{ severity, message, expected? }`. */
@@ -101,6 +105,8 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'attr:plugins'?: string | undefined;
   /** `light` (the default), `dark` or `auto`. */
   'attr:theme'?: 'light' | 'dark' | 'auto' | undefined;
+  /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
+  'attr:results'?: 'summary' | 'marks' | 'off' | undefined;
   /** The pane's store; assigning one replaces the `pane` lookup. */
   'prop:workbook'?: SheetpaneErrors['workbook'] | undefined;
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
@@ -111,6 +117,8 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'prop:readOnly'?: SheetpaneErrors['readOnly'] | undefined;
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   'prop:theme'?: SheetpaneErrors['theme'] | undefined;
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  'prop:results'?: SheetpaneErrors['results'] | undefined;
   /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
   'on:sheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
@@ -119,7 +127,7 @@ export type SheetpaneErrorsSolidProps = SheetpaneErrorsAttributes & SheetpaneErr
   'on:sheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select']) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history']) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry. */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal']) => void) | undefined;
 };
 

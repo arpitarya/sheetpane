@@ -61,6 +61,8 @@ export interface SheetpaneExcelAttributes {
   'rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   flagging?: 'on' | 'off' | undefined;
+  /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
+  results?: 'summary' | 'marks' | 'off' | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-excel>`, typed as the element declares them. */
@@ -81,6 +83,8 @@ export interface SheetpaneExcelProperties {
   rules?: SheetpaneExcel['rules'] | undefined;
   /** `flagging="off"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read. */
   flagging?: SheetpaneExcel['flagging'] | undefined;
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  results?: SheetpaneExcel['results'] | undefined;
   /** Rules by column title, as plain JSON (`required`, `type`, `min`, `max`, `minLength`, `maxLength`, `pattern`, `oneOf`, `unique`, `message`, `severity`, `onInvalid`). */
   columns?: SheetpaneExcel['columns'] | undefined;
   /** `validate(ctx, signal)`, sync or async: `null`, or `{ severity, message, expected? }`. */
@@ -103,7 +107,7 @@ export interface SheetpaneErrorsEventMap {
   'sheetpane-select': CustomEvent<{ sheet: string; ref: string }>;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'sheetpane-history': CustomEvent<{ reason: 'undo' | 'redo' | 'cleared'; canUndo: boolean; canRedo: boolean }>;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry. */
   'sheetpane-reveal': CustomEvent<{ error: SheetpaneError }>;
 }
 
@@ -119,6 +123,8 @@ export interface SheetpaneErrorsAttributes {
   plugins?: string | undefined;
   /** `light` (the default), `dark` or `auto`. */
   theme?: 'light' | 'dark' | 'auto' | undefined;
+  /** `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50). */
+  results?: 'summary' | 'marks' | 'off' | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-errors>`, typed as the element declares them. */
@@ -133,4 +139,6 @@ export interface SheetpaneErrorsProperties {
   readOnly?: SheetpaneErrors['readOnly'] | undefined;
   /** `light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29). */
   theme?: SheetpaneErrors['theme'] | undefined;
+  /** The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute. */
+  results?: SheetpaneErrors['results'] | undefined;
 }

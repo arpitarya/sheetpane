@@ -5,8 +5,25 @@ import type { ImportedWorkbook } from '@sheetpane/import';
 
 /** The pane's mode, shared by its elements: `view` reads, `edit` changes cells and flags errors. */
 export type Mode = 'view' | 'edit';
-/** How serious an error is; see {@link SEVERITY} for its name, glyph and help line. */
-export type Severity = 'error' | 'warning' | 'note';
+/**
+ * How serious an error is — or, for `pass` and `skipped` (not checked), a result rather than a
+ * problem (W-50); see {@link SEVERITY} for its name, glyph and help line.
+ */
+export type Severity = 'error' | 'warning' | 'note' | 'pass' | 'skipped';
+/** The severities that ask for action: everything but a result. */
+export type ProblemSeverity = 'error' | 'warning' | 'note';
+/** A result, not a problem: a passed check or a cell that was not checked (W-50). */
+export type ResultSeverity = 'pass' | 'skipped';
+/**
+ * How much of the results a pane shows (W-50, the `results` attribute): `off` drops `pass` and
+ * `skipped` entries on arrival; `summary` (the default) counts them in the errors panel and marks
+ * nothing on the sheet; `marks` also puts a ✓ or — in each result cell's bottom-left corner.
+ */
+export type ResultsLevel = 'off' | 'summary' | 'marks';
+/** The results levels, in order. */
+export const RESULTS_LEVELS: readonly ResultsLevel[] = ['off', 'summary', 'marks'];
+/** The `results` attribute's level: `off` or `marks`, else `summary`. */
+export const resultsLevelOf = (v: string | null | undefined): ResultsLevel => (v === 'off' || v === 'marks' ? v : 'summary');
 
 /** SheetpaneError v1 — exactly the contract verdict's schema. */
 export interface SheetpaneError {
@@ -129,4 +146,12 @@ export const SEVERITY: Record<Severity, { name: string; glyph: string; help: str
   error: { name: 'Error', glyph: '✕', help: 'Must be fixed before this file is accepted.' },
   warning: { name: 'Warning', glyph: '!', help: 'Needs a second look; may be fine.' },
   note: { name: 'Note', glyph: 'i', help: 'For information — nothing blocks.' },
+  pass: { name: 'Passed', glyph: '✓', help: 'A check ran on this cell and it passed — not a problem.' },
+  skipped: { name: 'Not checked', glyph: '—', help: 'No check ran on this cell; the message says why — not a problem.' },
 };
+
+/** Severity order, worst first: error › warning › note › skipped › pass (W-50 DoD 4). */
+export const SEVERITY_ORDER: Record<Severity, number> = { error: 5, warning: 4, note: 3, skipped: 2, pass: 1 };
+
+/** A `pass` or `skipped` entry: a result, never counted where a count asks for action (W-50). */
+export const isResult = (e: { severity: Severity }): boolean => e.severity === 'pass' || e.severity === 'skipped';

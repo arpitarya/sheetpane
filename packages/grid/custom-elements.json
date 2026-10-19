@@ -112,6 +112,15 @@
               },
               "default": "'on'",
               "fieldName": "flagging"
+            },
+            {
+              "name": "results",
+              "description": "`summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).",
+              "type": {
+                "text": "'summary' | 'marks' | 'off'"
+              },
+              "default": "'summary'",
+              "fieldName": "results"
             }
           ],
           "members": [
@@ -191,6 +200,17 @@
               },
               "description": "`flagging=\"off\"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read.",
               "attribute": "flagging",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "results",
+              "privacy": "public",
+              "type": {
+                "text": "ResultsLevel"
+              },
+              "description": "The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute.",
+              "attribute": "results",
               "reflects": true
             },
             {
@@ -712,13 +732,18 @@
             },
             {
               "name": "--sp-pass",
-              "description": "Resolved, passing. Dark theme: `#86B399`.",
+              "description": "Resolved, passing; the ✓ result mark. Dark theme: `#86B399`.",
               "default": "#16703E"
             },
             {
               "name": "--sp-pass-soft",
               "description": "Resolved, passing — the tint. Dark theme: `#163225`.",
               "default": "#E6F2EA"
+            },
+            {
+              "name": "--sp-skip",
+              "description": "Not checked: the — result mark (W-50). Dark theme: `#A1A1A1`.",
+              "default": "#63666E"
             },
             {
               "name": "--sp-fail",
@@ -894,6 +919,15 @@
               },
               "default": "'light'",
               "fieldName": "theme"
+            },
+            {
+              "name": "results",
+              "description": "`summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).",
+              "type": {
+                "text": "'summary' | 'marks' | 'off'"
+              },
+              "default": "'summary'",
+              "fieldName": "results"
             }
           ],
           "members": [
@@ -944,6 +978,17 @@
               },
               "description": "`light` (the default), `dark` or `auto` — the same tokens as the sheet (W-29).",
               "attribute": "theme",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "results",
+              "privacy": "public",
+              "type": {
+                "text": "ResultsLevel"
+              },
+              "description": "The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute.",
+              "attribute": "results",
               "reflects": true
             },
             {
@@ -1029,7 +1074,7 @@
               "type": {
                 "text": "CustomEvent<{ error: SheetpaneError }>"
               },
-              "description": "`{ error }` on Show in sheet, so the host can switch tab or open the pop-up."
+              "description": "`{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry."
             }
           ],
           "slots": [],
@@ -1112,13 +1157,18 @@
             },
             {
               "name": "--sp-pass",
-              "description": "Resolved, passing. Dark theme: `#86B399`.",
+              "description": "Resolved, passing; the ✓ result mark. Dark theme: `#86B399`.",
               "default": "#16703E"
             },
             {
               "name": "--sp-pass-soft",
               "description": "Resolved, passing — the tint. Dark theme: `#163225`.",
               "default": "#E6F2EA"
+            },
+            {
+              "name": "--sp-skip",
+              "description": "Not checked: the — result mark (W-50). Dark theme: `#A1A1A1`.",
+              "default": "#63666E"
             },
             {
               "name": "--sp-fail",

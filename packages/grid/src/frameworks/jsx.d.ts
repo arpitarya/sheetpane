@@ -50,7 +50,7 @@ export type SheetpaneErrorsReactProps = SheetpaneErrorsAttributes & SheetpaneErr
   'onsheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select']) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history']) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a result group's Show ▸, its first entry. */
   'onsheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal']) => void) | undefined;
 };
 

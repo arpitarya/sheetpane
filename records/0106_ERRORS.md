@@ -60,8 +60,8 @@ the store and the contract are the contract verdict's and
 ### Decision
 
 1. **The element** registers on import; attributes `pane`, `readonly`,
-   `author`, `plugins`, `theme` (SR-GRID decision 15a); properties `workbook`, `errors`, `errorTypes`,
-   `readOnly`, `theme`; methods `getErrors()`, `setErrors(list, { plugins? })`; events
+   `author`, `plugins`, `theme` (SR-GRID decision 15a), `results` (decision 13); properties `workbook`, `errors`, `errorTypes`,
+   `readOnly`, `theme`, `results`; methods `getErrors()`, `setErrors(list, { plugins? })`; events
    `sheetpane-errors {errors, plugins}`, `sheetpane-change`,
    `sheetpane-select`, `sheetpane-history`, `sheetpane-reveal {error}` —
    bubbling, composed; an action's event fires on the element where it
@@ -69,8 +69,8 @@ the store and the contract are the contract verdict's and
 2. **No private copy:** every render reads the store. Connecting registers the
    element with the store, so Flag issue opens the form here and not in the
    sheet; disconnecting releases it.
-3. **The list:** "n open"; severity filter (All · ✕ · ! · i, each with its
-   count) and — when errors come from more than people — an author filter
+3. **The list:** "n open" (problems only — decision 13); severity filter (All · ✕ · ! · i, each with its
+   count of problems) and — when errors come from more than people — an author filter
    (People · Workbook rules · Column rules — "Rules file" when the pane has
    a rules file, its rows then grouped by sheet — · File comments); rows open first then resolved,
    by number; each row shows the number (✓ when resolved), the type's name,
@@ -109,12 +109,43 @@ the store and the contract are the contract verdict's and
 
 12. **Test hooks (W-41):** rows carry `data-sp-error` and `data-sp-ref`; Resolve `data-sp="resolve"`; the form's Add `data-sp="add-error"` (SR-GRID decision 9a lists them all).
 
+13. **Results (W-50):** `pass` and `skipped` entries (SR-GRID decision 23)
+    are listed apart from the problems. The `results` attribute (and
+    property) sets the pane's level, as on the sheet. **Summary line** —
+    under the header whenever the pane holds results and the level is not
+    `off`: "*n* problems · ✓ *n* passed · — *n* not checked" (problems are
+    open entries; results are cells) and an **On sheet** `role="switch"`
+    that moves the pane between `summary` and `marks` (a view setting: no
+    change, no undo step). **Chips** — *Problems n* · *✓ Passed n* · *— Not
+    checked n*, the result chips only when such results exist; *Problems* is
+    the default and the only view with the severity and author filters.
+    **Groups** — *Passed* lists one row per check (`type` + `message`),
+    *Not checked* one per reason (`message`, else `type`); each says its
+    name (the message, else the type's name), its cell count and where it
+    is (one range when its cells fill it, "H6, H31, H44 …" otherwise, "*n*
+    sheets" across sheets), largest first, with **Show ▸**: it selects the
+    group's bounding range on its first sheet, marks that range's results on
+    the sheet even at `summary` (`store.focusResults`) and fires
+    `sheetpane-reveal` with the group's first entry. A group opens to its
+    entries, **virtualised** — 28 px rows in a box at most 280 px tall, only
+    the rows in view (± 4) in the DOM; each row (with `data-sp-error` and
+    `data-sp-ref`) is Show in sheet for that entry, and marks its range.
+    **Counts that ask for action ignore results:** "n open", the severity
+    filters, and the sheet's tab and toolbar counts (SR-GRID decision 23).
+    The form offers the three problem severities only.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
   filters, reveal, readonly, `errorTypes`, events, notice, font, axe) and the
   L7 sync test in both mount orders with the errors element inside a
-  `<dialog>`; the undo-across-elements test in `plugins.test.ts`.
+  `<dialog>`; the undo-across-elements test in `plugins.test.ts`;
+  `results.test.ts` (W-50: the summary line and chips only with results,
+  Problems by default, groups by check and by reason with their counts and
+  ranges, Show ▸ marking at `summary`, Show in sheet for all five
+  severities, the On sheet switch from here marking the sheet, counts that
+  ignore results, axe with a group open, 5,000 passes as two rows and an
+  opened group drawing fewer than 20 rows as it scrolls).
 
 ### Alternatives considered
 

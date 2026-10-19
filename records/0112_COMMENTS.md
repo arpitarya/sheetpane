@@ -69,7 +69,11 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    `Name: ` (not twice). Excel's `tc=` placeholder notes are skipped; thread
    entries this review wrote are skipped.
 3. **Write:** every error not authored `file`, at the top-left cell of its
-   range. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   range — except results (`pass`, `skipped`; SR-GRID decision 23), which
+   are written only when `ctx.exportOptions.includeResults === true`
+   (`<sheetpane-excel>.export({ includeResults: true })`; W-50), so a
+   downloaded review stays a list of problems; there is no Download-menu
+   switch for it — the host asks. First comment `<id> · <Severity> · <Type name> · Found: <found>` (`Passed`, `Not checked` for results),
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved. On a cell with someone's thread the errors join it as replies; on
@@ -98,7 +102,7 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
 ### Consequences
 
 - **Codes (W-40, SR-CODES):** SP-5801 (a comment part with no container), SP-5802 (not a worksheet), SP-5803 (comments not written for a sheet).
-- **Enforced today:** `just test-pkg comments` — 26 tests (notes and threads
+- **Enforced today:** `just test-pkg comments` — 28 tests (results left out unless `includeResults`, W-50; notes and threads
   from the ExcelJS fixture and hand-written packages; read-only rows,
   author filter; the four parts, rels, content types and `legacyDrawing`
   order; extending existing parts; joining a thread; the note-at-cell skip;
