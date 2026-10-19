@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { paneStore, registeredPluginIds, type SheetpaneErrors, type SheetpaneExcel } from '@sheetpane/grid';
 import features from '../../import/test/fixtures/exceljs-features.xlsx?inline';
+import dependent from '../../fixtures/files/dependent-lists.xlsx?inline';
 import '../src/ui.js';
 import { ui } from '../src/ui.js';
 import { frame, fromDataUrl, workbook } from './helpers.js';
@@ -82,6 +83,26 @@ describe('the list arrow (DoD 4)', () => {
     expect(opts.map((o) => o.textContent)).toEqual(['Gold', 'Silver', 'Tin']);
     opts[1]!.click();
     expect(store.text('Main', 'A2')).toBe('Silver');
+  });
+
+  it('an INDIRECT list offers what each row’s parent names, and follows the parent when it changes (W-60 DoD 3)', async () => {
+    const { excel, store } = await pair(fromDataUrl(dependent));
+    const arrow = ui().controls![0]!;
+    const choices = (ref: string) => arrow.cellOptions!(store.cellContext('Readings', ref)!);
+    expect(choices('C2')).toEqual(['NTU', 'FNU']);
+    expect(choices('C3')).toEqual(['°C', '°F']);
+    expect(choices('C12')).toEqual([]); // no parameter yet: nothing to offer
+    store.setCell('Readings', 'A6', 'Conductivity');
+    expect(store.getErrors()).toEqual([expect.objectContaining({ range: 'C6', expected: 'list — µS/cm, mS/cm', status: 'open' })]);
+    store.select({ sheet: 'Readings', ref: 'C6' });
+    await frame();
+    mousedown(cell(excel, 5, 2)!.querySelector('.mk')!);
+    await frame();
+    const opts = [...sh(excel).querySelectorAll('.menu [data-act=pick-option]')] as HTMLButtonElement[];
+    expect(opts.map((o) => o.textContent)).toEqual(['µS/cm', 'mS/cm']);
+    opts[1]!.click();
+    expect(store.text('Readings', 'C6')).toBe('mS/cm');
+    expect(store.getErrors()).toEqual([expect.objectContaining({ range: 'C6', status: 'resolved' })]);
   });
 });
 

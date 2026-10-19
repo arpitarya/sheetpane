@@ -202,7 +202,7 @@ out('showcase.xlsx', await zip(parts));
 async function book(spec) {
   const p = {
     '_rels/.rels': `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`,
+    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets>${spec.names ? `<definedNames>${spec.names.map(([name, f]) => `<definedName name="${name}">${esc(f)}</definedName>`).join('')}</definedNames>` : ''}</workbook>`,
     'xl/_rels/workbook.xml.rels': `${XML}<Relationships xmlns="${PR}">${spec.sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${spec.sheets.length + 1}" Type="${R}/styles" Target="styles.xml"/></Relationships>`,
     'xl/styles.xml': styles,
     '[Content_Types].xml': `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${spec.sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
@@ -219,6 +219,22 @@ const EDGE = [
   { name: 'edge/formula-errors.xlsx', spec: { sheets: [{ name: 'Errors', cells: { A1: 0, B1: { f: '1/A1', v: '#DIV/0!' }, C1: { f: '#REF!+1', v: '#REF!' }, D1: { f: 'NA()', v: '#N/A' } } }] }, features: ['cached formula errors'] },
 ];
 for (const e of EDGE) out(e.name, await book(e.spec));
+
+// ── W-60: dependent lists — a Unit list that follows the Parameter, one defined name per parameter ─────────
+const PARAMS = [['Turbidity', ['NTU', 'FNU']], ['Temperature', ['°C', '°F']], ['Conductivity', ['µS/cm', 'mS/cm']], ['Nitrate', ['mg/L', 'mg N/L']]];
+const PARAM_ROWS = [['Turbidity', 1.8, 'NTU'], ['Temperature', 21.5, '°C'], ['Conductivity', 412, 'µS/cm'], ['Nitrate', 3.2, 'mg/L'], ['Turbidity', 2.4, '°C']]; // the last unit is stale: C6 fails
+const colL = (i) => String.fromCharCode(66 + i); // B, C, D, E — one column of units per parameter on Lists
+const DEPENDENT = { names: [['Parameters', `Lists!$A$2:$A$${PARAMS.length + 1}`], ...PARAMS.map(([p, us], i) => [p, `Lists!$${colL(i)}$2:$${colL(i)}$${us.length + 1}`])], sheets: [
+  { name: 'Readings', cols: [16, 10, 10], cells: {
+    A1: { v: 'Parameter', s: XF.bold }, B1: { v: 'Value', s: XF.bold }, C1: { v: 'Unit', s: XF.bold },
+    ...Object.fromEntries(PARAM_ROWS.flatMap(([p, v, u], i) => [[`A${i + 2}`, p], [`B${i + 2}`, v], [`C${i + 2}`, u]])),
+  }, tail: '<dataValidations count="2"><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Parameter" error="Pick a parameter from the list" sqref="A2:A20"><formula1>Parameters</formula1></dataValidation><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Unit" error="Pick a unit for this parameter" sqref="C2:C20"><formula1>INDIRECT($A2)</formula1></dataValidation></dataValidations>' },
+  { name: 'Lists', cols: [16, 10, 12, 12, 10], cells: {
+    A1: { v: 'Parameter', s: XF.bold }, ...Object.fromEntries(PARAMS.map(([p], i) => [`A${i + 2}`, p])),
+    ...Object.fromEntries(PARAMS.flatMap(([p, us], i) => [[`${colL(i)}1`, { v: p, s: XF.bold }], ...us.map((u, k) => [`${colL(i)}${k + 2}`, u])])),
+  } },
+] };
+out('dependent-lists.xlsx', await book(DEPENDENT));
 // refused on purpose (SR-LAW-3: .xlsx and .csv only)
 out('edge/legacy.xls', new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, ...new Array(504).fill(0)]));
 out('edge/not-a-zip.xlsx', 'this is not a workbook');
@@ -243,6 +259,7 @@ const manifest = {
   files: [
     { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread', 'two Excel tables, a list rule over a table column'] },
     { name: 'showcase.rules.json', kind: 'rules', appSaved: null, for: 'showcase.xlsx', errors: ['Validation!C3', 'Validation!B4', 'Formulas!B3', 'Formulas!B6', 'Formulas!B7', 'Numbers!B3'] },
+    { name: 'dependent-lists.xlsx', kind: 'xlsx', appSaved: null, sheets: DEPENDENT.sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['dependent lists: a Parameter list, and a Unit list =INDIRECT($A2) over one defined name per parameter (W-60)', 'one stale unit (Readings!C6 fails)'] },
     ...EDGE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: e.features })),
     { name: 'edge/legacy.xls', kind: 'refused', appSaved: null, features: ['a legacy .xls (compound file) header'] },
     { name: 'edge/not-a-zip.xlsx', kind: 'refused', appSaved: null, features: ['not a ZIP package'] },

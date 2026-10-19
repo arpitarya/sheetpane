@@ -61,7 +61,9 @@ helpers to become one package any runner can load (W-32 made the showcase).
 2. **The files** — `showcase.xlsx` (one sheet per plugin; its `Tables`
    sheet, W-61, holds two Excel tables — Units, and Readings with a totals
    row — and a list rule over `Units[Unit]` through the defined name
-   `UnitList`), `showcase.rules.json`, `edge/` (empty,
+   `UnitList`), `showcase.rules.json`, `dependent-lists.xlsx` (W-60:
+   Readings' Unit list is `=INDIRECT($A2)` over one defined name per
+   parameter on Lists; one stale unit, `Readings!C6`), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
    guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
@@ -77,7 +79,8 @@ helpers to become one package any runner can load (W-32 made the showcase).
    `path(name)` (Node), `bytes(name)` (disk in Node, `fetch` elsewhere, typed
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
-   rules-file test; `@sheetpane/testing` (W-41) loads from here.
+   rules-file test; `@sheetpane/testing` (W-41) loads from here;
+   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60).
 
 ### Consequences
 
