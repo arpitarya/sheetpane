@@ -141,6 +141,9 @@ flowchart LR
 - **Owed:** one real prompt per tool from the packed tarballs — W-48, the
   decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
+- **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
+  cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
+  check (decision 5) reads them against the element's source.
 
 ### Alternatives considered
 

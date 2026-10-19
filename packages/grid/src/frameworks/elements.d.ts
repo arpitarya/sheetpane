@@ -15,6 +15,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-visibility': CustomEvent<{ sheet: string; axis: 'row' | 'col' | 'sheet'; indexes: number[]; hidden: boolean; via: 'menu' | 'key' | 'marker' | 'reveal' }>;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'sheetpane-resize': CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>;
+  /** `{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56). */
+  'sheetpane-hover': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string } } | null>;
   /** `{ sheet }` when the selection moves to another sheet. */
   'sheetpane-sheet': CustomEvent<{ sheet: string }>;
   /** `{ mode }` when the pane switches between View and Edit. */

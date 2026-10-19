@@ -197,7 +197,7 @@ export function manifest(dts = join(GRID, 'dist')) {
       ...decl.methods.map((m) => ({ kind: 'method', name: m.name, privacy: 'public', ...(m.doc ? { description: m.doc } : {}), ...(m.parameters.length ? { parameters: m.parameters } : {}), return: { type: { text: m.returns } } })),
     ];
     const events = doc.fires.map((e) => {
-      const literals = [...e.text.matchAll(/`(\{[^`]*\})`/g)].map((m) => payloadType(m[1], e.name));
+      const literals = [...e.text.matchAll(/`(\{[^`]*\}|null)`/g)].map((m) => (m[1] === 'null' ? 'null' : payloadType(m[1], e.name)));
       return { name: e.name, type: { text: `CustomEvent<${[...new Set(literals)].join(' | ') || 'unknown'}>` }, description: e.text };
     });
     const summary = /^(.*?\.)(?:\s|$)/.exec(doc.intro)?.[1] ?? doc.intro;

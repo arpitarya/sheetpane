@@ -42,6 +42,10 @@ export function Review({ file, onSave }: { file: File | null; onSave: (e: Sheetp
   `onsheetpane-close`.
 - Attribute names with a dash (`header-row`, `on-invalid`, `rules-src`) are
   written as they are: `header-row="2"`.
+- Methods (`highlight()`, `select()`, `export()`) are called through a
+  `ref`; `onsheetpane-hover={(e) => setHovered(e.detail?.ref ?? null)}`
+  follows the pointer (W-56; mouse and pen only, once per frame):
+  `useEffect(() => { if (cell) sheet.current?.highlight(cell, { tone: 'pass' }); else sheet.current?.clearHighlight(); }, [cell]);`
 
 ## React 18
 

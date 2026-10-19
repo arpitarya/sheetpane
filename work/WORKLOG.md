@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-56 hover and highlight (closed)  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-56 in lane c (a worktree beside other lanes), close it, commit, do not push.*
+- **Done:** `sheetpane-hover {sheet, ref, column}` / `null` — mouse and pen only, one `requestAnimationFrame` per frame, only on a new cell (a merge's top-left, frozen panes, re-read on scroll); `highlight(ranges, { tone, label, sheet, pinned, reveal })` → count, `clearHighlight()` — boxes 2 px outside the cells in the overlay, `pointer-events: none`, `info` · `pass` · `fail`, not a change, cleared on a sheet switch unless pinned and by a new file, `reveal` scrolls it in and shows a hidden row or column under it; the status line (a live region) now rewrites its nodes only when its text changes, so the label is said once. Manifest reads a `null` payload; typings, README, two skills, plugin copy, llms regenerated. `highlight.test.ts` 12 ✓; the hazard run — 250,000 rows, 4 moves a frame while scrolling, the host highlighting each hovered cell: 301 frames, 300 events, worst 16.8 ms, none dropped (load ≈ 115 from the parallel lanes). SR-GRID 9, 11c, Consequences; SR-SKILLS Consequences; CHANGELOG; item archived.
+- **Decided / left open:** a bad ref or a missing sheet is skipped, not thrown (no new SP code; `highlight()` returns the count drawn); the highlight is per element, like zoom. Not done: hearing the label with a real screen reader.
+- **Mistakes:** the first `reveal` scroll put the cell flush with the edge, hiding the outline's 2 px — the scroll now keeps 4 px.
+- **Next:** the orchestrator merges lane c.
+
+---
+
 ## 2026-10-19 — the HTML and React demos redesigned; demo-check 51/51  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"improve the ui for example html and react it will be used for demo purpose and for test. recreate them if that will be faster"*

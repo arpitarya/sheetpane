@@ -69,6 +69,8 @@ export type SheetpaneExcelSolidProps = SheetpaneExcelAttributes & SheetpaneExcel
   'on:sheetpane-visibility'?: ((event: SheetpaneExcelEventMap['sheetpane-visibility']) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'on:sheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize']) => void) | undefined;
+  /** `{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56). */
+  'on:sheetpane-hover'?: ((event: SheetpaneExcelEventMap['sheetpane-hover']) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'on:sheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet']) => void) | undefined;
   /** `{ mode }` when the pane switches between View and Edit. */

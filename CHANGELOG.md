@@ -8,6 +8,10 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+### Added
+
+- `@sheetpane/grid`: `sheetpane-hover` names the cell under a mouse or pen pointer — `{ sheet, ref, column }`, at most once per frame and only when the cell changes — and `null` when the pointer leaves the cells; a finger never fires it. `highlight(ranges, { tone, label, sheet, pinned, reveal })` outlines cells from outside without selecting them: several ranges, `info`, `pass` or `fail`, clicks pass through, not a change and not in the download, cleared on a sheet switch unless pinned; `reveal` scrolls it into view and the label is said once by the status line. `clearHighlight()` removes it. Typed in the manifest and the framework typings (W-56, SR-GRID decision 11c).
+
 ### Fixed
 
 - Demos (`examples/html`, `examples/react`): redesigned in the Proof look. A host bar with Views, Open file…, the CSV sample, the pop-up, Font and a new Theme switch (light, dark, auto, applied to every component). A *Demo* row of tabs, with Review, the plugins and the combinations set apart. Each demo's blurb shows the attribute that turns it on. Both components fill the window, and a footer shows the host events (change, errors, export). Every hook the demo check uses is kept; `demo-check` passes 51 of 51.

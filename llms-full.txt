@@ -484,6 +484,7 @@ committed manifest drifts from the elements.
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
+| method | `highlight(ranges, { tone, label, sheet, pinned, reveal }?)`, `clearHighlight()` | outline cells without selecting them — and `sheetpane-hover` — see *Pointing at cells* under [Following an edit](#following-an-edit) |
 | event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
 
 ### Following an edit
@@ -535,6 +536,22 @@ them with the `sizes` property and the `sheetpane-resize` event:
 ```js
 excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
 excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
+**Pointing at cells from outside (W-56):** `sheetpane-hover` names the cell under a mouse or pen pointer —
+`{sheet, ref, column}`, a merge by its top-left, at most once per frame and only when the cell changes —
+and `null` when the pointer leaves the cells; a finger never hovers. `highlight(ranges, options?)` outlines
+cells without selecting them: `B3`, `B3:D8`, `Data!B3` or `{ ref, sheet?, tone? }`, in `tone` `info`
+(default), `pass` or `fail`. The outline lets the pointer through; it is not a change, not undone, not in the
+download. Each call replaces the last; a sheet switch clears it unless `pinned: true`, and so does a new
+file; `reveal: true` scrolls the first range into view; a `label` is shown in the status line and said once
+by screen readers. It returns how many ranges it outlined (a bad ref or a missing sheet is skipped);
+`clearHighlight()` removes it. Together they make "hover a box, its cell lights up — hover a cell, its box
+does":
+
+```js
+excel.addEventListener('sheetpane-hover', (e) => pdf.outline(e.detail && boxFor(e.detail.ref))); // null: none
+pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' : 'fail', label: box.name }) : excel.clearHighlight());
 ```
 
 ## Column rules
@@ -4838,7 +4855,11 @@ pnpm and a justfile; the testing verdict chose the runner.
     `just demo-check`, on every push; `scripts/demo-packed.mjs`
     installs both from `pnpm pack` tarballs (every package, the eight plugins
     included) outside the workspace and runs the same check — `just
-    demo-packed`, nightly.
+    demo-packed`, nightly. Both share one look (2026-10-19): a host bar
+    (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
+    dark · auto, set on every component), the components filling the window,
+    and a footer of host events; `examples/react/src/demo.css` is the
+    stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
@@ -5430,7 +5451,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    { cols: { B: 120 }, rows: { 4: 40 } } }`, px at 100 %, get and set);
    methods `load()`, `export()`,
    `select()`, `getErrors()`, `setErrors()`, `undo()`, `redo()`,
-   `shortcuts()`, `column()`, `reveal()`, `unreveal()` (W-49); attribute `header-row` (default 1); events
+   `shortcuts()`, `column()`, `reveal()`, `unreveal()` (W-49), `highlight()`,
+   `clearHighlight()` (W-56, decision 11c); attribute `header-row` (default 1); events
    `sheetpane-load`, `-change {sheet, ref, kind, was, now}`, `-errors
    {errors, plugins}`, `-select {sheet, ref, range, column, value}` (`range`
    when more than one cell is selected; it fires when the selection settles —
@@ -5440,7 +5462,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
    before the change map, undo, derive or validate see it), `-editcancel`,
    `-sheet {sheet}`, `-resize {sheet, axis, indexes, px, via}` (W-47: on
    release; `via` is `drag`, `fit`, `menu` or `reset`), `-visibility {sheet,
-   axis, indexes, hidden, via}` (W-49, decision 21c), every payload naming `column: {index, letter, header}`
+   axis, indexes, hidden, via}` (W-49, decision 21c), `-hover {sheet, ref,
+   column}` or `null` (W-56, decision 11c), every payload naming `column: {index, letter, header}`
    (W-26, the events verdict); `-mode`, `-history`,
    `-close`, `-export {blob, kind, name, guarded, format, converted,
    original?}` (cancelable: the Download control downloads only when no
@@ -5483,7 +5506,15 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     `menuitemcheckbox`es; Esc returns focus to ▾ — keyboard help, close in a pop-up), cell bar (ending in the
     docked selection actions, decision 13), the format row, the grid,
     sheet tabs (`.xlsx` only; a sheet the file hides is not a tab — decision
-    21c), status line. States: the
+    21c), status line. **One toolbar row** (design, 2026-10-19): as the
+    element narrows it sheds the change-count label (≤ 1240 px; the Download
+    badge keeps the count), find's width (≤ 1140 px), the open counts
+    (≤ 1040 px; the errors panel and tab counts keep them) and the
+    kind-and-size chip (≤ 960 px; kept in the file name's tooltip); only below
+    860 px may it wrap. **The format row is one row too:** groups
+    that do not fit move, from the right, into a **More ▾** at its end; Number
+    format and Text never move (W-14). The grid's focus ring is drawn over the
+    cells, for keyboard use only. States: the
     upload drop zone (file, link, base64), reading, "Can’t open this file",
     "Password protected" (no unlocking — the reader cannot decrypt).
 11. **The grid:** DOM cells, rows absolutely placed, only the visible rows
@@ -5558,6 +5589,31 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     format when a `format` plugin is installed, else locale grouping —
     computed when the selection settles, never per frame. One range at a
     time: Ctrl/⌘+click ranges and a fill handle are not built.
+11c. **Hover and highlight (W-56):** a host follows the pointer and points at
+    cells without touching the selection. **`sheetpane-hover`** names the cell
+    under a mouse or pen pointer (Pointer Events on the scroller; a finger
+    never hovers) — `{sheet, ref, column}`, a merge by its top-left, frozen
+    panes read where they stick — once the cell changes, at most once per
+    frame (one `requestAnimationFrame` with two binary searches, nothing
+    rendered); `null` over the headers, a scrollbar, a menu or callout card,
+    past the sheet's cells, or when the pointer leaves; a scroll under a still
+    pointer re-reads it. **`highlight(ranges, { tone, label, sheet, pinned,
+    reveal })`** draws one box per range 2 px outside its cells (so the
+    selection ring shows), `tone` `info` (the accent) · `pass` · `fail` with
+    the tone's `-soft` halo, in the overlay above the plugin layer and under
+    the pins and cards, `pointer-events: none` — clicks and hover reach the
+    cells. Ranges are `B3`, `B3:D8`, `Data!B3`, `'Q3 data'!B3`, or `{ ref,
+    sheet?, tone? }`; a bad ref or a sheet the workbook lacks is skipped and
+    the call returns how many it outlined (0 before a file is loaded). Each
+    call replaces the last; `clearHighlight()` removes it; a sheet switch
+    clears it unless `pinned` (a pinned one shows again on its sheet), and a
+    new file always does. It is a **view setting** of the element, like zoom:
+    not a change, not undone, not in the download, not shared with the pane's
+    other elements. `reveal: true` scrolls the first range on the sheet shown
+    into view with 4 px to spare, and shows for viewing a hidden row or column
+    under its top-left cell (decision 21c). A `label` is shown in the status
+    line while an outline shows; the status line (`role="status"`) replaces
+    its nodes only when its text changes, so the label is said once.
 12. **Keyboard (APG grid):** focus stays on the `role="grid"` element and
     `aria-activedescendant` names the active cell; arrows, Shift+arrows,
     Home/End, Ctrl+Home/End, PageUp/PageDown; Ctrl/⌘+arrow jumps to the edge
@@ -5582,8 +5638,12 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
     copied); Copy ref gives `B3`, `B3:D8`, `B:D`, `4:12` or the sheet's name
     (W-46); the group
     hides while the cell-bar draft is edited and while composing, and at a
-    narrow cell bar (≤ 720 px) the plugin buttons fold into ⋯ before Flag
-    issue moves. **Right-click, Shift+F10 and the Menu key** on a cell select
+    narrow cell bar (≤ 720 px), or whenever they would squeeze the value
+    field below 200 px, the plugin buttons fold into ⋯ before Flag issue
+    moves. The bar holds the cell's quick actions (Bold · Fill · Merge,
+    greyed when they do not apply); a control with `menus` (W-49) is docked
+    only when it joins the cell menu and applies now. In the menus, Flag
+    issue and the plugin items each sit under a separator. **Right-click, Shift+F10 and the Menu key** on a cell select
     it and open the same actions as a `role="menu"` just under it (Flag
     issue · Copy ref · Copy value · the `selbar` controls); arrows move, Enter
     runs, Esc closes and returns focus to the grid; the browser's menu is
@@ -5808,7 +5868,8 @@ the grid, contract, plugins and testing verdicts in `work/compare/`.
 generated from the source by `scripts/build-manifest.mjs` — the tags from
 `define()`, attributes from `observedAttributes` plus `theme` (set only
 through `:host([theme])`), the class TSDoc's Attributes list, `@fires`,
-`@slot` (`format-row`; `selbar` is a plugin control slot, not an HTML slot)
+`@slot` (`format-row`; `selbar` is a plugin control slot, not an HTML slot; a
+`@fires` payload literal may be `` `null` ``, as `sheetpane-hover`'s is)
 and `@csspart` (excel: `root` `toolbar` `cellbar` `format-row` `status`
 `dialog`; errors: `root`), public members from the built `.d.ts`, and the
 `--sp-*` tokens with their defaults. From it come VS Code HTML/CSS custom
@@ -5856,7 +5917,21 @@ Angular uses `CUSTOM_ELEMENTS_SCHEMA` (README); there is no Angular package.
   is not a change and the download stays the original; `sizes` round-trip;
   overlays follow; a column-edge drag on 250,000 rows — 181 frames in 3 s,
   worst 16.8 ms, none dropped; the 5 s scroll with per-row heights — worst
-  16.8 ms, none dropped, also with 2 frozen rows); `theme.test.ts` (every token has a hex dark
+  16.8 ms, none dropped, also with 2 frozen rows); `highlight.test.ts` (W-56:
+  hover once per frame for the last cell, nothing within a cell, `null` on a
+  header and on leaving, none for a finger, a pen hovers, a merge's
+  top-left, a frozen row, a scroll under a still pointer; highlight boxes 2 px
+  around the cells in a tone, per-range tones and sheet-qualified refs, bad
+  refs skipped, replaced by the next call, pass-through (`elementFromPoint`
+  and a press select the cell under it), not a change and the download the
+  file as opened, cleared on a sheet switch unless pinned and by a new file,
+  zoom, hidden rows; `reveal` scrolls it inside the client area and shows a
+  hidden row; the label in the status line with no rewrite while it stays;
+  axe in View and Edit; 250,000 rows scrolled 900 px a frame for 5 s with
+  four pointer moves a frame and the host highlighting each hovered cell —
+  301 frames, 300 hover events, worst 16.8 ms, none dropped, Chromium 156
+  headless, 10 cores, load average ≈ 115 from parallel agents, reported);
+  `theme.test.ts` (every token has a hex dark
   value, the contrast table in both themes, the attribute restyling chrome
   while a `decorate` fill stays as saved, a host override winning);
   `rules.test.ts` (the four-column example: every rule kind, commit, undo,
@@ -7470,6 +7545,9 @@ flowchart LR
 - **Owed:** one real prompt per tool from the packed tarballs — W-48, the
   decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
+- **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
+  cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
+  check (decision 5) reads them against the element's source.
 
 ### Alternatives considered
 

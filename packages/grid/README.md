@@ -215,6 +215,7 @@ committed manifest drifts from the elements.
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
+| method | `highlight(ranges, { tone, label, sheet, pinned, reveal }?)`, `clearHighlight()` | outline cells without selecting them — and `sheetpane-hover` — see *Pointing at cells* under [Following an edit](#following-an-edit) |
 | event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
 
 ### Following an edit
@@ -266,6 +267,22 @@ them with the `sizes` property and the `sheetpane-resize` event:
 ```js
 excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
 excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
+**Pointing at cells from outside (W-56):** `sheetpane-hover` names the cell under a mouse or pen pointer —
+`{sheet, ref, column}`, a merge by its top-left, at most once per frame and only when the cell changes —
+and `null` when the pointer leaves the cells; a finger never hovers. `highlight(ranges, options?)` outlines
+cells without selecting them: `B3`, `B3:D8`, `Data!B3` or `{ ref, sheet?, tone? }`, in `tone` `info`
+(default), `pass` or `fail`. The outline lets the pointer through; it is not a change, not undone, not in the
+download. Each call replaces the last; a sheet switch clears it unless `pinned: true`, and so does a new
+file; `reveal: true` scrolls the first range into view; a `label` is shown in the status line and said once
+by screen readers. It returns how many ranges it outlined (a bad ref or a missing sheet is skipped);
+`clearHighlight()` removes it. Together they make "hover a box, its cell lights up — hover a cell, its box
+does":
+
+```js
+excel.addEventListener('sheetpane-hover', (e) => pdf.outline(e.detail && boxFor(e.detail.ref))); // null: none
+pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' : 'fail', label: box.name }) : excel.clearHighlight());
 ```
 
 ## Column rules

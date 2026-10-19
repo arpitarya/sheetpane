@@ -42,8 +42,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-55** `agent` · **G1** · Errors that belong to a whole sheet or the whole workbook, not a cell. Filed by Arpit (Cowork). [detail](open/W-55-sheet-and-workbook-errors.md)
 
-- 🟢 **W-56** `agent` · **G1** · A hover event and a host highlight that does not move the selection. Filed by Arpit (Cowork). [detail](open/W-56-hover-and-highlight.md)
-
 - 🟢 **W-57** `agent` · **G2** · Export writes data validation and conditional formatting. Filed by Arpit (Cowork). [detail](open/W-57-export-writes-validation-and-conditional-formats.md)
 
 - 🟡 **W-58** `agent` · **G2** · Write the rules file into the download as Excel's own dropdowns and checks. Waiting on W-57. Filed by Arpit (Cowork). [detail](open/W-58-rules-file-as-excel-dropdowns.md)
