@@ -29,7 +29,7 @@ registerPlugin('shout', () => shout());      // then <sheetpane-excel plugins="s
 | hook | providers | does |
 |---|---|---|
 | `format` | one per pane | a number's display text |
-| `decorate` | many, ordered by `after` | allow-listed CSS for a cell — never `font-family` |
+| `decorate` | many, ordered by `after` | allow-listed CSS for a cell — never `font-family`; optional `decorateRuns(cell)` draws a rich-text cell's `cell.runs` as styled pieces |
 | `derive` | one per pane | recalculated cells (never user changes); `evaluate()` optional |
 | `validate` | many | error drafts, `author: 'workbook'` / `'file'` / `'host'` |
 | `overlay` | many | items in sheet space (`role`, `alt`, `passThrough`) |
@@ -37,8 +37,10 @@ registerPlugin('shout', () => shout());      // then <sheetpane-excel plugins="s
 
 **Slots** for `controls`: `format-row`, `selbar` (docked in the cell bar and
 the right-click menu), `cellbar`, `status` (text), `cell` (a mark where
-`appliesTo` accepts), `overlay`. `exportOptions: [{ key, label, default }]`
-adds a switch to the Download menu.
+`appliesTo` accepts), `overlay`. `exportOptions: [{ key, label, default,
+applies? }]` adds a switch to the Download menu; `applies(store)` hides it
+while it has nothing to do and, while it is on, makes Download export an
+untouched workbook instead of handing back the original bytes.
 
 ## Rules
 
@@ -48,6 +50,12 @@ adds a switch to the Download menu.
   one undo step) — never into the DOM.
 - No font family, ever ([SR-LAW-5](https://github.com/arpitarya/sheetpane/blob/main/records/0007_LAW-5-host-font.md)); no
   network beyond what the host gave.
+- Rows and columns inserted or deleted (W-52): the core moves every table of
+  `ctx.book` (a new object — re-read it, do not cache by address) and the
+  change map; `derive` is told `{ kind: 'restructure', sheet, op, at, count }`
+  and returns the whole derived set, as on a load. References a plugin keeps
+  itself (chart series, formula text) move with `restructureFormula` from
+  `@sheetpane/grid`; `book.part()` already serves chart parts moved.
 - Errors and warnings carry an `SP-5x00` code ([SR-CODES](https://github.com/arpitarya/sheetpane/blob/main/records/0117_CODES.md)):
   use `spError` / `spMessage` from `@sheetpane/grid`.
 

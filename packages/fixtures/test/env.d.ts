@@ -6,3 +6,7 @@ declare module '*?inline' {
 interface ImportMeta {
   glob(pattern: string, options: { query: string; import: string; eager: true }): Record<string, unknown>;
 }
+declare module '*?raw' {
+  const text: string;
+  export default text;
+}

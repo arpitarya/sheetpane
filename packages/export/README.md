@@ -12,8 +12,12 @@ pnpm add @sheetpane/export      # or npm / yarn
 
 ```ts
 type Cell = string | number | boolean | null;
-interface Sheet { name: string; rows: Cell[][]; merges?: string[]; columnWidths?: number[]; hidden?: boolean }
-interface Workbook { sheets: Sheet[] }
+interface Sheet {
+  name: string; rows: Cell[][]; merges?: string[]; columnWidths?: number[]; hidden?: boolean;
+  freeze?: { rows: number; cols: number };
+  dataValidations?: DataValidation[]; conditionalFormats?: ConditionalFormat[];
+}
+interface Workbook { sheets: Sheet[]; dxfs?: Dxf[] }
 interface Change { sheet: string; ref: string; value: Cell }
 ```
 
@@ -35,6 +39,38 @@ Text is written as inline strings, numbers and booleans typed. `{ compression:
 'store' }` gives byte-identical output on every engine (larger; the audit
 mode); the default compresses with `CompressionStream` / `zlib`.
 
+## Dropdowns and conditional formats
+
+A sheet's `dataValidations` and `conditionalFormats` are written as Excel's
+own rules — the same shapes `@sheetpane/import` reads, so a rule read from a
+file can be written back unchanged. A conditional format's `dxfId` picks the
+format it applies from the workbook's `dxfs`.
+
+```ts
+const bytes = await toXlsx({
+  sheets: [
+    {
+      name: 'Spec', rows: [['Item', 'Unit'], ['Bolt', null]],
+      dataValidations: [{
+        sqref: ['B2:B200'], type: 'list', formula1: 'Lists!$A$2:$A$9',   // or a literal: '"kg,m,pcs"'
+        allowBlank: true, showErrorMessage: true, showDropDown: false,   // false shows the arrow (OOXML's inverted flag)
+        prompt: 'Pick a unit', error: 'Not a unit on the Lists sheet',
+      }],
+      conditionalFormats: [{
+        sqref: ['B2:B200'],
+        rules: [{ type: 'expression', priority: 1, stopIfTrue: false, formulas: ['AND($A2<>"",$B2="")'], dxfId: 0 }],
+      }],
+    },
+    { name: 'Lists', rows: [['Unit'], ['kg'], ['m'], ['pcs']] },
+  ],
+  dxfs: [{ font: { color: { rgb: 'FF9C0006' } }, fill: { patternType: 'solid', bgColor: { rgb: 'FFFFC7CE' } } }],  // a dxf's solid fill is bgColor
+});
+```
+
+A rule Excel would repair — an unknown type, a title over 32 or a message over
+255 characters, a typed-out list over 255, a `dxfId` with no format — is
+refused with `SP-2015`, naming the sheet and range.
+
 ## Patch the uploaded `.xlsx` — keep everything else
 
 ```ts
@@ -52,7 +88,8 @@ for byte. Excel is asked to recalculate formulas on open, and pivot tables
 whose source changed to refresh.
 
 Options also rewrite a sheet's frozen pane (`freeze`), its merged ranges
-(`merges`) and what it hides (`hidden`):
+(`merges`), its rules (`dataValidations`, `conditionalFormats`, with new
+formats in `dxfs`) and what it hides (`hidden`):
 
 ```ts
 await patchXlsx(originalBytes, [], {
@@ -68,6 +105,22 @@ listed rows and columns are hidden and every other one is shown. `<col>` spans
 are split and merged so widths and styles stay put. When the active sheet is
 hidden, the workbook opens on the first visible one. Hiding every sheet is
 refused (`SP-2002`).
+
+```ts
+const book = await read(originalBytes);                 // @sheetpane/import
+await patchXlsx(originalBytes, [], {
+  dataValidations: [{ sheet: 'Spec', rules: [...book.sheets[0].dataValidations, unitRule] }],
+  dxfs: [{ fill: { patternType: 'solid', bgColor: { rgb: 'FFFFC7CE' } } }],
+  conditionalFormats: [{ sheet: 'Spec', formats: [{ sqref: ['B2:B200'], rules: [
+    { type: 'containsBlanks', priority: 1, stopIfTrue: false, formulas: ['LEN(TRIM(B2))=0'], dxfId: book.styles.dxfs.length },
+  ] }] }],
+});
+```
+
+Each list is the sheet's **whole** set: `[]` removes the block. `dxfs` are
+added after the file's own, so the first new one is `book.styles.dxfs.length`.
+An `exportPatch` hook can do the same with `setDataValidations(xml, rules)`
+and `setConditionalFormats(xml, formats, dxfCount)`.
 
 ## Write CSV
 
@@ -86,13 +139,29 @@ so your app can say so. Turn it off with `{ guardFormulas: false }`.
 
 `toCsv` writes one sheet; for a multi-sheet workbook, pick the one you mean.
 
+## Table references — `resolveStructuredRef(formula, sheets)`
+
+An Excel table's structured reference as plain cells, from the tables each sheet
+carries (`@sheetpane/import` reads them):
+
+```js
+resolveStructuredRef('Units[Unit]', book.sheets);
+// { sheet: 'Lists', table: 'Units', ref: 'A2:A5', range: { top: 1, left: 0, bottom: 4, right: 0 } }
+```
+
+`Table[Column]` and `Table[[#Data],[Column]]` are the column's data rows;
+`#Headers`, `#Totals` and `#All` name those rows; `Table[[A]:[B]]` spans columns;
+`Table[]` and the bare name are the data body. `[#This Row]` and anything that is
+not one range give `undefined`. `patchXlsx` keeps a workbook's table parts as they are.
+
 ## Errors
 
 Every refusal is an `ExportError` with a `code` and the `sheet` / `ref` it is
 about: a bad sheet name (1–31 characters, none of `[ ] : * ? / \`, unique
 ignoring case), more than 1,048,576 rows or 16,384 columns, `NaN` or
 `Infinity`, text over 32,767 characters, overlapping merges, a `hidden`
-option that would leave no sheet visible.
+option that would leave no sheet visible, a validation or conditional-format
+rule Excel would repair (`SP-2015`).
 
 ## Save the file — `download(data, filename, options?)`
 

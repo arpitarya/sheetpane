@@ -131,6 +131,9 @@ and events.
 | [`images`](packages/images/README.md) | pictures anchored in the sheet |
 | [`comments`](packages/comments/README.md) | notes and threaded comments, read and written |
 | [`visibility`](packages/visibility/README.md) | hide, unhide and group rows, columns and sheets |
+| [`tables`](packages/tables/README.md) | Excel tables drawn in their style — header, bands, totals |
+| [`compare`](packages/compare/README.md) | what changed since a base version — tinted, summed up, stepped through; `diffWorkbooks` headless |
+| [`review`](packages/review/README.md) | the review as a sheet in the download, flagged cells filled |
 
 ```html
 <script type="module">import '@sheetpane/grid'; import '@sheetpane/formulas/ui';</script>

@@ -10,6 +10,7 @@
     "@sheetpane/images",
     "@sheetpane/numfmt",
     "@sheetpane/styles",
+    "@sheetpane/tables",
     "@sheetpane/validation"
   ],
   "sheets": [
@@ -396,6 +397,74 @@
       "pictures": 0,
       "charts": 0,
       "notes": 4
+    },
+    {
+      "name": "Tables",
+      "rows": 13,
+      "columns": 3,
+      "dimension": "A1:C13",
+      "headerRow": 1,
+      "columnsInfo": [
+        {
+          "column": "A",
+          "title": "Unit",
+          "type": "text",
+          "blanks": 2,
+          "distinct": 10,
+          "values": [
+            "%",
+            "Copper",
+            "Lead",
+            "Moisture",
+            "Parameter",
+            "Total",
+            "Zinc",
+            "mg/L",
+            "ppm",
+            "ug/L"
+          ]
+        },
+        {
+          "column": "B",
+          "title": "Meaning",
+          "type": "mixed",
+          "blanks": 2,
+          "distinct": 10,
+          "values": [
+            "12",
+            "3",
+            "40",
+            "62",
+            "7",
+            "Value",
+            "micrograms per litre",
+            "milligrams per litre",
+            "parts per million",
+            "percent"
+          ]
+        },
+        {
+          "column": "C",
+          "title": "",
+          "type": "text",
+          "blanks": 7,
+          "distinct": 5,
+          "values": [
+            "%",
+            "Unit",
+            "mg/L",
+            "ppm",
+            "ug/L"
+          ]
+        }
+      ],
+      "merges": [],
+      "formulas": 1,
+      "dataValidations": 1,
+      "conditionalFormats": 0,
+      "pictures": 0,
+      "charts": 0,
+      "notes": 0
     }
   ]
 }

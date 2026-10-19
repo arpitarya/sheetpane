@@ -112,6 +112,49 @@
               },
               "default": "'on'",
               "fieldName": "flagging"
+            },
+            {
+              "name": "ref",
+              "description": "The cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3019) and the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "ref"
+            },
+            {
+              "name": "link",
+              "description": "`none` (the default) or `hash`: the selection is kept in the URL fragment as `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link* joins the cell menu. The rest of the fragment is the host's and is kept as it was.",
+              "type": {
+                "text": "'none' | 'hash'"
+              },
+              "default": "'none'",
+              "fieldName": "link"
+            },
+            {
+              "name": "results",
+              "description": "`summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).",
+              "type": {
+                "text": "'summary' | 'marks' | 'off'"
+              },
+              "default": "'summary'",
+              "fieldName": "results"
+            },
+            {
+              "name": "layers",
+              "description": "Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "layers"
+            },
+            {
+              "name": "protection",
+              "description": "`honour` (the default) or `ignore`: whether a protected sheet's locked cells refuse edits and a protected structure keeps its sheets, pane-wide (W-62). `ignore` is the host's decision; the file is unchanged.",
+              "type": {
+                "text": "'honour' | 'ignore'"
+              },
+              "default": "'honour'",
+              "fieldName": "protection"
             }
           ],
           "members": [
@@ -144,12 +187,32 @@
             },
             {
               "kind": "field",
+              "name": "renderDetail",
+              "privacy": "public",
+              "type": {
+                "text": "RenderDetail | undefined"
+              },
+              "description": "The host's extra detail for an error (W-68): called with a copy of the error when its card opens in the sheet, and\ndrawn after the message in a `part=\"detail\"` region. A string is text, never HTML; a Node is the host's own. Called\nagain only when the error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on\neach element that should show it — `<sheetpane-errors>` has its own."
+            },
+            {
+              "kind": "field",
               "name": "file",
               "privacy": "public",
               "type": {
                 "text": "File | Blob | ArrayBuffer | Uint8Array | null"
               },
               "description": "Loads a file, like `load()`; `null` does nothing."
+            },
+            {
+              "kind": "field",
+              "name": "layers",
+              "privacy": "public",
+              "type": {
+                "text": "string[]"
+              },
+              "description": "The review layers shown (W-51) — the pane's, shared with `<sheetpane-errors>`: every layer until the `layers`\nattribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer.",
+              "attribute": "layers",
+              "reflects": true
             },
             {
               "kind": "field",
@@ -191,6 +254,28 @@
               },
               "description": "`flagging=\"off\"`: no Flag issue anywhere, no composer, no callout card — the errors panel is the one place errors are read.",
               "attribute": "flagging",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "results",
+              "privacy": "public",
+              "type": {
+                "text": "ResultsLevel"
+              },
+              "description": "The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute.",
+              "attribute": "results",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "protection",
+              "privacy": "public",
+              "type": {
+                "text": "ProtectionMode"
+              },
+              "description": "The pane's protection mode (W-62): `honour` (the default) keeps the file's protection; `ignore` is the host's decision. Setting it sets the `protection` attribute.",
+              "attribute": "protection",
               "reflects": true
             },
             {
@@ -254,6 +339,28 @@
               "reflects": true
             },
             {
+              "kind": "field",
+              "name": "ref",
+              "privacy": "public",
+              "type": {
+                "text": "string | null"
+              },
+              "description": "The `ref` attribute: the cell or range selected once a file is read (W-66); `null`, `undefined` or `''` removes it.",
+              "attribute": "ref",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "link",
+              "privacy": "public",
+              "type": {
+                "text": "'none' | 'hash'"
+              },
+              "description": "`none` (the default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu (W-66).",
+              "attribute": "link",
+              "reflects": true
+            },
+            {
               "kind": "method",
               "name": "load",
               "privacy": "public",
@@ -283,7 +390,7 @@
               "kind": "method",
               "name": "export",
               "privacy": "public",
-              "description": "Every change applied; the upload untouched. Also dispatches `sheetpane-export`.",
+              "description": "Every change applied; the upload untouched. Also dispatches `sheetpane-export`, with the blob's SHA-256 (W-65).",
               "parameters": [
                 {
                   "name": "options",
@@ -335,7 +442,16 @@
               "kind": "method",
               "name": "getErrors",
               "privacy": "public",
-              "description": "A copy of the pane's errors, to save a review.",
+              "description": "A copy of the pane's errors, to save a review; `{ layer }` gives one layer's (W-51).",
+              "parameters": [
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ layer?: string }"
+                  }
+                }
+              ],
               "return": {
                 "type": {
                   "text": "SheetpaneError[]"
@@ -346,15 +462,59 @@
               "kind": "method",
               "name": "setErrors",
               "privacy": "public",
-              "description": "Restores a saved review; not a user action, so the undo stack is cleared.",
+              "description": "Restores a saved review — a list or the `sheetpane-errors` envelope — clearing the undo stack; `{ layer }` replaces that layer only (W-51).",
               "parameters": [
                 {
                   "name": "list",
                   "type": {
-                    "text": "SheetpaneError[]"
+                    "text": "SheetpaneError[] | ErrorsEnvelope"
+                  }
+                },
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ layer?: string }"
                   }
                 }
               ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "highlight",
+              "privacy": "public",
+              "description": "Outlines cells from outside without selecting them (W-56): a pass-through outline on the overlay —\nnot a change, not undone, not in the download, and the selection stays where it is. Each call\nreplaces the last; the outline goes on a sheet switch unless `pinned`, and with a new file. A range\nthat is not A1 (`B3`, `B3:D8`, `Data!B3`, `'Q3 data'!B3:D8`) or names a sheet the workbook lacks is\nskipped. A view setting of this element, like zoom.\n@param ranges - One range or several; an object gives one its own sheet or tone.\n@param options - `tone`, `label` (said once by the status line), `sheet`, `pinned`, `reveal`.\n@returns How many ranges are outlined; 0 before a file is loaded.",
+              "parameters": [
+                {
+                  "name": "ranges",
+                  "type": {
+                    "text": "HighlightRange | readonly HighlightRange[]"
+                  }
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "HighlightOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "number"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "clearHighlight",
+              "privacy": "public",
+              "description": "Removes the outline `highlight()` drew (W-56).",
               "return": {
                 "type": {
                   "text": "void"
@@ -504,23 +664,30 @@
             {
               "name": "sheetpane-load",
               "type": {
-                "text": "CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>"
+                "text": "CustomEvent<{ status: 'ready'; name: string; kind: 'xlsx' | 'csv'; sheets: string[]; readMs: number; sha256: string | undefined } | { status: 'error'; code: string; spCode: SpCode; message: string; name: string; detail?: string }>"
               },
-              "description": "`{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`."
+              "description": "`{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`."
             },
             {
               "name": "sheetpane-change",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }>"
+                "text": "CustomEvent<{ sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown; op?: 'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols'; at?: number; count?: number }>"
               },
-              "description": "`{ sheet, ref, kind, was, now }` for each change, undo and redo included."
+              "description": "`{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`."
             },
             {
               "name": "sheetpane-errors",
               "type": {
-                "text": "CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>"
+                "text": "CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>"
               },
-              "description": "`{ errors, plugins }` when the pane's errors change."
+              "description": "`{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed."
+            },
+            {
+              "name": "sheetpane-layers",
+              "type": {
+                "text": "CustomEvent<{ visible: string[]; layers: string[] }>"
+              },
+              "description": "`{ visible, layers }` when the visible review layers change (W-51)."
             },
             {
               "name": "sheetpane-select",
@@ -542,6 +709,13 @@
                 "text": "CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>"
               },
               "description": "`{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47)."
+            },
+            {
+              "name": "sheetpane-hover",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string } } | null>"
+              },
+              "description": "`{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56)."
             },
             {
               "name": "sheetpane-sheet",
@@ -567,9 +741,9 @@
             {
               "name": "sheetpane-editstart",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown }>"
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string }; value: unknown; richText?: true }>"
               },
-              "description": "`{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only."
+              "description": "`{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only."
             },
             {
               "name": "sheetpane-input",
@@ -588,16 +762,16 @@
             {
               "name": "sheetpane-editcancel",
               "type": {
-                "text": "CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string }>"
+                "text": "CustomEvent<{ sheet: string; ref: string } | { sheet: string; ref: string; reason: 'blocked'; code: 'SP-6003'; message: string } | { sheet: string; ref: string; reason: 'locked'; code: 'SP-3026'; message: string }>"
               },
-              "description": "`{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it."
+              "description": "`{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3026', message }` when the cell is locked on a protected sheet (W-62)."
             },
             {
               "name": "sheetpane-export",
               "type": {
-                "text": "CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; original?: boolean }>"
+                "text": "CustomEvent<{ blob: Blob; kind: 'xlsx' | 'csv'; name: string; guarded: string[] | false; format: 'xlsx' | 'csv'; converted: boolean; sha256: string | undefined; original?: boolean }>"
               },
-              "description": "`{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing."
+              "description": "`{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing."
             },
             {
               "name": "sheetpane-close",
@@ -637,6 +811,10 @@
             {
               "name": "dialog",
               "description": "The modal `<dialog>` the root moves into when `display=\"popup\"`."
+            },
+            {
+              "name": "detail",
+              "description": "The host's region in the error card, after the message: what `renderDetail` returns (W-68)."
             }
           ],
           "cssProperties": [
@@ -712,13 +890,18 @@
             },
             {
               "name": "--sp-pass",
-              "description": "Resolved, passing. Dark theme: `#86B399`.",
+              "description": "Resolved, passing; the ✓ result mark. Dark theme: `#86B399`.",
               "default": "#16703E"
             },
             {
               "name": "--sp-pass-soft",
               "description": "Resolved, passing — the tint. Dark theme: `#163225`.",
               "default": "#E6F2EA"
+            },
+            {
+              "name": "--sp-skip",
+              "description": "Not checked: the — result mark (W-50). Dark theme: `#A1A1A1`.",
+              "default": "#63666E"
             },
             {
               "name": "--sp-fail",
@@ -866,7 +1049,7 @@
             },
             {
               "name": "readonly",
-              "description": "Hides the form, Resolve, Delete, Undo and Redo (a sign-off screen).",
+              "description": "Hides the form, Resolve, Accept…, Delete, Undo and Redo (a sign-off screen).",
               "type": {
                 "text": "boolean"
               },
@@ -874,7 +1057,7 @@
             },
             {
               "name": "author",
-              "description": "Written into the errors this element's user adds.",
+              "description": "Written into the errors this element's user adds, and as who accepted one (W-69).",
               "type": {
                 "text": "string"
               }
@@ -894,6 +1077,23 @@
               },
               "default": "'light'",
               "fieldName": "theme"
+            },
+            {
+              "name": "results",
+              "description": "`summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).",
+              "type": {
+                "text": "'summary' | 'marks' | 'off'"
+              },
+              "default": "'summary'",
+              "fieldName": "results"
+            },
+            {
+              "name": "layers",
+              "description": "Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements; with two or more layers the header shows a switch.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "layers"
             }
           ],
           "members": [
@@ -947,10 +1147,59 @@
               "reflects": true
             },
             {
+              "kind": "field",
+              "name": "renderDetail",
+              "privacy": "public",
+              "type": {
+                "text": "RenderDetail | undefined"
+              },
+              "description": "The host's extra detail for an error (W-68): called with a copy of the error when its row is opened, and drawn after\nthe message in a `part=\"detail\"` region. A string is text, never HTML; a Node is the host's own. Called again only when\nthe error changes (its `meta` included) or this is replaced; a throw is logged as SP-3017. Set it on each element\nthat should show it — the sheet's error card has its own."
+            },
+            {
+              "kind": "field",
+              "name": "results",
+              "privacy": "public",
+              "type": {
+                "text": "ResultsLevel"
+              },
+              "description": "The pane's results level (W-50): `summary` (the default), `marks` or `off`; setting it sets the `results` attribute.",
+              "attribute": "results",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "layers",
+              "privacy": "public",
+              "type": {
+                "text": "string[]"
+              },
+              "description": "The review layers shown (W-51) — the pane's, shared with `<sheetpane-excel>`: every layer until the `layers`\nattribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer.",
+              "attribute": "layers",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "layerNames",
+              "privacy": "public",
+              "type": {
+                "text": "Readonly<Record<string, string>>"
+              },
+              "description": "What the switch and the rows call each layer (W-51), e.g. `{ pdf: 'PDF check' }`; a layer not named here shows its name (`review` as *Review*)."
+            },
+            {
               "kind": "method",
               "name": "getErrors",
               "privacy": "public",
-              "description": "A copy of the pane's errors, to save a review.",
+              "description": "A copy of the pane's errors, to save a review; `{ layer }` gives one layer's (W-51).",
+              "parameters": [
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ layer?: string }"
+                  }
+                }
+              ],
               "return": {
                 "type": {
                   "text": "SheetpaneError[]"
@@ -961,19 +1210,19 @@
               "kind": "method",
               "name": "setErrors",
               "privacy": "public",
-              "description": "Restores a saved review. `plugins` (from the saved `sheetpane-errors` envelope) shows a notice when it differs from this pane's set.",
+              "description": "Restores a saved review — a list, or the `sheetpane-errors` envelope with its layers — or, with `layer`, replaces that\nlayer only (W-51). `plugins` (from the saved envelope; read from it when it is passed whole) shows a notice when it\ndiffers from this pane's set.",
               "parameters": [
                 {
                   "name": "list",
                   "type": {
-                    "text": "SheetpaneError[]"
+                    "text": "SheetpaneError[] | ErrorsEnvelope"
                   }
                 },
                 {
                   "name": "o",
                   "optional": true,
                   "type": {
-                    "text": "{ plugins?: string[] }"
+                    "text": "{ plugins?: string[]; layer?: string }"
                   }
                 }
               ],
@@ -999,9 +1248,16 @@
             {
               "name": "sheetpane-errors",
               "type": {
-                "text": "CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>"
+                "text": "CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>"
               },
-              "description": "`{ errors, plugins }` when the pane's errors change — the envelope to save a review."
+              "description": "`{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed."
+            },
+            {
+              "name": "sheetpane-layers",
+              "type": {
+                "text": "CustomEvent<{ visible: string[]; layers: string[] }>"
+              },
+              "description": "`{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51)."
             },
             {
               "name": "sheetpane-change",
@@ -1029,7 +1285,7 @@
               "type": {
                 "text": "CustomEvent<{ error: SheetpaneError }>"
               },
-              "description": "`{ error }` on Show in sheet, so the host can switch tab or open the pop-up."
+              "description": "`{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50)."
             }
           ],
           "slots": [],
@@ -1037,6 +1293,10 @@
             {
               "name": "root",
               "description": "The panel's frame: the header, the form, the filters and the list."
+            },
+            {
+              "name": "detail",
+              "description": "The host's region in an open row, after the message: what `renderDetail` returns (W-68)."
             }
           ],
           "cssProperties": [
@@ -1112,13 +1372,18 @@
             },
             {
               "name": "--sp-pass",
-              "description": "Resolved, passing. Dark theme: `#86B399`.",
+              "description": "Resolved, passing; the ✓ result mark. Dark theme: `#86B399`.",
               "default": "#16703E"
             },
             {
               "name": "--sp-pass-soft",
               "description": "Resolved, passing — the tint. Dark theme: `#163225`.",
               "default": "#E6F2EA"
+            },
+            {
+              "name": "--sp-skip",
+              "description": "Not checked: the — result mark (W-50). Dark theme: `#A1A1A1`.",
+              "default": "#63666E"
             },
             {
               "name": "--sp-fail",

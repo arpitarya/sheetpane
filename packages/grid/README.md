@@ -205,17 +205,24 @@ committed manifest drifts from the elements.
 | attribute | `plugins` | the enabled plugin ids, e.g. `numfmt formulas` |
 | attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it, and column rules match by it |
 | attribute | `theme` | `light` (default), `dark` or `auto` (follows the page's `prefers-color-scheme`) |
+| attribute / property | `ref` | the cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8` — see [Opening at a cell](#opening-at-a-cell-and-links) |
+| attribute / property | `link` | `none` (default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu |
 | attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
+| attribute / property | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide; see [Results](#results-passed-and-not-checked) |
+| attribute / property | `protection` | `honour` (default) or `ignore` — whether a protected sheet's locked cells refuse edits, pane-wide; see [Protected sheets](#protected-sheets) |
 | property | `columns`, `validate` | column rules by title, and a check function — see [Column rules](#column-rules) |
 | property | `file` | a `File`, `Blob`, `ArrayBuffer` or `Uint8Array` to read |
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
+| property | `renderDetail` | your extra detail in the error card (W-68, under *Saving and restoring a review*) |
+| attribute / property | `layers` | the review layers shown, space-separated — the pane's, shared with `<sheetpane-errors>`; none shows every layer (W-51, under *Saving and restoring a review*) |
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
-| method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
-| event | `sheetpane-load`, `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` | bubbling, composed |
+| method | `select(sheet, ref)`, `getErrors({ layer? })`, `setErrors(list or envelope, { layer? })`, `undo()`, `redo()` | |
+| method | `highlight(ranges, { tone, label, sheet, pinned, reveal }?)`, `clearHighlight()` | outline cells without selecting them — and `sheetpane-hover` — see *Pointing at cells* under [Following an edit](#following-an-edit) |
+| event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {v, errors, plugins, layers, changed}`, `sheetpane-layers {visible, layers}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
 
 ### Following an edit
 
@@ -226,11 +233,11 @@ every payload names the column `{ index, letter, header }` (the title from
 | event | fires | detail | cancel it to |
 |---|---|---|---|
 | `sheetpane-select` | the selected cell moves | `{sheet, ref, column, value}` | — |
-| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value}` | keep the cell read-only |
+| `sheetpane-editstart` | the cell bar opens on a cell | `{sheet, ref, column, value, richText?}` — `richText: true` on a rich-text cell, whose edit saves plain text | keep the cell read-only |
 | `sheetpane-input` | each keystroke, before saving | `{sheet, ref, column, draft, was}` | — |
 | `sheetpane-beforechange` | Enter, Tab, blur, Delete, or each cell of a paste | `{sheet, ref, column, was, now}` | refuse the value |
-| `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` | — |
-| `sheetpane-editcancel` | Esc, or a column rule set to `block` refused the value | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', message}`) | — |
+| `sheetpane-change` | after saving | `{sheet, ref, kind, was, now}` (an insert or delete: `kind: 'structure'`, `op`, `at`, `count`) | — |
+| `sheetpane-editcancel` | Esc, a column rule set to `block` refused the value, or the cell is locked on a protected sheet | `{sheet, ref}` (refused: `{sheet, ref, reason: 'blocked', code: 'SP-6003', message}`; locked: `{sheet, ref, reason: 'locked', code: 'SP-3026', message: 'Locked in the file'}`) | — |
 | `sheetpane-sheet` | the sheet tab changes | `{sheet}` | — |
 
 A refused value never reaches the change map, undo or a plugin.
@@ -243,8 +250,8 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
 
 **Keys:** arrows, Shift+arrows, Home/End, Ctrl+Home/End, PageUp/PageDown;
 Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**;
-**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy value and
-plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
+**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy link with
+`link="hash"`, Copy value and plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
 
@@ -266,6 +273,67 @@ them with the `sizes` property and the `sheetpane-resize` event:
 ```js
 excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
 excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
+**Inserting and deleting rows and columns (Edit):** the cell menu and the ⋯ menu offer *Insert row above /
+below*, *Insert column left / right*, *Delete row* and *Delete column* (with counts for a range); a header
+menu offers its axis's three. Ctrl/⌘+Shift+= inserts rows above (columns left when whole columns are
+selected); Ctrl/⌘+− deletes whole rows or columns. Everything that points at a cell moves — values, edits,
+errors, formulas on every sheet (`#REF!` for a deleted target), merges, validations, conditional formats,
+notes, pictures and charts, hidden and grouped rows, freeze, sizes — and the download carries it. Each is one
+undo step and one `sheetpane-change` with `kind: 'structure'`, `op`, `at` (0-based) and `count`. What Excel
+refuses is refused, greyed with its reason: the file's protection — a protected structure, or a protected
+sheet without *Insert rows* / *Delete rows* / *Insert columns* / *Delete columns* (`SP-3026`) — a delete that
+splits a merged range (`SP-3022`), anything that
+would move a pivot table or its source (`SP-3023`), cells pushed off the sheet (`SP-3024`), a table cut
+(`SP-3025`). A host drives the same through the store:
+
+```js
+const book = excel.workbook;
+if (!book.structureRefusal({ sheet: 'Spec', op: 'insertRows', at: 4, count: 1 })) book.insertRows('Spec', 4); // above row 5
+book.deleteCols('Spec', 2, 2); // C and D
+```
+
+**Pointing at cells from outside (W-56):** `sheetpane-hover` names the cell under a mouse or pen pointer —
+`{sheet, ref, column}`, a merge by its top-left, at most once per frame and only when the cell changes —
+and `null` when the pointer leaves the cells; a finger never hovers. `highlight(ranges, options?)` outlines
+cells without selecting them: `B3`, `B3:D8`, `Data!B3` or `{ ref, sheet?, tone? }`, in `tone` `info`
+(default), `pass` or `fail`. The outline lets the pointer through; it is not a change, not undone, not in the
+download. Each call replaces the last; a sheet switch clears it unless `pinned: true`, and so does a new
+file; `reveal: true` scrolls the first range into view; a `label` is shown in the status line and said once
+by screen readers. It returns how many ranges it outlined (a bad ref or a missing sheet is skipped);
+`clearHighlight()` removes it. Together they make "hover a box, its cell lights up — hover a cell, its box
+does":
+
+```js
+excel.addEventListener('sheetpane-hover', (e) => pdf.outline(e.detail && boxFor(e.detail.ref))); // null: none
+pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' : 'fail', label: box.name }) : excel.clearHighlight());
+```
+
+### Opening at a cell, and links
+
+`ref` opens the file at a cell — the selection once it is read, scrolled into view; set later, it selects
+then. A cell or range, with or without its sheet (`B4`, `Data!B4`, `'Q3 data'!B4:D8`). One that names no
+cell warns `SP-3019` in the console and the sheet opens at A1.
+
+```html
+<sheetpane-excel pane="q3" src="/files/q3.xlsx" ref="Data!F9"></sheetpane-excel>
+```
+
+`link="hash"` keeps the selection in the URL, so a reload or a shared link opens at the same cell, and adds
+*Copy link* to the cell menu. It is off by default. Only one parameter of the fragment is sheetpane's —
+`sheetpane=<pane>:<Sheet>!<ref>` — and the rest is left as it was: after a hash router's path it goes with
+`?` (`#/reports/12?sheetpane=q3:Data!F9`), after an anchor or your own parameters with `&`. It is written
+with `history.replaceState` once the selection settles — no history entry, no `hashchange` for your router
+— and read when a file is read and on back and forward. A link wins over `ref`. Give each sheet its own
+`pane` when a page has two. The fragment never leaves the browser: it is not part of any request.
+
+**React, Vue and Solid** keep `ref` for their own refs, so their typings leave it out. Set it from a ref
+callback, or call `select()` once the file is read:
+
+```jsx
+<sheetpane-excel pane="q3" src={url} ref={(el) => el?.setAttribute('ref', 'Data!F9')} />
+<sheetpane-excel pane="q3" src={url} onsheetpane-load={(e) => e.detail.status === 'ready' && e.currentTarget.select('Data', 'F9')} />
 ```
 
 ## Column rules
@@ -377,27 +445,240 @@ opens no pop-up — the errors panel is the one place errors are read.
   excel.rules = parse(await (await fetch('./sheetpane.rules.yaml')).text());
   ```
 
+## The same checks with no page (`@sheetpane/grid/check`)
+
+`check()` runs what the pane runs on load — the rules file, column rules, an
+async `validate`, and each plugin's `validate` after a `derive` plugin has
+recalculated — in Node, a worker or a page, and returns the errors the pane
+would hold. The entry imports no element and touches no DOM.
+
+```js
+import { readFile } from 'node:fs/promises';
+import { check } from '@sheetpane/grid/check';
+import { validation } from '@sheetpane/validation/check';
+
+const errors = await check(await readFile('q3.xlsx'), {
+  name: 'q3.xlsx',
+  rules: JSON.parse(await readFile('sheetpane.rules.json', 'utf8')),
+  plugins: [validation()],          // objects, or ids registered with registerPlugin
+});
+```
+
+- **Options are the element's:** `rules` (an object, or its JSON text),
+  `columns`, `validate(ctx, signal)`, `onInvalid`, `headerRow`, `plugins`, and
+  the file's `name` (`.csv` reads CSV; unnamed bytes are sniffed as `load()`
+  does).
+- **The same errors** as `<sheetpane-excel>` given the same file and settings
+  — only `id` and `createdAt` are per run — sorted by sheet, row and column.
+  A file that cannot be read throws its reader's code (SP-10xx); anything but
+  bytes throws SP-3020.
+- The store, the rules checker and the plugin contract are exported here too
+  (`createWorkbook`, `checkDocument`, `registerPlugin`, the types), for a
+  DOM-free plugin or a host's own pipeline. `loadWorkbook(bytes, options)`
+  takes the same options and returns the loaded store, every check finished,
+  instead of its errors.
+
+## A range as static HTML (`@sheetpane/grid/static`)
+
+`renderStatic(book, { sheet, range, errors, theme, headers })` returns one
+self-contained `<table>` — the text the pane shows (the `format` plugin), the
+look it draws (`decorate` plugins, merges, the theme's tokens as inline hex),
+hidden rows and columns left out, and the errors marked — for a report or an
+email. Made with no DOM, in Node, a worker or a page.
+
+```js
+import { readFile, writeFile } from 'node:fs/promises';
+import { loadWorkbook, renderStatic } from '@sheetpane/grid/static';
+import { numfmt } from '@sheetpane/numfmt';
+import { styles } from '@sheetpane/styles';
+import { condfmt } from '@sheetpane/condfmt';
+import { validation } from '@sheetpane/validation/check';
+
+const book = await loadWorkbook(await readFile('q3.xlsx'), { name: 'q3.xlsx', rules, plugins: [numfmt(), styles(), condfmt(), validation()] });
+await writeFile('report.html', renderStatic(book, { sheet: 'Holdings', range: 'A1:F20' }));
+```
+
+- **`book`** is a loaded store: `loadWorkbook()`'s, `createWorkbook()`'s after
+  `load()`, or an element's `workbook` — its changes and derived values show.
+  `sheet` defaults to the selected one, `range` to the used range (≤ 200,000
+  cells), `errors` to the visible layers' (`[]` marks nothing; pass `check()`'s
+  or a restored review), `theme` to `light` (`dark` too), `headers` to true.
+- **Marks:** a ring and a tint as the grid draws them, and a badge with the
+  glyph (✕ ! i ✓, `A` for an accepted deviation) and a number that the footer
+  explains — severity, range, type, message, *should be*, the acceptance's
+  reason. Never colour alone. Errors about the whole sheet or the workbook
+  head the footer and mark no cell. Results (✓ passed, — not checked) show
+  as the grid's corner glyph only when the pane's `results` level is
+  `marks`. Rich text keeps its runs (italic, bold, colour), never a font.
+- **Inert:** no script, no event attribute, no `class`, no stylesheet, no URL
+  (a `decorate` value that loads or escapes is dropped), every value escaped,
+  no font family — the reader's font is the font.
+- **Not drawn:** what an `overlay` plugin draws (pictures, charts) — the
+  footer says so and `data-sp-skipped` names the plugins. Interactive cell
+  controls (a list arrow) are not drawn either.
+- Refusals: SP-3027 when `book` is not a loaded workbook; SP-3028 for an
+  unknown sheet, a range that is not A1, or too many cells.
+
 ## `<sheetpane-errors>`
 
 | kind | name | what |
 |---|---|---|
 | attribute | `pane`, `author`, `plugins` | as above |
-| attribute | `readonly` | hides the form, Resolve and Delete — a sign-off screen |
-| property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
-| event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
+| attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
+| attribute / property | `results` | as above; the panel's *On sheet* switch moves the pane between `summary` and `marks` |
+| property / method | `errors`, `errorTypes`, `getErrors({ layer? })`, `setErrors(list or envelope, { plugins?, layer? })` | |
+| property | `renderDetail` | your extra detail in an open row — see below (W-68) |
+| attribute / property | `layers`; `layerNames` | the review layers shown (as on the sheet); what the switch calls each, e.g. `{ pdf: 'PDF check' }` (W-51) |
+| event | `sheetpane-errors {v, errors, plugins, layers, changed}`, `sheetpane-layers {visible, layers}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
 
 ## Saving and restoring a review
 
 Errors are plain JSON (`SheetpaneError`, schema `v: 1`). Listen to
-`sheetpane-errors`, store `detail.errors` and `detail.plugins` where you like,
-and give them back after the file loads:
+`sheetpane-errors`, store its `detail` — the envelope `{ v: 2, errors,
+plugins, layers, changed }` — where you like, and give it back after the
+file loads:
 
 ```js
-excel.addEventListener('sheetpane-load', () => errors.setErrors(saved.errors, { plugins: saved.plugins }));
+excel.addEventListener('sheetpane-load', () => errors.setErrors(saved));
 ```
+
+A review saved before W-51 (`{ errors, plugins }`) restores the same way, into
+the `review` layer.
+
+**Review layers** (W-51): several sets of errors in one pane — say a
+validation run and a PDF check — each replaced whole without touching the
+others. Every error has a `layer` (`review` unless named):
+
+```js
+errors.setErrors(validationFindings, { layer: 'validation' });
+errors.setErrors(pdfFindings, { layer: 'pdf' }); // validation is kept
+errors.layerNames = { pdf: 'PDF check' };
+errors.layers = ['pdf']; // or layers="pdf" on either element; null shows all
+```
+
+With two or more layers the panel's header shows a switch — **All**, then
+each layer with its open count. What is shown is the pane's: the sheet's
+pins, marks and counts, the list and the comments an export writes all
+follow it (`export({ layers: [...] })` names another set). Replacing a layer
+keeps undo; a person's new error goes into the layer they are looking at.
+Names are ids: 1–64 characters, no spaces (SP-3021).
 
 An error whose cell no longer shows what was found is tagged *stale*, never
 moved.
+
+**An error with no cell** (W-55): `range: ""` is about the whole sheet, and
+`sheet: ""` with `range: ""` about the whole workbook — "no Pages List", "a
+listed tab has no sheet". Add one with `setErrors()`, `workbook.addError()` or
+a `validate` hook (a whole-sheet draft only). The list shows them first — a
+*Workbook* group, then each sheet's — above the cell errors; a whole-sheet
+error is counted on its tab and **Show in sheet** opens the tab; for a
+workbook-level one it is disabled. They are never placed on A1; no pin, no
+cell mark, no `found`. `errorScope(e)` says which (`cell` · `sheet` ·
+`workbook`). **If your code reads `range` as an A1 reference, handle `""`.**
+
+**Your data on an error, and your detail beside it** (W-68): `meta` holds any
+JSON of yours (64 KiB at most, `ERROR_META_MAX`); it is saved and restored
+with the error and never written into the file. `renderDetail(error)` — on
+`<sheetpane-excel>` for the error card and on `<sheetpane-errors>` for the
+open row, each its own — returns a string (shown as text, never HTML), a
+Node (yours, placed as it is) or `null`. It is drawn after the message, in
+`::part(detail)`, and runs again only when that error changes.
+
+```js
+workbook.addError({ sheet: 'Spec', range: 'C7', type: 'out-of-range', severity: 'error', meta: { page: 3, measured: '6.63 in' } });
+const detail = (e) => (e.meta?.measured ? `The PDF measures ${e.meta.measured}, outside ± 0.06 in` : null);
+excel.renderDetail = detail;
+errors.renderDetail = detail;
+```
+
+A `meta` that is not JSON or is over the cap is dropped (SP-3016); a hook
+that throws shows nothing (SP-3017).
+
+**Accepted deviations** (W-69): a known, approved difference can be accepted
+instead of deleted. **Accept…** in an open row of `<sheetpane-errors>` asks
+for a reason (required) and records it with who (the element's `author`) and
+when: `status: 'accepted'`, `acceptedBy`, `acceptedAt`, `reason`. Accepted
+errors stay in the review and the download but are not counted — not in
+"n open", the severity chips or the sheet's counts — and the **Accepted n**
+chip lists them. Reopen takes an acceptance back; so does undo. From code:
+
+```js
+workbook.acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' });
+```
+
+A blank reason is refused (SP-3018). Count open problems with
+`status === 'open' && !isResult(e)`. With `@sheetpane/comments`, the export adds a reply
+*Accepted: <reason>* to the error's comment thread.
+
+**The Edits view** (W-64): an *Edits n* chip beside *Problems* lists every
+change in the pane, newest first — the cell or range and kind, *was → now*,
+the time, and the errors that edit cleared or raised (each a link to the
+error). Picking a row selects the cell; **Revert** on a row and **Revert
+all** are each one undo step. It shows in Edit mode, and in View mode while
+there are edits. The store gives the same list to your code:
+
+```js
+const edits = workbook.edits(); // [{ key, sheet, ref, kind, was, now, at }], newest first
+workbook.editEffects(edits[0].key); // { cleared, raised, matched } — error ids
+workbook.revertEdits([edits[0].key]); // omit the keys to revert all
+```
+
+## Results: passed and not checked
+
+A host that checks a sheet can report what passed as well as what failed:
+an entry with `severity: 'pass'` (✓) or `'skipped'` (— not checked; its
+`message` says why). Give them with `setErrors()` or from a plugin's
+`validate`. Results stay quiet:
+
+| `results=` | errors panel | sheet |
+|---|---|---|
+| `off` | results are dropped on arrival | as without results |
+| `summary` (default) | one line — *1 problem · ✓ 180 passed · — 28 not checked · On sheet* — and *Passed* / *Not checked* chips; the list opens on *Problems* | nothing marked; the status line says *186 of 214 checked* |
+| `marks` (or *On sheet*) | the same, switch on | a 9 px ✓ or — in each result cell's bottom-left corner |
+
+Passes are listed grouped by check (`type` + `message`), not-checked cells
+by reason (`message`); a group opens to its cells, and **Show ▸** selects its
+range and marks it even at `summary`. Selecting a result cell names its check
+in the cell bar. A problem on the same cell always wins. Tab counts, the
+toolbar counts, the panel's *n open* and the severity filters count problems
+only, and a download leaves results out (`@sheetpane/comments` writes them
+only with `export({ includeResults: true })`). A host that switches on
+`severity` meets two more values.
+
+```js
+errors.setErrors([
+  { v: 1, id: 'ERR-0001', sheet: 'Holdings', range: 'H3', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%',
+    found: '0.35%', expected: '', cellChanged: false, status: 'open', matchesExpected: false, author: 'host', createdAt: new Date().toISOString() },
+]);
+```
+
+## Protected sheets
+
+What a file protects stays protected in Edit, with no plugin. On a protected
+sheet (Excel: Review › Protect Sheet) a locked cell — every cell is locked
+until someone unlocks it — shows its value and *🔒 Locked in the file* in the
+cell bar; typing, paste and Delete there are refused with
+`sheetpane-editcancel` `{ reason: 'locked', code: 'SP-3026' }`, before
+`sheetpane-beforechange`. Unlocked cells edit as usual, and a paste or a
+range Delete writes those only, saying how many locked cells it left. A
+formula marked *Hidden* shows its value, never its formula. A workbook whose
+structure is protected keeps its sheets and its rows and columns: Hide and
+Unhide sheet, and every insert and delete, are disabled with the reason; a
+protected sheet refuses the inserts and deletes it does not allow, as Excel
+does (`SP-3026`).
+
+```js
+const wb = excel.workbook;
+wb.isLocked('Spec', 'A2');        // true: a locked cell on a protected sheet
+wb.isFormulaHidden('Spec', 'E2'); // true: shows its value only
+wb.structureLocked();             // true: <workbookProtection lockStructure="1">
+wb.sheetProtection('Spec');       // { formatCells: true, …, hasPassword: true } — never the password
+```
+
+sheetpane never reads, checks or removes a protection password, and the
+download carries the file's protection exactly as it was. `protection="ignore"`
+sets it aside for the pane — **the host's decision**: a host that lets people
+edit what the file locks owns that choice.
 
 ## Plugins
 

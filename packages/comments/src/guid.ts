@@ -72,16 +72,16 @@ export function guid(name: string): string {
 }
 
 /**
- * The ids of one error's thread entries: the comment, and the `expected` reply.
+ * The ids of one error's thread entries: the comment, the `expected` reply, and the `Accepted: <reason>` reply (W-69).
  * Named by the error's `id` and `createdAt` — ids restart at ERR-0001 each
  * session, so the id alone would collide with an earlier review's threads.
  *
  * @param e - The error (its `id` and `createdAt`).
- * @returns Excel-form GUIDs (`{…}`) for the `comment` and its `expected` reply.
+ * @returns Excel-form GUIDs (`{…}`) for the `comment`, its `expected` reply and its `accepted` reply.
  */
-export function errorGuids(e: { id: string; createdAt: string }): { comment: string; expected: string } {
+export function errorGuids(e: { id: string; createdAt: string }): { comment: string; expected: string; accepted: string } {
   const base = `sheetpane:${e.id}:${e.createdAt}`;
-  return { comment: guid(base), expected: guid(`${base}#expected`) };
+  return { comment: guid(base), expected: guid(`${base}#expected`), accepted: guid(`${base}#accepted`) };
 }
 
 /** The person an author is written as. */

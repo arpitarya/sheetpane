@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/grid",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "View and edit .xlsx and .csv files inside any web page: the <sheetpane-excel> and <sheetpane-errors> web components, always in sync through one in-memory workbook.",
   "license": "MIT",
   "repository": {
@@ -22,6 +22,16 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./check": {
+      "source": "./src/check.ts",
+      "types": "./dist/check.d.ts",
+      "import": "./dist/check.js"
+    },
+    "./static": {
+      "source": "./src/static.ts",
+      "types": "./dist/static.d.ts",
+      "import": "./dist/static.js"
     },
     "./style.css": "./dist/style.css",
     "./rules.schema.json": "./dist/rules.schema.json",
@@ -72,6 +82,14 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./check": {
+        "types": "./dist/check.d.ts",
+        "import": "./dist/check.js"
+      },
+      "./static": {
+        "types": "./dist/static.d.ts",
+        "import": "./dist/static.js"
       },
       "./style.css": "./dist/style.css",
       "./rules.schema.json": "./dist/rules.schema.json",

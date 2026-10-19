@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: errors a host and an agent can look up
 owns: [packages/export/src/codes.ts, docs/ERRORS.md, test/error-codes.test.ts, test/error-codes.lock.json]
 laws: [L0, L8]
-timestamp: 2026-10-19T04:00:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-40
 ---
@@ -50,10 +50,15 @@ flowchart LR
 1. **Every message sheetpane shows a host carries `SP-` and four digits:**
    thrown errors, `console.warn` / `console.error`, rules-engine `note`
    errors, refused loads, event details that carry a reason.
-2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid ·
+2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid
+   (SP-3020, W-54: `check()` given something other than bytes; SP-3027 and
+   SP-3028, W-67: `renderStatic()` given no loaded workbook, or a sheet or
+   range it cannot draw) ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
-   5800 comments) · 6xxx column rules and the rules file · 7xxx mcp
+   5800 comments, 5900 compare — W-63: SP-5901, a per-sheet key that is
+   not a column; 5000 review — W-59: SP-5001 – SP-5005, its own hundred, the
+   5100 – 5900 hundreds being taken) · 6xxx column rules and the rules file · 7xxx mcp
    (W-39: SP-7001…7007, the MCP server's tool errors — SR-MCP decision 7;
    `@sheetpane/mcp` also reports the 60xx rules notes `check_rules` finds).
 3. **Never reuse:** a code is never renumbered or removed; a dead one stays in
@@ -80,7 +85,56 @@ flowchart LR
   for a throw (outside a three-line, reasoned allow-list), a console line not
   built by `spMessage`, or a rules note without a code; checks ranges, the
   lock, a docs entry per code and none without one, and the index. 73 codes at
-  W-40.
+  W-40. Later codes are appended to the lock in the order they were issued,
+  not by number. Example: SP-5804, from W-55, comes after SP-7007, and
+  SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
+  `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
+  refused), after them; SP-3021, from W-51 (an unusable review-layer name),
+  after SP-5901.
+- **W-65** added SP-1009 (warning): no SHA-256 where Web Crypto is missing —
+  the file's fingerprint is `undefined`, never a substitute (SR-IMPORT
+  decision 11).
+- **W-57** added SP-2015 (error, `bad-rule`): a data-validation rule,
+  conditional format or differential format `toXlsx` / `patchXlsx` cannot
+  write as Excel reads it (SR-EXPORT decision 6).
+- **W-66** added SP-3019 (warning): the `ref` attribute or a `#sheetpane=`
+  link names no cell (SR-GRID decision 11d).
+- **W-58** added SP-5401 – SP-5407 (warnings), the first 5400 codes: the
+  host's rules written into the download as Excel's own — a check Excel
+  cannot hold, two checks in one rule, a list it cannot type out, a bound it
+  cannot read, a missing column or sheet, cells that keep their own rule,
+  and a sheet whose rules could not be rewritten (SR-VALIDATION decision 10).
+- **W-54** added SP-3020 (error, `TypeError`): `check()` from
+  `@sheetpane/grid/check` given something other than a file's bytes (SR-GRID
+  decision 22f). Issued as SP-3016 in its lane; renumbered at the merge, as
+  W-68 had taken SP-3016.
+- **W-51** added SP-3021 (warning): a review-layer name that is not one
+  (SR-GRID decision 5d). Issued as SP-3019 in its lane; renumbered at the
+  merge, as W-66 had taken SP-3019.
+- **W-59** added SP-5001 – SP-5005, the 5000 hundred (`@sheetpane/review`:
+  the Review sheet not written, a sheet's cells not coloured, a range too
+  large to colour whole, no styles part, a fill that is not a colour — SR-REVIEW
+  decisions 8–9). Issued as SP-5901 – SP-5905 in its lane; renumbered at the
+  merge, as the 5900 hundred is @sheetpane/compare's (W-63, SP-5901);
+  appended to the lock after SP-3021.
+- **W-52** added SP-2016 (`bad-structure`, an error) and SP-3022 – SP-3025
+  (warnings: a merge cut, a pivot moved, cells pushed off the sheet, a table
+  cut) (SR-EXPORT decision 11, SR-GRID decision 21d). Issued as SP-2015 and
+  SP-3017 – SP-3020 in its lane; renumbered at the merge, as W-57, W-68,
+  W-69, W-66 and W-54 had taken them; appended to the lock after SP-5005.
+- **W-62** added SP-3026 (warning, *Locked in the file*): an edit refused on a
+  locked cell of a protected sheet, carried by `sheetpane-editcancel`
+  `{ reason: 'locked', code: 'SP-3026' }` (SR-GRID decision 21e); since the
+  merge, also W-52's insert or delete refused by the structure lock or a
+  sheet's insert/delete switch (decision 21d). Issued as
+  SP-3020 in its lane; renumbered at the merge, as W-54 had taken it;
+  appended to the lock after SP-3025.
+- **W-67** added SP-3027 (error, `TypeError`: `renderStatic()` given no
+  loaded workbook) and SP-3028 (error, `RangeError`: a sheet it does not
+  hold, a range that is not A1, or more than 200,000 cells) (SR-GRID
+  decision 22g). Issued as SP-3017 and SP-3018 in its lane; renumbered at
+  the merge, as W-68 and W-69 had taken them; appended to the lock after
+  SP-3026.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

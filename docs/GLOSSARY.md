@@ -25,6 +25,8 @@ description: "Recurring terms, defined once."
 | sheetpane-errors | working name of the web component that is the error component |
 | justfile | the root file of recipes for `just`, a command runner; `just --list` shows every repo command (W-10) |
 | column rules | checks a host supplies per column header title (`columns`, `validate`); failures become errors with `author: "host"` that resolve themselves when the cell passes (SR-GRID decision 22) |
+| static table | the HTML `renderStatic()` from `@sheetpane/grid/static` returns: one `<table>` of a range with the grid's text, look and error marks, inline styles only, no script — for a report or an email (SR-GRID decision 22g) |
+| check entry | a package's DOM-free `/check` sub-path (`@sheetpane/grid/check`, `@sheetpane/validation/check`): the checks the pane runs on load, callable from Node or a worker, giving the same errors (SR-GRID decision 22f) |
 | skill | a Markdown file an AI coding agent reads to learn a task; `npx sheetpane-skills install` copies sheetpane's into a repository (SR-SKILLS) |
 | SP code | a permanent `SP-xxxx` code on every error, warning, note and refusal sheetpane shows, listed in `docs/ERRORS.md` (SR-CODES) |
 | rules file | a JSON document of column, cell and range rules per sheet (`"*"` for every sheet), given as `rules` or `rules-src`; checked by the same engine as column rules (SR-GRID decision 22d) |
@@ -34,3 +36,5 @@ description: "Recurring terms, defined once."
 | hook | one of six named functions on the workbook store a plugin may provide: `format`, `decorate`, `derive`, `validate`, `overlay`, `exportPatch` |
 | slot | one of six named places in the grid a plugin's control descriptor may target: `format-row`, `selbar`, `cellbar`, `status`, `cell`, `overlay`; the grid draws the control, the plugin describes it |
 | derived cell | a cell whose value a plugin computed (`derive`) rather than the user typed; marked in the grid, never in the change map |
+| edit · Edits view | one entry of the change map — a cell's value, formula, style or number format, a merge, a freeze, hidden rows … — listed in `<sheetpane-errors>`'s *Edits* view with was → now, its time, the errors it cleared or raised, and its own Revert (`store.edits()`, SR-GRID decision 24, SR-ERRORS decision 17) |
+| rich text · run | a cell whose string mixes formatting (one word in italic); each differently formatted stretch is a run (`<r>`), read into a sheet's `runs` and drawn by `decorateRuns` — see SR-IMPORT decision 12 |

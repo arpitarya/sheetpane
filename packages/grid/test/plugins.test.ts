@@ -11,7 +11,7 @@ const fmt: Plugin = { id: 'fmt', provides: ['format'], format: (c) => (typeof c.
 const bold: Plugin = { id: 'bold', provides: ['decorate'], decorate: (c) => (c.ref === 'A2' ? { 'font-weight': '700', color: 'rgb(255, 0, 0)' } : undefined) };
 const blue: Plugin = { id: 'blue', provides: ['decorate'], after: ['bold'], decorate: (c) => (c.ref === 'A2' ? { color: 'rgb(0, 0, 255)' } : undefined) };
 const twice: Plugin = { id: 'twice', provides: ['derive'], derive: (input, ctx) => {
-  if (input.kind === 'load') return [];
+  if (input.kind !== 'change') return [];
   return input.cells.filter((c) => c.sheet === 'Holdings' && c.ref === 'F3').map((c) => ({ sheet: 'Holdings', ref: 'H3', value: Number(c.value) * 2, text: String(Number(c.value) * 2) }));
 } };
 const positive: Plugin = { id: 'positive', provides: ['validate'], validate: (sheet, ctx) => {
@@ -394,6 +394,8 @@ describe('core fixes the plugin builds asked for', () => {
     expect($(errors, '.ty').textContent).toBe('Workbook rule');
     s.setCell('Holdings', 'H3', '400000');
     expect(s.getErrors()[0]!.found).toBe('400000'); // found follows the cell for machine-authored errors
+    s.setCell('Fee tiers', 'C3', '200000');
+    expect(s.getErrors()[0]).toMatchObject({ status: 'open', expected: '≤ 200000' }); // and expected follows the rule's operands (W-60)
     s.setCell('Fee tiers', 'C3', '500000');
     expect(s.getErrors()[0]!.status).toBe('resolved'); // an edit on the other sheet re-validates
   });

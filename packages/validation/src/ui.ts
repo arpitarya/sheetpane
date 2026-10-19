@@ -5,6 +5,7 @@
 import { registerPlugin, type ControlDescriptor, type Plugin, type Snapshot } from '@sheetpane/grid';
 import { AUTHOR, ERROR_TYPE, lastReport, listRuleAt, validation, type ValidationOptions } from './index.js';
 import { listOptions } from './rules.js';
+import { lastRulesWrite } from './write.js';
 
 /** The controls plugin's id. */
 export const UI_ID = 'validation-ui';
@@ -14,23 +15,30 @@ const ARROW = '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" strok
  * Open validation errors in a snapshot.
  *
  * @param snap - A snapshot of the store.
- * @returns How many errors by the `workbook` author, of type `validation`, are open.
+ * @returns How many errors by the `workbook` author, of type `validation`, are open in the layers shown (W-51).
  */
 export function openWarnings(snap: Snapshot): number {
-  return snap.errors.filter((e) => e.author === AUTHOR && e.type === ERROR_TYPE && e.status === 'open').length;
+  return snap.visibleErrors.filter((e) => e.author === AUTHOR && e.type === ERROR_TYPE && e.status === 'open').length;
 }
 
 /**
- * The status line: `3 validation warnings`, plus `· 1 rule not checked` when some are skipped.
+ * The status line: `3 validation warnings`, plus `· 1 rule not checked` when some are skipped, plus — after an
+ * export that wrote the host's rules (W-58) — `· 2 rules not written to Excel` for those skipped or cut short.
  *
  * @param snap - A snapshot of the store.
- * @returns The text, or `''` when the workbook has no rules.
+ * @returns The text, or `''` when the workbook has no rules and none were written.
  */
 export function statusText(snap: Snapshot): string {
+  const parts: string[] = [];
   const report = lastReport(snap.book);
-  if (!report?.rules) return '';
-  const n = openWarnings(snap), k = report.skipped.length;
-  return `${n} validation warning${n === 1 ? '' : 's'}${k ? ` · ${k} rule${k === 1 ? '' : 's'} not checked` : ''}`;
+  if (report?.rules) {
+    const n = openWarnings(snap), k = report.skipped.length;
+    parts.push(`${n} validation warning${n === 1 ? '' : 's'}${k ? ` · ${k} rule${k === 1 ? '' : 's'} not checked` : ''}`);
+  }
+  const w = lastRulesWrite(snap.book);
+  const u = w ? w.skipped.length + w.conflicts.length : 0;
+  if (u) parts.push(`${u} rule${u === 1 ? '' : 's'} not written to Excel`);
+  return parts.join(' · ');
 }
 
 const listArrow: ControlDescriptor = {

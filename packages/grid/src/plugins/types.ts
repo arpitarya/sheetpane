@@ -1,7 +1,7 @@
 // The plugin contract (plugins verdict decisions 2–7; W-14): six hooks, six slots.
 // A plugin is a plain object; everything it may touch goes through the store.
-import type { Cell, PatchContext } from '@sheetpane/export';
-import type { ImportedSheet, ImportedWorkbook } from '@sheetpane/import';
+import type { Cell, PatchContext, StructureOpName } from '@sheetpane/export';
+import type { ImportedSheet, ImportedWorkbook, TextRun } from '@sheetpane/import';
 import type { Mode, Selection, SheetpaneError, Snapshot } from '../pane/types.js';
 import type { WorkbookStore } from '../pane/store.js';
 
@@ -34,6 +34,14 @@ export interface CellContext {
   readonly value: Cell;
   /** The cell's style index (`s`), the change map's `style` entry applied by plugins themselves. */
   readonly styleIndex: number | undefined;
+  /** A rich-text cell's runs from the file (W-53) — only while the cell still holds the file's value; absent once it is edited. */
+  readonly runs?: readonly TextRun[];
+}
+
+/** One styled piece of a rich-text cell (W-53): a run's text and its CSS from {@link STYLE_PROPS}, never `font-family`. */
+export interface RunStyle {
+  text: string;
+  style?: StyleSubset;
 }
 
 /** What every plugin hook but `format` and `decorate` is given. */
@@ -41,24 +49,39 @@ export interface PluginContext {
   readonly store: WorkbookStore;
   readonly book: ImportedWorkbook;
   snapshot(): Snapshot;
-  /** During `exportPatch`: the options the host passed to `export(options)` (e.g. `{ comments: false }`). */
+  /** During `exportPatch`: the options the host passed to `export(options)` (e.g. `{ comments: false }`, `{ layers: ['pdf'] }` — W-51). */
   readonly exportOptions?: Readonly<Record<string, unknown>>;
 }
 
-/** What `derive` is told: the workbook loaded, or cells changed (by the user, or by undo). */
+/**
+ * What `derive` is told: the workbook loaded, cells changed (by the user, or by undo), or rows or
+ * columns were inserted or deleted (W-52) — `ctx.book` is then the moved workbook and, as on a
+ * load, the provider returns every derived cell (the store replaces its derived set with them).
+ */
 export type DeriveInput =
   | { kind: 'load' }
-  | { kind: 'change'; cells: { sheet: string; ref: string; value: Cell }[] };
+  | { kind: 'change'; cells: { sheet: string; ref: string; value: Cell }[] }
+  | { kind: 'restructure'; sheet: string; op: StructureOpName; at: number; count: number };
 
 /** One recalculated cell. `clear: true` removes the cell's derived entry (its value and text are then ignored). */
 export interface DerivedChange { sheet: string; ref: string; value: Cell; text: string; clear?: boolean }
 
 /** What `validate` returns: an error without the fields the store owns. */
-/** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. */
-export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
+/** `key` tells apart a provider's findings that share a sheet, range and type (several notes on one cell); it is not stored on the error. `layer` (W-51) puts the error in that review layer; without it, `review`. */
+export type ErrorDraft = Omit<SheetpaneError, 'v' | 'id' | 'matchesExpected' | 'createdAt' | 'status' | 'cellChanged' | 'acceptedBy' | 'acceptedAt' | 'reason'> & { status?: 'open' | 'resolved'; cellChanged?: boolean; key?: string };
 
 /** One switch a plugin offers in the Download menu; its `key` reaches `exportPatch` as `ctx.exportOptions[key]`. */
-export interface ExportOption { key: string; label: string; default: boolean }
+export interface ExportOption {
+  key: string;
+  label: string;
+  default: boolean;
+  /**
+   * Whether the switch has anything to do for this workbook (W-58). When it returns `false` the menu leaves the switch
+   * out; when it returns `true` and the switch is on, Download exports even an untouched workbook instead of handing back
+   * the original bytes. Absent: always shown, and Download decides by changes and errors alone.
+   */
+  applies?(store: WorkbookStore): boolean;
+}
 
 /** Something drawn in sheet space (pictures, charts). `rect` is in pixels at 100 % zoom from the top-left of A1. */
 export interface OverlayItem {
@@ -135,6 +158,11 @@ export interface Plugin {
   after?: string[];
   format?(cell: CellContext): string | undefined;
   decorate?(cell: CellContext): StyleSubset | undefined;
+  /**
+   * Part of the `decorate` hook (W-53): a rich-text cell (`cell.runs`) drawn as styled spans inside the cell. The
+   * pieces' text joined must be the cell's display text, or the grid draws it plain. Later providers win.
+   */
+  decorateRuns?(cell: CellContext): RunStyle[] | undefined;
   derive?(input: DeriveInput, ctx: PluginContext): DerivedChange[] | Promise<DerivedChange[]>;
   validate?(sheet: string, ctx: PluginContext): ErrorDraft[];
   overlay?(sheet: string, ctx: PluginContext & { geometry: Geometry }): OverlayItem[];

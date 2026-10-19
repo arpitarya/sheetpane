@@ -27,12 +27,20 @@ function exportsOf(file: string, seen = new Set<string>()): Map<string, Origin> 
   if (done) return done;
   const out = new Map<string, Origin>();
   if (seen.has(file)) return out;
-  const src = read(file);
-  if (src === undefined) return out;
+  const text = read(file);
+  if (text === undefined) return out;
+  // comments out: an @example's `import … from '@sheetpane/…'` is not an import (W-54: grid/check's
+  // example imports validation/check, which imports grid/check — a cycle that cut a real re-export)
+  const src = text.replace(/\/\*[\s\S]*?\*\//g, '');
   seen.add(file);
   const target = (spec: string) => {
-    const pkg = /^@sheetpane\/([\w-]+)$/.exec(spec);
-    return pkg ? join(file.slice(0, file.lastIndexOf('/packages/') + 10), pkg[1]!, 'dist/index.d.ts') : resolve(dirname(file), spec.replace(/\.js$/, '.d.ts'));
+    const pkg = /^@sheetpane\/([\w-]+)(\/[\w-]+)?$/.exec(spec);
+    if (!pkg) return resolve(dirname(file), spec.replace(/\.js$/, '.d.ts'));
+    const dir = join(file.slice(0, file.lastIndexOf('/packages/') + 10), pkg[1]!);
+    if (!pkg[2]) return join(dir, 'dist/index.d.ts');
+    // a sub-path entry (`@sheetpane/grid/check`, W-54): its `types` in the package's exports
+    const sub = (JSON.parse(read(join(dir, 'package.json')) ?? '{}') as { exports?: Record<string, { types?: string }> }).exports?.[`.${pkg[2]}`]?.types;
+    return join(dir, sub ?? `dist${pkg[2]}.d.ts`);
   };
   const names = (list: string) => list.split(',').map((x) => x.trim()).filter(Boolean).map((part) => {
     const [orig, alias] = part.replace(/^type\s+/, '').split(/\s+as\s+/).map((x) => x.trim()) as [string, string?];

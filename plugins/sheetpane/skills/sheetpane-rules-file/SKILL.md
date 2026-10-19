@@ -56,6 +56,35 @@ No Flag issue (cell bar, right-click menu, `F`), no composer, no pop-up card
 ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/0105_GRID.md) decision 22e). The error mark stays on the cell; the panel is the one
 place errors are read.
 
+## Into the download as Excel dropdowns
+
+With `@sheetpane/validation` on the pane, the Download menu offers *Write
+rules as Excel dropdowns* (only while a rules file or column rules are set).
+On, the `.xlsx` carries the rules as the workbook's own data validation, so a
+person who opens it in Excel gets the same dropdowns and checks
+([SR-VALIDATION](https://github.com/arpitarya/sheetpane/blob/main/records/0108_VALIDATION.md) decision 10).
+
+```ts
+import { validation, lastRulesWrite } from '@sheetpane/validation';
+
+const store = createWorkbook({ plugins: [validation({ rulesAsValidation: true })] }); // the switch on at first
+await excel.export({ rulesAsValidation: true });   // or for one export
+lastRulesWrite(excel.workbook?.book);            // { written, merged, skipped, conflicts }
+```
+
+- `oneOf` / `equals` → a dropdown list; `number` / `integer` with `min` /
+  `max` → decimal / whole number; `date` → date (bounds as `2026-01-31` or a
+  serial); `minLength` / `maxLength` → text length; `boolean` → TRUE, FALSE;
+  `required` → "ignore blank" off. A column rule covers the column under the
+  titles to the last row.
+- **Not written, and listed** on the console and the status line: `pattern`,
+  `noneOf`, `unique` (SP-5401); two checks in one rule (SP-5402); a list with
+  a comma in a value or over 255 characters (SP-5403); an unreadable bound
+  (SP-5404); a missing column or sheet (SP-5405).
+- **The workbook's own rule wins** on its cells (SP-5406); a rule that checks
+  the same thing joins it instead of being repeated.
+- `.xlsx` uploads only; a CSV download carries no rules.
+
 ## Pitfalls
 
 - **Never silent:** an unknown key, word, type or version, a sheet, title or
@@ -63,7 +92,8 @@ place errors are read.
   SP-6010 to SP-6025) — read the panel after changing the file.
 - An unknown `version` applies no rule at all.
 - The file is authored by the host; `@sheetpane/validation` reads rules saved
-  in the workbook. They are different things.
+  in the workbook. They are different things — until the download writes the
+  file's rules into the workbook (above), where Excel and sheetpane then agree.
 
 ## Related
 

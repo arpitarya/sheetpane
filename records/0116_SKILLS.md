@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: teaching a host's coding agents to use sheetpane
 owns: [packages/skills/, packages/grid/src/skills-bin.ts, test/skills.test.ts, scripts/build-plugin.mjs, scripts/build-plugin.d.mts, plugins/sheetpane/, .claude-plugin/marketplace.json]
 laws: [L0, L2, L8]
-timestamp: 2026-10-19T05:00:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-35
 ---
@@ -50,7 +50,8 @@ flowchart LR
 
 1. **The package** ships `skills/`, `entry/`, `bin/` only, has no
    dependencies and no build, and is a `dependency` of export, import, grid
-   and all eight plugins at the lockstep version — SR-BUILD decision 7's
+   and every plugin package at the lockstep version (`sheetpane-plugins`
+   lists each, `@sheetpane/tables` since W-61, visibility and compare included) — SR-BUILD decision 7's
    second exception. `@sheetpane/grid` exposes the same `sheetpane-skills`
    bin (`src/skills-bin.ts` forwards to `@sheetpane/skills/bin`), because
    package managers link only direct dependencies' bins.
@@ -63,7 +64,13 @@ flowchart LR
    (`audience`). No `argument-hint`: claude.ai and the Skills API refuse it. A `SKILL.md`
    is ≤ 200 lines. A skill links to its records on GitHub (so the links work
    once installed elsewhere) and never restates a rule as its own
-   (SR-LAW-0).
+   (SR-LAW-0). Where a host's step runs outside the page — checking a file
+   on a server or in a worker — `sheetpane-setup` and `sheetpane-backend`
+   point at `@sheetpane/grid/check` (W-54, SR-GRID decision 22f), and
+   `sheetpane-backend` at `@sheetpane/grid/static` for a report or an email
+   showing the sheet (W-67, SR-GRID decision 22g) — the visible layers'
+   errors by default, sheet and workbook errors in its footer, results only
+   at `marks`, an accepted deviation with its reason.
 2a. **Commands (W-45):** every skill is a command in all three tools (`/name`
     in Claude Code and Kiro, `$name` in Codex), the typed text reaching it
     (`$ARGUMENTS` where filled). Three are written as commands:
@@ -141,6 +148,28 @@ flowchart LR
 - **Owed:** one real prompt per tool from the packed tarballs — W-48, the
   decider's (split from W-35 DoD 8; it did not block W-35). Skill 18 (`sheetpane-frameworks`) was written with
   W-37's typings; `sheetpane-react` points at `@sheetpane/grid/jsx`.
+  `sheetpane-plugins` and `sheetpane-plugin-author` name rich text with W-53
+  (a sheet's `runs`, `decorateRuns`, `richText` on `sheetpane-editstart`), so the
+  drift check covers them. `sheetpane-rules-file` names W-58's *Write rules as
+  Excel dropdowns* (`rulesAsValidation`, `lastRulesWrite`, SP-5401 – SP-5406)
+  and `sheetpane-plugin-author` the export switch's `applies` (W-58).
+- **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
+  cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
+  check (decision 5) reads them against the element's source.
+- **Taught since W-62 (2026-10-19):** `sheetpane-security` covers protected
+  sheets — locked cells refused with SP-3026, hidden formulas, the structure
+  lock (sheets, and since the merge inserts and deletes, with a sheet's
+  insert/delete switches), `protection="ignore"` as the host's decision, and that a password is
+  never read or removed; `sheetpane-events` lists `reason: 'locked'` on
+  `sheetpane-editcancel`.
+- **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,
+  `link="hash"` and *Copy link*, and that React, Vue and Solid set `ref`
+  with `setAttribute` (their own `ref` is the framework's).
+- **Taught since W-52 (2026-10-19):** `sheetpane-events` covers inserting and
+  deleting rows and columns — the menus, the keys, the store methods,
+  `kind: 'structure'` with `op`, `at` and `count`, the SP-3022…3020 refusals;
+  `sheetpane-plugin-author` covers `DeriveInput` `restructure`, the moved
+  `ctx.book` and `restructureFormula`.
 
 ### Alternatives considered
 

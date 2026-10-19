@@ -109,10 +109,32 @@
             "type": "number"
           }
         }
+      },
+      "Tables": {
+        "columns": {
+          "Unit": {
+            "type": "text",
+            "oneOf": [
+              "%",
+              "Copper",
+              "Lead",
+              "Moisture",
+              "Parameter",
+              "Total",
+              "Zinc",
+              "mg/L",
+              "ppm",
+              "ug/L"
+            ]
+          },
+          "Meaning": {}
+        }
       }
     }
   },
   "notes": [
-    "“Numbers” column “Value” mixes types — no type drafted"
+    "“Numbers” column “Value” mixes types — no type drafted",
+    "“Tables” column “Meaning” mixes types — no type drafted",
+    "“Tables” column C has no title in row 1 — no rule drafted"
   ]
 }

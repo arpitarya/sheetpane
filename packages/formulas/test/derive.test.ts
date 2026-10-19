@@ -238,3 +238,43 @@ describe('errors never throw (DoD 6)', () => {
     expect(store.getSnapshot().derived.size).toBe(0);
   });
 });
+
+describe('rows and columns inserted or deleted (W-52 DoD 3: DeriveInput restructure)', () => {
+  it('rebuilds from the moved workbook: totals still add up, a deleted input is #REF!', async () => {
+    const f = formulas();
+    const store = await loaded(await holdings(), [f]);
+    await f.ready();
+    store.insertRows('Holdings', 3); // a new row 4, inside SUM(D3:D5)
+    store.setCell('Holdings', 'B4', '10');
+    store.setCell('Holdings', 'C4', '2');
+    store.setCell('Holdings', 'D4', '=B4*C4', { parse: false });
+    await until(() => derived(store, 'D7')?.value === 387737.5 + 20);
+    await f.ready();
+    expect(store.formula('Holdings', 'D7')).toBe('=SUM(D3:D6)');
+    expect(derived(store, 'D4')?.value).toBe(20);
+    store.deleteCols('Holdings', 1); // Units: every D formula now reads #REF!
+    await until(() => derived(store, 'C3')?.value === '#REF!');
+    await f.ready();
+    expect(store.formula('Holdings', 'C3')).toBe('=#REF!*B3');
+    store.undo();
+    await until(() => derived(store, 'D3') === undefined || derived(store, 'D3')?.value === 322080);
+    await f.ready();
+    expect(store.value('Holdings', 'D3')).toBeCloseTo(322080, 9);
+    expect(store.value('Holdings', 'D7')).toBeCloseTo(387737.5 + 20, 9);
+  });
+
+  it('the download writes the moved formulas and their recalculated values', async () => {
+    const f = formulas();
+    const store = await loaded(await holdings(), [f]);
+    await f.ready();
+    store.deleteRows('Holdings', 3); // AC-2 goes
+    await until(() => derived(store, 'D5')?.value !== undefined);
+    await f.ready();
+    const xml = new TextDecoder().decode(await store.exportFile().then(async (r) => {
+      const { readZip, inflateEntry } = await import('@sheetpane/export');
+      const bytes = new Uint8Array(await r.blob.arrayBuffer());
+      return inflateEntry(bytes, readZip(bytes).find((e) => e.name === 'xl/worksheets/sheet1.xml')!);
+    }));
+    expect(xml).toContain('<f>SUM(D3:D4)</f><v>355552</v>');
+  });
+});

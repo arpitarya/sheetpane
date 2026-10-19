@@ -9,18 +9,26 @@ import { define } from './shared/dom.js';
 // tooling at the declarations and their TSDoc (W-36)
 export { SheetpaneExcel } from './excel/element.js';
 export { SheetpaneErrors } from './errors/element.js';
-export { WorkbookStore, createWorkbook, parseInput, formulaRefs, key as cellKey, splitKey, kindRef, baseRef, SLOTTED_KINDS, HISTORY_CAP, type StoreOptions, type StoreEvent, type Origin } from './pane/store.js';
+export type { HighlightOptions, HighlightRange, HighlightTone } from './excel/element.js';
+export { WorkbookStore, createWorkbook, parseInput, formulaRefs, key as cellKey, splitKey, kindRef, baseRef, editRef, SLOTTED_KINDS, HISTORY_CAP, type StoreOptions, type StoreEvent, type Origin, type ResultCounts } from './pane/store.js';
 export { acquirePane, releasePane, paneStore } from './pane/registry.js';
+// W-62: what the file's protection locks, asked from a snapshot (a plugin control's `disabled`) or the store
+export { LOCKED_MESSAGE, PROTECTION_MODES, STRUCTURE_LOCKED_MESSAGE, formulaHiddenIn, lockedIn, protectionModeOf, sheetProtectionIn, structureLockedIn, structureProtectionIn } from './pane/protection.js';
 export { checkDocument, describeRule, RULE_TYPE, CELL_RULE_TYPE, type RulesDocument, type DocProblem, type ColumnRule, type ColumnRules, type ColumnRulesConfig, type OnInvalid, type RuleContext, type RuleOutcome, type RulePhase, type RuleResult, type ValidateFn } from './pane/rules.js';
-export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, machineAuthored } from './pane/types.js';
+export { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, ERROR_META_MAX, SEVERITY, SEVERITY_ORDER, RESULTS_LEVELS, DEFAULT_LAYER, errorScope, isResult, isLayerName, layerOf, resultsLevelOf, machineAuthored } from './pane/types.js';
 // for plugins whose rules are written against a range's top-left (validation, condfmt): the one implementation
 export { shiftFormula } from '@sheetpane/export';
+// W-61: a table's structured reference (`Units[Name]`) as cells — for plugins that read list sources.
+export { resolveStructuredRef, type StructuredRef, type TableShape } from '@sheetpane/export';
+// inserting and deleting rows and columns (W-52): the shift every plugin's own references follow
+export { restructureFormula, shiftRefText, shiftSqref, shiftIndex, inverseOp, type StructureOp, type StructureOpName } from '@sheetpane/export';
+export type { StructureRefusal } from './pane/structure.js';
 // Stable error codes (W-40), re-exported for plugins that do not depend on @sheetpane/export.
 export { CODES, ERRORS_DOC_URL, codeUrl, spMessage, spError, codeOf, detailOf, type CodeInfo, type SpCode, type SpCoded, type SpError } from '@sheetpane/export';
-export type { SheetpaneError, Severity, Mode, ChangeKind, ChangeEntry, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType } from './pane/types.js';
+export type { SheetpaneError, Severity, ProblemSeverity, ResultSeverity, ResultsLevel, Mode, ChangeKind, ChangeEntry, Edit, EditEffects, DerivedCell, Selection, Composing, LoadState, Source, Snapshot, ErrorType, ErrorScope, ErrorMeta, ErrorStatus, RenderDetail, ErrorsEnvelope, ProtectionMode } from './pane/types.js';
 export { registerPlugin, registeredPluginIds, pluginsFromIds, checkPlugins, mergeDecorations, controlsFor, type PluginFactory } from './plugins/host.js';
 export { HOOKS, SLOTS, SINGLE_PROVIDER, STYLE_PROPS } from './plugins/types.js';
-export type { Plugin, HookName, SlotName, ControlDescriptor, CellContext, PluginContext, DeriveInput, DerivedChange, ErrorDraft, OverlayItem, Geometry, StyleSubset, StyleProp } from './plugins/types.js';
+export type { Plugin, HookName, SlotName, ControlDescriptor, CellContext, PluginContext, DeriveInput, DerivedChange, ErrorDraft, OverlayItem, Geometry, StyleSubset, StyleProp, RunStyle } from './plugins/types.js';
 export { sheetGeometry, charsToPx, ROW_H, HEAD_H, ROWHEAD_W } from './excel/geometry.js';
 export { DARK_TOKENS, TOKENS, TOKENS_CSS, type Theme, type TokenName } from './tokens.js';
 

@@ -80,7 +80,11 @@ W-16 asked for recalculation on the plugins verdict's single-provider
    reverted away, return `clear: true` (SR-GRID 21b), so ⟳ and export mean
    "recalculated". Calls queue; calls behind a running recalculation share one
    evaluation. Numbers compare at a 1e-14 relative tolerance; `null` equals
-   `''`. Values are read at 15 significant digits.
+   `''`. Values are read at 15 significant digits. On `restructure` (rows or
+   columns inserted or deleted, W-52) the model is rebuilt from the moved
+   workbook, as on a load — its formulas, and typed ones in the change map,
+   already point where Excel would point them, `#REF!` for a deleted cell —
+   and the whole derived set is returned.
 5. **Errors:** `#DIV/0!`, `#REF!`, `#N/A` are values; a half-typed formula
    never throws (it shows IronCalc's `#ERROR!`). A cycle shows 0, as Excel
    does, is listed by `cycles()`, marked ↻ and named in the status line. A
@@ -96,7 +100,9 @@ W-16 asked for recalculation on the plugins verdict's single-provider
    the selection, `⟳ N cells recalculated`, circular references; `cell`
    marks ⟳ (recalculated), ↻ (cycle), ≈ (unsupported); `overlay` — coloured,
    labelled outlines of the referenced ranges while a formula is edited
-   (drawn as four edges, so cells stay clickable).
+   (drawn as four edges, so cells stay clickable). A hidden formula on a
+   protected sheet (W-62, SR-GRID 21e — `formulaHiddenIn`) shows no `fx` and
+   no outlines; its value only.
 8. **`evaluate(formula, { sheet, ref })`** returns one formula's value
    synchronously, through a scratch cell (the sheet's last cell) set,
    evaluated, read and cleared — the workbook is never touched. It serves

@@ -5,9 +5,9 @@ decision 9). Publishing is **only** `.github/workflows/publish.yml`, run by a
 published GitHub Release. It uses npm trusted publishing (OIDC): no `NPM_TOKEN`
 exists anywhere, and none should be added.
 
-The packages: `@sheetpane/charts`, `comments`, `condfmt`, `export`, `fixtures`,
-`formulas`, `grid`, `images`, `import`, `mcp`, `numfmt`, `skills`, `styles`,
-`testing`, `validation`, `visibility`, and the unscoped `create-sheetpane`. Each
+The packages: `@sheetpane/charts`, `comments`, `compare`, `condfmt`, `export`, `fixtures`,
+`formulas`, `grid`, `images`, `import`, `mcp`, `numfmt`, `review`, `skills`, `styles`,
+`tables`, `testing`, `validation`, `visibility`, and the unscoped `create-sheetpane`. Each
 ships its build output (`dist/`, or `bin/`, `templates/`, `skills/`) with its
 README and LICENSE, never `src/` or tests.
 
@@ -29,17 +29,17 @@ that already exists, so the first publish cannot come from CI.
    git checkout main
    ```
    npm asks for a code from your authenticator on every write. One fresh code
-   usually covers all 17 if you go straight through; if it expires, re-run the
+   usually covers all 18 if you go straight through; if it expires, re-run the
    loop with a new code. A version already on npm is refused, not
    overwritten, so re-running is safe.
-4. **A trusted publisher on each of the 17 packages.** On npmjs.com, open
+4. **A trusted publisher on each of the 18 packages.** On npmjs.com, open
    *package → Settings → Trusted Publisher → GitHub Actions* and fill in:
    - **Organization or user:** `arpitarya`
    - **Repository:** `sheetpane`
    - **Workflow filename:** `publish.yml`
    - **Environment name:** `npm`
 
-   Then tick **Allow npm publish**. Or let `scripts/npm-trust.sh` do all 17
+   Then tick **Allow npm publish**. Or let `scripts/npm-trust.sh` do all 18
    with `npm trust github`. It needs npm 12 and asks for your login and 2FA.
 5. **The `npm` environment in GitHub:** *Settings → Environments → New
    environment → `npm`*. Add yourself as a required reviewer if you want to
@@ -74,7 +74,7 @@ has a `BREAKING CHANGE:` footer.
    release creates the tag and runs `publish.yml`, which:
    - refuses unless `ci.yml` succeeded on this commit;
    - checks version parity and that the tag is the packages' version;
-   - builds once and packs the 17 tarballs;
+   - builds once and packs the 18 tarballs;
    - checks each tarball (README, LICENSE and build output present; no
      `src/`, no tests, no `workspace:`);
    - publishes each one with provenance. A version with a `-` (e.g.

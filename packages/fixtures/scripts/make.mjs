@@ -48,7 +48,7 @@ function cellXml(ref, c) {
   if (o.f) return `<c r="${ref}"${s} t="str">${f}<v>${esc(o.v ?? '')}</v></c>`;
   return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${esc(o.v)}</t></is></c>`;
 }
-function sheetXml({ cells, cols = [], tail = '' }) {
+function sheetXml({ cells, cols = [], colStyle = {}, tail = '' }) {
   const rows = new Map();
   for (const [ref, c] of Object.entries(cells)) {
     const r = Number(/\d+/.exec(ref)[0]);
@@ -57,7 +57,7 @@ function sheetXml({ cells, cols = [], tail = '' }) {
   }
   const colIdx = (ref) => [.../^[A-Z]+/.exec(ref)[0]].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0);
   const body = [...rows].sort(([a], [b]) => a - b).map(([r, cs]) => `<row r="${r}">${cs.sort(([a], [b]) => colIdx(a) - colIdx(b)).map(([ref, c]) => cellXml(ref, c)).join('')}</row>`).join('');
-  const colsXml = cols.length ? `<cols>${cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+  const colsXml = cols.length ? `<cols>${cols.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}"${colStyle[i + 1] ? ` style="${colStyle[i + 1]}"` : ''} customWidth="1"/>`).join('')}</cols>` : '';
   return `${XML}<worksheet xmlns="${NS}" xmlns:r="${R}">${colsXml}<sheetData>${body}</sheetData>${tail}</worksheet>`;
 }
 
@@ -92,6 +92,12 @@ const drawing = (body) => `${XML}<xdr:wsDr xmlns:xdr="${XDR}" xmlns:a="${A}" xml
 const PLACEHOLDER = '[Threaded comment]\n\nYour version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924';
 const PERSONS = [{ id: '{1F0C2D1E-6A5B-4B1C-9E2F-0A1B2C3D4E5F}', name: 'Arpit' }, { id: '{2A1D3E2F-7B6C-4C2D-8F3A-1B2C3D4E5F60}', name: 'Priya' }];
 const THREAD_ID = '{8C1B2A3D-4E5F-4061-8273-9A0B1C2D3E4F}';
+
+// ── tables (W-61) ─────────────────────────────────────────────────────────────
+const UNITS = [['mg/L', 'milligrams per litre'], ['ug/L', 'micrograms per litre'], ['%', 'percent'], ['ppm', 'parts per million']];
+const READINGS = [['Lead', 3, 'mg/L'], ['Zinc', 40, 'ug/L'], ['Moisture', 12, '%'], ['Copper', 7, 'ppm']];
+/** A table part: its range, the filter range (the totals row left out), columns, `tableStyleInfo` and extra attributes. */
+const tableXml = (id, name, ref, filter, columns, style, extra = '') => `${XML}<table xmlns="${NS}" id="${id}" name="${name}" displayName="${name}" ref="${ref}"${extra}><autoFilter ref="${filter}"/><tableColumns count="${columns.length}">${columns.map((c, i) => `<tableColumn id="${i + 1}" name="${esc(c.name)}"${c.label ? ` totalsRowLabel="${esc(c.label)}"` : ''}${c.fn ? ` totalsRowFunction="${c.fn}"` : ''}/>`).join('')}</tableColumns><tableStyleInfo ${style}/></table>`;
 
 // ── the sheets ────────────────────────────────────────────────────────────
 const sheets = [
@@ -145,6 +151,16 @@ const sheets = [
     ['rId2', `${R}/vmlDrawing`, '../drawings/vmlDrawing1.vml'],
     ['rId3', 'http://schemas.microsoft.com/office/2017/10/relationships/threadedComment', '../threadedComments/threadedComment1.xml'],
   ] },
+  // W-61: two Excel tables; Readings' Unit column is a list over Units[Unit], through the defined name UnitList
+  // Units at A1:B5; Readings at A8:C13, under it, with a totals row
+  { name: 'Tables', cols: [12, 22, 10], cells: {
+    A1: 'Unit', B1: 'Meaning',
+    ...Object.fromEntries(UNITS.flatMap(([u, m], i) => [[`A${i + 2}`, u], [`B${i + 2}`, m]])),
+    A8: 'Parameter', B8: 'Value', C8: 'Unit',
+    ...Object.fromEntries(READINGS.flatMap(([p, v, u], i) => [[`A${i + 9}`, p], [`B${i + 9}`, v], [`C${i + 9}`, u]])),
+    A13: 'Total', B13: { f: 'SUM(B9:B12)', v: READINGS.reduce((n, r) => n + r[1], 0) },
+  }, tail: '<dataValidations count="1"><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Unit" error="Pick a unit from the Units table" sqref="C9:C12"><formula1>UnitList</formula1></dataValidation></dataValidations><tableParts count="2"><tablePart r:id="rId1"/><tablePart r:id="rId2"/></tableParts>',
+    rels: [['rId1', `${R}/table`, '../tables/table1.xml'], ['rId2', `${R}/table`, '../tables/table2.xml']] },
 ];
 
 const parts = {};
@@ -166,12 +182,14 @@ const shape = (id, row, col) => `<v:shape id="_x0000_s${id}" type="#_x0000_t202"
 parts['xl/drawings/vmlDrawing1.vml'] = `<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout><v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype>${shape(1025, 1, 0)}${shape(1026, 2, 1)}</xml>`;
 parts['xl/threadedComments/threadedComment1.xml'] = `${XML}<ThreadedComments xmlns="${TC}" xmlns:x="${NS}"><threadedComment ref="B3" dT="2026-09-30T10:00:00.00" personId="${PERSONS[0].id}" id="${THREAD_ID}"><text>Is this the September price?</text></threadedComment><threadedComment ref="B3" dT="2026-09-30T11:30:00.00" personId="${PERSONS[1].id}" id="{9D2C3B4E-5F60-4172-9384-AB1C2D3E4F50}" parentId="${THREAD_ID}"><text>Yes — the 30 Sep close.</text></threadedComment></ThreadedComments>`;
 parts['xl/persons/person.xml'] = `${XML}<personList xmlns="${TC}" xmlns:x="${NS}">${PERSONS.map((p) => `<person displayName="${p.name}" id="${p.id}" userId="${p.name}" providerId="None"/>`).join('')}</personList>`;
+parts['xl/tables/table1.xml'] = tableXml(1, 'Units', 'A1:B5', 'A1:B5', [{ name: 'Unit' }, { name: 'Meaning' }], 'name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"', ' totalsRowShown="0"');
+parts['xl/tables/table2.xml'] = tableXml(2, 'Readings', 'A8:C13', 'A8:C12', [{ name: 'Parameter', label: 'Total' }, { name: 'Value', fn: 'sum' }, { name: 'Unit' }], 'name="TableStyleMedium7" showFirstColumn="1" showLastColumn="0" showRowStripes="1" showColumnStripes="0"', ' totalsRowCount="1"');
 parts['xl/styles.xml'] = styles;
 const n = sheets.length;
-parts['xl/workbook.xml'] = `${XML}<workbook xmlns="${NS}" xmlns:r="${R}"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${sheets.map((s, i) => `<sheet name="${s.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`;
+parts['xl/workbook.xml'] = `${XML}<workbook xmlns="${NS}" xmlns:r="${R}"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${sheets.map((s, i) => `<sheet name="${s.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets><definedNames><definedName name="UnitList">Units[Unit]</definedName></definedNames></workbook>`;
 parts['xl/_rels/workbook.xml.rels'] = `${XML}<Relationships xmlns="${PR}">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${n + 1}" Type="${R}/styles" Target="styles.xml"/><Relationship Id="rId${n + 2}" Type="http://schemas.microsoft.com/office/2017/10/relationships/person" Target="persons/person.xml"/></Relationships>`;
 parts['_rels/.rels'] = `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
-parts['[Content_Types].xml'] = `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${overrides.join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/charts/chart2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/comments1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/><Override PartName="/xl/threadedComments/threadedComment1.xml" ContentType="application/vnd.ms-excel.threadedcomments+xml"/><Override PartName="/xl/persons/person.xml" ContentType="application/vnd.ms-excel.person+xml"/></Types>`;
+parts['[Content_Types].xml'] = `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${overrides.join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/charts/chart2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/comments1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/><Override PartName="/xl/threadedComments/threadedComment1.xml" ContentType="application/vnd.ms-excel.threadedcomments+xml"/><Override PartName="/xl/persons/person.xml" ContentType="application/vnd.ms-excel.person+xml"/>${[1, 2].map((i) => `<Override PartName="/xl/tables/table${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>`).join('')}</Types>`;
 
 const enc = (x) => (typeof x === 'string' ? new TextEncoder().encode(x) : new Uint8Array(x));
 const files = new URL('../files/', import.meta.url);
@@ -184,9 +202,9 @@ out('showcase.xlsx', await zip(parts));
 async function book(spec) {
   const p = {
     '_rels/.rels': `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`,
+    'xl/workbook.xml': `${XML}<workbook xmlns="${NS}" xmlns:r="${R}">${spec.date1904 ? '<workbookPr date1904="1"/>' : ''}${spec.workbookProtection ?? ''}<sheets>${spec.sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets>${spec.names ? `<definedNames>${spec.names.map(([name, f]) => `<definedName name="${name}">${esc(f)}</definedName>`).join('')}</definedNames>` : ''}</workbook>`,
     'xl/_rels/workbook.xml.rels': `${XML}<Relationships xmlns="${PR}">${spec.sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${spec.sheets.length + 1}" Type="${R}/styles" Target="styles.xml"/></Relationships>`,
-    'xl/styles.xml': styles,
+    'xl/styles.xml': spec.styles ?? styles,
     '[Content_Types].xml': `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${spec.sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
   };
   spec.sheets.forEach((s, i) => { p[`xl/worksheets/sheet${i + 1}.xml`] = sheetXml(s); });
@@ -201,6 +219,58 @@ const EDGE = [
   { name: 'edge/formula-errors.xlsx', spec: { sheets: [{ name: 'Errors', cells: { A1: 0, B1: { f: '1/A1', v: '#DIV/0!' }, C1: { f: '#REF!+1', v: '#REF!' }, D1: { f: 'NA()', v: '#N/A' } } }] }, features: ['cached formula errors'] },
 ];
 for (const e of EDGE) out(e.name, await book(e.spec));
+
+// ── W-60: dependent lists — a Unit list that follows the Parameter, one defined name per parameter ─────────
+const PARAMS = [['Turbidity', ['NTU', 'FNU']], ['Temperature', ['°C', '°F']], ['Conductivity', ['µS/cm', 'mS/cm']], ['Nitrate', ['mg/L', 'mg N/L']]];
+const PARAM_ROWS = [['Turbidity', 1.8, 'NTU'], ['Temperature', 21.5, '°C'], ['Conductivity', 412, 'µS/cm'], ['Nitrate', 3.2, 'mg/L'], ['Turbidity', 2.4, '°C']]; // the last unit is stale: C6 fails
+const colL = (i) => String.fromCharCode(66 + i); // B, C, D, E — one column of units per parameter on Lists
+const DEPENDENT = { names: [['Parameters', `Lists!$A$2:$A$${PARAMS.length + 1}`], ...PARAMS.map(([p, us], i) => [p, `Lists!$${colL(i)}$2:$${colL(i)}$${us.length + 1}`])], sheets: [
+  { name: 'Readings', cols: [16, 10, 10], cells: {
+    A1: { v: 'Parameter', s: XF.bold }, B1: { v: 'Value', s: XF.bold }, C1: { v: 'Unit', s: XF.bold },
+    ...Object.fromEntries(PARAM_ROWS.flatMap(([p, v, u], i) => [[`A${i + 2}`, p], [`B${i + 2}`, v], [`C${i + 2}`, u]])),
+  }, tail: '<dataValidations count="2"><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Parameter" error="Pick a parameter from the list" sqref="A2:A20"><formula1>Parameters</formula1></dataValidation><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Unit" error="Pick a unit for this parameter" sqref="C2:C20"><formula1>INDIRECT($A2)</formula1></dataValidation></dataValidations>' },
+  { name: 'Lists', cols: [16, 10, 12, 12, 10], cells: {
+    A1: { v: 'Parameter', s: XF.bold }, ...Object.fromEntries(PARAMS.map(([p], i) => [`A${i + 2}`, p])),
+    ...Object.fromEntries(PARAMS.flatMap(([p, us], i) => [[`${colL(i)}1`, { v: p, s: XF.bold }], ...us.map((u, k) => [`${colL(i)}${k + 2}`, u])])),
+  } },
+] };
+out('dependent-lists.xlsx', await book(DEPENDENT));
+// ── a compare pair (W-63): two versions of one spec workbook ─────────────────────
+// Holdings, keyed by Account: AC-10037's price changed, AC-10044 removed, AC-10099 added,
+// AC-10052 moved to the top; Fees renamed Fee schedule (one rate changed); Notes removed;
+// Summary added. diffWorkbooks(base, now, { key: 'Account' }) finds exactly these.
+const HOLDINGS = [['AC-10021', 'Priya Shah', 1200, 268.4], ['AC-10037', 'Tom Reyes', 430, 74.85], ['AC-10044', 'Ana Ruiz', 75, 12.1], ['AC-10052', 'Lee Wong', 900, 33.5], ['AC-10068', 'Sam Park', 310, 102.25]];
+const holdings = (rows) => ({ name: 'Holdings', cols: [12, 14, 8, 10], cells: Object.fromEntries([['Account', 'Name', 'Units', 'Price'], ...rows].flatMap((r, i) => r.map((v, j) => [`${'ABCD'[j]}${i + 1}`, i ? v : { v, s: XF.bold }]))) });
+const fees = (name, rates) => ({ name, cells: Object.fromEntries([['Tier', 'Rate'], ...rates].flatMap((r, i) => r.map((v, j) => [`${'AB'[j]}${i + 1}`, i ? v : { v, s: XF.bold }]))) });
+const COMPARE = [
+  { name: 'compare/base.xlsx', spec: { sheets: [holdings(HOLDINGS), fees('Fees', [['Bronze', 0.75], ['Silver', 0.5], ['Gold', 0.35], ['Platinum', 0.2]]), { name: 'Notes', cells: { A1: 'Draft — not for release' } }] }, features: ['the older version of a compare pair (W-63)'] },
+  { name: 'compare/now.xlsx', spec: { sheets: [holdings([HOLDINGS[3], HOLDINGS[0], [HOLDINGS[1][0], HOLDINGS[1][1], HOLDINGS[1][2], 76.1], HOLDINGS[4], ['AC-10099', 'Mia Chen', 50, 18.75]]), fees('Fee schedule', [['Bronze', 0.75], ['Silver', 0.45], ['Gold', 0.35], ['Platinum', 0.2]]), { name: 'Summary', cells: { A1: 'Accounts', B1: 5 } }] }, features: ['the newer version of a compare pair (W-63): one price changed, a row removed, added and moved; a sheet renamed, one removed, one added'] },
+];
+for (const c of COMPARE) out(c.name, await book(c.spec));
+// ── W-62: protection — a spec sheet whose Value, Unit and Description stay open, a hidden formula, a locked list,
+// an unprotected sheet, and the structure locked. The password is `sheetpane`, stored as Excel's legacy hash.
+const legacyHash = (pw) => { // ECMA-376 Part 4 §14.7.1: the 16-bit password verifier
+  let h = 0;
+  for (let i = pw.length - 1; i >= 0; i--) { h = ((h >> 14) & 1) | ((h << 1) & 0x7fff); h ^= pw.charCodeAt(i); }
+  h = ((h >> 14) & 1) | ((h << 1) & 0x7fff);
+  return ((h ^ pw.length) ^ 0xce4b).toString(16).toUpperCase();
+};
+const PW = legacyHash('sheetpane');
+// two formats past the shared ones: 13 unlocked, 14 locked with its formula hidden
+const XF_OPEN = 13, XF_HIDDEN = 14;
+const protStyles = styles.replace('<cellXfs count="13">', '<cellXfs count="15">').replace('</cellXfs>', '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection locked="0"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyProtection="1"><protection hidden="1"/></xf></cellXfs>');
+const SPEC_ROWS = [['Lead', 3, 'mg/L', 'Total lead, filtered'], ['Zinc', 40, 'ug/L', 'Dissolved zinc'], ['Copper', 7, 'ppm', '']];
+const SHEET_LOCK = `<sheetProtection password="${PW}" sheet="1" objects="1" scenarios="1"/>`;
+const PROTECTED = { styles: protStyles, workbookProtection: `<workbookProtection workbookPassword="${PW}" lockStructure="1"/>`, sheets: [
+  { name: 'Spec', cols: [14, 10, 10, 28, 10], colStyle: { 2: XF_OPEN, 3: XF_OPEN, 4: XF_OPEN }, cells: {
+    A1: { v: 'Parameter', s: XF.bold }, B1: { v: 'Value', s: XF.bold }, C1: { v: 'Unit', s: XF.bold }, D1: { v: 'Description', s: XF.bold }, E1: { v: 'Limit', s: XF.bold },
+    ...Object.fromEntries(SPEC_ROWS.flatMap(([p, v, u, d], i) => [[`A${i + 2}`, p], [`B${i + 2}`, { v, s: XF_OPEN }], [`C${i + 2}`, { v: u, s: XF_OPEN }], ...(d ? [[`D${i + 2}`, { v: d, s: XF_OPEN }]] : []), [`E${i + 2}`, { f: `B${i + 2}*1.1`, v: Math.round(v * 11) / 10, s: XF_HIDDEN }]])),
+  }, tail: SHEET_LOCK },
+  { name: 'Lists', cols: [10, 24], cells: { A1: { v: 'Unit', s: XF.bold }, B1: { v: 'Meaning', s: XF.bold }, ...Object.fromEntries(UNITS.flatMap(([u, m], i) => [[`A${i + 2}`, u], [`B${i + 2}`, m]])) }, tail: SHEET_LOCK },
+  { name: 'Notes', cells: { A1: { v: 'Note', s: XF.bold }, A2: 'This sheet is not protected: every cell edits.' } },
+  { name: 'Archive', hidden: true, cells: { A1: { v: 'Old limits', s: XF.bold }, A2: 'Kept hidden; the structure lock keeps it so.' } },
+] };
+out('protected.xlsx', await book(PROTECTED));
 // refused on purpose (SR-LAW-3: .xlsx and .csv only)
 out('edge/legacy.xls', new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, ...new Array(504).fill(0)]));
 out('edge/not-a-zip.xlsx', 'this is not a workbook');
@@ -223,9 +293,12 @@ const manifest = {
   version: 1,
   note: 'Hand-built by scripts/make.mjs unless appSaved names the app that saved it; hand-built files prove behaviour, not Excel compatibility.',
   files: [
-    { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread'] },
+    { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread', 'two Excel tables, a list rule over a table column'] },
     { name: 'showcase.rules.json', kind: 'rules', appSaved: null, for: 'showcase.xlsx', errors: ['Validation!C3', 'Validation!B4', 'Formulas!B3', 'Formulas!B6', 'Formulas!B7', 'Numbers!B3'] },
+    { name: 'dependent-lists.xlsx', kind: 'xlsx', appSaved: null, sheets: DEPENDENT.sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['dependent lists: a Parameter list, and a Unit list =INDIRECT($A2) over one defined name per parameter (W-60)', 'one stale unit (Readings!C6 fails)'] },
+    { name: 'protected.xlsx', kind: 'xlsx', appSaved: null, sheets: PROTECTED.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: ['sheet protection with a password (`sheetpane`, Excel’s legacy hash): Spec’s Value, Unit and Description unlocked (cells and columns), Parameter and the header locked (W-62)', 'Spec’s Limit a hidden formula', 'Lists protected, every cell locked; Notes not protected', 'the workbook structure locked; Archive hidden'] },
     ...EDGE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: e.features })),
+    ...COMPARE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: false, headers: headersOf(s.cells) })), features: e.features })),
     { name: 'edge/legacy.xls', kind: 'refused', appSaved: null, features: ['a legacy .xls (compound file) header'] },
     { name: 'edge/not-a-zip.xlsx', kind: 'refused', appSaved: null, features: ['not a ZIP package'] },
     ...Object.keys(CSV).map((name) => ({ name, kind: 'csv', appSaved: null, sheets: [{ name: name.slice(4, -4), headers: name === 'csv/quoted.csv' ? ['Name', 'Note'] : name === 'csv/formula-guard.csv' ? ['Cell', 'Text'] : ROWS[0] }], features: [name.slice(4, -4)] })),

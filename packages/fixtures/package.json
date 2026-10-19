@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/fixtures",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Known workbooks for testing a sheetpane host: the showcase, its rules sample, CSV dialects and edge cases, with a manifest of what each holds.",
   "license": "MIT",
   "repository": {
@@ -32,9 +32,15 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@sheetpane/comments": "workspace:*",
+    "@sheetpane/condfmt": "workspace:*",
     "@sheetpane/export": "workspace:*",
+    "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*",
-    "@sheetpane/import": "workspace:*"
+    "@sheetpane/import": "workspace:*",
+    "@sheetpane/numfmt": "workspace:*",
+    "@sheetpane/styles": "workspace:*",
+    "@sheetpane/validation": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

@@ -74,6 +74,31 @@ async function gallery(page, name) {
   await t.x.locator('.hmk[data-hid="rows:2-2"]').click();
   await t.x.locator('#c2_0').waitFor();
   check(gone && (await t.x.evaluate((el) => el.workbook.hidden('Numbers').rows.length)) === 0, `${name}: Hide and show hides row 3 from its header menu, marks it, and a marker click unhides it`);
+  // W-61: Tables — each table drawn by its style; Readings' Unit list follows Units[Unit]
+  t = await tab('Tables', 'tables', 'Tables');
+  const bg = (id) => t.x.locator(id).evaluate((el) => getComputedStyle(el).backgroundColor);
+  const drawn = (await bg('#c0_0')) === 'rgb(68, 114, 196)' && (await bg('#c7_0')) === 'rgb(112, 173, 71)';
+  await t.x.locator('#c8_2').click();
+  await t.x.locator('input.cell').fill('furlong');
+  await t.x.locator('input.cell').press('Enter');
+  const unitError = () => t.x.evaluate((el) => el.workbook.getErrors().find((x) => x.sheet === 'Tables' && x.range === 'C9' && x.status === 'open')?.expected ?? '');
+  await t.e.locator('.item').nth(2).waitFor({ timeout: 15000 });
+  check(drawn && (await unitError()) === 'list — mg/L, ug/L, %, ppm', `${name}: Tables draws both tables in their styles, and C9’s list is Units[Unit] (${await unitError()})`);
+  // W-63: Compare — the fixtures' newer spec against its base (read in the page), keyed by Account
+  t = await tab('Compare', 'compare', 'Holdings');
+  await t.x.locator('.status').filter({ hasText: 'Compared with base.xlsx: 4 sheets · 7 rows · 2 cells changed' }).waitFor({ timeout: 15000 });
+  const amber = await t.x.locator('#c3_3').evaluate((el) => getComputedStyle(el).backgroundColor);
+  await t.x.locator('#c1_1').click();
+  await t.x.locator('.grid').press('Alt+F5');
+  const stepped = await t.x.evaluate((el) => el.workbook.getSnapshot().selection.ref);
+  const listed = await t.x.evaluate((el) => el.workbook.getErrors().filter((x) => x.type === 'compare').length);
+  check(amber === 'rgba(191, 135, 0, 0.3)' && stepped === 'D4' && listed === 7, `${name}: Compare tints the changed price, sums up 4 sheets · 7 rows · 2 cells, lists 7 changes, and Alt+F5 steps to D4 (${amber}, ${stepped}, ${listed})`);
+  // W-59: Review sheet — flag a cell, download: the file carries a Review sheet listing it, linked to its cell
+  t = await tab('Review sheet', 'review-sheet', 'Numbers');
+  const flagged = await t.x.evaluate((el) => el.workbook.addError({ sheet: 'Numbers', range: 'B6', type: 'wrong-value', severity: 'error', message: 'demo-check' }).id);
+  const reviewed = await t.x.evaluate(async (el) => Array.from(new Uint8Array(await (await el.export({ reviewFills: true })).arrayBuffer())));
+  const rv = await readValues(new Uint8Array(reviewed), 'showcase.xlsx');
+  check(rv.names.at(-1) === 'Review' && valueAt(rv, 'Review!A2') === flagged && valueAt(rv, 'Review!C2') === 'B6' && valueAt(rv, 'Numbers!B6') === 1.25, `${name}: Review sheet — the download lists the flagged cell on a Review sheet, its own cells unchanged`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

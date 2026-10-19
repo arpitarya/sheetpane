@@ -25,8 +25,10 @@ Ctrl+Shift+0 is often taken by the input-language hotkey — the header menu alw
 - **Changes:** hiding is counted once per sheet and axis, undoable, and the download carries it
   (`patchXlsx`'s `hidden` option). Revealing for viewing never is.
 - **Rules:** the last visible sheet cannot be hidden ("A workbook needs one visible sheet"); a CSV
-  stores no hidden state, so the controls are disabled there.
+  stores no hidden state, so the controls are disabled there; a workbook whose structure the file
+  protects keeps its sheets — Hide sheet (and the banner's Unhide) is disabled with the reason
+  until the host sets `protection="ignore"`.
 - **Headless:** `visibility()` from `@sheetpane/visibility`, and the actions `setSpanHidden`,
-  `setSheetHidden`, `hiddenIn`, `canHideSheet`, `spanOf`.
+  `setSheetHidden`, `hiddenIn`, `canHideSheet`, `spanOf`, `sheetBlockedReason`.
 
 Spec: [SR-VISIBILITY](../../records/0121_VISIBILITY.md). MIT.

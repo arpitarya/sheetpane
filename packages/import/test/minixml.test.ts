@@ -7,7 +7,7 @@ import d1904 from './fixtures/exceljs-1904.xlsx?inline';
 import freezeFx from './fixtures/exceljs-freeze.xlsx?inline';
 import { read } from '../src/index.js';
 import { SAMPLE_BOOK } from '../../export/test/fixtures/sample.js';
-import { fromDataUrl, hiddenPkg } from './helpers.js';
+import { fromDataUrl, hiddenPkg, protectedPkg, tablesPkg } from './helpers.js';
 
 const real = globalThis.DOMParser;
 afterEach(() => { globalThis.DOMParser = real; });
@@ -19,6 +19,8 @@ describe('the built-in XML reader matches DOMParser (SR-IMPORT decision 8)', () 
     ['exceljs-freeze.xlsx', async () => fromDataUrl(freezeFx)],
     ['the design sample, written by toXlsx', () => toXlsx(SAMPLE_BOOK)],
     ['hidden sheets, rows, columns and outlines (W-49)', async () => hiddenPkg()],
+    ['two Excel tables (W-61)', async () => tablesPkg()],
+    ['sheet, workbook and cell protection (W-62)', async () => protectedPkg()],
   ];
   it.each(files)('%s', async (name, load) => {
     const bytes = await load();

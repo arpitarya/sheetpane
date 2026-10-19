@@ -4,5 +4,8 @@ export { read, type ReadAnyOptions } from './read.js';
 export { fromXlsx, type ReadOptions } from './xlsx.js';
 export { fromCsv, detectDelimiter, parseCsv, sheetNameFrom, type CsvOptions, type Delimiter } from './csv.js';
 export { ImportError, importSpCode, type ImportErrorCode } from './errors.js';
+export { sha256 } from './hash.js';
+export { cellProtection } from './protection.js';
 export { formatCode, general, inSubset, subsetCode, serialToParts, BUILTIN as BUILTIN_FORMATS } from './numfmt.js';
+export { restructureWorkbook, shiftTables } from './shift.js';
 export type * from './types.js';

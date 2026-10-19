@@ -22,7 +22,8 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-*Empty since 2026-10-19 — W-44 closed: 0.3.0 published from CI. Next gate: W-30 and W-48, the decider's own hands-on runs (testing).*
+
+*Empty since 2026-10-19 — next gate: W-30 and W-48, the decider's hands-on runs (testing), and the first npm publish of `@sheetpane/tables`, `review` and `compare` for 0.4.0.*
 
 ---
 
@@ -30,49 +31,9 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-50** `agent` · **G1** · Pass and not-checked marks: show what is right, not only what is wrong. Filed by Arpit (Cowork). [detail](open/W-50-pass-and-not-checked.md)
-
-- 🟢 **W-51** `agent` · **G1** · Review layers: several sets of errors in one pane, switched without losing any. Filed by Arpit (Cowork). [detail](open/W-51-review-layers.md)
-
-- 🟢 **W-52** `agent` · **G1** · Insert and delete rows and columns in Edit, with every reference shifted. Filed by Arpit (Cowork). [detail](open/W-52-insert-delete-rows-columns.md)
-
-- 🟢 **W-53** `agent` · **G1** · Rich text: keep a cell's formatted runs (one word in italic) on import and draw them. Filed by Arpit (Cowork). [detail](open/W-53-rich-text-runs.md)
-
-- 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
-
-- 🟢 **W-55** `agent` · **G1** · Errors that belong to a whole sheet or the whole workbook, not a cell. Filed by Arpit (Cowork). [detail](open/W-55-sheet-and-workbook-errors.md)
-
-- 🟢 **W-56** `agent` · **G1** · A hover event and a host highlight that does not move the selection. Filed by Arpit (Cowork). [detail](open/W-56-hover-and-highlight.md)
-
-- 🟢 **W-57** `agent` · **G2** · Export writes data validation and conditional formatting. Filed by Arpit (Cowork). [detail](open/W-57-export-writes-validation-and-conditional-formats.md)
-
-- 🟡 **W-58** `agent` · **G2** · Write the rules file into the download as Excel's own dropdowns and checks. Waiting on W-57. Filed by Arpit (Cowork). [detail](open/W-58-rules-file-as-excel-dropdowns.md)
-
-- 🟢 **W-59** `agent` · **G2** · New plugin `@sheetpane/review`: the review written into the download as its own sheet, flagged cells coloured. Filed by Arpit (Cowork). [detail](open/W-59-review-sheet-plugin.md)
-
-- 🟢 **W-60** `agent` · **G2** · Dependent dropdowns: a list that changes with another cell (`INDIRECT`). Filed by Arpit (Cowork). [detail](open/W-60-dependent-dropdowns.md)
-
-- 🟢 **W-61** `agent` · **G2** · Excel Tables: read them by name, resolve `Table[Column]`, and a `@sheetpane/tables` plugin to draw them. Filed by Arpit (Cowork). [detail](open/W-61-excel-tables.md)
-
-- 🟢 **W-62** `agent` · **G2** · Locked cells and sheet protection honoured in Edit. Filed by Arpit (Cowork). [detail](open/W-62-locked-cells-and-protection.md)
-
-- 🟡 **W-63** `agent` · **G3** · New plugin `@sheetpane/compare`: what changed between two versions of a workbook. Waiting on W-51. Filed by Arpit (Cowork). [detail](open/W-63-compare-plugin.md)
-
-- 🟢 **W-64** `agent` · **G3** · An *Edits* view in the errors panel: every change, before → after, revert one. Filed by Arpit (Cowork). [detail](open/W-64-edits-view.md)
-
-- 🟢 **W-65** `agent` · **G3** · The file's SHA-256 on load and on export. Filed by Arpit (Cowork). [detail](open/W-65-file-fingerprint.md)
-
-- 🟢 **W-66** `agent` · **G3** · Open straight at a cell: a `ref` attribute and opt-in links in the URL. Filed by Arpit (Cowork). [detail](open/W-66-link-to-a-cell.md)
-
-- 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
-
-- 🟢 **W-68** `agent` · **G3** · Room in the error card for the host: `meta` on an error and a `renderDetail` hook. Filed by Arpit (Cowork). [detail](open/W-68-error-detail-slot.md)
-
-- 🟢 **W-69** `agent` · **G3** · Accepted deviations: an error accepted with a reason, kept in the review and the download. Filed by Arpit (Cowork). [detail](open/W-69-accepted-deviations.md)
-
 ### testing
 
-- 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
+- 🟢 **W-30** `arpit` · Save one tiny sheet from Excel, Google Sheets, LibreOffice and Numbers; an agent then tests `@sheetpane/import` on them (split from W-13); also the static HTML of W-67 opened in mail clients (DoD 10). Filed by Arpit (Cowork). [detail](open/W-30-real-app-fixtures.md)
 
 - 🟢 **W-48** `arpit` · Try the skills package in Claude Code, Kiro and Codex: install from the tarballs into a scratch host, one real prompt each, note the result (split from W-35 DoD 8). Filed by Arpit (Cowork). [detail](open/W-48-try-skills-in-each-tool.md)
 

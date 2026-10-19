@@ -23,14 +23,17 @@ decision 5.
 | kind | name | what |
 |---|---|---|
 | attribute | `pane` | the same id as the sheet's |
-| attribute | `author` | written on errors added here |
-| attribute | `readonly` | a sign-off screen: no form, Resolve, Delete, Undo or Redo (SR-ERRORS decision 7) |
+| attribute | `author` | written on errors added here, and as who accepted one (W-69) |
+| attribute | `readonly` | a sign-off screen: no form, Resolve, Accept…, Delete, Undo or Redo (SR-ERRORS decision 7) |
 | attribute | `plugins`, `theme` | as on the sheet |
-| property | `errors`, `errorTypes`, `readOnly`, `workbook` | |
-| method | `getErrors()`, `setErrors(list, { plugins })` | |
-| event | `sheetpane-errors {errors, plugins}` | the list changed — the one to persist |
+| attribute | `results` | `summary` (default), `marks` or `off` — how passed and not-checked cells show, pane-wide (W-50) |
+| attribute / property | `layers`; `layerNames` | the review layers shown, pane-wide; what the switch calls each (W-51) |
+| property | `errors`, `errorTypes`, `readOnly`, `workbook`, `renderDetail` (W-68, below) | |
+| method | `getErrors({ layer? })`, `setErrors(list or envelope, { plugins?, layer? })` | |
+| view | *Edits n* (W-64) | every change, newest first: cell and kind, was → now, time, links to the errors it cleared or raised; **Revert** / **Revert all**, one undo step each (SR-ERRORS decision 17). Store: `edits()`, `editEffects(key)`, `revertEdits(keys?)` |
+| event | `sheetpane-errors {v, errors, plugins, layers, changed}` | the list changed — the envelope to persist |
 | event | `sheetpane-reveal {error}` | **Show in sheet** was pressed: switch to the sheet's tab or open the pop-up |
-| event | `sheetpane-change`, `sheetpane-select`, `sheetpane-history` | as on the sheet, for actions taken here |
+| event | `sheetpane-change`, `sheetpane-select`, `sheetpane-history` | as on the sheet, for actions taken here (a Revert in the Edits view fires `sheetpane-change` per cell) |
 
 ## An error
 
@@ -43,32 +46,105 @@ Plain JSON, schema `v: 1` (`SheetpaneError`, exported as a type):
   "createdAt": "2026-10-18T09:12:00.000Z" }
 ```
 
-- **`found`** is the uploaded text, frozen; it never follows an edit.
-- **`matchesExpected`** turns true when the cell shows `expected` — it never
-  resolves the error. A person resolves it.
+- **`found`** is the uploaded text, frozen. **`matchesExpected`** turns true
+  when the cell shows `expected` — it never resolves the error; a person does.
 - **`author`** is the element's `author`, or `workbook` / `file` / `host`
   for errors a plugin or a rule wrote — those are read-only and resolve
   themselves (SR-GRID decision 19b).
 - Ids are `ERR-0001…`, never reused in a session.
+
+### An error with no cell
+
+A finding about a whole sheet or the workbook has no cell, and is never put
+on A1 (W-55):
+
+```js
+excel.workbook.addError({ sheet: 'Pages', range: '', type: 'other', severity: 'error', message: 'No Pages List' }); // the whole sheet
+excel.workbook.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet' }); // the workbook
+```
+
+- Listed first: a **Workbook** group, then each sheet's whole-sheet errors
+  (counted on its tab). **Show in sheet** opens the tab; disabled for the
+  workbook. `found` is `""`, no pin or mark; `errorScope(e)` → `cell` ·
+  `sheet` · `workbook`.
+- **Code that parses `range` as A1 must handle `""`.**
+- `@sheetpane/comments` skips them (`no-cell`, SP-5804); `@sheetpane/review`
+  lists them on its Review sheet, never coloured.
+
+### The host's data and detail (W-68)
+
+`meta` is yours: any JSON (64 KiB at most, `ERROR_META_MAX`), kept by
+`getErrors()` / `setErrors()` and the `sheetpane-errors` envelope, **never
+written into the file**. `renderDetail` draws from it, after the message, in
+the panel's open row and the sheet's error card — set it on **both**:
+
+```js
+excel.workbook.addError({ sheet: 'Spec', range: 'C7', type: 'out-of-range', severity: 'error', meta: { page: 3, measured: '6.63 in' } });
+const detail = (e) => (e.meta?.measured ? `The PDF measures ${e.meta.measured}, outside ± 0.06 in` : null);
+excel.renderDetail = detail;
+panel.renderDetail = detail; // or return a Node: an <img> of the crop, a link
+```
+
+- A string is text, never HTML; a Node is yours (style `::part(detail)`).
+  It runs again only when that error changes (`meta` included).
+- A `meta` over the cap or not JSON is dropped (SP-3016); a throwing hook
+  shows nothing (SP-3017).
+- Keep a reference in `meta` (a page, a box), not the picture's pixels.
+
+### Accepted deviations (W-69)
+
+A known, approved difference should stop counting as a problem without being
+deleted. `status` is `open` · `resolved` · `accepted`; an accepted error
+carries `acceptedBy`, `acceptedAt` and a **required** `reason`:
+
+```js
+excel.workbook.acceptError(e.id, 'Approved by the customer on 18 Oct', { by: 'Ravi' }); // true; one undo step
+excel.workbook.updateError(e.id, { status: 'open' }); // Reopen: who, when and why are dropped
+```
+
+- **Accept…** in an open row asks *Why is this accepted?*, writing the
+  element's `author` as who (not in `readonly`, not on rule or file rows).
+- Not counted: "n open", the severity chips, the sheet's counts and tab
+  counts leave accepted errors out. The **Accepted n** chip lists them.
+- **Count open errors with `status === 'open'`**, not `!== 'resolved'`.
+- `@sheetpane/comments` replies *Accepted: <reason>* and marks the thread
+  done; `@sheetpane/review` lists it with who and when, never filled.
+- A blank reason, or a `workbook` / `file` error, is refused (SP-3018).
+  `setErrors` brings an accepted error without a reason back as `open`.
+
+### Review layers (W-51)
+
+Two result sets over one workbook (a validation run, a PDF check), each
+replaced whole. Every error has a `layer` (`review` when none is named):
+
+```js
+panel.setErrors(validationFindings, { layer: 'validation' });
+panel.setErrors(pdfFindings, { layer: 'pdf' }); // validation is untouched
+panel.layerNames = { pdf: 'PDF check' };
+panel.layers = ['pdf']; // or layers="pdf" on either element; null shows all
+```
+
+- Two or more layers: a header switch (**All**, then each layer with its
+  open count; `sheetpane-layers`). **What is shown is the pane's** — pins,
+  marks, counts, list and comments export read `snapshot.visibleErrors`.
+- Re-running a check keeps undo. Names are ids, no spaces (SP-3021).
 
 ## Saving and restoring a review
 
 ```js
 const excel = document.querySelector('sheetpane-excel');
 const panel = document.querySelector('sheetpane-errors');
-panel.addEventListener('sheetpane-errors', (e) => save({ errors: e.detail.errors, plugins: e.detail.plugins }));
+panel.addEventListener('sheetpane-errors', (e) => save(e.detail)); // { v: 2, errors, plugins, layers, changed }
 excel.addEventListener('sheetpane-load', () => {
-  panel.setErrors(saved.errors, { plugins: saved.plugins });
+  panel.setErrors(saved); // the envelope: every layer, and the plugins notice
 }, { once: true });
 ```
 
-- **Restore after `sheetpane-load`.** Loading a file starts with an empty
-  list; a restore before it is wiped.
-- **`setErrors()` is a restore, not an edit:** it clears undo (SR-GRID
-  decision 7). An error whose cell no longer shows `found` is tagged *stale*,
-  never moved.
-- **Pass `plugins`** from the saved envelope: a different plugin set shows the
-  "formatted differently" notice (SR-ERRORS decision 8).
+- **Save the whole envelope** (`layers` keeps an empty layer); one saved before W-51 restores into `review`.
+- **Restore after `sheetpane-load`** (a load empties the list). A restore
+  is not an edit: it clears undo (SR-GRID decision 7). An error whose cell
+  no longer shows `found` is tagged *stale*, never moved.
+- **Keep `plugins`:** a different plugin set shows a notice (SR-ERRORS 8).
 - The full server round trip is [sheetpane-backend](../sheetpane-backend/SKILL.md).
 
 ## Error types
@@ -90,6 +166,16 @@ Types written by plugins and rules (`validation`, `comment`, `column-rule`,
 `cell-rule`) are named from `BUILTIN_TYPE_NAMES` when your catalog does not
 name them.
 
+## Results: passed and not checked
+
+`severity` may also be `pass` (✓) or `skipped` (— not checked; `message`
+says why): results, not problems. At `results="summary"` (default) the panel
+shows a line of counts, an *On sheet* switch and *Passed* / *Not checked*
+chips (grouped by check or reason; **Show ▸** marks a group); `marks` puts a
+✓ or — in each result cell's corner; `off` drops them on arrival. Counts that
+ask for action count problems only; `@sheetpane/comments` writes results
+only with `export({ includeResults: true })` (SR-ERRORS 15, SR-GRID 23).
+
 ## Show in sheet
 
 ```js
@@ -101,13 +187,13 @@ sheet visible (SR-ERRORS decision 4).
 
 ## Pitfalls
 
-- **Editing an error object you got from `getErrors()` changes nothing** —
-  it is a copy. Use `setErrors()` for a restore.
+- **An error from `getErrors()` is a copy** — editing it changes nothing.
 - **The form lives in the panel** when a panel is connected to the pane, else
   it opens inline in the sheet (SR-GRID decision 13).
 - **With `flagging="off"`** nobody can add errors by hand; the panel is then
   where rule errors are read ([sheetpane-rules-file](../sheetpane-rules-file/SKILL.md)).
-- **Undo is shared:** Ctrl/⌘+Z in the panel undoes the pane's last action,
-  cell edits included (SR-ERRORS decision 9).
+- **A `switch` on `severity` meets `pass` and `skipped` too** — use
+  `isResult(e)` to keep results out of a count of problems.
+- **Undo is shared:** Ctrl/⌘+Z in the panel undoes the pane's last action (SR-ERRORS 9).
 - Errors travel inside an `.xlsx` as comments only with
   `@sheetpane/comments` installed ([SR-COMMENTS](https://github.com/arpitarya/sheetpane/blob/main/records/0112_COMMENTS.md)).

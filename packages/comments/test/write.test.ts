@@ -307,3 +307,135 @@ describe('switching it off (DoD 3a)', () => {
     expect([...parts.keys()]).toEqual([...(await unzip(src)).keys()]);
   });
 });
+
+describe('errors with no cell (W-55)', () => {
+  it('a whole-sheet or workbook-level error is skipped with SP-5804, never written at A1; the cell errors are written', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const cell = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    const sheet = s.addError({ sheet: 'Other', range: '', type: 'other', severity: 'error', message: 'No Pages List', author: 'Arpit' });
+    const book = s.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet', author: 'Arpit' });
+    const parts = await unzip(await exported(s));
+    expect(plugin.lastExport).toEqual({ written: [cell.id], skipped: [{ id: sheet.id, reason: 'no-cell', code: 'SP-5804' }, { id: book.id, reason: 'no-cell', code: 'SP-5804' }] });
+    const refs = [...parts].filter(([n]) => /threadedComment\d+\.xml$/.test(n)).flatMap(([, xml]) => [...parseXml(xml).getElementsByTagName('threadedComment')].map((t) => t.getAttribute('ref')));
+    expect(refs).toEqual(['I6', 'I6']);
+    expect([...parts.keys()].filter((n) => /threadedComment\d+\.xml$/.test(n))).toHaveLength(1); // nothing on the sheet "Other"
+  });
+});
+
+describe('the host’s data on an error (W-68)', () => {
+  it('meta is never written into the file — not in a comment, not anywhere in the package — and the .csv is untouched', async () => {
+    const s = await storeOn(await plain());
+    const marker = 'pdfsuite-crop-7f3a';
+    const e = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', message: 'Fee rate', author: 'Arpit', meta: { crop: marker, page: 3 } });
+    expect(e.meta).toEqual({ crop: marker, page: 3 });
+    const parts = await unzip(await exported(s));
+    expect([...parts.values()].some((xml) => xml.includes('Fee rate'))).toBe(true); // the error itself is written
+    expect([...parts.values()].filter((xml) => xml.includes(marker) || xml.includes('"page"'))).toEqual([]);
+    const csv = new TextDecoder().decode(await blobBytes((await s.exportFile({ format: 'csv' })).blob));
+    expect(csv).not.toContain(marker);
+  });
+});
+
+describe('accepted deviations (W-69)', () => {
+  it('an accepted error is written with a reply “Accepted: <reason>” by who accepted it, at that time; its thread is done', async () => {
+    const s = await storeOn(await plain());
+    const a = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', message: 'Fee rate', author: 'Arpit' });
+    const b = s.addError({ sheet: 'Holdings', range: 'C4', type: 'other', severity: 'note', author: 'Arpit' });
+    expect(s.acceptError(a.id, 'Grandfathered rate, approved by compliance', { by: 'Ravi' })).toBe(true);
+    const at = s.getErrors()[0]!.acceptedAt!;
+    const parts = await unzip(await exported(s));
+    const ts = [...parseXml(parts.get('xl/threadedComments/threadedComment1.xml')!).getElementsByTagName('threadedComment')];
+    expect(ts.map((t) => [t.getAttribute('ref'), t.getAttribute('id'), t.getAttribute('parentId'), t.getAttribute('done'), t.textContent])).toEqual([
+      ['C4', errorGuids(b).comment, null, null, `${b.id} · Note · Other · Found: 12`],
+      ['I6', errorGuids(a).comment, null, '1', `${a.id} · Error · Wrong value · Found: 7.5%\nFee rate`], // done: accepted is not a problem
+      ['I6', errorGuids(a).expected, errorGuids(a).comment, null, 'Should be: 0.75%'],
+      ['I6', errorGuids(a).accepted, errorGuids(a).comment, null, 'Accepted: Grandfathered rate, approved by compliance'],
+    ]);
+    expect(ts[3]!.getAttribute('personId')).toBe(personGuid('Ravi'));
+    expect(ts[3]!.getAttribute('dT')).toBe(at.replace(/(\.\d{2})\d*Z$/, '$1'));
+    expect([...parseXml(parts.get('xl/persons/person.xml')!).getElementsByTagName('person')].map((p) => p.getAttribute('displayName')).sort()).toEqual(['Arpit', 'Ravi']);
+    expect(parts.get('xl/comments1.xml')).toContain('Reply:\n    Accepted: Grandfathered rate, approved by compliance');
+  });
+  it('nobody named: the reply is the error author’s; reopened, a second export drops the reply; the reading side skips it', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const a = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', author: 'Arpit' });
+    s.acceptError(a.id, 'Known');
+    let parts = await unzip(await exported(s));
+    let ts = [...parseXml(parts.get('xl/threadedComments/threadedComment1.xml')!).getElementsByTagName('threadedComment')];
+    expect(ts.map((t) => [t.getAttribute('id'), t.getAttribute('personId')])).toEqual([[errorGuids(a).comment, personGuid('Arpit')], [errorGuids(a).accepted, personGuid('Arpit')]]);
+    // the exported file read back: our own entries are not file comments
+    const back = await storeOn(await exported(s), plugin);
+    back.setErrors(s.getErrors());
+    expect(back.getErrors().filter((e) => e.author === 'file')).toEqual([]);
+    expect(back.getErrors()[0]).toMatchObject({ status: 'accepted', reason: 'Known' });
+    back.updateError(a.id, { status: 'open' });
+    parts = await unzip(await exported(back));
+    ts = [...parseXml(parts.get('xl/threadedComments/threadedComment1.xml')!).getElementsByTagName('threadedComment')];
+    expect(ts.map((t) => [t.getAttribute('id'), t.getAttribute('done')])).toEqual([[errorGuids(a).comment, null]]);
+  });
+});
+
+describe('results stay out of the review unless the host asks (W-50 DoD 5)', () => {
+  it('pass and skipped are left out of the parts; `includeResults: true` writes them, named', async () => {
+    const s = await storeOn(await plain());
+    const a = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    const p = s.addError({ sheet: 'Holdings', range: 'C4', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%', author: 'host' });
+    const k = s.addError({ sheet: 'Holdings', range: 'B2', type: 'spec', severity: 'skipped', message: 'Blank in the source', author: 'host' });
+    const ids = (xml: string) => [...parseXml(xml).getElementsByTagName('threadedComment')].map((t) => t.getAttribute('id'));
+    const plainTc = (await unzip(await exported(s))).get('xl/threadedComments/threadedComment1.xml')!;
+    expect(ids(plainTc)).toEqual([errorGuids(a).comment, errorGuids(a).expected]);
+    const withTc = (await unzip(await exported(s, { includeResults: true }))).get('xl/threadedComments/threadedComment1.xml')!;
+    expect(ids(withTc)).toEqual(expect.arrayContaining([errorGuids(p).comment, errorGuids(k).comment, errorGuids(a).comment]));
+    const text = [...parseXml(withTc).getElementsByTagName('threadedComment')].map((t) => t.textContent);
+    expect(text).toContain(`${p.id} · Passed · fee-rate · Found: 12\nFee rate 0.00%–2.00%`);
+    expect(text).toContain(`${k.id} · Not checked · spec · Found: AC-1O044\nBlank in the source`);
+  });
+  it('a review of results only writes nothing by default', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    s.addError({ sheet: 'Holdings', range: 'C4', type: 'fee-rate', severity: 'pass', message: 'Fee rate 0.00%–2.00%', author: 'host' });
+    const parts = await unzip(await exported(s));
+    expect([...parts.keys()].some((n) => n.startsWith('xl/threadedComments/'))).toBe(false);
+    expect(plugin.lastExport).toBeUndefined();
+  });
+});
+
+describe('review layers (W-51)', () => {
+  const written = (plugin: CommentsPlugin) => [...(plugin.lastExport?.written ?? [])].sort();
+  it('an export writes the layers shown by default, any named set by option; reading back skips every layer’s own threads', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const mine = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    const finding = (id: string, range: string): SheetpaneError => ({ v: 1, id, sheet: 'Holdings', range, type: 'other', severity: 'warning', found: '', expected: '', message: id, cellChanged: false, status: 'open', matchesExpected: false, author: 'checker', createdAt: '2026-10-19T09:00:00.000Z' });
+    s.setErrors([finding('V-1', 'B2')], { layer: 'validation' });
+    s.setErrors([finding('P-1', 'C4')], { layer: 'pdf' });
+    await exported(s); // every layer shown
+    expect(written(plugin)).toEqual([mine.id, 'P-1', 'V-1'].sort());
+    s.setVisibleLayers(['pdf']);
+    await exported(s);
+    expect(written(plugin)).toEqual(['P-1']);
+    const both = await exported(s, { layers: ['validation', 'review'] }); // named, whatever is shown
+    expect(written(plugin)).toEqual([mine.id, 'V-1'].sort());
+    await exported(s, { layers: [] });
+    expect(plugin.lastExport).toBeUndefined(); // an empty set writes nothing
+    // the file read back with the whole review restored: none of its threads come back as file notes
+    const back = await storeOn(both);
+    back.setErrors(s.envelope());
+    expect(back.getErrors().filter((e) => e.author === 'file')).toEqual([]);
+  });
+  it('W-63: the compare layer is not the review — left out while shown, written when named', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const mine = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    s.setErrors([{ v: 1, id: 'C-1', sheet: 'Holdings', range: 'B2', type: 'compare', severity: 'note', found: '', expected: '', message: 'was 3 → now 3.25', cellChanged: false, status: 'open', matchesExpected: false, author: 'compare', createdAt: '2026-10-19T09:00:00.000Z' }], { layer: 'compare' });
+    await exported(s);
+    expect(written(plugin)).toEqual([mine.id]);
+    s.setVisibleLayers(['compare']);
+    await exported(s); // shown alone, still not the review
+    expect(plugin.lastExport).toBeUndefined();
+    await exported(s, { layers: ['review', 'compare'] });
+    expect(written(plugin)).toEqual([mine.id, 'C-1'].sort());
+  });
+});

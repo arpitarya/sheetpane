@@ -72,6 +72,12 @@ else.
    `Workbook { sheets }`; `Change { sheet, ref, value }`; `Sheet.freeze?:
    { rows, cols }` (W-24). `columnWidths` are
    Excel character units (`<col width>`), index 0 = column A.
+   `Sheet.dataValidations?: DataValidation[]`, `Sheet.conditionalFormats?:
+   ConditionalFormat[]` and `Workbook.dxfs?: Dxf[]` (W-57) — the shapes
+   `@sheetpane/import` reads (`DataValidation`, `ConditionalFormat`,
+   `CfRule`, `Cfvo`, `Dxf`, `Font`, `Fill`, `Border`, `BorderSide`,
+   `Alignment`, `Color` are defined here and re-exported by import), so a
+   rule read is a rule written; a rule's `dxfId` indexes `Workbook.dxfs`.
 2. **`toXlsx(book, { compression?, onStripped? }): Promise<Uint8Array>`**
    writes exactly `[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`,
    `xl/_rels/workbook.xml.rels`, `xl/worksheets/sheetN.xml`, `xl/styles.xml`.
@@ -81,7 +87,18 @@ else.
    is the active tab. The file's default font in `styles.xml` is Excel's
    (Calibri 11) — a property of the file for Excel, never read for display
    (SR-LAW-5). `toXlsx` writes no formulas and takes no change list, so it
-   writes no `<calcPr>`.
+   writes no `<calcPr>`. **Rules (W-57):** each sheet's
+   `conditionalFormats` as one `<conditionalFormatting>` per format and its
+   `dataValidations` as one `<dataValidations>`, in schema order after
+   `<mergeCells>` (`conditionalFormatting` before `dataValidations`);
+   `Workbook.dxfs` as `<dxfs>` after `<cellStyles>` in `styles.xml` (a dxf's
+   children in CT_Dxf order: font, numFmt, fill, alignment, border). A
+   validation with a `prompt` or `promptTitle` gets `showInputMessage="1"`
+   (the shape has no flag for it, and Excel shows no prompt without it);
+   `type="none"` and false flags are left out; attribute line breaks and tabs,
+   and a carriage return in a formula, are written as character references so
+   both readers give them back. A workbook with no rules and no dxfs is
+   written byte for byte as before.
 3. **`patchXlsx(original, changes, { compression?, exportPatch?, onStripped?, maxEntrySize?, maxTotalSize? })`**
    - rewrites only the changed `<c>` elements of the touched sheets, keeping
      each cell's `s` (style); new text goes in as inline strings; shared
@@ -105,6 +122,20 @@ else.
      for `Sheet.freeze` (W-24);
    - `merges: [{ sheet, ranges }]` rewrites that sheet's `<mergeCells>` to
      exactly those ranges (in schema position; removed when empty);
+   - `dataValidations: [{ sheet, rules }]` and `conditionalFormats: [{ sheet,
+     formats }]` (W-57) rewrite that sheet's `<dataValidations>` and every
+     top-level `<conditionalFormatting>` to exactly those (the new formats
+     where the first old block stood, else in schema position after
+     `mergeCells` / `phoneticPr`; `dataValidations` after them; removed when
+     empty); Excel 2010's `x14:` rules inside `<extLst>` are left as they are
+     (import does not read them). `dxfs: Dxf[]` is appended to the file's
+     `<dxfs>` (count updated; created before `tableStyles` / `colors` /
+     `extLst` when missing; a package with no style sheet gets sheetpane's,
+     with its relationship and content type); a rule's `dxfId` counts the
+     file's formats first, then the appended ones. Everything is checked
+     before anything is written; sheets not named stay byte for byte.
+     `setDataValidations(xml, rules)` and `setConditionalFormats(xml,
+     formats, dxfCount)` are exported for an `exportPatch` hook;
    - `hidden: [{ sheet, rows?, cols?, state?, outline?: { rows?, cols? } }]`
      (W-49): each list and outline map is the sheet's whole set after the
      edit (0-based); fields not given are left alone. Rows: the listed rows
@@ -124,6 +155,10 @@ else.
      state → `bad-value`, no visible sheet left → `sheet-count`. Sheets not
      named stay byte for byte. Checked through ExcelJS and the import
      package; not yet opened in Excel or LibreOffice (W-30's files);
+   - `structure: [{ sheet, op, at, count }]` (W-52) inserts and deletes rows
+     and columns in the upload first, in order — decision 11; `changes`,
+     `merges`, `freeze` and `hidden` are then given as the sheet stands
+     after them;
    - runs each `exportPatch` hook after its own writes, with a
      `PatchContext` (`list`, `has`, `readText`, `readBytes`, `write`,
      `remove`, `workbookPath`, `sheetNames`, `sheetPath`, `relsPathOf`,
@@ -144,7 +179,16 @@ else.
    or trailing `'`, unique ignoring case; at least one sheet, at least one
    visible; ≤ 1,048,576 rows and ≤ 16,384 columns, naming the first cell
    over; finite numbers; ≤ 32,767 characters of text; merges of two or more
-   cells that do not overlap.
+   cells that do not overlap. **Rules** (`bad-rule`, SP-2015, W-57): every
+   `sqref` non-empty and each entry a cell or range; a known validation
+   `type`, `operator` and `errorStyle`; `errorTitle` / `promptTitle` ≤ 32
+   characters, `error` / `prompt` ≤ 255, a quoted list ≤ 255 — Excel's own
+   limits, past which it repairs the file; a conditional format with at
+   least one rule, a known `type`, `operator` and `timePeriod`, a whole
+   `priority`, ≤ 3 formulas, a `dxfId` the workbook has; a colour scale with
+   2–3 thresholds and one colour each, a data bar with 2 and a colour, an
+   icon set with 2–5 and a known set name; `dxfs` a list of objects.
+   Characters XML forbids are dropped from a rule's text.
 7. **ZIP:** central-directory walk, sizes from the central directory, ZIP64
    and encrypted entries refused, methods 0 and 8 only, CRC-32 checked on
    every inflate; inflated size capped (512 MB per entry, 1 GB per archive by
@@ -156,11 +200,62 @@ else.
    `inflateEntry`, `rawData`, `writeZip`, `isZip`, `crc32`, the XML and
    OOXML-string helpers, `getAttr` / `setAttr` / `parseRels` /
    `resolveTarget` / `relsPathOf`, the A1 helpers, `shiftFormula`,
-   `checkSheetName`.
+   `checkSheetName`, `resolveStructuredRef`.
+9a. **Structured references (W-61):** `resolveStructuredRef(formula,
+    sheets)` turns a table reference into `{ sheet, table, range, ref }`
+    from the tables each sheet carries (SR-IMPORT decision 13; any `{ name,
+    ref, headerRowCount, totalsRowCount, columns }` fits — `TableShape`):
+    `Table[Column]` and `[[#Data],[Column]]` are the column's data rows;
+    `#Headers`, `#Totals`, `#All` and touching pairs of them
+    (`#Headers,#Data`, `#Data,#Totals`) name the bands; `[[A]:[B]]` a
+    column span; `Table[]`, `Table[#Data]` and the bare `Table` the data
+    body. Table and column names are case-insensitive; `'` escapes `[ ] #
+    '`. `[#This Row]` / `@`, a union of columns, bands that do not touch and
+    a band the table does not have resolve to `undefined`. `patchXlsx`
+    leaves table parts as they are (a test reads both tables back after an
+    edit); moving a table's `ref` when rows are inserted is W-52's.
 10. **No runtime dependencies** (SR-LAW-2). `download()` lives in this
     package too — [SR-DOWNLOAD](0101_DOWNLOAD.md).
+11. **Rows and columns inserted or deleted (W-52):** one operation is
+    `StructureOp { sheet, op: 'insertRows' | 'deleteRows' | 'insertCols' |
+    'deleteCols', at (0-based), count }`, and **one implementation** shifts
+    for it (`structure.ts`, shared with `@sheetpane/import` and the grid):
+    an index moves or is deleted; a span widens on an insert strictly inside
+    it and is clipped by a delete, gone when wholly deleted; a leading count
+    (a frozen split) grows or shrinks; A1 text keeps its `$` signs (absolute
+    references move too, as in Excel); `restructureFormula(f, host, op)`
+    moves every reference to the sheet — qualified, or unqualified on the
+    host sheet — and writes `#REF!` (`Sheet1!#REF!`) for a deleted target,
+    leaving strings, other sheets, external (`[1]Sheet!A1`), 3-D and
+    structured references alone. `patchXlsx`'s `structure` option
+    (`restructure.ts`) rewrites, per operation: the sheet's rows and cells
+    (deleted ones go, `spans` dropped), every sheet's cell formulas (a shared
+    group that names the sheet is written out per cell; array and data-table
+    ranges move), `<dimension>`, the frozen pane's split and corner, the
+    selections, `<cols>` (a span an insert starts inside is split — new
+    columns take the default width; neighbours a delete closes up rejoin),
+    `<mergeCells>`, the autofilter (filter columns follow their column) and
+    sort state, the existing `<dataValidations>` and `<conditionalFormatting>`
+    blocks and their x14 twins (a block wholly deleted goes — its own
+    function, `restructureRuleBlocks`), hyperlinks,
+    protected ranges, ignored errors, cell watches and page breaks; tables
+    (range, autofilter, a deleted column's `<tableColumn>`, calculated
+    formulas), drawing anchors (a point in a deleted row is pulled to the
+    gap), legacy notes and their VML shapes, threaded comments, every chart's
+    series (`restructureChartXml`), and the defined names; then drops the
+    calculation chain and sets `fullCalcOnLoad`. **Refused, the file left
+    as it was** (`bad-structure`, SP-2016): moving a pivot table or its
+    worksheet source, cutting an array formula or a data table, and a table
+    cut it cannot follow (`tableRefusal`: all of it, its header or totals
+    row, every data row, or columns inserted inside it). **Order (W-57):**
+    the structure is applied to the upload first; every other option
+    (`changes`, `merges`, `dataValidations`, `conditionalFormats`, `dxfs`,
+    `freeze`, `hidden`) is then written as given, against the sheet as it
+    stands after it — so a sheet's rules given whole land where the caller
+    put them and are never moved again, and a block not named is the file's
+    own, shifted.
 
-**Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107.
+**Codes (W-40):** `@sheetpane/export` owns the code registry (SR-CODES: `CODES`, `spError`, `spMessage`, `codeOf`, `detailOf`, `codeUrl`); `ExportError` gains `spCode` and `spDetail` (`code` unchanged, the message prefixed `SP-2xxx`); `download()` refuses with SP-2101 to SP-2107. W-57 adds SP-2015 (`bad-rule`).
 
 ### Consequences
 
@@ -168,7 +263,10 @@ else.
   tests (`just test-pkg export-browser`, which also catch real downloads —
   SR-DOWNLOAD): independent read-back through ExcelJS,
   PapaParse and fflate; fast-check properties (CSV identity, `toXlsx`
-  identity, `patchXlsx` changes exactly the named cells, string escape);
+  identity, `patchXlsx` changes exactly the named cells, string escape;
+  W-57: `import(toXlsx(x))` and `import(patchXlsx(upload, x))` give the
+  validation, conditional-format and dxf tables `x` back, through DOMParser
+  and the built-in XML reader — `packages/import/test/rules*.test.ts`);
   the committed golden `sheetpane-sample.store.xlsx` reproduced in Node and
   Chromium; coverage gate 90 % lines.
 - **Opened by the decider, 2026-10-18:** `sheetpane-sample.xlsx` and
@@ -176,6 +274,21 @@ else.
   prompt, and `sheetpane-sample.csv` shows its accents correctly in Excel. "Excel
   opens it" is backed by Excel and LibreOffice as well as three independent
   readers.
+- **Rules are checked for structure, not against the schema** (W-57): the
+  tests read what is written back through ExcelJS and the import package;
+  ECMA-376 schema validation is B-033. Opening a generated file with working
+  dropdowns and formats in Excel and LibreOffice is W-30 DoD 3.
+- `patchXlsx`'s `dxfs` are appended, never deduplicated or removed: a format
+  no rule names any more stays in `styles.xml` (harmless, like orphaned
+  shared strings).
+- **W-52 (2026-10-19):** `restructure.test.ts` (21; with W-57, rules given whole written
+  after the shift, as given, and a block not named shifted) — every part above on a
+  hand-written workbook (`test/fixtures/structure.ts`) with ExcelJS read-back,
+  the refusals, and the fast-check property that inserting then deleting the
+  same span gives back every part byte for byte; `structure.test.ts` (9) for
+  the pure shifts; `@sheetpane/import`'s property that the moved workbook
+  reads the same as the moved file. Opening a shifted Excel-saved file in
+  Excel is the decider's (W-30).
 - Shared strings orphaned by a patch stay in the table (harmless; keeps the
   patch small); the table's `count` is not recomputed.
 
@@ -212,7 +325,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/export/src/index.ts`](../packages/export/src/index.ts) · [`patch.ts`](../packages/export/src/patch.ts) · [`xlsx.ts`](../packages/export/src/xlsx.ts) · [`csv.ts`](../packages/export/src/csv.ts) · [`zip.ts`](../packages/export/src/zip.ts)
+- [`packages/export/src/index.ts`](../packages/export/src/index.ts) · [`patch.ts`](../packages/export/src/patch.ts) · [`xlsx.ts`](../packages/export/src/xlsx.ts) · [`rules.ts`](../packages/export/src/rules.ts) · [`csv.ts`](../packages/export/src/csv.ts) · [`zip.ts`](../packages/export/src/zip.ts)
 
 **Project docs**
 

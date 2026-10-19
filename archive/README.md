@@ -33,8 +33,28 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-37-custom-elements-manifest.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) (the manifest) · [SR-BUILD](../records/0102_BUILD.md) decisions 5, 7 |
 | `W-39-mcp-server.md` | 2026-10-18 | [SR-MCP](../records/0119_MCP.md) |
 | `W-43-create-sheetpane.md` | 2026-10-18 | [SR-CREATE](../records/0120_CREATE.md) · [SR-BUILD](../records/0102_BUILD.md) decisions 7, 8 |
+| `W-62-locked-cells-and-protection.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9, 9a, 21e · [SR-IMPORT](../records/0104_IMPORT.md) 15 · [SR-VISIBILITY](../records/0121_VISIBILITY.md) 3 · [SR-CODES](../records/0117_CODES.md) (SP-3026) · [SR-FIXTURES](../records/0115_FIXTURES.md) 2, 5; the Excel-saved check is W-30 DoD 9, W-52's insert/delete refused under the protection (wired at the integration merge) |
+| `W-50-pass-and-not-checked.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 23 · [SR-ERRORS](../records/0106_ERRORS.md) 13 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 |
+| `W-61-excel-tables.md` | 2026-10-19 | [SR-TABLES](../records/0122_TABLES.md) · [SR-IMPORT](../records/0104_IMPORT.md) 13 · [SR-EXPORT](../records/0103_EXPORT.md) 9a · [SR-VALIDATION](../records/0108_VALIDATION.md) 3–4; the Excel check is W-30 DoD 6, the `ref` shift W-52 |
+| `W-60-dependent-dropdowns.md` | 2026-10-19 | [SR-VALIDATION](../records/0108_VALIDATION.md) 3, 4, 9 · [SR-GRID](../records/0105_GRID.md) 19b · [SR-FIXTURES](../records/0115_FIXTURES.md) 2, 5; the Excel-saved check is W-30 DoD 7 |
 | `W-49-hide-and-show.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 21c · [SR-VISIBILITY](../records/0121_VISIBILITY.md) · [SR-IMPORT](../records/0104_IMPORT.md) 10 · [SR-EXPORT](../records/0103_EXPORT.md) 3 |
+| `W-58-rules-file-as-excel-dropdowns.md` | 2026-10-19 | [SR-VALIDATION](../records/0108_VALIDATION.md) 1, 10 · [SR-GRID](../records/0105_GRID.md) 10, 17 · [SR-CODES](../records/0117_CODES.md) (SP-5401 – SP-5407) |
+| `W-57-export-writes-validation-and-conditional-formats.md` | 2026-10-19 | [SR-EXPORT](../records/0103_EXPORT.md) 1, 2, 3, 6 · [SR-IMPORT](../records/0104_IMPORT.md) 2 · [SR-CODES](../records/0117_CODES.md) (SP-2015) |
+| `W-53-rich-text-runs.md` | 2026-10-19 | [SR-IMPORT](../records/0104_IMPORT.md) 12 · [SR-GRID](../records/0105_GRID.md) 9, 9a, 15c, 17 · [SR-STYLES](../records/0110_STYLES.md) 9 |
+| `W-65-file-fingerprint.md` | 2026-10-19 | [SR-IMPORT](../records/0104_IMPORT.md) 11 · [SR-GRID](../records/0105_GRID.md) 2, 6, 9 · [SR-CODES](../records/0117_CODES.md) (SP-1009) |
+| `W-54-checks-in-node.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 22f · [SR-VALIDATION](../records/0108_VALIDATION.md) 11 · [SR-BUILD](../records/0102_BUILD.md) 5a · [SR-MCP](../records/0119_MCP.md) 5 · [SR-FIXTURES](../records/0115_FIXTURES.md) 6 |
+| `W-67-static-html-render.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 22g · [SR-BUILD](../records/0102_BUILD.md) 5a · [SR-FIXTURES](../records/0115_FIXTURES.md) 6a · [SR-CODES](../records/0117_CODES.md) 2 (SP-3027, SP-3028); mail clients are W-30 DoD 10 |
 | `W-44-live-playground.md` | 2026-10-19 | [SR-BUILD](../records/0102_BUILD.md) 8, 8b, 9 · [`RELEASING.md`](../RELEASING.md) — the playground at https://arpitarya.github.io/sheetpane/, the starters, and publishing from CI |
+| `W-63-compare-plugin.md` | 2026-10-19 | [SR-COMPARE](../records/0124_COMPARE.md) · [SR-MCP](../records/0119_MCP.md) · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 · [SR-CODES](../records/0117_CODES.md) (SP-5901) |
+| `W-51-review-layers.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 2, 5d, 7, 9, 17 · [SR-ERRORS](../records/0106_ERRORS.md) 1, 2, 16 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 · [SR-CODES](../records/0117_CODES.md) (SP-3021) |
+| `W-59-review-sheet-plugin.md` | 2026-10-19 | [SR-REVIEW](../records/0123_REVIEW.md) · [SR-CODES](../records/0117_CODES.md) (SP-5001 – SP-5005) · [SR-BUILD](../records/0102_BUILD.md) 11a; opening a download in real Excel → W-30 DoD 3 |
+| `W-69-accepted-deviations.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5c · [SR-ERRORS](../records/0106_ERRORS.md) 3, 7, 14 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3, 5 · [SR-CODES](../records/0117_CODES.md) (SP-3018) |
+| `W-68-error-detail-slot.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5b · [SR-ERRORS](../records/0106_ERRORS.md) 1, 13 · [SR-CODES](../records/0117_CODES.md) (SP-3016, SP-3017) |
+| `W-55-sheet-and-workbook-errors.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5a · [SR-ERRORS](../records/0106_ERRORS.md) 3, 4 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 · [SR-CODES](../records/0117_CODES.md) (SP-5804) |
+| `W-56-hover-and-highlight.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9, 11c |
+| `W-64-edits-view.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9a, 24 · [SR-ERRORS](../records/0106_ERRORS.md) 17 |
+| `W-66-link-to-a-cell.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 9, 11d, 13 · [SR-CODES](../records/0117_CODES.md) (SP-3019) |
+| `W-52-insert-delete-rows-columns.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 3, 6, 7, 17, 21d · [SR-EXPORT](../records/0103_EXPORT.md) 3, 11 · [SR-IMPORT](../records/0104_IMPORT.md) 14 · [SR-FORMULAS](../records/0111_FORMULAS.md) 4 · [SR-CHARTS](../records/0113_CHARTS.md) 8 · [SR-CODES](../records/0117_CODES.md) (SP-2016, SP-3022–3025) |
 | `W-45-agent-commands-hooks-plugin.md` | 2026-10-18 | [SR-SKILLS](../records/0116_SKILLS.md) decisions 2a, 4b–4d |
 | `W-47-resize-columns-rows.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 9a, 11, 12 |
 | `W-46-smooth-range-selection.md` | 2026-10-18 | [SR-GRID](../records/0105_GRID.md) decisions 9, 9a, 11a, 11b, 12, 13 |

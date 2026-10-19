@@ -32,5 +32,62 @@
       "target": "cell B3",
       "rule": "a number of at most 0.1"
     }
+  ],
+  "findingCount": 6,
+  "findings": [
+    {
+      "sheet": "Numbers",
+      "range": "B3",
+      "type": "cell-rule",
+      "severity": "error",
+      "found": "12.3%",
+      "expected": "a number of at most 0.1",
+      "message": "The rate is above the 10 % cap"
+    },
+    {
+      "sheet": "Formulas",
+      "range": "B3",
+      "type": "column-rule",
+      "severity": "error",
+      "found": "5400",
+      "expected": "a number of at most 5000",
+      "message": "Any one line over 5,000 needs a second approver"
+    },
+    {
+      "sheet": "Formulas",
+      "range": "B6",
+      "type": "column-rule",
+      "severity": "error",
+      "found": "7600",
+      "expected": "a number of at most 5000",
+      "message": "Any one line over 5,000 needs a second approver"
+    },
+    {
+      "sheet": "Formulas",
+      "range": "B7",
+      "type": "column-rule",
+      "severity": "error",
+      "found": "15200",
+      "expected": "a number of at most 5000",
+      "message": "Any one line over 5,000 needs a second approver"
+    },
+    {
+      "sheet": "Validation",
+      "range": "C3",
+      "type": "column-rule",
+      "severity": "error",
+      "found": "-2",
+      "expected": "a whole number of at least 1",
+      "message": "Units: must be at least 1 (min)"
+    },
+    {
+      "sheet": "Validation",
+      "range": "B4",
+      "type": "column-rule",
+      "severity": "warning",
+      "found": "Bogus",
+      "expected": "one of Active, Inactive",
+      "message": "Status: must be one of Active, Inactive (oneOf)"
+    }
   ]
 }

@@ -60,7 +60,8 @@ the number format is SR-NUMFMT's.
 ### Decision
 
 1. **`styles({ fileStyles? })`** → `{ id: 'styles', provides: ['decorate',
-   'exportPatch'] }`; `ui(options?)` (`styles-ui`) carries the controls.
+   'exportPatch'], after: ['tables'] }` — a cell's own format draws over its
+   Excel table's style (SR-TABLES decision 4); `ui(options?)` (`styles-ui`) carries the controls.
    Importing `@sheetpane/styles` registers `styles` alone;
    `@sheetpane/styles/ui` registers `[styles(), ui()]`. The headless entry
    never imports the UI. No runtime dependency; `@sheetpane/grid` is a peer.
@@ -104,19 +105,38 @@ the number format is SR-NUMFMT's.
    `applyTint`, `paletteOf`, `fontCss`, `fillCss` with `{ dxf: true }`,
    `borderCss`, `alignmentCss`, `dxfCss`, `ALLOWED_PROPS`, `allowListed`)
    are exported.
+9. **Rich text (W-53):** `decorateRuns` (on the `decorate` hook, SR-GRID
+   decision 17) draws a rich-text cell's runs (`cell.runs`, SR-IMPORT
+   decision 12) as pieces: a run with no formatting takes the cell's look; a
+   formatted run states `font-weight` (700 / 400), `font-style` (italic /
+   normal) and `text-decoration` (or `none`) outright — an Excel run's
+   `<rPr>` is its whole font — and its size (`em` of the cell's own font's
+   size) and colour only where they differ from the cell's own font (a cell
+   font with no colour is measured against the default font, so default ink
+   stays the host's); superscript and subscript are `vertical-align: super` /
+   `sub` at 0.75 of the size. Never a font family; allow-listed like
+   `decorate`. `fileStyles: false` draws runs plain. Exported:
+   `decorateRuns`, `runCss`. A restyle keeps the runs (only the cell's `s`
+   changes); a value edit drops them (plain text, SR-GRID). Nothing in
+   `exportPatch` touches `sharedStrings.xml`.
 
 ### Consequences
 
-- **Enforced today:** `just test-pkg styles` — 46 tests (colours: rgb, theme
+- **Enforced today:** `just test-pkg styles` — 56 tests (colours: rgb, theme
   and tint, indexed; decorate from the ExcelJS fixture property by property
   and from hand-made `styles.xml` for every border style, alignment, font and
   fill; the allow-list and the L5 veto over the package; the format row in
   View and Edit, every group, shortcuts, one undo step; merges; the core
   layout showing alignment and wrap with tints above a fill; contrast of the
   changed mark on every default fill; export round-trips, dedup, missing
-  `styles.xml`, byte-for-byte when untouched).
+  `styles.xml`, byte-for-byte when untouched). `runs.test.ts` (W-53, 10):
+  every run property against the cell's own font, superscript, the
+  allow-list and no family, `fileStyles: false`, the spans drawn, and export —
+  an edited rich cell written as a plain inline string while the shared
+  strings and every untouched rich cell stay byte for byte, a restyle
+  keeping the runs.
 - **Owed:** a fixture of every fill, font and border combination **saved by
-  Excel** — W-30.
+  Excel**, and a rich-text cell saved by Excel — W-30.
 
 ### Alternatives considered
 

@@ -36,7 +36,7 @@ describe('contrast (W-29 DoD 5)', () => {
       for (const s of ['pass', 'fail', 'warn'] as const) expect(ratio(t[s], t[`${s}-soft`]), `${s} on ${s}-soft`).toBeGreaterThanOrEqual(4.5);
     });
     it(`${name}: glyphs, pins, the changed mark, references and the focus ring 3:1 against the cell`, () => {
-      for (const k of ['accent', 'pass', 'fail', 'warn', 'changed', 'note', 'ref-1', 'ref-2', 'ref-3'] as const) {
+      for (const k of ['accent', 'pass', 'skip', 'fail', 'warn', 'changed', 'note', 'ref-1', 'ref-2', 'ref-3'] as const) { // skip: W-50's — mark
         expect(ratio(t[k], t.cell), `${k} on cell`).toBeGreaterThanOrEqual(3);
         expect(ratio(t['on-solid'], t[k]), `on-solid on ${k}`).toBeGreaterThanOrEqual(3);
       }

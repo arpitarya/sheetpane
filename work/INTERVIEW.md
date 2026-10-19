@@ -47,6 +47,21 @@ entry.**
   freeze panes (W-24) are core; pivots are not built** (proposal, B-028);
   undo / redo (W-23) ships before any formatting control. The whole split and
   the rulings it read in: [`compare/plugins.compare.md`](compare/plugins.compare.md).
+- **The pdfsuite round, W-50–W-69** (2026-10-19, Claude Code, built in parallel
+  lanes and merged): result severities `pass` / `skipped` and a `results`
+  level (W-50); error **layers** and envelope v2 (W-51); insert and delete rows
+  and columns as one `structure` change, every reference shifted (W-52);
+  rich-text runs (W-53); `@sheetpane/grid/check` and `/static` — the pane's
+  checks and a static HTML render in Node (W-54, W-67); sheet- and
+  workbook-level errors (W-55); hover and `highlight()` (W-56); export writes
+  validation and conditional formats (W-57), the rules file as Excel dropdowns
+  (W-58); dependent `INDIRECT` lists (W-60); Excel tables (W-61); protection
+  honoured (W-62); the Edits view (W-64); SHA-256 on load and export (W-65);
+  `ref` and `link="hash"` (W-66); `meta` + `renderDetail` (W-68); accepted
+  deviations (W-69). **Three new plugin packages:** `@sheetpane/tables`
+  (SR-TABLES 0122), `@sheetpane/review` (SR-REVIEW 0123, a Review sheet in the
+  download), `@sheetpane/compare` (SR-COMPARE 0124, `diffWorkbooks` + a
+  `compare` layer + MCP `diff_workbooks`).
 
 **Arpit's rulings, 2026-10-18, "resolve all the blockers":** the four
 research forks were decided in-session and the ten `unruled` backlog rows
@@ -71,14 +86,19 @@ board and an item file disagreed, the board was changed.
 
 ## 2 · In flight, and the immediate next step
 
-*Updated 2026-10-19 (Claude Code, end of the consumer-tooling and grid run).*
-**Every agent item is closed:** the core through W-34, then W-33 (rules
-file), W-35 (skills; its tool trial is W-48), W-36 (TSDoc), W-37 (manifest,
-typings), W-38 (llms.txt), W-39 (MCP; `@sheetpane/import` reads `.xlsx` in
-Node), W-40 (SP codes), W-41 (testing), W-42 (fixtures), W-43
-(`create-sheetpane`), W-45 (commands, hooks, Claude plugin), W-46 (range
-selection), W-47 (resizing), W-49 (hide and show, `@sheetpane/visibility`).
-W-44 is built and waits on the decider (enable Pages, first release).
+*Updated 2026-10-19 (Claude Code, end of the W-50–W-69 run).* **Every agent
+item is closed again:** W-50–W-69 were built in eight parallel worktree lanes
+and merged on a branch `integration` (codes and record decisions that two
+lanes issued with the same number were renumbered at the merge — the
+archived items say which). **Next:** release 0.4.0 — `@sheetpane/tables`,
+`review` and `compare` are new on npm, so the decider publishes those three
+by hand once (RELEASING.md), adds their trusted publisher, and CI publishes
+the rest. **Owed by the decider:** W-30 (real-app files; it now also gathers
+every Excel / LibreOffice check W-52–W-62 and W-67 handed it), W-48, and the
+`unruled` rows B-044–B-046 (choices made in this run to confirm).
+
+Earlier, same day: every agent item through W-49 was closed; W-44 closed
+with 0.3.0.
 
 - **Owed by the decider:** W-44, W-30 (real-app files), W-48 (the skills,
   hooks and plugin in each tool), and reviewing Cowork's law L10 + B-035

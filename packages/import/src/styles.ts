@@ -89,7 +89,9 @@ function xf(e: Element): CellXf {
   const x: CellXf = { numFmtId: num(e, 'numFmtId') ?? 0, fontId: num(e, 'fontId') ?? 0, fillId: num(e, 'fillId') ?? 0, borderId: num(e, 'borderId') ?? 0 };
   const a = alignment(kid(e, 'alignment'));
   if (a) x.alignment = a;
-  for (const k of ['applyNumberFormat', 'applyFont', 'applyFill', 'applyBorder', 'applyAlignment'] as const) if (e.hasAttribute(k)) x[k] = bool(e, k);
+  const pr = kid(e, 'protection'); // W-62: absent means locked, not hidden
+  if (pr) x.protection = { locked: bool(pr, 'locked', true), hidden: bool(pr, 'hidden') };
+  for (const k of ['applyNumberFormat', 'applyFont', 'applyFill', 'applyBorder', 'applyAlignment', 'applyProtection'] as const) if (e.hasAttribute(k)) x[k] = bool(e, k);
   return x;
 }
 

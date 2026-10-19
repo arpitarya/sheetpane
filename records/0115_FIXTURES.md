@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: testing a host against known files
 owns: [packages/fixtures/]
 laws: [L2, L3, L8]
-timestamp: 2026-10-19T03:00:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-42
 ---
@@ -58,10 +58,22 @@ helpers to become one package any runner can load (W-32 made the showcase).
    the one exception to SR-BUILD decision 7's `dist`-only rule, so that
    `url()` reaches the files from `src/` and `dist/` alike. `./files/*` is
    exported.
-2. **The files** — `showcase.xlsx`, `showcase.rules.json`, `edge/` (empty,
+2. **The files** — `showcase.xlsx` (one sheet per plugin; its `Tables`
+   sheet, W-61, holds two Excel tables — Units, and Readings with a totals
+   row — and a list rule over `Units[Unit]` through the defined name
+   `UnitList`), `showcase.rules.json`, `dependent-lists.xlsx` (W-60:
+   Readings' Unit list is `=INDIRECT($A2)` over one defined name per
+   parameter on Lists; one stale unit, `Readings!C6`), `protected.xlsx`
+   (W-62: Spec and Lists protected with the password `sheetpane`, stored as
+   Excel's legacy hash `CC7D`; Spec's Value, Unit and Description columns
+   unlocked — their cells and their `<col style>`, so empty rows below stay
+   open — Parameter and the header locked, Limit a hidden formula; Notes not
+   protected; the structure locked, Archive hidden), `edge/` (empty,
    hidden sheet, non-ASCII names, merged, 1904, formula errors, a legacy
    `.xls`, not a ZIP), `csv/` (comma, semicolon, tab, BOM, quoted, formula
-   guard) — are written by `scripts/make.mjs`, never hand-zipped, and are the
+   guard), `compare/` (W-63: `base.xlsx` and `now.xlsx`, two versions of one
+   spec workbook — a price changed, a row removed, added and moved, a sheet
+   renamed, removed and added) — are written by `scripts/make.mjs`, never hand-zipped, and are the
    same byte for byte on every run (`writeZip`'s fixed timestamps). The
    250,000-row case is `hugeCsv(rows)`, not a file.
 3. **The manifest** `files/fixtures.json` (and `src/manifest.ts`, generated
@@ -74,7 +86,36 @@ helpers to become one package any runner can load (W-32 made the showcase).
    `path(name)` (Node), `bytes(name)` (disk in Node, `fetch` elsewhere, typed
    without Node's types), `info(name)`, `MANIFEST`, `hugeCsv(rows)`.
 5. **Used by** both demos (the gallery and the Rules file tab) and the grid's
-   rules-file test; `@sheetpane/testing` (W-41) loads from here.
+   rules-file test; `@sheetpane/testing` (W-41) loads from here;
+   `@sheetpane/validation`'s tests read `dependent-lists.xlsx` (W-60);
+   the grid's, the formulas plugin's and `@sheetpane/visibility`'s
+   protection tests read `protected.xlsx` (W-62). `book()` in `make.mjs`
+   takes its own `styles`, a `workbookProtection` element and per-column
+   formats (`colStyle`); every other file is unchanged byte for byte.
+6. **The parity pair (W-54):** `test/parity.ts` names the cases — every
+   manifest file (the refused two by their code) and `hugeCsv(20000)` — and
+   the pane's settings for each (the rules sample, element `columns`, an
+   async `validate`; plugins numfmt, validation, comments, formulas).
+   `parity.test.ts` opens each in `<sheetpane-excel>` in the browser,
+   `parity.node.test.ts` runs `check()` from `@sheetpane/grid/check` in Node;
+   both must equal `test/golden/parity.json` (errors without `id` and
+   `createdAt`, in one order), so the browser and Node agree.
+   `UPDATE_GOLDEN=1` rewrites it from Node. Those four plugins and
+   `@sheetpane/validation` are this package's devDependencies for it.
+6a. **The static pair (W-67):** `test/static.ts` names the cases — the
+   showcase, `merged`, `hidden-sheet`, `unicode-names`, `date1904` and
+   `comma.csv`, with the rules sample, plugins numfmt, styles, condfmt,
+   validation and comments, and one edit on the showcase (a changed and a
+   stale cell) plus its Numbers sheet's later marks — results at `marks`
+   (one under a rule's error), an accepted deviation, an error about the
+   sheet and one about the workbook, and one in a hidden layer. `static.test.ts` opens each in `<sheetpane-excel>` (Edit,
+   Chromium) and, for every sheet in both themes, compares each cell and
+   header of `renderStatic()`'s table with the grid's — computed text,
+   colours, weight, style, size, alignment, borders, padding, the mark's ring
+   and tint, a result's glyph, colour, size and label, the changed corner,
+   width and height; `static.node.test.ts`
+   renders the same in Node; both equal `test/golden/static.json`.
+   `@sheetpane/styles` and `@sheetpane/condfmt` are devDependencies for it.
 
 ### Consequences
 
@@ -82,7 +123,8 @@ helpers to become one package any runner can load (W-32 made the showcase).
   node` — every listed file read in Chromium matches its sheets and titles;
   refused files are refused; the hidden sheet and 1904 read as listed; the
   rules sample on the showcase fails exactly the listed cells; `path()` and
-  `bytes()` in Node; `hugeCsv()`. `pack-check` checks the `./files/*` folder.
+  `bytes()` in Node; `hugeCsv()`; the parity pair (decision 6); the static
+  pair (decision 6a). `pack-check` checks the `./files/*` folder.
 - **Owed:** files saved by Excel, Google Sheets, LibreOffice and Numbers,
   with `appSaved` naming the app and version — W-30 (DoD 5). The import
   package's ExcelJS fixtures stay with their generator (ExcelJS is that

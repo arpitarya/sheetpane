@@ -8,63 +8,71 @@ export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 
 /** `<sheetpane-excel>` in Svelte: attributes, properties, `on:sheetpane-…` (Svelte 4) and `onsheetpane-…` (Svelte 5) listeners. */
 export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  'on:sheetpane-layers'?: ((event: SheetpaneExcelEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
   'on:sheetpane-visibility'?: ((event: SheetpaneExcelEventMap['sheetpane-visibility'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'on:sheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56). */
+  'on:sheetpane-hover'?: ((event: SheetpaneExcelEventMap['sheetpane-hover'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'on:sheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ mode }` when the pane switches between View and Edit. */
   'on:sheetpane-mode'?: ((event: SheetpaneExcelEventMap['sheetpane-mode'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneExcelEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   'on:sheetpane-editstart'?: ((event: SheetpaneExcelEventMap['sheetpane-editstart'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'on:sheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused. */
   'on:sheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
+  /** `{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3026', message }` when the cell is locked on a protected sheet (W-62). */
   'on:sheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'on:sheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{}` when the pop-up closes. */
   'on:sheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ status: 'ready', name, kind, sheets, readMs }` when a file is read, or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
+  /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   'onsheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
+  /** `{ sheet, ref, kind, was, now, op?, at?, count? }` for each change, undo and redo included; rows or columns inserted or deleted (W-52) are one event, `kind: 'structure'`, with `op`, `at` (0-based) and `count`. */
   'onsheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'onsheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  'onsheetpane-layers'?: ((event: SheetpaneExcelEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'onsheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
   'onsheetpane-visibility'?: ((event: SheetpaneExcelEventMap['sheetpane-visibility'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'onsheetpane-resize'?: ((event: SheetpaneExcelEventMap['sheetpane-resize'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56). */
+  'onsheetpane-hover'?: ((event: SheetpaneExcelEventMap['sheetpane-hover'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   'onsheetpane-sheet'?: ((event: SheetpaneExcelEventMap['sheetpane-sheet'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ mode }` when the pane switches between View and Edit. */
   'onsheetpane-mode'?: ((event: SheetpaneExcelEventMap['sheetpane-mode'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneExcelEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref, column, value }` before a cell edit starts; cancellable — the cell stays read-only. */
+  /** `{ sheet, ref, column, value, richText?: true }` before a cell edit starts (`richText: true` on a rich-text cell, whose edit saves plain text — W-53); cancellable — the cell stays read-only. */
   'onsheetpane-editstart'?: ((event: SheetpaneExcelEventMap['sheetpane-editstart'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, draft, was }` as the cell-bar draft is typed. */
   'onsheetpane-input'?: ((event: SheetpaneExcelEventMap['sheetpane-input'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, column, was, now }` before a value is stored; cancellable — the value is refused. */
   'onsheetpane-beforechange'?: ((event: SheetpaneExcelEventMap['sheetpane-beforechange'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ sheet, ref }` when Esc restores a draft, or `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it. */
+  /** `{ sheet, ref }` when Esc restores a draft, `{ sheet, ref, reason: 'blocked', code: 'SP-6003', message }` when a `block` rule refuses it, or `{ sheet, ref, reason: 'locked', code: 'SP-3026', message }` when the cell is locked on a protected sheet (W-62). */
   'onsheetpane-editcancel'?: ((event: SheetpaneExcelEventMap['sheetpane-editcancel'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ blob, kind, name, guarded, format, converted, original? }` on `export()` and Download; cancellable — the Download control then saves nothing. */
+  /** `{ blob, kind, name, guarded, format, converted, sha256, original? }` on `export()` and Download (`sha256`: the blob's SHA-256, W-65); cancellable — the Download control then saves nothing. */
   'onsheetpane-export'?: ((event: SheetpaneExcelEventMap['sheetpane-export'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{}` when the pop-up closes. */
   'onsheetpane-close'?: ((event: SheetpaneExcelEventMap['sheetpane-close'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
@@ -72,25 +80,29 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
 
 /** `<sheetpane-errors>` in Svelte: attributes, properties, `on:sheetpane-…` (Svelte 4) and `onsheetpane-…` (Svelte 5) listeners. */
 export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneErrorsProperties & {
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'on:sheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  'on:sheetpane-layers'?: ((event: SheetpaneErrorsEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   'on:sheetpane-change'?: ((event: SheetpaneErrorsEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref }` when picking a row selects its cell. */
   'on:sheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50). */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'onsheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  'onsheetpane-layers'?: ((event: SheetpaneErrorsEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   'onsheetpane-change'?: ((event: SheetpaneErrorsEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref }` when picking a row selects its cell. */
   'onsheetpane-select'?: ((event: SheetpaneErrorsEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`. */
   'onsheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up. */
+  /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50). */
   'onsheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
 };
 

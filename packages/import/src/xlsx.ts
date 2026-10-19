@@ -7,8 +7,8 @@ import {
 import { all, bool, first, kid, kids, num, parseXml, relAttr, str } from './dom.js';
 import { ImportError } from './errors.js';
 import { formatCode, general, subsetCode } from './numfmt.js';
-import { color, parseStyles, parseTheme } from './styles.js';
-import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetState, StyleTables, ThreadedComment } from './types.js';
+import { color, font, parseStyles, parseTheme } from './styles.js';
+import type { AnchorPoint, CfRule, Cfvo, ConditionalFormat, DataValidation, DrawingAnchor, ImportedSheet, ImportedWorkbook, Note, OutlineEntry, Person, PivotTable, SheetProtection, SheetState, StyleTables, Table, TextRun, ThreadedComment, WorkbookProtection } from './types.js';
 
 /** Options for reading an .xlsx: the ZIP size limits that refuse a ZIP bomb. */
 export interface ReadOptions extends ZipLimits {}
@@ -96,6 +96,31 @@ function richText(e: Element): string {
   return decodeOoxmlString(s);
 }
 
+const RUN_KEYS = ['b', 'i', 'u', 'strike', 'color', 'sz', 'vertAlign'] as const;
+
+/** One `<r>`: its text and what its `<rPr>` names — never the family (`<rFont>`, SR-LAW-5). */
+function textRun(r: Element): TextRun {
+  const run: TextRun = { text: decodeOoxmlString(kids(r, 't').map((t) => t.textContent ?? '').join('')) };
+  const pr = kid(r, 'rPr');
+  if (pr) {
+    const f = font(pr);
+    for (const k of RUN_KEYS) if (f[k] !== undefined) (run as unknown as Record<string, unknown>)[k] = f[k];
+  }
+  return run;
+}
+
+/**
+ * A string container (`<si>`, `<is>`): its text, and its runs when it is rich text (W-53) — two or more runs, or
+ * one run that carries formatting. Phonetic runs (`<rPh>`) are not runs.
+ */
+function richString(e: Element): { text: string; runs?: TextRun[] } {
+  const text = richText(e);
+  const rs = kids(e, 'r');
+  if (!rs.length) return { text };
+  const runs = rs.map(textRun);
+  return runs.length > 1 || Object.keys(runs[0]!).length > 1 ? { text, runs } : { text };
+}
+
 const cfvo = (e: Element): Cfvo => {
   const o: Cfvo = { type: str(e, 'type') ?? 'num' };
   const v = str(e, 'val');
@@ -142,7 +167,69 @@ async function parseDrawing(pkg: Pkg, path: string): Promise<DrawingAnchor[]> {
   return out;
 }
 
-interface SheetCtx { pkg: Pkg; sst: string[]; styles: StyleTables; date1904: boolean; name: string; path: string; state: SheetState }
+/**
+ * One table part (`xl/tables/tableN.xml`, W-61): its name as formulas use it, its range, header and totals
+ * rows, columns and `tableStyleInfo`. Undefined when the part is missing or names no range.
+ */
+async function parseTable(pkg: Pkg, path: string): Promise<Table | undefined> {
+  const d = await pkg.doc(path);
+  const root = d?.documentElement;
+  const ref = root?.getAttribute('ref');
+  if (!root || !ref) return undefined;
+  const info = kid(root, 'tableStyleInfo');
+  const style: Table['style'] = {
+    showFirstColumn: bool(info, 'showFirstColumn'),
+    showLastColumn: bool(info, 'showLastColumn'),
+    showRowStripes: bool(info, 'showRowStripes'),
+    showColumnStripes: bool(info, 'showColumnStripes'),
+  };
+  const sn = str(info, 'name');
+  if (sn) style.name = sn;
+  const cols = kid(root, 'tableColumns');
+  const t: Table = {
+    name: str(root, 'displayName') || str(root, 'name') || '',
+    id: num(root, 'id') ?? 0,
+    ref,
+    headerRowCount: num(root, 'headerRowCount') ?? 1,
+    totalsRowCount: num(root, 'totalsRowCount') ?? 0,
+    columns: (cols ? kids(cols, 'tableColumn') : []).map((c) => {
+      const col: Table['columns'][number] = { name: decodeOoxmlString(c.getAttribute('name') ?? '') };
+      const fn = str(c, 'totalsRowFunction'), label = str(c, 'totalsRowLabel');
+      if (fn) col.totalsRowFunction = fn;
+      if (label !== undefined) col.totalsRowLabel = decodeOoxmlString(label);
+      return col;
+    }),
+    style,
+    path,
+  };
+  const af = kid(root, 'autoFilter')?.getAttribute('ref');
+  if (af) t.autoFilter = af;
+  return t;
+}
+
+/** `<sheetProtection>`'s switches and their schema defaults: `true` = refused while protected (W-62). */
+const SHEET_PROTECTION_DEFAULTS = {
+  objects: false, scenarios: false, formatCells: true, formatColumns: true, formatRows: true, insertColumns: true, insertRows: true,
+  insertHyperlinks: true, deleteColumns: true, deleteRows: true, selectLockedCells: false, selectUnlockedCells: false, sort: true,
+  autoFilter: true, pivotTables: true,
+} as const;
+
+/** A sheet's protection while `sheet="1"`; the password is never read, only whether one is stored (W-62). */
+function sheetProtection(e: Element | undefined): SheetProtection | undefined {
+  if (!e || !bool(e, 'sheet')) return undefined;
+  const p = {} as SheetProtection;
+  for (const [k, d] of Object.entries(SHEET_PROTECTION_DEFAULTS)) p[k as keyof typeof SHEET_PROTECTION_DEFAULTS] = bool(e, k, d);
+  p.hasPassword = !!(e.getAttribute('password') || e.getAttribute('hashValue'));
+  return p;
+}
+
+/** The workbook's `<workbookProtection>`; the password is never read, only whether one is stored (W-62). */
+function workbookProtection(e: Element | undefined): WorkbookProtection | undefined {
+  if (!e) return undefined;
+  return { lockStructure: bool(e, 'lockStructure'), lockWindows: bool(e, 'lockWindows'), hasPassword: !!(e.getAttribute('workbookPassword') || e.getAttribute('workbookHashValue')) };
+}
+
+interface SheetCtx { pkg: Pkg; sst: string[]; sstRuns: (TextRun[] | undefined)[]; styles: StyleTables; date1904: boolean; name: string; path: string; state: SheetState }
 
 /** An `outlineLevel` / `collapsed` pair, or undefined when the element carries neither. Levels are clamped to Excel's 0–7. */
 function outlineOf(e: Element): OutlineEntry | undefined {
@@ -157,8 +244,8 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
   if (!doc) throw new ImportError('corrupt', `sheet "${c.name}" points at a missing part ${c.path}`);
   const root = doc.documentElement;
   const rows: Cell[][] = [], text: string[][] = [];
-  const styleIndex: Record<string, number> = {}, formulas: Record<string, string> = {};
-  const rowHeights: (number | undefined)[] = [], hiddenRows: number[] = [], rowOutline: (OutlineEntry | undefined)[] = [];
+  const styleIndex: Record<string, number> = {}, formulas: Record<string, string> = {}, runs: Record<string, TextRun[]> = {};
+  const rowHeights: (number | undefined)[] = [], hiddenRows: number[] = [], rowOutline: (OutlineEntry | undefined)[] = [], rowStyles: (number | undefined)[] = [];
   const shared = new Map<string, { f: string; row: number; col: number }>();
   const tooBig = (what: string) => new ImportError('too-large', `sheet "${c.name}" has a cell past Excel's limits (${what}) — refused`);
   const sheetData = kid(root, 'sheetData');
@@ -173,6 +260,8 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     if (bool(rowEl, 'hidden') || ht === 0) hiddenRows.push(r); // a zero height hides the row as well
     const ro = outlineOf(rowEl);
     if (ro) rowOutline[r] = ro;
+    const rs = num(rowEl, 's');
+    if (rs !== undefined && bool(rowEl, 'customFormat')) rowStyles[r] = rs; // W-62: an empty cell of the row takes it
     let prevCol = -1;
     for (const ce of kids(rowEl, 'c')) {
       const ref = ce.getAttribute('r');
@@ -197,8 +286,8 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
       }
       let value: Cell = null, shown = '';
       switch (t) {
-        case 's': value = c.sst[Number(v)] ?? ''; shown = value; break;
-        case 'inlineStr': { const is = kid(ce, 'is'); value = is ? richText(is) : ''; shown = value; break; }
+        case 's': { const i = Number(v); value = c.sst[i] ?? ''; shown = value; const ru = c.sstRuns[i]; if (ru) runs[a1] = ru; break; }
+        case 'inlineStr': { const is = kid(ce, 'is'); const rs = is ? richString(is) : { text: '' }; value = rs.text; shown = value; if (rs.runs) runs[a1] = rs.runs; break; }
         case 'str': value = v !== undefined ? decodeOoxmlString(v) : ''; shown = value; break;
         case 'b': value = v === '1' || v === 'true'; shown = value ? 'TRUE' : 'FALSE'; break;
         case 'e': value = v ?? '#N/A'; shown = value; break;
@@ -223,15 +312,17 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     text[r] = Array.from({ length: row.length }, (_, i) => tr[i] ?? '');
   }
   const merges = (() => { const m = kid(root, 'mergeCells'); return m ? kids(m, 'mergeCell').map((e) => e.getAttribute('ref') ?? '').filter(Boolean) : []; })();
-  const columnWidths: number[] = [], colOutline: (OutlineEntry | undefined)[] = [];
+  const columnWidths: number[] = [], colOutline: (OutlineEntry | undefined)[] = [], colStyles: (number | undefined)[] = [];
   const hiddenColSet = new Set<number>();
   const cols = kid(root, 'cols');
   for (const col of cols ? kids(cols, 'col') : []) {
     const min = Math.max(1, num(col, 'min') ?? 1), max = Math.min(num(col, 'max') ?? min, MAX_COLS);
     const w = num(col, 'width'), hidden = bool(col, 'hidden') || w === 0; // a zero width hides the column as well
     const co = outlineOf(col);
+    const cs = num(col, 'style');
     for (let i = min - 1; i < max; i++) {
       if (w !== undefined) columnWidths[i] = w;
+      if (cs) colStyles[i] = cs;
       if (hidden) hiddenColSet.add(i);
       if (co) colOutline[i] = { ...co };
     }
@@ -322,16 +413,34 @@ async function parseSheet(c: SheetCtx): Promise<ImportedSheet> {
     } else if (rel.type.endsWith('/pivotTable')) {
       const d = await c.pkg.doc(rel.target);
       const loc = d && first(d, 'location');
-      if (d && loc) pivotTables.push({ name: d.documentElement.getAttribute('name') ?? '', ref: loc.getAttribute('ref') ?? '' });
+      if (!d || !loc) continue;
+      const pt: PivotTable = { name: d.documentElement.getAttribute('name') ?? '', ref: loc.getAttribute('ref') ?? '' };
+      // the cache it reads: a worksheet range is what an insert or delete must not move (W-52)
+      const cache = (await c.pkg.rels(rel.target)).find((r) => r.type.endsWith('/pivotCacheDefinition'));
+      const cd = cache && await c.pkg.doc(cache.target);
+      const ws = cd && first(cd, 'worksheetSource');
+      const sheet = ws?.getAttribute('sheet'), ref = ws?.getAttribute('ref');
+      if (sheet && ref) pt.source = { sheet, ref };
+      pivotTables.push(pt);
     }
   }
+  // Excel tables (W-61): in <tableParts> order, each its own part
+  const tables: Table[] = [];
+  const parts = kid(root, 'tableParts');
+  for (const tp of parts ? kids(parts, 'tablePart') : []) {
+    const rel = rels.find((r) => r.id === relAttr(tp, 'id') && !r.external && r.type.endsWith('/table'));
+    const t = rel && (await parseTable(c.pkg, rel.target));
+    if (t) tables.push(t);
+  }
   const dcw = num(fmt, 'defaultColWidth');
+  const protection = sheetProtection(kid(root, 'sheetProtection'));
   return {
     name: c.name, rows, text, path: c.path, merges, columnWidths, state: c.state, hidden: c.state !== 'visible',
-    styleIndex, formulas, freeze, hiddenRows, hiddenCols, rowOutline, colOutline, outline, ...(autoFilter ? { autoFilter } : {}), rowHeights,
+    styleIndex, runs, formulas, freeze, hiddenRows, hiddenCols, rowOutline, colOutline, outline, ...(autoFilter ? { autoFilter } : {}), rowHeights,
     defaultRowHeight: num(fmt, 'defaultRowHeight') ?? 15,
     defaultColWidth: dcw ?? (num(fmt, 'baseColWidth') !== undefined ? num(fmt, 'baseColWidth')! + 0.71 : undefined),
-    dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables,
+    dataValidations, conditionalFormats, drawings, notes, threadedComments, pivotTables, tables, rowStyles, colStyles,
+    ...(protection ? { protection } : {}),
   };
 }
 
@@ -373,7 +482,8 @@ export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOpt
   const styles = parseStyles(stylesPath ? await pkg.doc(stylesPath) : undefined);
   const themeColors = parseTheme(themePath ? await pkg.doc(themePath) : undefined);
   const sstDoc = sstPath ? await pkg.doc(sstPath) : undefined;
-  const sst = sstDoc ? kids(sstDoc.documentElement, 'si').map(richText) : [];
+  const strings = sstDoc ? kids(sstDoc.documentElement, 'si').map(richString) : [];
+  const sst = strings.map((x) => x.text), sstRuns = strings.map((x) => x.runs);
   const persons: Person[] = [];
   const pd = personPath ? await pkg.doc(personPath) : undefined;
   for (const p of pd ? all(pd, 'person') : []) {
@@ -383,6 +493,7 @@ export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOpt
     if (pr) x.providerId = pr;
     persons.push(x);
   }
+  const wbProtection = workbookProtection(first(wb, 'workbookProtection'));
   const definedNames = all(wb, 'definedName').map((d) => {
     const n: ImportedWorkbook['definedNames'][number] = { name: d.getAttribute('name') ?? '', formula: d.textContent ?? '' };
     const l = num(d, 'localSheetId');
@@ -399,12 +510,13 @@ export async function fromXlsx(data: ArrayBuffer | Uint8Array | Blob, o: ReadOpt
     keptIndex.push(i);
     const st = s.getAttribute('state');
     const state: SheetState = st === 'hidden' || st === 'veryHidden' ? st : 'visible';
-    sheets.push(await parseSheet({ pkg, sst, styles, date1904, name: s.getAttribute('name') ?? `Sheet${i + 1}`, path: rel.target, state }));
+    sheets.push(await parseSheet({ pkg, sst, sstRuns, styles, date1904, name: s.getAttribute('name') ?? `Sheet${i + 1}`, path: rel.target, state }));
   }
   if (!sheets.length) throw new ImportError('not-workbook', 'the workbook has no worksheets');
   activeTab = Math.max(0, keptIndex.indexOf(activeTab));
   return {
     sheets, source: 'xlsx', activeSheet: activeTab, date1904, styles, themeColors, persons, definedNames,
+    ...(wbProtection ? { workbookProtection: wbProtection } : {}),
     part: (path) => pkg.bytesOf(path),
   };
 }

@@ -52,7 +52,7 @@ flowchart LR
 1. **The package:** `@sheetpane/visibility` — `visibility()` (headless, `id:
    'visibility'`, no hook: its presence lets a marker click unhide in Edit)
    and the actions `setSpanHidden`, `setSheetHidden`, `hiddenIn`,
-   `canHideSheet`, `spanOf`, `blockedReason`; `@sheetpane/visibility/ui`
+   `canHideSheet`, `spanOf`, `blockedReason`, `sheetBlockedReason` (W-62); `@sheetpane/visibility/ui`
    adds the controls (`id: 'visibility-ui'`) and registers `visibility` for
    the `plugins` attribute. `@sheetpane/grid` is a peer; `@sheetpane/export`
    a dependency. No seventh hook: the core API (SR-GRID 21c) does the work.
@@ -68,7 +68,14 @@ flowchart LR
    the last visible sheet cannot be hidden ("A workbook needs one visible
    sheet"); Hide sheet writes `hidden`, never `veryHidden`, and moves to the
    next visible sheet; a CSV stores no hidden state, so every control is
-   disabled there with the reason ("CSV can't store hidden rows").
+   disabled there with the reason ("CSV can't store hidden rows"). **A
+   protected structure (W-62):** while the file's `<workbookProtection
+   lockStructure="1">` is honoured (SR-GRID 21e, `structureLockedIn`),
+   Hide sheet is disabled with "Locked in the file — the workbook's
+   structure is protected" (`sheetBlockedReason`) and `setSheetHidden`
+   returns `false`; the store refuses `setSheetState` itself, and the core
+   banner's *Unhide* is disabled with the same reason. `protection="ignore"`
+   opens them. Rows and columns are not covered by the structure lock.
 4. **Changes:** hiding is one change per sheet and axis (`hidden`), a sheet's
    state one (`sheetState`), outline levels one per axis (`outline`) —
    counted, undoable, exported (SR-GRID 21c, SR-EXPORT `hidden`).
@@ -79,7 +86,10 @@ flowchart LR
   the bar's label and its run, ⌘⌥9 matched on `e.code`, one change and undo;
   Unhide disabled until a range crosses the gap; a marker click unhides in
   Edit; the header menu's Hide and Group; the tab menu's Hide sheet and the
-  last-sheet rule; CSV disabled. The demos' gallery tab "Hide and show" and
+  last-sheet rule; CSV disabled; a protected structure (W-62, on
+  `protected.xlsx`) — Hide sheet and the banner's Unhide disabled with the
+  reason, `setSheetHidden` refused, both open again under
+  `protection="ignore"`. The demos' gallery tab "Hide and show" and
   its `demo-check` step.
 - **Not done:** opening a download in Excel and LibreOffice (W-30's real-app
   files).

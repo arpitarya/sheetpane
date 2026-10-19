@@ -5,8 +5,9 @@
 // lives in the docs (bundle size).
 //
 // Ranges: 1xxx import · 2xxx export · 3xxx grid · 4xxx errors element ·
-// 5xxx plugins (5100 numfmt · 5200 formulas · 5300 styles · 5400 validation ·
-// 5500 condfmt · 5600 images · 5700 charts · 5800 comments) · 6xxx rules ·
+// 5xxx plugins (5000 review · 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation ·
+// 5500 condfmt · 5600 images · 5700 charts · 5800 comments · 5900 compare) ·
+// 6xxx rules ·
 // 7xxx mcp.
 
 /** One registry entry: a code's short title and how serious it is. */
@@ -29,6 +30,7 @@ const TABLE = {
   'SP-1006': { title: 'File too large', severity: 'error' },
   'SP-1007': { title: 'Damaged file', severity: 'error' },
   'SP-1008': { title: 'Reading .xlsx needs a DOM', severity: 'error', retired: true },
+  'SP-1009': { title: 'No SHA-256 without Web Crypto', severity: 'warning' },
 
   // ── 2xxx · @sheetpane/export ─────────────────────────────────────────────
   'SP-2001': { title: 'Invalid sheet name', severity: 'error' },
@@ -45,6 +47,8 @@ const TABLE = {
   'SP-2012': { title: 'Damaged archive', severity: 'error' },
   'SP-2013': { title: 'Archive over the size limit', severity: 'error' },
   'SP-2014': { title: 'Not a workbook package', severity: 'error' },
+  'SP-2015': { title: 'Invalid validation or conditional-format rule', severity: 'error' },
+  'SP-2016': { title: 'Insert or delete refused', severity: 'error' },
   // 21xx · download()
   'SP-2101': { title: 'download() needs a file name', severity: 'error' },
   'SP-2102': { title: 'Only .xlsx or .csv can be saved', severity: 'error' },
@@ -70,10 +74,29 @@ const TABLE = {
   'SP-3013': { title: 'Plugin validate failed', severity: 'error' },
   'SP-3014': { title: 'Plugin overlay failed', severity: 'error' },
   'SP-3015': { title: 'Source could not be read', severity: 'error' },
+  'SP-3016': { title: 'Error meta dropped', severity: 'warning' },
+  'SP-3017': { title: 'renderDetail failed', severity: 'error' },
+  'SP-3018': { title: 'Error not accepted', severity: 'warning' },
+  'SP-3019': { title: 'Cell to open at not found', severity: 'warning' },
+  'SP-3020': { title: 'Nothing to check', severity: 'error' },
+  'SP-3021': { title: 'Layer name not valid', severity: 'warning' },
+  'SP-3022': { title: 'Delete would split a merged range', severity: 'warning' },
+  'SP-3023': { title: 'Insert or delete would move a pivot table', severity: 'warning' },
+  'SP-3024': { title: 'Insert would push cells off the sheet', severity: 'warning' },
+  'SP-3025': { title: 'Insert or delete would cut a table', severity: 'warning' },
+  'SP-3026': { title: 'Locked in the file', severity: 'warning' },
+  'SP-3027': { title: 'Nothing to render', severity: 'error' },
+  'SP-3028': { title: 'Cannot render that range', severity: 'error' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 
   // ── 5xxx · plugins ───────────────────────────────────────────────────────
+  // 5000 · @sheetpane/review (W-59: its own hundred — 5100 to 5900 are taken)
+  'SP-5001': { title: 'Review sheet not written', severity: 'error' },
+  'SP-5002': { title: 'Flagged cells not coloured on a sheet', severity: 'error' },
+  'SP-5003': { title: 'Range too large to colour whole', severity: 'note' },
+  'SP-5004': { title: 'No styles part to colour cells', severity: 'note' },
+  'SP-5005': { title: 'Review fill is not a colour', severity: 'error' },
   // 5100 · @sheetpane/numfmt
   'SP-5101': { title: 'Selection too large to format', severity: 'warning' },
   'SP-5102': { title: 'Not a style sheet', severity: 'error' },
@@ -81,7 +104,15 @@ const TABLE = {
   // 5200 · @sheetpane/formulas
   'SP-5201': { title: 'Recalculation failed', severity: 'error' },
   'SP-5202': { title: 'Formula engine did not load', severity: 'error' },
-  // 5300 styles · 5400 validation · 5500 condfmt · 5600 images — none raised yet
+  // 5300 styles · 5500 condfmt · 5600 images — none raised yet
+  // 5400 · @sheetpane/validation — the host's rules written as Excel's own (W-58)
+  'SP-5401': { title: 'Rule check Excel validation cannot hold', severity: 'warning' },
+  'SP-5402': { title: 'Rule checks one Excel rule cannot combine', severity: 'warning' },
+  'SP-5403': { title: 'List Excel cannot type out', severity: 'warning' },
+  'SP-5404': { title: 'Rule bound Excel cannot read', severity: 'warning' },
+  'SP-5405': { title: 'No column or sheet for a rule to write', severity: 'warning' },
+  'SP-5406': { title: 'Cells keep the rule they already have', severity: 'warning' },
+  'SP-5407': { title: 'Sheet rules could not be rewritten', severity: 'warning' },
   // 5700 · @sheetpane/charts
   'SP-5701': { title: 'Chart part is not well-formed XML', severity: 'error' },
   'SP-5702': { title: 'Chart part holds no chart', severity: 'error' },
@@ -89,6 +120,9 @@ const TABLE = {
   'SP-5801': { title: 'Comment part has no container', severity: 'error' },
   'SP-5802': { title: 'Not a worksheet', severity: 'error' },
   'SP-5803': { title: 'Comments not written for a sheet', severity: 'error' },
+  'SP-5804': { title: 'Error with no cell not written as a comment', severity: 'note' },
+  // 5900 · @sheetpane/compare
+  'SP-5901': { title: 'Compare key is not a column', severity: 'error' },
 
   // ── 6xxx · column rules and the rules file ──────────────────────────────
   'SP-6001': { title: 'Column rule pattern is not a regular expression', severity: 'error' },

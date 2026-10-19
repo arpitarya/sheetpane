@@ -2,7 +2,7 @@
 // a file hides (SR-GRID decision 21c); this plugin is what lets an editor change it: with it in the
 // pane, a marker click in Edit unhides, and `./ui` adds the controls. Headless: the actions below.
 // No runtime dependency; `@sheetpane/grid` is a peer.
-import { cellKey, registerPlugin, type Plugin, type Selection, type Snapshot, type WorkbookStore } from '@sheetpane/grid';
+import { STRUCTURE_LOCKED_MESSAGE, cellKey, registerPlugin, structureLockedIn, type Plugin, type Selection, type Snapshot, type WorkbookStore } from '@sheetpane/grid';
 import { parseRange, parseRef } from '@sheetpane/export';
 
 /**
@@ -26,6 +26,16 @@ export function blockedReason(snap: Snapshot): string | undefined {
 }
 
 /**
+ * Why a sheet's state cannot be changed here, or undefined when it can: a CSV, or a workbook whose structure the
+ * file protects (`lockStructure`, W-62 — unless the host set `protection="ignore"`).
+ * @param snap - The pane's snapshot.
+ * @returns The reason, or undefined.
+ */
+export function sheetBlockedReason(snap: Snapshot): string | undefined {
+  return blockedReason(snap) ?? (structureLockedIn(snap) ? STRUCTURE_LOCKED_MESSAGE : undefined);
+}
+
+/**
  * Hides the selection's rows or columns — one undoable change, written into the download.
  * @param store - The pane's workbook.
  * @param sel - The selection.
@@ -42,10 +52,10 @@ export function setSpanHidden(store: WorkbookStore, sel: Selection, axis: 'rows'
  * @param store - The pane's workbook.
  * @param sheet - The sheet's name.
  * @param hide - True hides; false unhides.
- * @returns False when refused (the last visible sheet, or a CSV).
+ * @returns False when refused (the last visible sheet, a CSV, or a protected structure — W-62).
  */
 export function setSheetHidden(store: WorkbookStore, sheet: string, hide: boolean): boolean {
-  if (blockedReason(store.getSnapshot())) return false;
+  if (sheetBlockedReason(store.getSnapshot())) return false;
   const ok = store.setSheetState(sheet, hide ? 'hidden' : 'visible');
   // hiding the sheet in view moves to the next visible one
   if (ok && hide && store.getSnapshot().selection.sheet === sheet) {

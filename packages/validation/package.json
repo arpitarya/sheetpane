@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/validation",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Data validation for sheetpane — the workbook's own `<dataValidations>` rules checked on load and on every edit, landing in <sheetpane-errors> — as a plugin on the `validate` hook.",
   "license": "MIT",
   "repository": {
@@ -24,6 +24,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./check": {
+      "source": "./src/check.ts",
+      "types": "./dist/check.d.ts",
+      "import": "./dist/check.js"
+    },
     "./ui": {
       "source": "./src/ui.ts",
       "types": "./dist/ui.d.ts",
@@ -41,10 +46,10 @@
     "@sheetpane/grid": "workspace:*"
   },
   "dependencies": {
+    "@sheetpane/export": "workspace:*",
     "@sheetpane/skills": "workspace:*"
   },
   "devDependencies": {
-    "@sheetpane/export": "workspace:*",
     "@sheetpane/formulas": "workspace:*",
     "@sheetpane/grid": "workspace:*"
   },
@@ -54,6 +59,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./check": {
+        "types": "./dist/check.d.ts",
+        "import": "./dist/check.js"
       },
       "./ui": {
         "types": "./dist/ui.d.ts",

@@ -1,7 +1,8 @@
 // toXlsx: a plain Workbook object in, a new .xlsx out (export verdict decisions 1, 5–7).
 import { CT, NS_CT, NS_MAIN, NS_PKG_REL, NS_R, REL, XML_DECL } from './ooxml.js';
 import { cellRef, colName, rangeRef, type RangePos } from './refs.js';
-import type { Cell, Sheet, Workbook } from './types.js';
+import { conditionalFormatsXml, dataValidationsXml, dxfXml } from './rules.js';
+import type { Cell, Dxf, Sheet, Workbook } from './types.js';
 import { checkWorkbook } from './validate.js';
 import { cleanXmlChars, escapeAttr, tElement, utf8 } from './xml.js';
 import { writeZip, type WriteOptions } from './zip.js';
@@ -14,6 +15,12 @@ export interface ToXlsxOptions extends WriteOptions {
 
 /** Style 1 is the one format sheetpane keeps: merge-and-centre. */
 export const STYLES_XML = `${XML_DECL}<styleSheet xmlns="${NS_MAIN}"><fonts count="1"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+
+/** The style sheet with the workbook's differential formats (W-57) after `<cellStyles>`; `STYLES_XML` when there are none. */
+export function stylesXml(dxfs: Dxf[] = []): string {
+  if (!dxfs.length) return STYLES_XML;
+  return STYLES_XML.replace('</styleSheet>', `<dxfs count="${dxfs.length}">${dxfs.map((d) => dxfXml(d)).join('')}</dxfs></styleSheet>`);
+}
 
 /** One `<c>` element for a value; `undefined` for an empty, unstyled cell. */
 export function cellXml(ref: string, v: Cell, style: number | string | undefined, prefix = '', stripped?: () => void): string | undefined {
@@ -56,7 +63,9 @@ function sheetXml(sheet: Sheet, merges: RangePos[], selected: boolean, stripped:
   const pane = paneXml(sheet.freeze);
   const view = `<sheetViews><sheetView workbookViewId="0"${selected ? ' tabSelected="1"' : ''}${pane ? `>${pane}</sheetView>` : '/>'}</sheetViews>`;
   const mc = merges.length ? `<mergeCells count="${merges.length}">${merges.map((m) => `<mergeCell ref="${rangeRef(m)}"/>`).join('')}</mergeCells>` : '';
-  return `${XML_DECL}<worksheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}"><dimension ref="${dim}"/>${view}<sheetFormatPr defaultRowHeight="15"/>${cols ? `<cols>${cols}</cols>` : ''}<sheetData>${rows.join('')}</sheetData>${mc}</worksheet>`;
+  // schema order: mergeCells, conditionalFormatting, dataValidations (W-57)
+  const rules = conditionalFormatsXml(sheet.conditionalFormats ?? []) + dataValidationsXml(sheet.dataValidations ?? []);
+  return `${XML_DECL}<worksheet xmlns="${NS_MAIN}" xmlns:r="${NS_R}"><dimension ref="${dim}"/>${view}<sheetFormatPr defaultRowHeight="15"/>${cols ? `<cols>${cols}</cols>` : ''}<sheetData>${rows.join('')}</sheetData>${mc}${rules}</worksheet>`;
 }
 
 /** `<pane>` for frozen rows/columns; `topLeftCell` is required or Excel ignores the pane (W-24). */
@@ -74,7 +83,8 @@ function colOf(cellTag: string): number {
 }
 
 /**
- * Builds a new .xlsx from the object: text as inline strings, numbers and booleans typed, merges centred.
+ * Builds a new .xlsx from the object: text as inline strings, numbers and booleans typed, merges centred;
+ * each sheet's data validation and conditional formats, and the workbook's `dxfs`, written as Excel stores them.
  * The same input gives the same bytes in `store` mode.
  *
  * @param book - The workbook; it is checked first and an `ExportError` names what is wrong.
@@ -100,7 +110,7 @@ export async function toXlsx(book: Workbook, o: ToXlsxOptions = {}): Promise<Uin
     { name: 'xl/workbook.xml', data: utf8(`${XML_DECL}<workbook xmlns="${NS_MAIN}" xmlns:r="${NS_R}"><bookViews><workbookView activeTab="${active}"/></bookViews><sheets>${book.sheets.map((s, i) => `<sheet name="${escapeAttr(s.name)}" sheetId="${i + 1}"${s.hidden ? ' state="hidden"' : ''} r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`) },
     { name: 'xl/_rels/workbook.xml.rels', data: utf8(`${XML_DECL}<Relationships xmlns="${NS_PKG_REL}">${book.sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${REL.worksheet}" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${n + 1}" Type="${REL.styles}" Target="styles.xml"/></Relationships>`) },
     ...book.sheets.map((s, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: utf8(sheetXml(s, merges[i]!, i === active, stripped)) })),
-    { name: 'xl/styles.xml', data: utf8(STYLES_XML) },
+    { name: 'xl/styles.xml', data: utf8(stylesXml(book.dxfs)) },
   ];
   if (stripped.length) o.onStripped?.(stripped);
   return writeZip(files, o);

@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import axe from 'axe-core';
-import type { SheetpaneErrors, SheetpaneExcel } from '../src/index.js';
-import { cellEl, cleanup, frame, sampleXlsx, shadow } from './helpers.js';
+import type { SheetpaneError, SheetpaneErrors, SheetpaneExcel } from '../src/index.js';
+import { cellEl, cleanup, frame, sampleXlsx, shadow, until } from './helpers.js';
 
 afterEach(cleanup);
 const $ = (el: Element, sel: string) => shadow(el).querySelector(sel) as HTMLElement;
@@ -188,5 +188,506 @@ describe('stable codes (W-40)', () => {
     ($(errors, `[data-id="${note!.id}"] .issue`) as HTMLButtonElement).click();
     await frame();
     expect($(errors, '.detail').textContent).toContain('SP-6023');
+  });
+});
+
+describe('errors with no cell (W-55)', () => {
+  async function scoped() {
+    const p = await pair();
+    const s = p.excel.workbook!;
+    const cell = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', expected: '268.4' });
+    const fee = s.addError({ sheet: 'Fee tiers', range: '', type: 'other', severity: 'error', message: 'No Pages List', expected: 'a Pages List sheet' });
+    const book = s.addError({ sheet: '', range: '', type: 'other', severity: 'warning', message: 'A listed tab has no sheet' });
+    const hold = s.addError({ sheet: 'Holdings', range: '', type: 'other', severity: 'note', message: 'Totals row missing' });
+    await frame();
+    return { ...p, s, cell, fee, book, hold };
+  }
+  const items = (el: Element) => [...shadow(el).querySelectorAll<HTMLElement>('.item')].map((i) => i.dataset.id);
+  const heads = (el: Element) => [...shadow(el).querySelectorAll('.grp')].map((g) => g.textContent);
+
+  it('the Workbook group, then each sheet’s whole-sheet errors in sheet order, above the cell errors', async () => {
+    const { errors, cell, fee, book, hold } = await scoped();
+    expect(items(errors)).toEqual([book.id, hold.id, fee.id, cell.id]);
+    expect(heads(errors)).toEqual(['Workbook', 'Holdings · whole sheet', 'Fee tiers · whole sheet', 'Cells']);
+    const row = $(errors, `[data-id="${fee.id}"] .issue`);
+    expect(row.getAttribute('aria-label')).toBe('Error 2: Other, Fee tiers whole sheet, Error');
+    expect(row.textContent).toContain('whole sheet');
+    expect(row.textContent).not.toContain('A1');
+    expect($(errors, `[data-id="${book.id}"] .issue`).getAttribute('aria-label')).toBe('Error 3: Other, whole workbook, Warning');
+    expect($(errors, `[data-id="${hold.id}"] .ba`)).toBeNull(); // nothing found, nothing expected: no Found → Should be line
+    expect($(errors, '.opencount').textContent).toBe('4 open');
+  });
+  it('keyboard order follows the groups', async () => {
+    const { errors, book, hold } = await scoped();
+    $(errors, '.issue').focus();
+    expect((shadow(errors).activeElement as HTMLElement).closest<HTMLElement>('.item')!.dataset.id).toBe(book.id);
+    await userEvent.tab();
+    expect((shadow(errors).activeElement as HTMLElement).closest<HTMLElement>('.item')!.dataset.id).toBe(hold.id);
+  });
+  it('counted on its tab; no pin, no mark, never on A1; stepping errors skips them', async () => {
+    const { excel } = await scoped();
+    const cnt = (name: string) => shadow(excel).querySelector(`[data-sheet="${name}"] .cnt`)?.textContent;
+    expect(cnt('Holdings')).toBe('2');
+    expect(cnt('Fee tiers')).toBe('1');
+    expect(shadow(excel).querySelector('[data-sheet="Fee tiers"] .cnt')!.getAttribute('aria-label')).toBe('1 open, 1 about the whole sheet');
+    expect(shadow(excel).querySelectorAll('.pin').length).toBe(1);
+    expect(cellEl(excel, 0, 0)!.className).not.toMatch(/m-(error|warning|note)/);
+  });
+  it('Show in sheet opens the sheet’s tab; for a workbook-level error it is disabled, with the reason', async () => {
+    const { excel, errors, s, fee, book } = await scoped();
+    s.select({ sheet: 'Holdings', ref: 'C4' });
+    let got: unknown;
+    document.addEventListener('sheetpane-reveal', (ev) => { got = (ev as CustomEvent).detail; }, { once: true });
+    ($(errors, `[data-id="${fee.id}"] .issue`) as HTMLButtonElement).click();
+    await frame();
+    expect(s.getSnapshot().selection).toEqual({ sheet: 'Fee tiers', ref: 'A1' });
+    s.select({ sheet: 'Fee tiers', ref: 'B5' });
+    ($(errors, '[data-act=reveal]') as HTMLButtonElement).click();
+    expect(got).toMatchObject({ error: { id: fee.id, sheet: 'Fee tiers', range: '' } });
+    expect(s.getSnapshot().selection).toEqual({ sheet: 'Fee tiers', ref: 'B5' }); // already there: the selection stays
+    await frame();
+    expect(shadow(excel).querySelector('[data-sheet="Fee tiers"]')!.getAttribute('aria-selected')).toBe('true');
+    ($(errors, `[data-id="${book.id}"] .issue`) as HTMLButtonElement).click();
+    await frame();
+    const btn = $(errors, '[data-act=reveal]') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(shadow(errors).getElementById(btn.getAttribute('aria-describedby')!)!.textContent).toContain('whole workbook');
+    expect(s.getSnapshot().selection.sheet).toBe('Fee tiers');
+  });
+  it('restored from a saved review; no axe violations with the groups and a detail open', async () => {
+    const { errors, book } = await scoped();
+    const saved = errors.getErrors();
+    errors.setErrors([]);
+    errors.setErrors(saved);
+    await frame();
+    expect(errors.getErrors()).toEqual(saved);
+    ($(errors, `[data-id="${book.id}"] .issue`) as HTMLButtonElement).click();
+    await frame();
+    // label-in-name (2.5.3) already fails on every row and filter in the browser's default font — "All 4" is
+    // named "All severities: 4" — and passes only by chance in the host-font test above; reported by W-55, not its change
+    const r = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
+    expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});
+
+describe('the host’s detail in the card and the list row (W-68)', () => {
+  const meta = { page: 3, measured: '6.63 in', expected: '6.50 in ± 0.06 in' };
+  async function withDetail() {
+    const p = await pair();
+    const s = p.excel.workbook!;
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', expected: '268.4', message: 'Price differs from the PDF', meta });
+    const other = s.addError({ sheet: 'Holdings', range: 'A8', type: 'other', severity: 'note' });
+    await frame();
+    return { ...p, s, e, other };
+  }
+  const open = async (errors: SheetpaneErrors, id: string) => { ($(errors, `[data-id="${id}"] .issue`) as HTMLButtonElement).click(); await frame(); };
+  const card = async (excel: SheetpaneExcel) => { excel.select('Holdings', 'G7'); await frame(); return $(excel, '.callout'); };
+
+  it('a string is text, never HTML, in a part="detail" region after the message — in the card and the open row', async () => {
+    const { excel, errors, e } = await withDetail();
+    const text = (x: { meta?: unknown }) => `<b>The PDF measures ${(x.meta as typeof meta).measured}</b>, outside ± 0.06 in`;
+    excel.renderDetail = text;
+    errors.renderDetail = text;
+    expect($(errors, '[part~=detail]')).toBeNull(); // no row open, no region
+    await open(errors, e.id);
+    const row = $(errors, '[part~=detail]');
+    expect(row.textContent).toBe('<b>The PDF measures 6.63 in</b>, outside ± 0.06 in');
+    expect(row.querySelector('b')).toBeNull();
+    expect(row.previousElementSibling!.textContent).toBe('Price differs from the PDF');
+    const c = await card(excel);
+    const region = c.querySelector<HTMLElement>('[part~=detail]')!;
+    expect(region.textContent).toBe(row.textContent);
+    expect(region.querySelector('b')).toBeNull();
+    expect(region.previousElementSibling!.textContent).toBe('Price differs from the PDF');
+    // without the hook there is no region; with one that returns nothing it is empty and takes no room
+    excel.renderDetail = () => null;
+    errors.renderDetail = undefined;
+    await frame();
+    expect($(errors, '[part~=detail]')).toBeNull();
+    expect(c.querySelector<HTMLElement>('[part~=detail]')!.childNodes.length).toBe(0);
+    expect(c.querySelector<HTMLElement>('[part~=detail]')!.getBoundingClientRect().height).toBe(0);
+  });
+  it('a Node is the host’s own; drawn again only when its error changes or the hook is replaced', async () => {
+    const { excel, errors, s, e, other } = await withDetail();
+    const calls: string[] = [];
+    const render = (x: { id: string; meta?: unknown }) => {
+      calls.push(x.id);
+      const fig = document.createElement('figure');
+      fig.className = 'crop';
+      fig.textContent = `page ${(x.meta as typeof meta | undefined)?.page ?? '?'}`;
+      return fig;
+    };
+    errors.renderDetail = render;
+    await open(errors, e.id);
+    const fig = $(errors, '[part~=detail] > figure.crop');
+    expect(fig.textContent).toBe('page 3');
+    expect(calls).toEqual([e.id]);
+    s.updateError(other.id, { status: 'resolved' }); // the list is drawn again for another error
+    await frame();
+    expect(calls).toEqual([e.id]);
+    expect($(errors, '[part~=detail] > figure.crop')).toBe(fig); // the same node, not a new one
+    s.updateError(e.id, { meta: { ...meta, page: 4 } }); // this error changed: drawn again
+    await frame();
+    expect(calls).toEqual([e.id, e.id]);
+    expect($(errors, '[part~=detail]').textContent).toBe('page 4');
+    errors.renderDetail = (x) => { calls.push(`b:${x.id}`); return 'replaced'; };
+    await frame();
+    expect($(errors, '[part~=detail]').textContent).toBe('replaced');
+    expect(calls.at(-1)).toBe(`b:${e.id}`);
+    // the card: the same rules, its own hook
+    excel.renderDetail = render;
+    const c = await card(excel);
+    expect(c.querySelector('[part~=detail] > figure.crop')!.textContent).toBe('page 4');
+    const n = calls.length;
+    s.updateError(e.id, { meta: { ...meta, page: 5 } });
+    await frame();
+    expect($(excel, '.callout [part~=detail]').textContent).toBe('page 5');
+    expect(calls.length).toBe(n + 2); // once for the card, once for the open row
+    // the hook gets a copy: changing it changes nothing in the pane
+    excel.renderDetail = (x) => { (x.meta as { page: number }).page = 0; x.message = 'changed'; return null; };
+    await frame();
+    expect(s.getErrors().find((x) => x.id === e.id)).toMatchObject({ message: 'Price differs from the PDF', meta: { page: 5 } });
+  });
+  it('a throw is logged as SP-3017 and shows nothing; the card and the row still work', async () => {
+    const { excel, errors, e } = await withDetail();
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      excel.renderDetail = () => { throw new Error('no PDF'); };
+      const c = await card(excel);
+      expect(log).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^SP-3017: renderDetail failed — renderDetail threw for ${e.id}`)), expect.any(Error));
+      expect(c.querySelector('[part~=detail]')!.childNodes.length).toBe(0);
+      (c.querySelector('[data-act=resolve]') as HTMLButtonElement).click();
+      expect(excel.getErrors().find((x) => x.id === e.id)!.status).toBe('resolved');
+      await frame();
+      expect(log).toHaveBeenCalledTimes(2); // the error changed, so the hook ran — and threw — once more
+      expect(errors.getErrors()).toHaveLength(2);
+    } finally { log.mockRestore(); }
+  });
+  it('clicks and keys in the region are the host’s: a host button named like an action does nothing to the pane', async () => {
+    const { excel, errors, e } = await withDetail();
+    const hostButton = () => { const b = document.createElement('button'); b.type = 'button'; b.dataset.act = 'delete'; b.textContent = 'Open the PDF'; return b; };
+    errors.renderDetail = hostButton;
+    excel.renderDetail = hostButton;
+    await open(errors, e.id);
+    ($(errors, '[part~=detail] button') as HTMLButtonElement).click();
+    const c = await card(excel);
+    (c.querySelector('[part~=detail] button') as HTMLButtonElement).click();
+    await frame();
+    expect(excel.getErrors()).toHaveLength(2);
+  });
+  it('focus order: the host’s controls come after the message, before the row’s and the card’s own; no axe violations', async () => {
+    const { excel, errors, e } = await withDetail();
+    const link = () => { const b = document.createElement('button'); b.type = 'button'; b.className = 'pdf'; b.textContent = 'Open page 3 of the PDF'; return b; };
+    errors.renderDetail = link;
+    excel.renderDetail = link;
+    await open(errors, e.id);
+    const active = (el: Element) => shadow(el).activeElement as HTMLElement;
+    $(errors, `[data-id="${e.id}"] .issue`).focus();
+    await userEvent.tab();
+    expect(active(errors).className).toBe('pdf');
+    await userEvent.tab();
+    expect(active(errors).dataset.act).toBe('reveal');
+    const c = await card(excel);
+    (c.querySelector('[data-act=next]') as HTMLElement).focus();
+    await userEvent.tab();
+    expect(active(excel).className).toBe('pdf');
+    await userEvent.tab();
+    expect(active(excel).dataset.act).toBe('resolve');
+    // label-in-name (2.5.3) is off for the list, as in the W-55 test: a known gap in SR-ERRORS, not this change
+    const r1 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
+    const r2 = await axe.run(c);
+    expect([...r1.violations, ...r2.violations].map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});
+
+describe('accepted deviations (W-69)', () => {
+  async function two(attrs: Record<string, string> = { author: 'Ravi' }) {
+    const p = await pair('excel-first', attrs);
+    const s = p.excel.workbook!;
+    const e = s.addError({ sheet: 'Holdings', range: 'G7', type: 'out-of-range', severity: 'error', message: 'Width 6.63 in, spec 6.50 in ± 0.06 in', author: 'Asha' });
+    const w = s.addError({ sheet: 'Holdings', range: 'A8', type: 'wrong-format', severity: 'warning' });
+    await frame();
+    return { ...p, s, e, w };
+  }
+  const open = async (errors: SheetpaneErrors, id: string) => { ($(errors, `[data-id="${id}"] .issue`) as HTMLButtonElement).click(); await frame(); };
+  const filters = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll('.filters button')].map((b) => b.textContent);
+  const rows = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll<HTMLElement>('.item')].map((r) => r.dataset.id);
+  async function accept(errors: SheetpaneErrors, id: string, reason: string) {
+    await open(errors, id);
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.fill($(errors, '[data-field=reason]') as HTMLTextAreaElement, reason);
+    ($(errors, '[data-act=accept-ok]') as HTMLButtonElement).click();
+    await frame();
+  }
+
+  it('Accept… asks for a reason, required; Accept records who, when and why — the error stops counting as open, here and in the sheet', async () => {
+    const { excel, errors, e, w } = await two();
+    await open(errors, e.id);
+    const btn = $(errors, '[data-act=accept]') as HTMLButtonElement;
+    expect(btn.textContent).toBe('Accept…');
+    btn.click();
+    await frame();
+    const form = $(errors, '.accept');
+    expect(form.getAttribute('role')).toBe('group');
+    const reason = $(errors, '[data-field=reason]') as HTMLTextAreaElement;
+    expect(shadow(errors).activeElement).toBe(reason);
+    expect(reason.required).toBe(true);
+    const ok = $(errors, '[data-act=accept-ok]') as HTMLButtonElement;
+    expect(ok.disabled).toBe(true);
+    await userEvent.fill(reason, '   ');
+    expect(ok.disabled).toBe(true); // blank is no reason
+    await userEvent.fill(reason, 'Approved by the customer on 18 Oct');
+    expect(ok.disabled).toBe(false);
+    ok.click();
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toMatchObject({ status: 'accepted', acceptedBy: 'Ravi', reason: 'Approved by the customer on 18 Oct', author: 'Asha' });
+    expect($(errors, '.opencount').textContent).toBe('1 open');
+    expect(filters(errors)).toEqual(['Problems 1', 'Edits 0', 'All 1', '✕ 0', '! 1', 'i 0', 'Accepted 1']); // Edit mode: the Edits view beside Problems (W-64)
+    expect(rows(errors)).toEqual([w.id]); // accepted items stop shouting
+    expect($(excel, '.counts').textContent).toContain('✕ 0');
+    const pin = shadow(excel).querySelector<HTMLElement>(`[data-pin="${e.id}"]`)!;
+    expect(pin.textContent).toBe('A');
+    expect(pin.getAttribute('aria-label')).toMatch(/, accepted$/);
+  });
+  it('the Accepted chip shows them, with who, when and why; Reopen takes one back', async () => {
+    const { excel, errors, e, w } = await two();
+    await accept(errors, e.id, 'Within the customer’s tolerance');
+    const chip = $(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement;
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+    expect(chip.textContent).toBe('Accepted 1');
+    chip.click();
+    await frame();
+    expect(chip.isConnected ? chip.getAttribute('aria-pressed') : $(errors, '[data-act=status][data-v=accepted]').getAttribute('aria-pressed')).toBe('true');
+    expect(rows(errors)).toEqual([e.id]);
+    const row = $(errors, `[data-id="${e.id}"]`);
+    expect(row.querySelector('.n')!.textContent).toBe('A');
+    expect(row.querySelector('.issue')!.getAttribute('aria-label')).toMatch(/, accepted$/);
+    expect(row.querySelector('.issue')!.getAttribute('aria-expanded')).toBe('true'); // still the open row
+    const said = $(errors, '.acceptance');
+    expect(said.textContent).toMatch(/^Accepted by Ravi · .+Within the customer’s tolerance$/);
+    expect($(errors, '[data-act=accept]')).toBeNull(); // already accepted
+    expect(($(errors, '[data-act=resolve]') as HTMLButtonElement).textContent).toBe('Reopen');
+    ($(errors, '[data-act=resolve]') as HTMLButtonElement).click();
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)!.status).toBe('open');
+    expect(['acceptedBy', 'acceptedAt', 'reason'].some((k) => k in excel.getErrors().find((x) => x.id === e.id)!)).toBe(false);
+    // nothing accepted left: the chip goes, and the list shows everything again
+    expect(shadow(errors).querySelector('[data-act=status]')).toBeNull();
+    expect(rows(errors)).toEqual([e.id, w.id]);
+  });
+  it('Esc and Cancel close the form without accepting; ⌘↵ accepts only with a reason', async () => {
+    const { excel, errors, e } = await two();
+    await open(errors, e.id);
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.keyboard('{Escape}');
+    await frame();
+    expect($(errors, '.accept')).toBeNull();
+    expect(shadow(errors).activeElement).toBe($(errors, '[data-act=accept]'));
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.keyboard('{Meta>}{Enter}{/Meta}'); // empty: nothing happens
+    await frame();
+    expect($(errors, '.accept')).not.toBeNull();
+    ($(errors, '[data-act=accept-cancel]') as HTMLButtonElement).click();
+    await frame();
+    expect($(errors, '.accept')).toBeNull();
+    expect(excel.getErrors().find((x) => x.id === e.id)!.status).toBe('open');
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    await userEvent.keyboard('Known deviation{Meta>}{Enter}{/Meta}');
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toMatchObject({ status: 'accepted', reason: 'Known deviation' });
+  });
+  it('one undo step: Ctrl+Z in the panel takes the acceptance back, Ctrl+Shift+Z gives it again', async () => {
+    const { excel, errors, e } = await two();
+    await accept(errors, e.id, 'Approved');
+    const accepted = excel.getErrors().find((x) => x.id === e.id)!;
+    $(errors, '.filters button').focus();
+    await userEvent.keyboard('{Control>}z{/Control}');
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toEqual(e);
+    expect($(errors, '.opencount').textContent).toBe('2 open');
+    $(errors, '.filters button').focus(); // the filters were re-drawn: the Accepted chip went
+    await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+    await frame();
+    expect(excel.getErrors().find((x) => x.id === e.id)).toEqual(accepted);
+  });
+  it('readonly and read-only rows offer no Accept…; an accepted row still says who and why', async () => {
+    const { excel, errors, e } = await two({ readonly: '' });
+    const s = excel.workbook!;
+    s.acceptError(e.id, 'Signed off', { by: 'Ravi' });
+    s.setErrors([...s.getErrors(), { ...e, id: 'ERR-0010', range: 'B3', author: 'host', status: 'open' }]);
+    await frame();
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    await open(errors, e.id);
+    expect($(errors, '.acceptance').textContent).toContain('Signed off');
+    expect($(errors, '[data-act=accept]')).toBeNull();
+    expect($(errors, '[data-act=resolve]')).toBeNull();
+    errors.readOnly = false;
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    await open(errors, 'ERR-0010');
+    expect($(errors, '[data-act=accept]')).toBeNull(); // a rule's error: read-only, as Resolve is
+  });
+  it('the sheet’s card shows the acceptance and offers Reopen (L7); no axe violations with the form open and the chip on', async () => {
+    const { excel, errors, e } = await two();
+    await accept(errors, e.id, 'Approved by the customer');
+    excel.select('Holdings', 'G7');
+    await frame();
+    const c = $(excel, '.callout');
+    expect(c.querySelector('.hd .g')!.textContent).toBe('A');
+    expect(c.querySelector('.acceptance')!.textContent).toMatch(/^Accepted by Ravi · .+Approved by the customer$/);
+    expect((c.querySelector('[data-act=resolve]') as HTMLButtonElement).textContent).toBe('Reopen');
+    expect(cellEl(excel, 6, 6)!.className).toContain('m-accepted');
+    const r0 = await axe.run(c);
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    await open(errors, e.id);
+    const r1 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } }); // the known gap (SR-ERRORS Consequences)
+    ($(errors, '[data-act=status][data-v=accepted]') as HTMLButtonElement).click();
+    await frame();
+    const other = excel.getErrors().find((x) => x.status === 'open')!;
+    await open(errors, other.id);
+    ($(errors, '[data-act=accept]') as HTMLButtonElement).click();
+    await frame();
+    const r2 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
+    expect([...r0.violations, ...r1.violations, ...r2.violations].map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});
+
+describe('review layers (W-51)', () => {
+  const finding = (id: string, range: string, severity: 'error' | 'warning' | 'note' = 'warning'): SheetpaneError => ({ v: 1, id, sheet: 'Holdings', range, type: 'other', severity, found: '', expected: '', message: `${id} at ${range}`, cellChanged: false, status: 'open', matchesExpected: false, author: 'checker', createdAt: '2026-10-19T09:00:00.000Z' });
+  const rows = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll<HTMLElement>('.item')].map((r) => r.dataset.id);
+  const pins = (excel: SheetpaneExcel) => [...shadow(excel).querySelectorAll<HTMLElement>('.pin[data-pin]')].map((p) => p.dataset.pin).sort();
+  const seg = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll<HTMLButtonElement>('.layerbox button')].map((b) => `${b.textContent}${b.getAttribute('aria-pressed') === 'true' ? '*' : ''}`);
+  async function layered(attrs: Record<string, string> = {}) {
+    const p = await pair('excel-first', attrs);
+    const s = p.excel.workbook!;
+    const mine = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', author: 'Asha' });
+    await frame();
+    return { ...p, s, mine };
+  }
+
+  it('one layer: no switch; a second layer: All and each layer with its open count, named by layerNames', async () => {
+    const { errors } = await layered();
+    expect(shadow(errors).querySelector('.layerbox .seg')).toBeNull();
+    errors.layerNames = { pdf: 'PDF check' };
+    errors.setErrors([finding('P-1', 'D5', 'error'), finding('P-2', 'B9')], { layer: 'pdf' });
+    await frame();
+    const group = $(errors, '.layerbox .seg');
+    expect(group.getAttribute('role')).toBe('group');
+    expect(group.getAttribute('aria-label')).toBe('Review layers');
+    expect(seg(errors)).toEqual(['All*', 'Review 1*', 'PDF check 2*']);
+    expect(rows(errors)).toHaveLength(3);
+    expect($(errors, `[data-id="P-1"] .m`).textContent).toContain('PDF check'); // with several layers shown, each row says which
+  });
+
+  it('the switch shows one layer in every surface — the list, the sheet’s pins, marks, counts and tab counts (L7); keyboard and events', async () => {
+    const { excel, errors, mine } = await layered();
+    errors.setErrors([finding('P-1', 'D5', 'error'), finding('P-2', 'B9')], { layer: 'pdf' });
+    await frame();
+    const onErrors = vi.fn(), onExcel = vi.fn();
+    errors.addEventListener('sheetpane-layers', (e) => onErrors((e as CustomEvent).detail));
+    excel.addEventListener('sheetpane-layers', onExcel);
+    ($(errors, '[data-act=layer][data-v=pdf]') as HTMLButtonElement).click();
+    await frame();
+    expect(onErrors).toHaveBeenCalledExactlyOnceWith({ visible: ['pdf'], layers: ['review', 'pdf'] });
+    expect(onExcel).not.toHaveBeenCalled(); // an action's event fires on the element where it happened
+    expect(seg(errors)).toEqual(['All', 'Review 1', 'pdf 2*']);
+    expect(shadow(errors).activeElement).toBe($(errors, '[data-act=layer][data-v=pdf]'));
+    expect(rows(errors)).toEqual(['P-1', 'P-2']);
+    expect($(errors, '.opencount').textContent).toBe('2 open');
+    expect(pins(excel)).toEqual(['P-1', 'P-2']);
+    expect(cellEl(excel, 6, 6)!.className).not.toContain('m-error'); // G7 is the review layer's
+    expect(cellEl(excel, 4, 3)!.className).toContain('m-error');
+    expect($(excel, '.counts').textContent).toBe('✕ 1 ! 1 i 0');
+    expect(shadow(excel).querySelector('[data-sheet="Holdings"] .cnt')!.textContent).toBe('2');
+    expect(excel.layers).toEqual(['pdf']);
+    expect(errors.layers).toEqual(['pdf']);
+    // keyboard: Shift+Tab to All, Enter shows every layer again
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    expect(shadow(errors).activeElement).toBe($(errors, '[data-act=layer][data-v=""]'));
+    await userEvent.keyboard('{Enter}');
+    await frame();
+    expect(seg(errors)).toEqual(['All*', 'Review 1*', 'pdf 2*']);
+    expect(pins(excel)).toEqual([mine.id, 'P-1', 'P-2'].sort());
+    expect(onErrors).toHaveBeenLastCalledWith({ visible: ['review', 'pdf'], layers: ['review', 'pdf'] });
+  });
+
+  it('the layers attribute, on either element, is the pane’s; a person’s new error lands in the layer shown', async () => {
+    const { excel, errors } = await layered();
+    errors.setErrors([finding('P-1', 'D5')], { layer: 'pdf' });
+    excel.setAttribute('layers', 'pdf');
+    await frame();
+    expect(errors.layers).toEqual(['pdf']);
+    expect(rows(errors)).toEqual(['P-1']);
+    errors.layers = ['review'];
+    await frame();
+    expect(errors.getAttribute('layers')).toBe('review');
+    expect(excel.layers).toEqual(['review']);
+    expect(pins(excel)).toHaveLength(1);
+    errors.layers = null;
+    await frame();
+    expect(errors.hasAttribute('layers')).toBe(false);
+    expect(excel.layers).toEqual(['review', 'pdf']);
+    // Flag issue while only pdf is shown: the new error is in pdf, in sight
+    excel.layers = ['pdf'];
+    excel.select('Holdings', 'C3');
+    await frame();
+    $(excel, '.grid').focus();
+    await userEvent.keyboard('f');
+    await frame();
+    await userEvent.keyboard('{Meta>}{Enter}{/Meta}');
+    await frame();
+    const added = errors.getErrors().at(-1)!;
+    expect(added.layer).toBe('pdf');
+    expect(rows(errors)).toContain(added.id);
+    // an element mounted with the attribute applies it to the pane it joins
+    const late = document.createElement('sheetpane-errors') as SheetpaneErrors;
+    late.setAttribute('pane', excel.getAttribute('pane')!);
+    late.setAttribute('layers', 'review');
+    document.body.append(late);
+    await frame();
+    expect(excel.layers).toEqual(['review']);
+  });
+
+  it('sheetpane-errors is the v2 envelope naming the layer that changed; setErrors(envelope) restores the layers and the plugins notice', async () => {
+    const { excel, errors } = await layered();
+    const got = vi.fn();
+    errors.addEventListener('sheetpane-errors', (e) => got((e as CustomEvent).detail));
+    errors.setErrors([finding('P-1', 'D5')], { layer: 'pdf' });
+    errors.setErrors([], { layer: 'compare' });
+    expect(got).toHaveBeenCalledTimes(2);
+    const env = got.mock.calls[1]![0];
+    expect(got.mock.calls[0]![0]).toMatchObject({ v: 2, layers: ['review', 'pdf'], changed: ['pdf'] });
+    expect(env).toMatchObject({ v: 2, plugins: [], layers: ['review', 'pdf', 'compare'], changed: [] });
+    expect(env.errors.map((e: SheetpaneError) => e.layer)).toEqual(['review', 'pdf']);
+    // a layered set is not a restore: no history event, and the plugins notice stays as it was
+    const history = vi.fn();
+    errors.addEventListener('sheetpane-history', history);
+    errors.setErrors([finding('P-2', 'D6')], { layer: 'pdf' });
+    expect(history).not.toHaveBeenCalled();
+    excel.workbook!.load(await sampleXlsx(), 'again.xlsx');
+    await until(() => excel.workbook!.getSnapshot().load.status === 'ready');
+    errors.setErrors({ ...JSON.parse(JSON.stringify(env)), plugins: ['numfmt'] });
+    await frame();
+    expect(excel.getErrors()).toEqual(env.errors);
+    expect(seg(errors)).toEqual(['All*', 'Review 1*', 'pdf 1*', 'compare 0*']);
+    expect($(errors, '.notice').textContent).toContain('formatted differently');
+    expect(history).toHaveBeenCalledOnce();
+  });
+
+  it('no axe violations with the switch and a layer chosen', async () => {
+    const { errors } = await layered();
+    errors.setErrors([finding('P-1', 'D5')], { layer: 'pdf' });
+    await frame();
+    ($(errors, '[data-act=layer][data-v=pdf]') as HTMLButtonElement).click();
+    await frame();
+    const r = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } }); // the known gap (SR-ERRORS Consequences)
+    expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   });
 });

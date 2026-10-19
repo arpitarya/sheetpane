@@ -1,6 +1,6 @@
 // The tools (W-39). Each is deterministic — the same input gives the same output — and computed
-// from what ships: the import package, the grid's rules checker, docs/ERRORS.md, the skills and
-// the custom-elements manifest. Read-only: paths come from the agent, nothing is written, no
+// from what ships: the import package, the grid's DOM-free check entry (the pane's own checks,
+// W-54), docs/ERRORS.md, the skills and the custom-elements manifest. Read-only: paths come from the agent, nothing is written, no
 // network. A bad input is a tool error (`isError: true`), never a crash.
 import { readFile, stat } from 'node:fs/promises';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -8,7 +8,8 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { read, BUILTIN_FORMATS, type ImportedSheet, type ImportedWorkbook } from '@sheetpane/import';
-import { checkDocument, describeRule, CODES, codeUrl, spMessage, type ColumnRule, type SpCode } from '@sheetpane/grid';
+import { check, checkDocument, describeRule, CODES, codeUrl, spMessage, type ColumnRule, type SheetpaneError, type SpCode } from '@sheetpane/grid/check';
+import { diffWorkbooks, summaryText, type DiffOptions } from '@sheetpane/compare';
 import { describeApi } from './api.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -43,19 +44,25 @@ const str = (args: Record<string, unknown>, k: string, required = true): string 
 
 // ── workbooks ──────────────────────────────────────────────────────────────
 
-/** Reads a workbook from a path the agent gives — `.xlsx` or `.csv`, nothing else (SR-LAW-3). */
-export async function loadWorkbook(path: string): Promise<ImportedWorkbook> {
+/** A workbook's bytes from a path the agent gives, its absolute path and its file name. */
+async function readWorkbook(path: string): Promise<{ abs: string; name: string; bytes: Uint8Array }> {
   const abs = resolve(path);
   let size: number;
   try { size = (await stat(abs)).size; } catch { throw new ToolError('SP-7002', `No file at ${abs}`); }
   if (size > MAX_BYTES) throw new ToolError('SP-7003', `${abs} is ${size} bytes — past the 256 MB this tool reads`);
-  const bytes = new Uint8Array(await readFile(abs));
-  try { return await read(bytes, { name: abs.split(/[\\/]/).pop()! }); } catch (e) {
-    // the reader's refusal keeps its own code (SP-10xx); anything else is this tool's SP-7004
-    const err = e as Error & { spCode?: SpCode; spDetail?: string };
-    if (err.spCode) throw new ToolError(err.spCode, err.spDetail ?? err.message);
-    throw new ToolError('SP-7004', `${abs}: ${err.message}`);
-  }
+  return { abs, name: abs.split(/[\\/]/).pop()!, bytes: new Uint8Array(await readFile(abs)) };
+}
+
+/** A failed read's code and detail: the reader's refusal keeps its own code (SP-10xx); anything else is this tool's SP-7004. */
+function readFailed(e: unknown, abs: string): [SpCode, string] {
+  const err = e as Error & { spCode?: SpCode; spDetail?: string };
+  return err.spCode ? [err.spCode, err.spDetail ?? err.message] : ['SP-7004', `${abs}: ${err.message}`];
+}
+
+/** Reads a workbook from a path the agent gives — `.xlsx` or `.csv`, nothing else (SR-LAW-3). */
+export async function loadWorkbook(path: string): Promise<ImportedWorkbook> {
+  const { abs, name, bytes } = await readWorkbook(path);
+  try { return await read(bytes, { name }); } catch (e) { throw new ToolError(...readFailed(e, abs)); }
 }
 
 type Kind = 'empty' | 'text' | 'number' | 'integer' | 'date' | 'boolean';
@@ -129,6 +136,7 @@ function pluginsFor(wb: ImportedWorkbook): string[] {
     if (s.drawings.some((d) => d.kind === 'picture')) out.add('images');
     if (s.drawings.some((d) => d.kind === 'chart')) out.add('charts');
     if (s.notes.length || s.threadedComments.length) out.add('comments');
+    if (s.tables.length) out.add('tables');
   }
   return [...out].sort().map((p) => `@sheetpane/${p}`);
 }
@@ -200,7 +208,14 @@ export async function draftRules(path: string, sheet?: string): Promise<Record<s
   };
 }
 
-/** A rules file checked the way the grid checks it, and against a workbook when one is given. */
+/** How many failing cells `check_rules` lists; `findingCount` gives them all. */
+const FINDINGS = 50;
+
+/**
+ * A rules file checked the way the grid checks it and, given a workbook, checked against it by the
+ * pane's own `check()` (W-54, no third copy): the notes about the workbook (a sheet or title the
+ * rules name that it lacks, a duplicate title) and the cells that fail.
+ */
 export async function checkRules(json: unknown, path?: string): Promise<Record<string, unknown>> {
   let doc = json;
   if (typeof json === 'string') {
@@ -213,30 +228,55 @@ export async function checkRules(json: unknown, path?: string): Promise<Record<s
     for (const [title, r] of Object.entries(d.columns)) rules.push({ sheet: name, target: `column “${title}”`, rule: describeRule(r) });
     for (const [ref, r] of Object.entries(d.cells)) rules.push({ sheet: name, target: `cell ${ref}`, rule: describeRule(r) });
   }
+  let findings: Record<string, unknown> = {};
   if (path !== undefined) {
-    const wb = await loadWorkbook(path);
-    const star = sheets.get('*');
-    const headerRowOf = (name: string) => sheets.get(name)?.headerRow ?? star?.headerRow ?? 1;
-    const found = new Map<string, Set<string>>();
-    for (const s of wb.sheets) {
-      const hr = headerRowOf(s.name), seen = new Set<string>();
-      for (const [c, t] of (s.text[hr - 1] ?? []).entries()) {
-        const k = t.trim().toLowerCase();
-        if (!k) continue;
-        if (seen.has(k)) { out.push({ code: 'SP-6024', sheet: s.name, found: t.trim(), message: `Two columns are titled “${t.trim()}” in “${s.name}” — the rules check column ${a1(0, c).replace(/\d+$/, '')}'s first match only` }); continue; }
-        seen.add(k);
-        if (!found.has(k)) found.set(k, new Set());
-        found.get(k)!.add(s.name);
-      }
-    }
-    for (const name of sheets.keys()) if (name !== '*' && !wb.sheets.some((s) => s.name === name)) out.push({ code: 'SP-6022', sheet: name, found: name, message: `No sheet is named “${name}” — its rules are not checked` });
-    for (const title of Object.keys(star?.columns ?? {})) if (!found.has(title.trim().toLowerCase())) out.push({ code: 'SP-6023', sheet: '*', found: title, message: `No column is titled “${title}” in any sheet — its rule is not checked` });
-    for (const [name, d] of sheets) {
-      if (name === '*' || !wb.sheets.some((s) => s.name === name)) continue;
-      for (const title of Object.keys(d.columns)) if (!found.get(title.trim().toLowerCase())?.has(name)) out.push({ code: 'SP-6023', sheet: name, found: title, message: `No column is titled “${title}” in row ${headerRowOf(name)} of “${name}” — its rule is not checked` });
-    }
+    const { abs, name, bytes } = await readWorkbook(path);
+    let errors: SheetpaneError[];
+    try { errors = await check(bytes, { name, rules: doc }); } catch (e) { throw new ToolError(...readFailed(e, abs)); }
+    // a note carries its SP code; the rules file's own problems are already listed — the rest are the workbook's
+    const own = new Set(problems.map((p) => `${p.code}|${p.message}`));
+    for (const e of errors) if (e.code && !own.has(`${e.code}|${e.message}`)) out.push({ code: e.code, sheet: e.sheet, found: e.found, message: e.message });
+    const failing = errors.filter((e) => !e.code);
+    findings = { findingCount: failing.length, findings: failing.slice(0, FINDINGS).map((e) => ({ sheet: e.sheet, range: e.range, type: e.type, severity: e.severity, found: e.found, expected: e.expected, message: e.message })) };
   }
-  return { ok: out.length === 0, problems: out.map((p) => ({ ...p, url: codeUrl(p.code as SpCode) })), rules };
+  return { ok: out.length === 0, problems: out.map((p) => ({ ...p, url: codeUrl(p.code as SpCode) })), rules, ...findings };
+}
+
+// ── two versions of a workbook (W-63) ─────────────────────────────────────
+
+const colLetter = (c: number) => a1(0, c).replace(/\d+$/, '');
+
+/** What changed between two workbooks — @sheetpane/compare's diffWorkbooks — with rows 1-based and at most `limit` rows and cells listed per sheet. */
+export async function diffReport(base: string, path: string, o: DiffOptions & { limit?: number } = {}): Promise<Record<string, unknown>> {
+  const [a, b] = [await loadWorkbook(base), await loadWorkbook(path)];
+  const { limit = 200, ...opts } = o;
+  const d = diffWorkbooks(a, b, opts); // the key is for every sheet: a sheet without it is aligned unkeyed, with a note
+  return {
+    base, path, summary: d.summary, text: summaryText(d.summary),
+    sheets: d.sheets.filter((s) => s.status !== 'same').map((s) => {
+      const rows = { added: [] as number[], removed: [] as number[], changed: [] as number[], moved: [] as { from: number; to: number }[] };
+      for (const r of s.rows) {
+        if (r.op === 'added') rows.added.push(r.b + 1);
+        else if (r.op === 'removed') rows.removed.push(r.a + 1);
+        else if (r.op === 'changed') rows.changed.push(r.b + 1);
+        else rows.moved.push({ from: r.a + 1, to: r.b + 1 });
+      }
+      const cut = <T>(l: T[]) => l.slice(0, limit);
+      const truncated = Object.values(rows).some((l) => l.length > limit) || s.cells.length > limit;
+      return {
+        status: s.status, ...(s.a !== undefined ? { was: s.a } : {}), ...(s.b !== undefined ? { now: s.b } : {}), ...(s.renamed !== undefined ? { renamed: s.renamed } : {}),
+        ...(s.status === 'changed' ? { keyed: s.keyed, ...(s.key ? { key: s.key } : {}), ...(s.note ? { note: s.note } : {}), columnsBy: s.columns.by } : {}),
+        counts: s.counts,
+        ...(s.columns.added.length || s.columns.removed.length || s.columns.moved.length ? { columns: { added: s.columns.added.map(colLetter), removed: s.columns.removed.map(colLetter), moved: s.columns.moved.map((m) => ({ from: colLetter(m.a), to: colLetter(m.b) })) } } : {}),
+        ...(s.status === 'changed' ? { rows: { added: cut(rows.added), removed: cut(rows.removed), changed: cut(rows.changed), moved: cut(rows.moved) } } : {}),
+        ...(s.cells.length ? { cells: cut(s.cells).map((c) => ({ ref: c.ref, ...(c.wasRef && c.wasRef !== c.ref ? { wasRef: c.wasRef } : {}), was: c.was, now: c.now, what: c.what })) } : {}),
+        ...(s.merges.added.length || s.merges.removed.length ? { merges: s.merges } : {}),
+        ...(s.hidden.rows.hidden.length || s.hidden.rows.shown.length || s.hidden.cols.hidden.length || s.hidden.cols.shown.length || s.hidden.state ? { hidden: s.hidden } : {}),
+        ...(s.rules ? { rules: s.rules } : {}),
+        ...(truncated ? { truncated: `rows and cells listed up to ${limit} each — pass a larger "limit" for more` } : {}),
+      };
+    }),
+  };
 }
 
 // ── error codes (W-40) ─────────────────────────────────────────────────────
@@ -340,7 +380,7 @@ export const TOOLS: Tool[] = [
   {
     name: 'check_rules',
     title: 'Check a rules file',
-    description: 'Check a sheetpane rules file exactly as the grid does (unknown keys and rule words, bad types, patterns, ranges, version), and list each rule in words. With a workbook path, also list the sheets and column titles the rules name that the workbook lacks.',
+    description: 'Check a sheetpane rules file exactly as the grid does (unknown keys and rule words, bad types, patterns, ranges, version), and list each rule in words. With a workbook path, also run the rules over the workbook as the pane does on load: the sheets and column titles the rules name that the workbook lacks, and the cells that fail (the first 50; findingCount counts them all).',
     inputSchema: { $schema: SCHEMA, type: 'object', properties: { rules: { description: 'The rules file: its JSON text, or the parsed object.', type: ['string', 'object'] }, path: pathProp }, required: ['rules'], additionalProperties: false },
     run: async (a) => {
       if (a.rules === undefined) throw new ToolError('SP-7001', '“rules” is required: the rules file\'s JSON text or object');
@@ -361,6 +401,29 @@ export const TOOLS: Tool[] = [
     inputSchema: { $schema: SCHEMA, type: 'object', properties: { task: { type: 'string', description: 'The task in a few words.' } }, required: ['task'], additionalProperties: false },
     run: async (a) => JSON.stringify(findSkill(str(a, 'task')!), null, 2),
   },
+  {
+    name: 'diff_workbooks',
+    title: 'Diff two workbooks',
+    description: 'Compare two versions of an .xlsx or .csv file and say what changed: sheets added, removed and renamed; per sheet, rows added, removed, changed and (with key columns) moved, and cells changed by value, display text or formula, was → now; also merges, hidden rows and columns, and rule counts. Read-only; the same diff as @sheetpane/compare.',
+    inputSchema: {
+      $schema: SCHEMA, type: 'object',
+      properties: {
+        base: { type: 'string', description: 'The older version: a path to an .xlsx or .csv file.' },
+        path: { type: 'string', description: 'The newer version: a path to an .xlsx or .csv file.' },
+        key: { type: ['string', 'array'], items: { type: 'string' }, description: 'Key columns that identify a row — header titles or column letters, e.g. "Account" or ["Account", "Date"]. With a key, a row that changed place is reported as moved; without one, as removed and added.' },
+        headerRow: { type: 'integer', minimum: 1, description: 'The row holding the column titles (default 1).' },
+        limit: { type: 'integer', minimum: 1, maximum: 10000, description: 'At most this many rows of each kind and cells listed per sheet (default 200); the counts are always whole.' },
+      },
+      required: ['base', 'path'], additionalProperties: false,
+    },
+    run: async (a) => {
+      const key = a.key;
+      if (key !== undefined && !(typeof key === 'string' || (Array.isArray(key) && key.every((k) => typeof k === 'string')))) throw new ToolError('SP-7001', '“key” must be a column title or letter, or a list of them');
+      const int = (k: string) => { const v = a[k]; if (v === undefined) return undefined; if (!Number.isInteger(v) || (v as number) < 1) throw new ToolError('SP-7001', `“${k}” must be a whole number of 1 or more`); return v as number; };
+      const headerRow = int('headerRow'), limit = int('limit');
+      return JSON.stringify(await diffReport(str(a, 'base')!, str(a, 'path')!, { ...(key !== undefined ? { key: key as string | string[] } : {}), ...(headerRow ? { headerRow } : {}), ...(limit ? { limit } : {}) }), null, 2);
+    },
+  },
 ];
 
 /** Runs one tool. A ToolError or a failed read is the tool's error, never the server's. */
@@ -369,6 +432,8 @@ export async function callTool(name: string, args: Record<string, unknown>): Pro
   try {
     return { content: [{ type: 'text', text: await tool.run(args ?? {}) }] };
   } catch (e) {
-    return { content: [{ type: 'text', text: e instanceof ToolError ? e.message : `${name} failed: ${(e as Error).message}` }], isError: true };
+    // a ToolError, or a coded error from a package (SP-5901 from diffWorkbooks): its message starts with the code
+    const coded = e instanceof ToolError || typeof (e as { spCode?: unknown }).spCode === 'string';
+    return { content: [{ type: 'text', text: coded ? (e as Error).message : `${name} failed: ${(e as Error).message}` }], isError: true };
   }
 }

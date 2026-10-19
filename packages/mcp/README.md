@@ -12,9 +12,10 @@ npx sheetpane-skills install # registers it for Claude Code, Kiro and Codex (wit
 | `describe_api` | `{ "name": "flagging" }` — an element, attribute, property, method, event, `--sp-*` property, slot, part or plugin | its entry in `custom-elements.json` (with its TSDoc) and the record that specifies it |
 | `inspect_workbook` | `{ "path": "data/q3.xlsx" }` | sheets, size, header-row guess, titles, each column's type, blanks and values, merges, and which plugins the file would use — `@sheetpane/import` |
 | `draft_rules` | `{ "path": "data/q3.xlsx", "sheet"?: "Sales" }` | a rules file for `<sheetpane-excel rules-src>`: `required`, `type`, `oneOf` per titled column — **a draft to review** |
-| `check_rules` | `{ "rules": {…} or "…json…", "path"?: "data/q3.xlsx" }` | the grid's own check, each rule in words, and the sheets and titles the workbook lacks |
+| `check_rules` | `{ "rules": {…} or "…json…", "path"?: "data/q3.xlsx" }` | the grid's own check, each rule in words; with a workbook, the pane's own `check()` over it — the sheets and titles it lacks, and the cells that fail |
 | `explain_code` | `{ "code": "SP-1002" }` | meaning, likely cause, fix and link — [docs/ERRORS.md](../../docs/ERRORS.md) |
 | `find_skill` | `{ "task": "validate columns from a JSON file" }` | the skill to read, with its `SKILL.md` path |
+| `diff_workbooks` | `{ "base": "spec-v1.xlsx", "path": "spec-v2.xlsx", "key"?: "Account" }` | what changed: sheets added, removed, renamed; rows added, removed, changed, moved; cells was → now — `@sheetpane/compare` |
 
 ## Registering it by hand
 

@@ -29,7 +29,7 @@ const TOKEN_DOC = {
   cell: 'The cell background.', head: 'Row and column headers.', grid: 'Cell gridlines.',
   ink: 'Body text.', 'ink-2': 'Secondary text.', 'ink-3': 'Muted text and icons.',
   accent: 'Selection, focus ring and primary buttons.', 'accent-ink': 'Accent text and pressed primary buttons.', 'accent-soft': 'The selected range and active rows.',
-  pass: 'Resolved, passing.', 'pass-soft': 'Resolved, passing — the tint.', fail: 'Errors.', 'fail-soft': 'Errors — the tint.',
+  pass: 'Resolved, passing; the ✓ result mark.', 'pass-soft': 'Resolved, passing — the tint.', skip: 'Not checked: the — result mark (W-50).', fail: 'Errors.', 'fail-soft': 'Errors — the tint.',
   warn: 'Warnings.', 'warn-soft': 'Warnings — the tint.', changed: 'The changed-cell mark.', 'changed-soft': 'The changed-cell mark — the tint.',
   note: 'Notes.', 'ref-1': 'The first reference colour (formula ranges, plugins).', 'ref-2': 'The second reference colour.', 'ref-3': 'The third reference colour.',
   'on-solid': 'Text on solid fills: pins, badges, primary buttons.', hit: 'Find hits.', 'hit-current': 'The current find hit.',
@@ -44,9 +44,10 @@ const FIELD = {
   column: '{ index: number; letter: string; header: string }', errors: 'SheetpaneError[]', plugins: 'string[]', error: 'SheetpaneError',
   mode: 'Mode', reason: "'undo' | 'redo' | 'cleared'", canUndo: 'boolean', canRedo: 'boolean',
   blob: 'Blob', name: 'string', guarded: 'string[] | false', format: "'xlsx' | 'csv'", converted: 'boolean', original: 'boolean',
-  sheets: 'string[]', readMs: 'number', code: 'string', spCode: 'SpCode', message: 'string', detail: 'string',
+  sheets: 'string[]', readMs: 'number', sha256: 'string | undefined', code: 'string', spCode: 'SpCode', message: 'string', detail: 'string',
+  layers: 'string[]', changed: 'string[]', visible: 'string[]',
 };
-const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" } };
+const FIELD_BY_EVENT = { 'sheetpane-visibility': { axis: "'row' | 'col' | 'sheet'", via: "'menu' | 'key' | 'marker' | 'reveal'", hidden: 'boolean' }, 'sheetpane-change': { kind: 'ChangeKind', op: "'insertRows' | 'deleteRows' | 'insertCols' | 'deleteCols'", at: 'number', count: 'number' }, 'sheetpane-load': { kind: "'xlsx' | 'csv'" }, 'sheetpane-export': { kind: "'xlsx' | 'csv'" }, 'sheetpane-errors': { v: '2' } };
 /** The type names payloads use, all exported by `@sheetpane/grid`. */
 const PAYLOAD_TYPES = ['ChangeKind', 'Mode', 'SheetpaneError', 'SpCode'];
 const LIFECYCLE = new Set(['connectedCallback', 'disconnectedCallback', 'attributeChangedCallback', 'adoptedCallback']);
@@ -197,7 +198,7 @@ export function manifest(dts = join(GRID, 'dist')) {
       ...decl.methods.map((m) => ({ kind: 'method', name: m.name, privacy: 'public', ...(m.doc ? { description: m.doc } : {}), ...(m.parameters.length ? { parameters: m.parameters } : {}), return: { type: { text: m.returns } } })),
     ];
     const events = doc.fires.map((e) => {
-      const literals = [...e.text.matchAll(/`(\{[^`]*\})`/g)].map((m) => payloadType(m[1], e.name));
+      const literals = [...e.text.matchAll(/`(\{[^`]*\}|null)`/g)].map((m) => (m[1] === 'null' ? 'null' : payloadType(m[1], e.name)));
       return { name: e.name, type: { text: `CustomEvent<${[...new Set(literals)].join(' | ') || 'unknown'}>` }, description: e.text };
     });
     const summary = /^(.*?\.)(?:\s|$)/.exec(doc.intro)?.[1] ?? doc.intro;
@@ -282,6 +283,17 @@ const camel = (s) => s.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 /** Writable fields a framework may set; an `on…` name is skipped (frameworks read it as a listener — use the attribute). */
 const settable = (d) => d.members.filter((x) => x.kind === 'field' && !x.readonly && !/^on[A-Z]/.test(x.name));
 const attrTs = (a) => (a.type.text === 'number' ? 'number | `${number}`' : a.type.text);
+/**
+ * Attributes and properties a framework may set — less `ref` (W-66) in React, Vue and Solid, which keep `ref`
+ * for their own refs: the element's `ref` attribute is set there with `setAttribute` (or Solid's `attr:ref`).
+ */
+const RESERVED = ['ref'];
+const fwProps = (d, reserved = []) => {
+  const omit = reserved.filter((r) => d.attributes.some((a) => a.name === r) || settable(d).some((f) => f.name === r));
+  if (!omit.length) return `${d.name}Attributes & ${d.name}Properties`;
+  const keys = omit.map((r) => `'${r}'`).join(' | ');
+  return `Omit<${d.name}Attributes, ${keys}> & Omit<${d.name}Properties, ${keys}>`;
+};
 
 function elementsDts(m) {
   const blocks = declarations(m).map((d) => {
@@ -317,7 +329,7 @@ const handlers = (d, key, evt = (e) => `${d.name}EventMap['${e.name}']`) => d.ev
 
 function reactDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in React 19 JSX: attributes, properties and \`onsheetpane-…\` event props (React 19 sets properties and listens to custom events). */
-export type ${d.name}ReactProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}ReactProps = ${fwProps(d, RESERVED)} & {
 ${handlers(d, (n) => `on${n}`)}
 };
 `).join('\n');
@@ -337,7 +349,7 @@ ${declarations(m).map((d) => `      '${d.tagName}': DetailedHTMLProps<HTMLAttrib
 
 function vueDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in a Vue 3 template: attributes, properties and \`@sheetpane-…\` listeners (\`onSheetpane…\` props). */
-export type ${d.name}VueProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}VueProps = ${fwProps(d, RESERVED)} & {
 ${handlers(d, (n) => camel(`on-${n}`))}
 };
 `).join('\n');
@@ -362,7 +374,7 @@ ${declarations(m).map((d) => `    '${d.tagName}': VueCustomElement<${d.name}, ${
 
 function svelteDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in Svelte: attributes, properties, \`on:sheetpane-…\` (Svelte 4) and \`onsheetpane-…\` (Svelte 5) listeners. */
-export type ${d.name}SvelteProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}SvelteProps = ${fwProps(d)} & {
 ${handlers(d, (n) => `on:${n}`, (e) => `${d.name}EventMap['${e.name}'] & { currentTarget: EventTarget & ${d.name} }`)}
 ${handlers(d, (n) => `on${n}`, (e) => `${d.name}EventMap['${e.name}'] & { currentTarget: EventTarget & ${d.name} }`)}
 };
@@ -381,7 +393,7 @@ ${declarations(m).map((d) => `    '${d.tagName}': HTMLAttributes<${d.name}> & ${
 
 function solidDts(m) {
   const props = declarations(m).map((d) => `/** \`<${d.tagName}>\` in Solid JSX: attributes (also as \`attr:…\`), properties (also as \`prop:…\`) and \`on:sheetpane-…\` listeners. Solid sets a custom element's props as properties, so write an attribute with no property (\`pane\`, \`header-row\`) as \`attr:…\`. */
-export type ${d.name}SolidProps = ${d.name}Attributes & ${d.name}Properties & {
+export type ${d.name}SolidProps = ${fwProps(d, RESERVED)} & {
 ${d.attributes.map((a) => `${jsdoc(a.description)}  'attr:${a.name}'?: ${attrTs(a)} | undefined;`).join('\n')}
 ${settable(d).map((f) => `${jsdoc(f.description)}  'prop:${f.name}'?: ${d.name}['${f.name}'] | undefined;`).join('\n')}
 ${handlers(d, (n) => `on:${n}`)}

@@ -9,7 +9,7 @@ date: 2026-10-18
 feature: the monorepo toolchain
 owns: [package.json, pnpm-lock.yaml, pnpm-workspace.yaml, justfile, tsconfig.base.json, tsconfig.json, vitest.config.ts, test/, scripts/build-grid-css.mjs, scripts/pack-check.mjs, scripts/release.mjs, scripts/npm-trust.sh, scripts/check-version-parity.mjs, scripts/smoke-built.mjs, scripts/release-notes.mjs, scripts/test-durations.mjs, .github/actions/, RELEASING.md, scripts/serve.mjs, scripts/demo-check.mjs, scripts/demo-packed.mjs, scripts/build-site.mjs, scripts/build-llms.mjs, scripts/build-manifest.mjs, scripts/build-starters.mjs, scripts/build-starters.d.mts, llms.txt, llms-full.txt, examples/, README.md, .github/workflows/]
 laws: [L2, L4, L5, L8, L10]
-timestamp: 2026-10-19T09:00:00Z
+timestamp: 2026-10-19T15:00:00Z
 content_sha: ""
 ratifies: W-04
 ---
@@ -98,6 +98,22 @@ pnpm and a justfile; the testing verdict chose the runner.
    grid's framework typings (W-37) are generated `.d.ts` files
    committed in `src/frameworks/`: `source` points at the `.d.ts`, the build
    copies them into `dist/frameworks/` with an empty `.js` for `import`.
+5a. **Entries** (each with its `source` condition, decision 5):
+
+    | entry | what | DOM |
+    |---|---|---|
+    | `@sheetpane/grid` | the elements, registered on import, and the API | a page (imports anywhere) |
+    | `@sheetpane/grid/check` | the pane's checks with no page — `check()`, `loadWorkbook()`, the store, the rules checker (W-54, SR-GRID 22f) | none |
+    | `@sheetpane/grid/static` | a range as one static HTML `<table>` — `renderStatic()`, `loadWorkbook()` (W-67, SR-GRID 22g) | none |
+    | `@sheetpane/grid/jsx` · `/vue` · `/svelte` · `/solid` | framework typings (W-37) | types only |
+    | `@sheetpane/grid/style.css` · `/rules.schema.json` · `/llms.txt` · `/custom-elements.json` · `/vscode.*-custom-data.json` · `/web-types.json` | data | — |
+    | `@sheetpane/<plugin>` | the plugin, registered on import | none |
+    | `@sheetpane/<plugin>/ui` | its controls (numfmt, formulas, styles, validation, condfmt, charts, visibility) | a page |
+    | `@sheetpane/validation/check` | the plugin unregistered (checking only, no export switch), and `check()` with it on (W-54, SR-VALIDATION 11) | none |
+    | `@sheetpane/fixtures/files/*` | the fixture files | — |
+
+    A `/check` or `/static` entry's import graph holds no element module and names no
+    `customElements`, `document` or `window` (`test/check-entries.test.ts`).
 6. **Tests:** Vitest, one root config. Project `repo` and `export` run in
    Node; every other package runs in browser mode on Playwright, and so do
    `@sheetpane/export`'s `*.browser.test.ts` files (project `export-browser`,
@@ -121,9 +137,12 @@ pnpm and a justfile; the testing verdict chose the runner.
    `test/durations.json` (`just test-durations` re-measures it; an unlisted
    file counts 1 s). A wall-clock budget (a frame gap,
    pixels scrolled in 5 s) is asserted on a developer machine and only
-   reported on a shared CI runner: `vitest.config.ts` provides
-   `timingBudgets` (off when `CI` is set), the grid's test helpers export it
-   as `budgets`, and the test logs its numbers either way. Every structural
+   reported on a shared CI runner or under `--coverage` (`just check`; the
+   instrumented code is not the code being timed): `vitest.config.ts`
+   provides `timingBudgets` (off when `CI` or `SP_NO_BUDGETS` is set — the
+   config sets the latter under `--coverage`, and Node tests read it), the
+   grid's test helpers export it as `budgets`, and the test logs its numbers
+   either way. Every structural
    assertion in the same test still holds everywhere.
 7. **Package checks** (`test/packages.test.ts`): each package is public,
    `@sheetpane/<dir>`, MIT, ESM with types; one version across all (lockstep);
@@ -135,7 +154,9 @@ pnpm and a justfile; the testing verdict chose the runner.
    except `@sheetpane/fixtures`, which ships `files/` too, so that `url()`
    reaches them from `src/` and `dist/` alike (W-42), and `@sheetpane/skills`,
    which ships `skills/`, `entry/` and `bin/`, has no build and is a
-   dependency of every other package (W-35, SR-SKILLS) — and
+   dependency of every other package (W-35, SR-SKILLS). A plugin that writes
+   into the package at export depends on `@sheetpane/export` (`workspace:*`):
+   `@sheetpane/visibility` (W-49) and `@sheetpane/validation` (W-58) — and
    `@sheetpane/grid`, which ships `custom-elements.json` beside `dist` (W-37).
    **`create-sheetpane`** (W-43, SR-CREATE) is the one unscoped package — `npm
    create sheetpane` resolves that name — with `files: ['bin', 'templates']`,
@@ -168,7 +189,9 @@ pnpm and a justfile; the testing verdict chose the runner.
    `portable` (ubuntu, macos and windows × Node 22 and the current LTS:
    version parity, build, typecheck, the Node unit tests, and
    `scripts/smoke-built.mjs`, which installs every package from its packed
-   tarball with npm into an empty folder and imports it from plain Node, so
+   tarball with npm into an empty folder and imports it from plain Node (and
+   runs each `/check` entry on a CSV, W-54, and renders one with
+   `/static`, W-67), so
    the BUILT package is what is tested); and `create` — a matrix over the six
    `create-sheetpane` templates running `scripts/create-check.mjs`
    (SR-CREATE decision 5). A branch's newer push cancels its older run; on
@@ -254,13 +277,23 @@ pnpm and a justfile; the testing verdict chose the runner.
     demo-packed`, nightly. Both share one look (2026-10-19): a host bar
     (Views, Open file…, the CSV sample, the pop-up, Font, and Theme — light ·
     dark · auto, set on every component), the components filling the window,
-    and a footer of host events; `examples/react/src/demo.css` is the
+    and a footer of host events (the `sheetpane-export` line names the file,
+    the format and the first 12 hex digits of its SHA-256, W-65);
+    `examples/react/src/demo.css` is the
     stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
-    its header menu, the marker unhides it) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    its header menu, the marker unhides it) · Tables (W-61: `tables
+    validation` on the showcase's Tables sheet — both tables in their style
+    colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Compare (W-63:
+    `@sheetpane/compare` — the fixtures' `compare/now.xlsx` against
+    `compare/base.xlsx`, which the host fetches and hands to `compareWith`;
+    `demo-check` reads the status line's 4 sheets · 7 rows · 2 cells, the
+    amber price, the 7 listed changes and Alt+F5 to D4) · Review sheet (W-59:
+    `@sheetpane/review` — the download gains a Review sheet listing the
+    review, flagged cells coloured) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
@@ -273,7 +306,8 @@ pnpm and a justfile; the testing verdict chose the runner.
     1 1/4; the yellow fill; B6 recalculated; two rule errors; a data bar; the
     picture; both charts; the note and the thread; all of them together; lazy
     mounting and edits kept; the Rules file tab's six errors with no Flag issue
-    and no card on F or a click.
+    and no card on F or a click; the Tables tab's two header fills and C9's
+    list.
 
 ### Consequences
 

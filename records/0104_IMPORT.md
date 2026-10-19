@@ -68,20 +68,25 @@ carry over unchanged; the plugins verdict added what plugins read.
    `fromXlsx(bytes | Blob)`, `fromCsv(text | Blob, { name?, delimiter? })` →
    `ImportedWorkbook`. Also exported: `detectDelimiter`, `parseCsv`,
    `sheetNameFrom`, `formatCode`, `general`, `inSubset`, `subsetCode`,
-   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, and every type.
+   `serialToParts`, `BUILTIN_FORMATS`, `ImportError`, `sha256` (W-65), `cellProtection` (W-62), and every type.
 2. **Shape:** each sheet is `@sheetpane/export`'s `Sheet` (`name`, `rows`,
    `merges`, `columnWidths`, `hidden`) plus `text` (same shape as `rows`),
-   `path`, `styleIndex`, `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
+   `path`, `styleIndex`, `runs` (decision 12), `formulas`, `freeze`, `hiddenRows`, `hiddenCols`,
    `state`, `rowOutline`, `colOutline`, `outline`, `autoFilter?` (W-49;
    `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
-   `conditionalFormats`, `drawings`, `notes`, `threadedComments`,
-   `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
-   `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
+   `conditionalFormats` (their types, and the `Dxf` / `Font` / `Fill` /
+   `Border` / `Alignment` / `Color` shapes, are `@sheetpane/export`'s,
+   re-exported here, so `toXlsx` and `patchXlsx` write what this reads —
+   W-57), `drawings`, `notes`, `threadedComments`,
+   `pivotTables`, `tables` (W-61, decision 13), `rowStyles`, `colStyles` and
+   `protection?` (W-62, decision 15). The workbook adds `source`, `activeSheet`, `date1904`,
+   `styles` (`numFmts`, `cellXfs` — each with its `protection?` — `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
-   `persons`, `definedNames`, `delimiter` (CSV) and `part(path)`.
+   `persons`, `definedNames`, `delimiter` (CSV), `sha256` (`read()` only —
+   decision 11), `workbookProtection?` (decision 15) and `part(path)`.
 3. **Cells:** `t="s"` / `inlineStr` → the text, phonetic runs left out,
-   `_xHHHH_` decoded; `str` → the text; `b` → a boolean shown `TRUE` /
+   `_xHHHH_` decoded, its formatted runs in `runs` (decision 12); `str` → the text; `b` → a boolean shown `TRUE` /
    `FALSE`; `e` → the error text; `d` → the ISO string; otherwise a number. A
    formula cell holds its **cached `<v>`**, never evaluated; its formula text
    is in `formulas`, shared formulas expanded with `shiftFormula`.
@@ -138,6 +143,95 @@ carry over unchanged; the plugins verdict added what plugins read.
     `{0, 0, true, true}`). The built-in XML reader reads the same (a parity
     test).
 
+11. **The file's fingerprint (W-65):** `read()` sets `sha256` — the SHA-256
+    of the bytes it was given, 64 lowercase hex digits — once, after the file
+    parsed (a refused file is not hashed). `fromXlsx` / `fromCsv` do not set
+    it (they may be given text or a part, not the file). The digest is Web
+    Crypto's `crypto.subtle.digest('SHA-256')` — no dependency (L2); every
+    modern browser on a secure page, Node 20 and later. Where `crypto.subtle`
+    is missing (a page that is not a secure context) or the digest fails,
+    `sha256` is absent and `console.warn` carries SP-1009 — **never a
+    substitute hash**, so nothing claims a provenance it does not have. The
+    helper is exported as `sha256(bytes | ArrayBuffer | Blob)` →
+    `Promise<string | undefined>`; the grid hashes its exports with it
+    (SR-GRID decision 6). Hashing is once per read or write, never per edit.
+
+12. **Rich text (W-53):** `runs` maps a cell to its string's runs —
+    `TextRun` `{ text, b?, i?, u?, strike?, color?, sz?, vertAlign? }` from
+    each `<r>` and its `<rPr>`, through the same font reader as `styles.xml`
+    — for shared (`<si>`) and inline (`<is>`) strings alike. **Only a rich
+    string is listed:** two or more runs, or one run that carries formatting
+    (a lone unformatted run, and a plain `<t>`, are not). A run with no
+    `<rPr>` is `{ text }` alone (it takes the cell's font). Phonetic runs
+    (`<rPh>`) are never runs; the family (`<rFont>`) is never read (L5). The
+    runs' text joined is the cell's value — `rows` and `text` are unchanged.
+    Cells sharing a string share one array (memory). A CSV has `{}`. The
+    built-in XML reader reads the same (a parity test). The grid draws runs
+    through the `decorate` hook (SR-GRID decision 17, SR-STYLES decision 9);
+    an edit writes plain text, and an untouched rich cell is never rewritten
+    (`patchXlsx` keeps `sharedStrings.xml` and the cell as they were).
+
+13. **Excel tables (W-61):** `tables` lists the sheet's tables in
+    `<tableParts>` order, each read from its own part
+    (`xl/tables/tableN.xml`) through the sheet's relationship; a part or
+    relationship that is missing is skipped. A `Table` is `{ name, id, ref,
+    headerRowCount, totalsRowCount, columns, style, autoFilter?, path }`:
+    `name` is `displayName` (the name structured references use; `name`
+    when it is absent), `ref` the whole table, header and totals rows
+    included, `headerRowCount` default 1, `totalsRowCount` default 0;
+    `columns` are `{ name, totalsRowFunction?, totalsRowLabel? }` with
+    `_xHHHH_` decoded; `style` is `tableStyleInfo`'s `name?` and its four
+    switches (`showFirstColumn`, `showLastColumn`, `showRowStripes`,
+    `showColumnStripes`, default `false`). A CSV has none. The built-in XML
+    reader reads the same (a parity test).
+
+14. **Rows and columns inserted or deleted (W-52):**
+    `restructureWorkbook(book, op)` returns a new `ImportedWorkbook` (the one
+    given is never changed) with every table moved by SR-EXPORT decision
+    11's shift: `rows` and `text` spliced (a row or sheet ends at its last
+    value, as a read leaves it), `styleIndex` and `formulas` rekeyed, every
+    sheet's formulas, validation and conditional-format formulas and the
+    defined names rewritten, `merges`, `freeze`, `hiddenRows` / `hiddenCols`,
+    `rowOutline` / `colOutline`, `rowHeights`, `columnWidths`, `autoFilter`,
+    `dataValidations` / `conditionalFormats` sqrefs, drawing anchors, notes,
+    threaded comments and pivot tables moved, and `part()` serving chart
+    parts with their series moved. `PivotTable.source` (W-52) is the cache's
+    `worksheetSource` (`{ sheet, ref }`), read so a move of it can be
+    refused. **Tables (W-61, decision 13):** `shiftTables(sheet, op)` moves
+    each table's `ref` and its own `autoFilter` with their cells, and a delete
+    of columns inside a table drops those `columns` — as `patchXlsx` moves
+    the table parts (SR-EXPORT decision 11). A cut a table cannot follow
+    (`tableRefusal`: all of it, its header or totals row, every data row, or
+    columns inserted inside it) is the one thing it refuses, as `patchXlsx`
+    does: `ExportError` `bad-structure` (SP-2016). Everything else — a merge
+    cut, a pivot moved — it does not check; the grid's store asks first.
+15. **Protection (W-62):** what the file protects is read; **the password
+    never is** — only whether one is stored (`hasPassword`: a `password` /
+    `hashValue` on a sheet, a `workbookPassword` / `workbookHashValue` on the
+    workbook). A sheet's `protection` is present only while
+    `<sheetProtection sheet="1">`: its fifteen switches as the file stores
+    them — **`true` means the action is refused while the sheet is
+    protected** — with the schema's defaults (`objects`, `scenarios`,
+    `selectLockedCells`, `selectUnlockedCells` `false`; `formatCells`,
+    `formatColumns`, `formatRows`, `insertColumns`, `insertRows`,
+    `insertHyperlinks`, `deleteColumns`, `deleteRows`, `sort`,
+    `autoFilter`, `pivotTables` `true`). The workbook's
+    `workbookProtection` is `{ lockStructure, lockWindows, hasPassword }`,
+    present when the file has `<workbookProtection>`. Each `cellXfs` entry
+    carries `protection: { locked, hidden }` when its `<xf>` has a
+    `<protection>` child (and `applyProtection`); absent means locked and
+    not hidden, Excel's default. `rowStyles` (a `<row s>` with
+    `customFormat="1"`) and `colStyles` (`<col style>`, spans expanded) are
+    sparse, index 0 = row 1 / column A — the formats an empty cell takes.
+    **`cellProtection(sheet, styles, row, col)`** is a cell's effective
+    `{ locked, hidden }`: the cell's own format when the file stores the
+    cell, else its row's, else its column's, else the default (`cellXfs[0]`).
+    A CSV has none (`rowStyles` and `colStyles` `[]`). `patchXlsx` never
+    writes `<sheetProtection>`, `<workbookProtection>` or `<protection>`, so
+    a download keeps them as they were (SR-EXPORT). The built-in XML reader
+    reads the same (a parity test). What the grid does with it: SR-GRID
+    decision 21e.
+
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 
 ### Consequences
@@ -151,8 +245,27 @@ carry over unchanged; the plugins verdict added what plugins read.
   threaded comments and persons, a pivot location, a chartsheet); CSV
   dialects, a round-trip property with `toCsv`, the 250,000-row CSV (136 ms in
   Chromium on Arpit's MacBook). `test/ssr.test.ts` imports it in Node.
+  `hash.test.ts` (W-65): the FIPS 180-2 vectors (`abc`, the empty message, the
+  448-bit message) on bytes, a view, an `ArrayBuffer` and a Blob; `read()` of a
+  CSV and an `.xlsx` however passed; no `crypto` or a failing digest → absent
+  with SP-1009.
+  `runs.test.ts` (W-53): runs of shared and inline strings, every run
+  property, phonetic runs left out, a lone run listed only when formatted,
+  shared arrays, CSV `{}`, and DOMParser–built-in reader parity.
+  `protection.test.ts` (W-62): every sheet switch and its default, a
+  `sheet="0"` and a missing element, the workbook lock, the password noticed
+  and never in the object, each format's `<protection>`, row and column
+  formats, `cellProtection`'s order, a CSV; `patchXlsx` with an edit, a
+  freeze and a hidden row keeps both protection elements and `styles.xml`
+  byte for byte; parity.
+- **W-52:** `shift.test.ts` (10; with W-61, the tables moved, the refusals, and each
+  operation's tables read as the moved file's) — each table moved by an insert and a
+  delete on both axes, chart parts served moved, the upload untouched, and
+  the fast-check property `restructureWorkbook(read(file), ops)` ≡
+  `read(patchXlsx(file, [], { structure: ops }))` over random operations.
 - **Owed by the decider:** files saved by Excel, Google Sheets, LibreOffice
   and Numbers (W-30) — none of those programs is on the build machine.
+  A rich-text cell saved by Excel is part of it (W-30 DoD 3).
   Until then the reader is proven on ExcelJS output and hand-written XML, and
   the reading verdict's "1 in 100" trigger cannot be measured.
 - Non-UTF-8 CSV (Windows-1252) decodes with replacement characters; the
@@ -188,7 +301,7 @@ is never listed here.*
 
 **Code**
 
-- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
+- [`packages/import/src/read.ts`](../packages/import/src/read.ts) · [`hash.ts`](../packages/import/src/hash.ts) · [`protection.ts`](../packages/import/src/protection.ts) · [`xlsx.ts`](../packages/import/src/xlsx.ts) · [`csv.ts`](../packages/import/src/csv.ts) · [`numfmt.ts`](../packages/import/src/numfmt.ts)
 
 **Project docs**
 

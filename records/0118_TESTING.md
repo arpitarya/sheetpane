@@ -77,7 +77,7 @@ flowchart LR
 - **Enforced today:** `--project testing` (the DOM driver, every helper, in
   Chromium; Firefox and WebKit nightly) and `--project node` (the Playwright
   driver against the HTML demo; the Node reader on `@sheetpane/fixtures`'
-  showcase); `demo-check`.
+  showcase, every sheet by name — its Tables sheet since W-61); `demo-check`.
 - **Owed:** each starter template ships one test using these (W-43).
 
 ### Alternatives considered

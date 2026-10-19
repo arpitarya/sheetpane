@@ -63,7 +63,8 @@ W-19 asked for conditional formatting as a second `decorate` provider after
 ### Decision
 
 1. **`condfmt()`** → `{ id: 'condfmt', provides: ['decorate'], after:
-   ['styles'] }`: a rule's dxf overrides the static style per property.
+   ['styles', 'tables'] }`: a rule's dxf overrides the static style and an
+   Excel table's style (SR-TABLES) per property.
    `ui()` (`condfmt-ui`) adds the legend and the count. Importing
    `@sheetpane/condfmt` registers `condfmt`; `/ui` registers `[condfmt(),
    ui()]`. Peers: `@sheetpane/grid` and `@sheetpane/styles` (`dxfCss`,

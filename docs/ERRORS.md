@@ -36,7 +36,7 @@ code's title and severity; this page holds the long text. The repo test
 | 2xxx | `@sheetpane/export` — writing a file, the ZIP walk, `download()` (21xx) |
 | 3xxx | `@sheetpane/grid` — the store, the plugin host, `<sheetpane-excel>` |
 | 4xxx | `<sheetpane-errors>` — none raised yet |
-| 5xxx | plugins — 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation · 5500 condfmt · 5600 images · 5700 charts · 5800 comments |
+| 5xxx | plugins — 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation · 5500 condfmt · 5600 images · 5700 charts · 5800 comments · 5900 review |
 | 6xxx | column rules and the rules file |
 | 7xxx | `@sheetpane/mcp` — reserved |
 
@@ -53,6 +53,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-1006](#sp-1006) | File too large | error |
 | [SP-1007](#sp-1007) | Damaged file | error |
 | [SP-1008](#sp-1008) | Reading .xlsx needs a DOM (retired) | error |
+| [SP-1009](#sp-1009) | No SHA-256 without Web Crypto | warning |
 | [SP-2001](#sp-2001) | Invalid sheet name | error |
 | [SP-2002](#sp-2002) | No visible sheet | error |
 | [SP-2003](#sp-2003) | Sheet past Excel’s limits | error |
@@ -67,6 +68,8 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-2012](#sp-2012) | Damaged archive | error |
 | [SP-2013](#sp-2013) | Archive over the size limit | error |
 | [SP-2014](#sp-2014) | Not a workbook package | error |
+| [SP-2015](#sp-2015) | Invalid validation or conditional-format rule | error |
+| [SP-2016](#sp-2016) | Insert or delete refused | error |
 | [SP-2101](#sp-2101) | download() needs a file name | error |
 | [SP-2102](#sp-2102) | Only .xlsx or .csv can be saved | error |
 | [SP-2103](#sp-2103) | File type cannot be told | error |
@@ -89,16 +92,43 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3013](#sp-3013) | Plugin validate failed | error |
 | [SP-3014](#sp-3014) | Plugin overlay failed | error |
 | [SP-3015](#sp-3015) | Source could not be read | error |
+| [SP-3016](#sp-3016) | Error meta dropped | warning |
+| [SP-3017](#sp-3017) | renderDetail failed | error |
+| [SP-3018](#sp-3018) | Error not accepted | warning |
+| [SP-3019](#sp-3019) | Cell to open at not found | warning |
+| [SP-3020](#sp-3020) | Nothing to check | error |
+| [SP-3021](#sp-3021) | Layer name not valid | warning |
+| [SP-3022](#sp-3022) | Delete would split a merged range | warning |
+| [SP-3023](#sp-3023) | Insert or delete would move a pivot table | warning |
+| [SP-3024](#sp-3024) | Insert would push cells off the sheet | warning |
+| [SP-3025](#sp-3025) | Insert or delete would cut a table | warning |
+| [SP-3026](#sp-3026) | Locked in the file | warning |
+| [SP-3027](#sp-3027) | Nothing to render | error |
+| [SP-3028](#sp-3028) | Cannot render that range | error |
+| [SP-5001](#sp-5001) | Review sheet not written | error |
+| [SP-5002](#sp-5002) | Flagged cells not coloured on a sheet | error |
+| [SP-5003](#sp-5003) | Range too large to colour whole | note |
+| [SP-5004](#sp-5004) | No styles part to colour cells | note |
+| [SP-5005](#sp-5005) | Review fill is not a colour | error |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
 | [SP-5201](#sp-5201) | Recalculation failed | error |
 | [SP-5202](#sp-5202) | Formula engine did not load | error |
+| [SP-5401](#sp-5401) | Rule check Excel validation cannot hold | warning |
+| [SP-5402](#sp-5402) | Rule checks one Excel rule cannot combine | warning |
+| [SP-5403](#sp-5403) | List Excel cannot type out | warning |
+| [SP-5404](#sp-5404) | Rule bound Excel cannot read | warning |
+| [SP-5405](#sp-5405) | No column or sheet for a rule to write | warning |
+| [SP-5406](#sp-5406) | Cells keep the rule they already have | warning |
+| [SP-5407](#sp-5407) | Sheet rules could not be rewritten | warning |
 | [SP-5701](#sp-5701) | Chart part is not well-formed XML | error |
 | [SP-5702](#sp-5702) | Chart part holds no chart | error |
 | [SP-5801](#sp-5801) | Comment part has no container | error |
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
+| [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
+| [SP-5901](#sp-5901) | Compare key is not a column | error |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -198,6 +228,14 @@ grid shows it as "Can't open this file" (or the password state) and fires
 - **Meaning:** no longer raised. `.xlsx` once needed `DOMParser`; since W-39 the reader carries its own XML parser for runtimes without one, so `.xlsx` reads in Node, workers and server renders.
 - **Likely cause:** an older `@sheetpane/import`.
 - **Fix:** upgrade `@sheetpane/import`. The code is kept so it is never reused.
+
+### SP-1009
+
+**No SHA-256 without Web Crypto** · warning · [SR-IMPORT](../records/0104_IMPORT.md) decision 11 · a console warning, not an `ImportError`
+
+- **Meaning:** the file opened (or was exported) but has no fingerprint: `read()`'s `sha256`, and the `sha256` of `sheetpane-load` and `sheetpane-export`, are `undefined`. sheetpane never puts a substitute hash in its place.
+- **Likely cause:** `crypto.subtle` is missing — the page is not a secure context (plain `http://` other than `localhost`, some embedded webviews), or a runtime without Web Crypto (Node before 20); rarely, `crypto.subtle.digest` itself failed.
+- **Fix:** serve the page over `https://` (or from `localhost`); in Node, use version 20 or later.
 
 ---
 
@@ -318,6 +356,22 @@ plain `Error`s or `TypeError`s.
 - **Meaning:** `patchXlsx` was given a ZIP with no `xl/workbook.xml`.
 - **Likely cause:** the upload was not an `.xlsx`, or the wrong bytes were passed.
 - **Fix:** pass the original workbook's bytes.
+
+### SP-2015
+
+**Invalid validation or conditional-format rule** · error · [SR-EXPORT](../records/0103_EXPORT.md) · `code: 'bad-rule'`
+
+- **Meaning:** a data-validation rule, conditional format or differential format given to `toXlsx` or `patchXlsx` cannot be written as Excel reads it (W-57).
+- **Likely cause:** an empty or malformed `sqref`; an unknown `type`, `operator`, `errorStyle`, `timePeriod`, cfvo type or icon set; a title over 32 or a message over 255 characters; a quoted list over 255 characters; a conditional format with no rule; a `dxfId` the workbook has no format for; a colour scale, data bar or icon set without the thresholds or colour it needs.
+- **Fix:** correct the rule the message names. Put a long list on a sheet and point `formula1` at the range; add the format to `dxfs` before naming its `dxfId`.
+
+### SP-2016
+
+**Insert or delete refused** · error · [SR-EXPORT](../records/0103_EXPORT.md) decision 11 · `code: 'bad-structure'`
+
+- **Meaning:** `patchXlsx`'s `structure` option would have to move something it does not rewrite — a pivot table or its source range — or cut something Excel keeps whole: an array formula, a data table, or a table (all of it, its header or totals row, every data row, or columns inserted inside it). Nothing is written; the file is left as it was. Also thrown for an operation that is not an insert or delete of whole rows or columns.
+- **Likely cause:** the grid's store refuses these first (SP-3022 to SP-3025); a host calling `patchXlsx` directly, or a table the store could not see, reaches this.
+- **Fix:** insert or delete elsewhere — below a pivot's source, outside the table — or change the pivot or the table in Excel first.
 
 ### SP-2101
 
@@ -501,6 +555,110 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Likely cause:** a 404 or 403; a cross-origin URL without CORS; invalid base64.
 - **Fix:** check the URL opens in the browser and is same-origin or CORS-enabled.
 
+### SP-3016
+
+**Error meta dropped** · warning · [SR-GRID](../records/0105_GRID.md) decision 5b
+
+- **Meaning:** an error's `meta` (W-68) was not kept: it is not JSON (a cycle, a BigInt, a function on its own), or its JSON text is over 64 KiB (`ERROR_META_MAX`). The error itself is kept, without it; `updateError` leaves the error's own `meta` as it was.
+- **Likely cause:** an image's pixels, a whole PDF page or a DOM node put in `meta`.
+- **Fix:** keep a reference in `meta` — a page number, a box, an id the host resolves — and draw the picture in `renderDetail`.
+
+### SP-3017
+
+**renderDetail failed** · error · [SR-ERRORS](../records/0106_ERRORS.md) decision 13
+
+- **Meaning:** the host's `renderDetail` threw for an error; nothing is shown in that card or row, and the rest of it works.
+- **Likely cause:** a bug in the host's hook, or an error whose `meta` it did not expect (an older review, an error without one).
+- **Fix:** read the error logged after this line; make the hook return `null` when it has nothing to show.
+
+### SP-3018
+
+**Error not accepted** · warning · [SR-GRID](../records/0105_GRID.md) decision 5c
+
+- **Meaning:** an acceptance (W-69) did not stand. `acceptError` or `updateError(id, { status: 'accepted' })` changed nothing; or `setErrors` restored an `accepted` error as `open`.
+- **Likely cause:** no reason was given, or only spaces; or the error is the workbook's own (author `workbook` or `file` — a validation rule or a file comment), which is not accepted this way.
+- **Fix:** pass the reason the deviation was approved, e.g. `acceptError(id, 'Approved by the customer on 18 Oct', { by: 'Ravi' })`; keep `reason` when saving a review.
+
+### SP-3019
+
+**Cell to open at not found** · warning · [SR-GRID](../records/0105_GRID.md) decision 11d
+
+- **Meaning:** the `ref` attribute, or the `#sheetpane=` link in the URL (`link="hash"`), names no cell of this workbook; the sheet opens where it would have (a bad link falls back to `ref`, a bad `ref` to A1).
+- **Likely cause:** a typo (`B` or `4B` is not a cell), a sheet name the file does not have (names match exactly, case included), or a link saved for another file.
+- **Fix:** write a cell or range as `B4`, `Data!B4` or `'Q3 data'!B4:D8`, and check the sheet's name in its tab.
+
+### SP-3020
+
+**Nothing to check** · error · [SR-GRID](../records/0105_GRID.md) decision 22f · `TypeError`
+
+- **Meaning:** `check()` from `@sheetpane/grid/check` (or `@sheetpane/validation/check`) was given something that is not a file's bytes.
+- **Likely cause:** a path or a parsed workbook passed instead of the bytes; an unresolved promise (`readFile` without `await`).
+- **Fix:** pass the bytes — `await readFile(path)` in Node, a `File` or `Blob` in a page — and the file's `name` in the options.
+
+### SP-3021
+
+**Layer name not valid** · warning · [SR-GRID](../records/0105_GRID.md) decision 5d
+
+- **Meaning:** a review layer (W-51) was named with something that is not a name: not a string, empty, over 64 characters, or holding a space. `setErrors(list, { layer })`, `getErrors({ layer })` and the `layers` property change nothing; an error restored or written with such a `layer` goes into `review`.
+- **Likely cause:** a display label used as the name (`'PDF check'`), or a layer read from a file that was never set.
+- **Fix:** name layers with short ids — `validation`, `pdf` — and give `<sheetpane-errors>` the words to show in `layerNames` (`{ pdf: 'PDF check' }`).
+
+### SP-3022
+
+**Delete would split a merged range** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** deleting these rows or columns would remove part of a merged range but not all of it; nothing is deleted. The menu item is greyed with this reason; `insertRows` and the other store methods return `false`.
+- **Likely cause:** the selection crosses a merged block (a title row, a merged label).
+- **Fix:** unmerge the range first, or delete every row (column) of it.
+
+### SP-3023
+
+**Insert or delete would move a pivot table** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** the operation would move a pivot table on this sheet, or the worksheet range a pivot table summarises; sheetpane does not rewrite pivots, so nothing changes.
+- **Likely cause:** rows or columns inserted or deleted above, left of, or inside a pivot table or its source.
+- **Fix:** insert or delete below and right of them, or change the pivot in Excel.
+
+### SP-3024
+
+**Insert would push cells off the sheet** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** the sheet already uses its last row (1,048,576) or column (XFD) — inserting would push those cells off the end; nothing is inserted, as Excel refuses.
+- **Likely cause:** a value or formula at the sheet's edge.
+- **Fix:** clear the cells at the edge first.
+
+### SP-3025
+
+**Insert or delete would cut a table** · warning · [SR-GRID](../records/0105_GRID.md) decision 21d
+
+- **Meaning:** an Excel table cannot follow the operation — it would delete all of the table, its header or totals row, or every data row, or insert columns inside it; nothing changes.
+- **Likely cause:** whole rows or columns selected across a table's edge.
+- **Fix:** delete body rows or whole columns of the table, or change the table in Excel. The tables are the ones `@sheetpane/import` reads (W-61); a host calling `restructureWorkbook` or `patchXlsx` directly meets SP-2016 instead.
+
+### SP-3026
+
+**Locked in the file** · warning · [SR-GRID](../records/0105_GRID.md) decision 21e
+
+- **Meaning:** an edit — typing, paste, Delete — was refused because the cell is locked on a protected sheet. `sheetpane-editcancel` carries `{ reason: 'locked', code: 'SP-3026', message: 'Locked in the file' }` and nothing is stored. Inserting or deleting rows or columns is refused with the same code when the workbook's structure is protected, or the sheet is protected without that permission (*Insert rows*, *Delete columns*, …): the menu item is greyed with the reason, `insertRows` and the other store methods return `false` (SR-GRID decision 21d).
+- **Likely cause:** the file's sheet is protected (Excel: Review › Protect Sheet) and the cell's format is *Locked* — Excel's default for every cell until it is unlocked; for an insert or delete, Protect Workbook (structure) or a sheet protected with *Insert rows* / *Delete rows* / *Insert columns* / *Delete columns* left unticked.
+- **Fix:** edit the cells the file leaves unlocked; or unlock the cells (Format Cells › Protection) or unprotect the sheet in Excel and open the file again. A host that rules otherwise sets `protection="ignore"` on `<sheetpane-excel>` — its own decision. sheetpane never checks or removes a protection password.
+
+### SP-3027
+
+**Nothing to render** · error · [SR-GRID](../records/0105_GRID.md) decision 22g · `TypeError`
+
+- **Meaning:** `renderStatic()` from `@sheetpane/grid/static` was given something that is not a loaded workbook.
+- **Likely cause:** the file's bytes or a parsed workbook passed instead of a store; a store whose `load()` has not finished or was refused.
+- **Fix:** pass `await loadWorkbook(bytes, { name, plugins })`, or a store after `await store.load(…)` with `getSnapshot().load.status === 'ready'`.
+
+### SP-3028
+
+**Cannot render that range** · error · [SR-GRID](../records/0105_GRID.md) decision 22g · `RangeError`
+
+- **Meaning:** `renderStatic()` was asked for a sheet the workbook does not hold, a range that is not A1, or more than 200,000 cells.
+- **Likely cause:** a sheet name spelt differently; `range: 'Sheet1!A1:C3'` (the sheet goes in `sheet`); a whole-column range on a large sheet.
+- **Fix:** name the sheet as the workbook does, give `range` as `A1:F20`, and render the part of the sheet a reader needs.
+
 ---
 
 ## 4xxx · the errors element
@@ -510,6 +668,46 @@ The store, the plugin host and `<sheetpane-excel>`.
 ---
 
 ## 5xxx · plugins
+
+### SP-5001
+
+**Review sheet not written** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** the workbook part could not be read or extended, so no Review sheet was added; the export goes on, with any fills already written. `lastExport.sheet` is `undefined`.
+- **Likely cause:** a damaged `xl/workbook.xml`, or one with no `<sheets>`.
+- **Fix:** read the error logged after this line; re-save the workbook in Excel and export again.
+
+### SP-5002
+
+**Flagged cells not coloured on a sheet** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** a sheet part (or the styles part) could not be read, so that sheet's flagged cells were left exactly as they were. Each error is in `lastExport.skipped` with `reason: 'unreadable-part'` and this code.
+- **Likely cause:** a sheet part with no `<sheetData>`, a chart sheet, or a damaged part.
+- **Fix:** read the error logged after this line; the Review sheet still lists the errors.
+
+### SP-5003
+
+**Range too large to colour whole** · note · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** an error's range covers more than 10,000 cells (`MAX_FILL_CELLS`), so only the cells the file already has inside it were coloured; no empty cells were added. It is in `lastExport.skipped` with `reason: 'range-capped'` and this code, and in `filled`.
+- **Likely cause:** an error raised on whole columns or a very large block.
+- **Fix:** nothing to fix; narrow the error's range if every cell should be coloured.
+
+### SP-5004
+
+**No styles part to colour cells** · note · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** the file has no readable styles part, so no cell was coloured; the Review sheet is still written, with an unstyled header. Each error is in `lastExport.skipped` with `reason: 'no-styles'` and this code.
+- **Likely cause:** a minimal workbook written by a script.
+- **Fix:** re-save the workbook in Excel, which adds the part.
+
+### SP-5005
+
+**Review fill is not a colour** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 8 · `TypeError`
+
+- **Meaning:** `review({ fills })` was given a value that is not a hex colour; the plugin is not created.
+- **Likely cause:** a colour name (`'red'`) or a short hex (`'#f00'`).
+- **Fix:** pass `#RRGGBB`, `RRGGBB` or ARGB `AARRGGBB`, or `null` to colour none.
 
 ### SP-5101
 
@@ -551,6 +749,62 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Likely cause:** the `.wasm` file is not served, a wrong `wasm` option, or a CSP blocking WebAssembly.
 - **Fix:** serve the engine's `.wasm`, pass its URL as `wasm`, and allow `wasm-unsafe-eval` in the CSP.
 
+### SP-5401
+
+**Rule check Excel validation cannot hold** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** writing the host's rules into the download (`rulesAsValidation`, W-58), a rule uses a check Excel's data validation has none of; the rule is not written and stays checked in sheetpane.
+- **Likely cause:** the rule has a `pattern` (no regular expressions in Excel), a `noneOf` list, or `unique`.
+- **Fix:** nothing to do for sheetpane. For Excel, add a `custom` rule by hand (`COUNTIF` for unique), or split the rule so its other checks are written.
+
+### SP-5402
+
+**Rule checks one Excel rule cannot combine** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule holds two checks — a list with `min` or `max`, a number with a length, `equals` with `oneOf`, a list whose values do not fit its `type` — and one Excel rule holds one; it is not written.
+- **Likely cause:** a rule that asks for more than one thing.
+- **Fix:** keep the check Excel users need most in the rule for that column, and move the other to a cell rule or leave it to sheetpane.
+
+### SP-5403
+
+**List Excel cannot type out** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a `oneOf` (or `equals`) list cannot be written as Excel's typed-out list, so it is not written.
+- **Likely cause:** a value holds a comma (Excel splits the list on commas), the list is empty, or it is longer than 255 characters.
+- **Fix:** shorten the list, or drop the commas from its values. A long list belongs on a sheet, with a list rule pointing at its range, written in the workbook itself.
+
+### SP-5404
+
+**Rule bound Excel cannot read** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule's `min`, `max`, `minLength` or `maxLength` cannot be written as an Excel operand; the rule is not written.
+- **Likely cause:** a number bound that is not a number, a date bound not written as `2026-01-31` or a serial, a length that is not a whole number from 0, or a lower bound above the upper.
+- **Fix:** write the bound as a number, an ISO date (`2026-01-31`) or a date serial.
+
+### SP-5405
+
+**No column or sheet for a rule to write** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule names a column title no sheet has in its title row, or a sheet the workbook lacks; it is not written.
+- **Likely cause:** a renamed or misspelt column title or sheet name, or a `headerRow` that points at the wrong row. The rules engine says the same with SP-6022 or SP-6023.
+- **Fix:** correct the title, the sheet name or `headerRow` in the rules file.
+
+### SP-5406
+
+**Cells keep the rule they already have** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a rule written into the download reaches cells that already hold a different rule — the workbook's own data validation, which always wins, or a stronger rule from the rules file (a cell rule over a column rule, a named sheet's over `"*"`'s). Excel holds one rule per cell, so the written rule leaves those cells. A rule that checks the same thing as the workbook's own joins it instead, and is not reported.
+- **Likely cause:** the workbook was saved with its own rule on the column, or a cell rule sits inside a ruled column.
+- **Fix:** nothing, if the workbook's own rule is the one wanted; otherwise remove it from the workbook, or make the two rules agree.
+
+### SP-5407
+
+**Sheet rules could not be rewritten** · warning · [SR-VALIDATION](../records/0108_VALIDATION.md)
+
+- **Meaning:** a sheet's own `<dataValidations>` could not be rewritten with the host's rules added, so that sheet keeps its block as it was and none of the host's rules are written to it.
+- **Likely cause:** the sheet's own rules include one `@sheetpane/export` refuses to write (SP-2015: an unknown type, a title over 32 characters, an `sqref` like `B:B`), or the sheet has no worksheet part.
+- **Fix:** resave the workbook in Excel so its rules are in Excel's own form, or correct the rule the message names.
+
 ### SP-5701
 
 **Chart part is not well-formed XML** · error · [SR-CHARTS](../records/0113_CHARTS.md)
@@ -590,6 +844,21 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** writing one sheet's comments failed; the export goes on without them.
 - **Likely cause:** SP-5801 or SP-5802 on that sheet, or an unexpected part.
 - **Fix:** read the error logged after this line; the export report lists the skipped ids.
+
+### SP-5804
+
+**Error with no cell not written as a comment** · note · [SR-COMMENTS](../records/0112_COMMENTS.md) decision 3
+
+- **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
+- **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
+- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, add `@sheetpane/review`, which lists it on a Review sheet of its own.
+### SP-5901
+
+**Compare key is not a column** · error · [SR-COMPARE](../records/0124_COMPARE.md)
+
+- **Meaning:** `diffWorkbooks` was given a key for one sheet that is not a column of both versions, so it cannot tell which rows are the same row.
+- **Likely cause:** a header title spelled differently, a key column renamed or deleted in one version, or a `headerRow` that is not the row with the titles.
+- **Fix:** name the key by its title in the header row (or by its column letter) as both versions have it; a key given for every sheet (a string, a list or `'*'`) is used only where it exists.
 
 ---
 

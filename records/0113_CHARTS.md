@@ -95,7 +95,12 @@ does not need). Anchors are SR-IMAGES' arithmetic.
 7. **Colours:** explicit `solidFill` (srgb, scheme, sys with
    lumMod/lumOff/tint/shade), else the theme's accents by `c:idx`, else
    Office's. File colours are data: the same in both themes (SR-GRID 15a).
-8. **Export:** nothing — patch mode copies the chart parts byte for byte.
+8. **Export:** nothing — patch mode copies the chart parts byte for byte;
+   when rows or columns were inserted or deleted, the core moves their
+   series references (SR-EXPORT decision 11). In the page, the moved
+   workbook's `book.part()` serves the chart part moved (SR-IMPORT decision
+   11), so the frame follows its anchor and the series read the moved
+   ranges with no code here (W-52).
 9. **Edit:** a click on the frame away from its button selects the cell
    under it.
 
@@ -108,6 +113,8 @@ does not need). Anchors are SR-IMAGES' arithmetic.
   slice angles, scatter positions; colours; live values through a `derive`
   provider; zoom; the accessible names; the chart part byte-identical on
   export), and SR-GRID's geometry and overlay tests.
+- **W-52:** `structure.test.ts` — an insert moves the anchor and the series
+  ranges, a deleted values column leaves `#REF!` and no range, undo restores.
 - **Owed:** fixtures with each type **saved by Excel** — W-30; a run with
   the real `@sheetpane/formulas` (the live path is the store's, tested with a
   generic `derive` provider).

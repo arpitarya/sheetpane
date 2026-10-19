@@ -3,7 +3,8 @@
 // outside the workspace (`--legacy-peer-deps`: a host's own peers — Playwright, Vitest for
 // @sheetpane/testing — are not downloaded; the packages' peers on each other are installed
 // explicitly), then each one used from plain Node — its main entry imported (SR-LAW-8:
-// every package imports with no DOM), a bin-only package's bin syntax-checked. No source is read.
+// every package imports with no DOM), a `/check` entry run on a CSV (W-54), the `/static` entry rendering one (W-67), a bin-only package's
+// bin syntax-checked. No source is read.
 // Usage: node scripts/smoke-built.mjs   (after `pnpm -r build`)
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -37,6 +38,18 @@ for (const { p } of pkgs) {
     if (exp && (typeof exp === 'string' || exp['.'])) {
       execFileSync(process.execPath, ['--input-type=module', '-e', `const m = await import(${JSON.stringify(p.name)}); if (!Object.keys(m).length) throw new Error('no exports');`], { cwd: host, stdio: ['ignore', 'pipe', 'pipe'] });
       console.log(`✓ ${p.name}@${p.version} imports`);
+      // a DOM-free `/check` entry (W-54): imports and checks a CSV in plain Node
+      if (typeof exp === 'object' && exp['./check']) {
+        const spec = `${p.name}/check`;
+        execFileSync(process.execPath, ['--input-type=module', '-e', `const { check } = await import(${JSON.stringify(spec)}); const e = await check(new TextEncoder().encode('Units\\n-1\\n'), { name: 'u.csv', columns: { Units: { min: 0 } } }); if (e.length !== 1 || e[0].range !== 'A2') throw new Error(JSON.stringify(e));`], { cwd: host, stdio: ['ignore', 'pipe', 'pipe'] });
+        console.log(`✓ ${spec}@${p.version} imports and checks`);
+      }
+      // a DOM-free `/static` entry (W-67): loads a CSV and renders it to one <table> in plain Node
+      if (typeof exp === 'object' && exp['./static']) {
+        const spec = `${p.name}/static`;
+        execFileSync(process.execPath, ['--input-type=module', '-e', `const { loadWorkbook, renderStatic } = await import(${JSON.stringify(spec)}); const b = await loadWorkbook(new TextEncoder().encode('Units\\n-1\\n'), { name: 'u.csv', columns: { Units: { min: 0 } } }); const h = renderStatic(b); if (!h.startsWith('<table ') || !h.includes('data-sp-mark="error"')) throw new Error(h);`], { cwd: host, stdio: ['ignore', 'pipe', 'pipe'] });
+        console.log(`✓ ${spec}@${p.version} imports and renders`);
+      }
     } else {
       for (const bin of Object.values(p.bin ?? {})) execFileSync(process.execPath, ['--check', join(host, 'node_modules', p.name, bin)]);
       console.log(`✓ ${p.name}@${p.version} bin parses`);

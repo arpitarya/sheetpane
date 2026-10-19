@@ -4,6 +4,7 @@ import type { JSX } from 'solid-js';
 
 const excel: JSX.IntrinsicElements['sheetpane-excel'] = {
   'attr:pane': 'q3', 'attr:header-row': '2', mode: 'edit', 'prop:file': null, ref: (el) => el.select('Sheet1', 'A1'),
+  'attr:ref': 'Data!F9', link: 'hash', // W-66: Solid's `ref` is its own; the attribute goes through `attr:`
   'on:sheetpane-change': (e) => console.log(e.detail.sheet, e.detail.kind),
 };
 const errors: JSX.IntrinsicElements['sheetpane-errors'] = { 'attr:pane': 'q3', 'on:sheetpane-errors': (e) => console.log(e.detail.errors) };

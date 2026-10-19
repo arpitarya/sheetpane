@@ -4,9 +4,9 @@
 // own `style` changes; `exportPatch` writes those changes into styles.xml.
 // Never a font family (SR-LAW-5): the host's font is the font.
 // Headless: this entry never imports ./ui.js. Importing it in Node is safe.
-import { registerPlugin, type CellContext, type Plugin, type StyleSubset } from '@sheetpane/grid';
+import { registerPlugin, type CellContext, type Plugin, type RunStyle, type StyleSubset } from '@sheetpane/grid';
 import { paletteOf, resolveColor } from './color.js';
-import { allowListed, AUTO_INK } from './css.js';
+import { allowListed, AUTO_INK, runCss } from './css.js';
 import { applyLook, cachedXfCss, fileLook, patchCss, patchOf } from './model.js';
 import { writeStyles } from './xml.js';
 
@@ -48,7 +48,9 @@ export function styles(o: StylesOptions = {}): Plugin {
   return {
     id: 'styles',
     provides: ['decorate', 'exportPatch'],
+    after: ['tables'], // a cell's own format draws over its table's style, as in Excel (W-61)
     decorate: (cell) => decorateCell(cell, fileStyles),
+    decorateRuns: (cell) => (fileStyles ? decorateRuns(cell) : undefined),
     exportPatch: (patch, ctx) => writeStyles(patch, ctx),
   };
 }
@@ -79,8 +81,26 @@ export function decorateCell(cell: CellContext, fileStyles = true): StyleSubset 
   return Object.keys(out).length ? out : undefined;
 }
 
+/**
+ * A rich-text cell's runs as styled pieces (W-53): each run with formatting gets its weight, style, decoration,
+ * vertical alignment, and its size and colour where they differ from the cell's own font; a run without formatting
+ * takes the cell's look. Never a font family (SR-LAW-5).
+ *
+ * @param cell - The cell, as the `decorate` hook receives it; `cell.runs` is set only while the cell holds the file's value.
+ * @returns One piece per run, or `undefined` when the cell has no runs.
+ */
+export function decorateRuns(cell: CellContext): RunStyle[] | undefined {
+  if (!cell.runs) return undefined;
+  const t = cell.book.styles, palette = paletteOf(cell.book);
+  const own = t.fonts[t.cellXfs[cell.styleIndex ?? 0]?.fontId ?? 0] ?? t.fonts[0];
+  return cell.runs.map((r) => {
+    const style = allowListed(runCss(r, palette, own, t.fonts[0]));
+    return Object.keys(style).length ? { text: r.text, style } : { text: r.text };
+  });
+}
+
 export { resolveColor, applyTint, mix, paletteOf, DEFAULT_THEME, DEFAULT_INDEXED, type Palette, type XlColor } from './color.js';
-export { ALLOWED_PROPS, allowListed, fontCss, fillCss, borderCss, sideCss, alignmentCss, xfCss, dxfCss, decoration, BORDER_CSS, BORDER_STYLES, AUTO_INK, CELL_EM, DEFAULT_SZ, type AllowedProp } from './css.js';
+export { ALLOWED_PROPS, allowListed, fontCss, fillCss, borderCss, sideCss, alignmentCss, xfCss, dxfCss, runCss, decoration, BORDER_CSS, BORDER_STYLES, AUTO_INK, CELL_EM, DEFAULT_SZ, type AllowedProp } from './css.js';
 export { STYLE_PREFIX, styleRef, patchOf, styleChanges, fileLook, applyLook, normalize, combine, restyle, lookAt, setChanges, PLAIN, type StylePatch, type BorderEdge, type Look, type ChangeSpec } from './model.js';
 export { writeStyles, restyleSheetXml, StyleSheet, MINIMAL_STYLES } from './xml.js';
 

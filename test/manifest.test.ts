@@ -67,7 +67,7 @@ describe('custom-elements.json (W-37)', () => {
       it('events = the sheetpane-* names its source dispatches', () => {
         const fired = [...new Set([...e.src.matchAll(/fire\(this, '(sheetpane-[\w-]+)'/g)].map((m) => m[1]!))].sort();
         expect(e.decl!.events.map((x) => x.name).sort()).toEqual(fired);
-        for (const ev of e.decl!.events) expect(ev.type.text, ev.name).toMatch(/^CustomEvent<\{.*\}>$|^CustomEvent<Record<string, never>>$/);
+        for (const ev of e.decl!.events) expect(ev.type.text, ev.name).toMatch(/^CustomEvent<\{.*\}( \| null)?>$|^CustomEvent<Record<string, never>>$/); // `| null`: sheetpane-hover off the cells (W-56)
       });
       it('members include every property and method its TSDoc lists', () => {
         const doc = /\/\*\*([\s\S]*?)\*\/\s*export class/.exec(e.src)![1]!;

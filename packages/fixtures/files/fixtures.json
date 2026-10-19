@@ -64,6 +64,13 @@
             "Account",
             "Price"
           ]
+        },
+        {
+          "name": "Tables",
+          "headers": [
+            "Unit",
+            "Meaning"
+          ]
         }
       ],
       "features": [
@@ -74,7 +81,8 @@
         "conditional formats",
         "a picture",
         "two charts",
-        "a note and a thread"
+        "a note and a thread",
+        "two Excel tables, a list rule over a table column"
       ]
     },
     {
@@ -89,6 +97,81 @@
         "Formulas!B6",
         "Formulas!B7",
         "Numbers!B3"
+      ]
+    },
+    {
+      "name": "dependent-lists.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Readings",
+          "headers": [
+            "Parameter",
+            "Value",
+            "Unit"
+          ]
+        },
+        {
+          "name": "Lists",
+          "headers": [
+            "Parameter",
+            "Turbidity",
+            "Temperature",
+            "Conductivity",
+            "Nitrate"
+          ]
+        }
+      ],
+      "features": [
+        "dependent lists: a Parameter list, and a Unit list =INDIRECT($A2) over one defined name per parameter (W-60)",
+        "one stale unit (Readings!C6 fails)"
+      ]
+    },
+    {
+      "name": "protected.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Spec",
+          "hidden": false,
+          "headers": [
+            "Parameter",
+            "Value",
+            "Unit",
+            "Description",
+            "Limit"
+          ]
+        },
+        {
+          "name": "Lists",
+          "hidden": false,
+          "headers": [
+            "Unit",
+            "Meaning"
+          ]
+        },
+        {
+          "name": "Notes",
+          "hidden": false,
+          "headers": [
+            "Note"
+          ]
+        },
+        {
+          "name": "Archive",
+          "hidden": true,
+          "headers": [
+            "Old limits"
+          ]
+        }
+      ],
+      "features": [
+        "sheet protection with a password (`sheetpane`, Excel’s legacy hash): Spec’s Value, Unit and Description unlocked (cells and columns), Parameter and the header locked (W-62)",
+        "Spec’s Limit a hidden formula",
+        "Lists protected, every cell locked; Notes not protected",
+        "the workbook structure locked; Archive hidden"
       ]
     },
     {
@@ -207,6 +290,77 @@
       ],
       "features": [
         "cached formula errors"
+      ]
+    },
+    {
+      "name": "compare/base.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Holdings",
+          "hidden": false,
+          "headers": [
+            "Account",
+            "Name",
+            "Units",
+            "Price"
+          ]
+        },
+        {
+          "name": "Fees",
+          "hidden": false,
+          "headers": [
+            "Tier",
+            "Rate"
+          ]
+        },
+        {
+          "name": "Notes",
+          "hidden": false,
+          "headers": [
+            "Draft — not for release"
+          ]
+        }
+      ],
+      "features": [
+        "the older version of a compare pair (W-63)"
+      ]
+    },
+    {
+      "name": "compare/now.xlsx",
+      "kind": "xlsx",
+      "appSaved": null,
+      "sheets": [
+        {
+          "name": "Holdings",
+          "hidden": false,
+          "headers": [
+            "Account",
+            "Name",
+            "Units",
+            "Price"
+          ]
+        },
+        {
+          "name": "Fee schedule",
+          "hidden": false,
+          "headers": [
+            "Tier",
+            "Rate"
+          ]
+        },
+        {
+          "name": "Summary",
+          "hidden": false,
+          "headers": [
+            "Accounts",
+            5
+          ]
+        }
+      ],
+      "features": [
+        "the newer version of a compare pair (W-63): one price changed, a row removed, added and moved; a sheet renamed, one removed, one added"
       ]
     },
     {

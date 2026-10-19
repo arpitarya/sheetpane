@@ -103,6 +103,40 @@ export function fontCss(font: XlFont | undefined, palette: Palette, base?: XlFon
 
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 
+/** A rich-text run as the grid hands it to `decorateRuns` (SR-IMPORT decision 12). */
+export type XlRun = NonNullable<CellContext['runs']>[number];
+
+/**
+ * One rich-text run's CSS, for a span inside its cell (W-53). A run with no formatting returns `{}` (it takes the
+ * cell's look). A formatted run states its weight, style and decoration outright — an Excel run's `<rPr>` is its
+ * whole font — and its size (in `em` of the cell's) and colour only where they differ from the cell's own font.
+ * Superscript and subscript are `vertical-align` at three quarters of the size. The family is never read.
+ *
+ * @param run - The run.
+ * @param palette - The workbook's palette, for its colour.
+ * @param own - The cell's font (`fonts[cellXfs[s].fontId]`).
+ * @param base - The workbook's default font (`fonts[0]`): a colour the cell's font leaves unset is measured against it,
+ *   so a run in the default ink keeps the host's ink (dark themes included).
+ * @returns The CSS.
+ */
+export function runCss(run: XlRun, palette: Palette, own: XlFont | undefined, base?: XlFont): StyleSubset {
+  const out: StyleSubset = {};
+  if (Object.keys(run).length === 1) return out;
+  out['font-weight'] = run.b ? '700' : '400';
+  out['font-style'] = run.i ? 'italic' : 'normal';
+  out['text-decoration'] = decoration(run.u, run.strike) ?? 'none';
+  const sup = run.vertAlign === 'superscript' ? 'super' : run.vertAlign === 'subscript' ? 'sub' : undefined;
+  const ref = own?.sz ?? DEFAULT_SZ;
+  const ratio = (run.sz !== undefined && run.sz > 0 ? run.sz / ref : 1) * (sup ? 0.75 : 1);
+  if (ratio !== 1) out['font-size'] = `${round3(ratio)}em`;
+  if (sup) out['vertical-align'] = sup;
+  if (run.color && !sameColor(run.color, own?.color ?? base?.color)) {
+    const c = resolveColor(run.color, palette);
+    if (c) out.color = c;
+  }
+  return out;
+}
+
 /** How much of the pattern colour each pattern shows over its background. */
 const PATTERN_DENSITY: Readonly<Record<string, number>> = {
   solid: 1, darkGray: 0.75, mediumGray: 0.5, lightGray: 0.25, gray125: 0.125, gray0625: 0.0625,

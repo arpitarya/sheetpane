@@ -25,9 +25,14 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `hiddenRows`, `hiddenCols` | 0-based, sorted; a zero height or width counts as hidden |
 | `rowOutline`, `colOutline`, `outline`, `autoFilter` | outline levels per row and column (sparse `{ level, collapsed? }`), the deepest levels and summary placement, and the filter range |
 | `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
-| `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins |
-| `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
+| `runs` | rich-text cells only, sparse: `{ B4: [{ text: 'Net ' }, { text: 'of tax', i: true, sz: 11 }] }` — each run's text with its `b`, `i`, `u`, `strike`, `color`, `sz`, `vertAlign` (never the font family); phonetic runs left out; `rows` and `text` hold the joined text as before |
+| `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins; the first two are `@sheetpane/export`'s shapes, so `toXlsx` / `patchXlsx` write them back unchanged |
+| `protection`, `rowStyles`, `colStyles` | the sheet's `<sheetProtection>` switches while it is protected (`true` = refused; `hasPassword`, never the password), and the formats an empty cell takes from its row or column — with `cellProtection(sheet, styles, row, col)` for a cell's `{ locked, hidden }` |
+| `tables` | the sheet's Excel tables: `name` (as formulas use it), `ref`, header and totals rows, `columns`, `style` — drawn by `@sheetpane/tables` |
+| `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook (each `styles.cellXfs` entry with its `protection?`) |
+| `workbookProtection` | `{ lockStructure, lockWindows, hasPassword }` when the file protects its structure or windows |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
+| `sha256` | from `read()`: the SHA-256 of the bytes opened, 64 lowercase hex digits — which file this is. Absent on a page without Web Crypto (not `https` or `localhost`), with a console warning `SP-1009`; never a substitute hash. `sha256(bytes)` is exported for hashing anything else |
 
 ## CSV
 
