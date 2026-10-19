@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/testing",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Test helpers for hosts that embed sheetpane: locators, actions and reading a download back, for Playwright and Vitest browser mode.",
   "license": "MIT",
   "repository": {

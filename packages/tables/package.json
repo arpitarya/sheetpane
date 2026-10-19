@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/tables",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Excel tables for sheetpane — each table's header row, banded rows and columns and totals row drawn from its built-in table style, as a plugin on the `decorate` hook. The tables themselves are read by @sheetpane/import.",
   "license": "MIT",
   "repository": {

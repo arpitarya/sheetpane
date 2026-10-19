@@ -1,6 +1,6 @@
 {
   "name": "@sheetpane/export",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Turn a plain JavaScript object into an .xlsx or .csv file. No runtime dependencies.",
   "license": "MIT",
   "repository": {
