@@ -117,7 +117,7 @@ export async function fromCsv(input: string | Blob, o: CsvOptions = {}): Promise
     sheets: [{
       name, rows, text: rows.map((r) => r.map((v) => (v === null ? '' : (v as string)))), path: '', merges: [], columnWidths: [], state: 'visible', hidden: false,
       styleIndex: {}, formulas: {}, freeze: { rows: 0, cols: 0 }, hiddenRows: [], hiddenCols: [], rowOutline: [], colOutline: [], outline: { levelRow: 0, levelCol: 0, summaryBelow: true, summaryRight: true }, rowHeights: [], defaultRowHeight: 15, defaultColWidth: undefined,
-      dataValidations: [], conditionalFormats: [], drawings: [], notes: [], threadedComments: [], pivotTables: [],
+      dataValidations: [], conditionalFormats: [], drawings: [], notes: [], threadedComments: [], pivotTables: [], tables: [],
     }],
     source: 'csv', activeSheet: 0, date1904: false,
     styles: { numFmts: {}, cellXfs: [], fonts: [], fills: [], borders: [], dxfs: [] },

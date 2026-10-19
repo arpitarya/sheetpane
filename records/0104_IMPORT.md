@@ -76,7 +76,7 @@ carry over unchanged; the plugins verdict added what plugins read.
    `hidden` is deprecated in favour of `state`),
    `rowHeights`, `defaultRowHeight`, `defaultColWidth`, `dataValidations`,
    `conditionalFormats`, `drawings`, `notes`, `threadedComments`,
-   `pivotTables`. The workbook adds `source`, `activeSheet`, `date1904`,
+   `pivotTables`, `tables` (W-61, decision 11). The workbook adds `source`, `activeSheet`, `date1904`,
    `styles` (`numFmts`, `cellXfs`, `fonts`, `fills`, `borders`, `dxfs`,
    `indexedColors`), `themeColors` (by SpreadsheetML theme index),
    `persons`, `definedNames`, `delimiter` (CSV) and `part(path)`.
@@ -137,6 +137,20 @@ carry over unchanged; the plugins verdict added what plugins read.
     hidden one. A CSV hides nothing (`state: 'visible'`, empty lists, outline
     `{0, 0, true, true}`). The built-in XML reader reads the same (a parity
     test).
+
+11. **Excel tables (W-61):** `tables` lists the sheet's tables in
+    `<tableParts>` order, each read from its own part
+    (`xl/tables/tableN.xml`) through the sheet's relationship; a part or
+    relationship that is missing is skipped. A `Table` is `{ name, id, ref,
+    headerRowCount, totalsRowCount, columns, style, autoFilter?, path }`:
+    `name` is `displayName` (the name structured references use; `name`
+    when it is absent), `ref` the whole table, header and totals rows
+    included, `headerRowCount` default 1, `totalsRowCount` default 0;
+    `columns` are `{ name, totalsRowFunction?, totalsRowLabel? }` with
+    `_xHHHH_` decoded; `style` is `tableStyleInfo`'s `name?` and its four
+    switches (`showFirstColumn`, `showLastColumn`, `showRowStripes`,
+    `showColumnStripes`, default `false`). A CSV has none. The built-in XML
+    reader reads the same (a parity test).
 
 **Codes (W-40):** `ImportError` gains `spCode` and `spDetail` (`code` unchanged); `password-or-legacy` maps to SP-1002, SP-1003 or SP-1004 by what the reader found (SR-CODES).
 

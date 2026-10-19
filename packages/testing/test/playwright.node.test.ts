@@ -23,7 +23,7 @@ afterAll(async () => { await browser?.close(); server?.close(); });
 describe('Node reader (W-41 DoD 4)', () => {
   it('reads .xlsx in Node without a DOM — the same values as the manifest says', async () => {
     const book = await readFile(new Uint8Array(readFileSync(path('showcase.xlsx'))), 'showcase.xlsx');
-    expect(book.names).toEqual(['Numbers', 'Styles', 'Formulas', 'Validation', 'CondFmt', 'Images', 'Charts', 'Comments']);
+    expect(book.names).toEqual(['Numbers', 'Styles', 'Formulas', 'Validation', 'CondFmt', 'Images', 'Charts', 'Comments', 'Tables']);
     expect(valueAt(book, 'Numbers!B6')).toBe(1.25);
     expect(valueAt(book, 'Formulas!B6')).toBe(7600);
     expect(book).toHaveCell('Validation!B4', 'Bogus');

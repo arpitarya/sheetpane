@@ -26,6 +26,7 @@ book.sheets[0].text;                      // display text: [['Account ID', …],
 | `rowOutline`, `colOutline`, `outline`, `autoFilter` | outline levels per row and column (sparse `{ level, collapsed? }`), the deepest levels and summary placement, and the filter range |
 | `formulas`, `styleIndex`, `freeze`, `rowHeights` | per sheet, for the grid and the plugins |
 | `dataValidations`, `conditionalFormats`, `drawings`, `notes`, `threadedComments`, `pivotTables` | per sheet, parsed, for the plugins |
+| `tables` | the sheet's Excel tables: `name` (as formulas use it), `ref`, header and totals rows, `columns`, `style` — drawn by `@sheetpane/tables` |
 | `styles`, `themeColors`, `persons`, `definedNames`, `date1904` | per workbook |
 | `part(path)` | any part of the package (a picture, a chart) without re-reading the ZIP |
 

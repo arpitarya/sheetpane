@@ -52,8 +52,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-60** `agent` · **G2** · Dependent dropdowns: a list that changes with another cell (`INDIRECT`). Filed by Arpit (Cowork). [detail](open/W-60-dependent-dropdowns.md)
 
-- 🟢 **W-61** `agent` · **G2** · Excel Tables: read them by name, resolve `Table[Column]`, and a `@sheetpane/tables` plugin to draw them. Filed by Arpit (Cowork). [detail](open/W-61-excel-tables.md)
-
 - 🟢 **W-62** `agent` · **G2** · Locked cells and sheet protection honoured in Edit. Filed by Arpit (Cowork). [detail](open/W-62-locked-cells-and-protection.md)
 
 - 🟡 **W-63** `agent` · **G3** · New plugin `@sheetpane/compare`: what changed between two versions of a workbook. Waiting on W-51. Filed by Arpit (Cowork). [detail](open/W-63-compare-plugin.md)

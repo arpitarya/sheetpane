@@ -50,7 +50,9 @@ export function x14(d: Dv): string {
   return `<x14:dataValidation ${attrs(d)}>${d.f1 !== undefined ? `<x14:formula1><xm:f>${esc(d.f1)}</xm:f></x14:formula1>` : ''}${d.f2 !== undefined ? `<x14:formula2><xm:f>${esc(d.f2)}</xm:f></x14:formula2>` : ''}<xm:sqref>${d.sqref}</xm:sqref></x14:dataValidation>`;
 }
 
-export interface SheetSpec { name: string; cells: Record<string, V>; rules?: Dv[]; x14?: Dv[] }
+/** An Excel table on a sheet (W-61): its name, range (header row first) and column names. */
+export interface TableSpec { name: string; ref: string; columns: string[]; totals?: boolean }
+export interface SheetSpec { name: string; cells: Record<string, V>; rules?: Dv[]; x14?: Dv[]; tables?: TableSpec[] }
 
 export async function workbook(sheets: SheetSpec[], definedNames: { name: string; formula: string; localSheetId?: number }[] = []): Promise<Uint8Array> {
   const enc = (s: string) => new TextEncoder().encode(s);
@@ -60,10 +62,18 @@ export async function workbook(sheets: SheetSpec[], definedNames: { name: string
     'xl/workbook.xml': `<workbook xmlns="${NS}" xmlns:r="${R}"><sheets>${sheets.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets>${definedNames.length ? `<definedNames>${definedNames.map((n) => `<definedName name="${n.name}"${n.localSheetId !== undefined ? ` localSheetId="${n.localSheetId}"` : ''}>${esc(n.formula)}</definedName>`).join('')}</definedNames>` : ''}</workbook>`,
     'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${PR}">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}</Relationships>`,
   };
+  let tableId = 0;
   sheets.forEach((s, i) => {
+    const tables = (s.tables ?? []).map((t) => {
+      const id = ++tableId;
+      parts[`xl/tables/table${id}.xml`] = `<table xmlns="${NS}" id="${id}" name="${t.name}" displayName="${t.name}" ref="${t.ref}"${t.totals ? ' totalsRowCount="1"' : ''}><tableColumns count="${t.columns.length}">${t.columns.map((c, k) => `<tableColumn id="${k + 1}" name="${esc(c)}"/>`).join('')}</tableColumns><tableStyleInfo name="TableStyleMedium2" showRowStripes="1"/></table>`;
+      return id;
+    });
+    if (tables.length) parts[`xl/worksheets/_rels/sheet${i + 1}.xml.rels`] = `<Relationships xmlns="${PR}">${tables.map((id, k) => `<Relationship Id="rId${k + 1}" Type="${R}/table" Target="../tables/table${id}.xml"/>`).join('')}</Relationships>`;
+    const tableParts = tables.length ? `<tableParts count="${tables.length}">${tables.map((_, k) => `<tablePart r:id="rId${k + 1}"/>`).join('')}</tableParts>` : '';
     const classic = s.rules?.length ? `<dataValidations count="${s.rules.length}">${s.rules.map(dv).join('')}</dataValidations>` : '';
     const ext = s.x14?.length ? `<extLst><ext uri="{CCE6A557-97BC-4b89-ADB6-D9C93CAAB3DF}" xmlns:x14="${X14}"><x14:dataValidations count="${s.x14.length}" xmlns:xm="${XM}">${s.x14.map(x14).join('')}</x14:dataValidations></ext></extLst>` : '';
-    parts[`xl/worksheets/sheet${i + 1}.xml`] = `<worksheet xmlns="${NS}" xmlns:r="${R}">${sheetData(s.cells)}${classic}${ext}</worksheet>`;
+    parts[`xl/worksheets/sheet${i + 1}.xml`] = `<worksheet xmlns="${NS}" xmlns:r="${R}">${sheetData(s.cells)}${classic}${tableParts}${ext}</worksheet>`;
   });
   return writeZip(Object.entries(parts).map(([name, s]) => ({ name, data: enc(s) })));
 }

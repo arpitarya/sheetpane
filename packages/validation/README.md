@@ -89,6 +89,8 @@ A `list` source can be:
 - a literal list: `"a,b,c"`
 - a range: `$H$1:$H$9`, `Lists!$A$1:$A$9`, `$A:$A`
 - a defined name that resolves to a range
+- an Excel table's column: `Units[Unit]` or `Units[[#Data],[Unit]]`, directly or
+  through a defined name — the column's data rows, as the file stores the table
 
 A range source is read live from the store, and the arrow's menu re-reads it
 each time it opens.

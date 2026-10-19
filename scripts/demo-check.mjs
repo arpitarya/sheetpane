@@ -74,6 +74,16 @@ async function gallery(page, name) {
   await t.x.locator('.hmk[data-hid="rows:2-2"]').click();
   await t.x.locator('#c2_0').waitFor();
   check(gone && (await t.x.evaluate((el) => el.workbook.hidden('Numbers').rows.length)) === 0, `${name}: Hide and show hides row 3 from its header menu, marks it, and a marker click unhides it`);
+  // W-61: Tables — each table drawn by its style; Readings' Unit list follows Units[Unit]
+  t = await tab('Tables', 'tables', 'Tables');
+  const bg = (id) => t.x.locator(id).evaluate((el) => getComputedStyle(el).backgroundColor);
+  const drawn = (await bg('#c0_0')) === 'rgb(68, 114, 196)' && (await bg('#c7_0')) === 'rgb(112, 173, 71)';
+  await t.x.locator('#c8_2').click();
+  await t.x.locator('input.cell').fill('furlong');
+  await t.x.locator('input.cell').press('Enter');
+  const unitError = () => t.x.evaluate((el) => el.workbook.getErrors().find((x) => x.sheet === 'Tables' && x.range === 'C9' && x.status === 'open')?.expected ?? '');
+  await t.e.locator('.item').nth(2).waitFor({ timeout: 15000 });
+  check(drawn && (await unitError()) === 'list — mg/L, ug/L, %, ppm', `${name}: Tables draws both tables in their styles, and C9’s list is Units[Unit] (${await unitError()})`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

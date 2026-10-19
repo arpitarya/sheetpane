@@ -7,7 +7,7 @@ exists anywhere, and none should be added.
 
 The packages: `@sheetpane/charts`, `comments`, `condfmt`, `export`, `fixtures`,
 `formulas`, `grid`, `images`, `import`, `mcp`, `numfmt`, `skills`, `styles`,
-`testing`, `validation`, `visibility`, and the unscoped `create-sheetpane`. Each
+`tables`, `testing`, `validation`, `visibility`, and the unscoped `create-sheetpane`. Each
 ships its build output (`dist/`, or `bin/`, `templates/`, `skills/`) with its
 README and LICENSE, never `src/` or tests.
 

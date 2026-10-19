@@ -1,7 +1,7 @@
 // The rule engine: a sheet's `<dataValidations>` compiled once per workbook, then
 // checked against the store's current values. No DOM, no dependency — the types
 // come from @sheetpane/grid, the values from the store a hook is handed.
-import { shiftFormula, type CellContext, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
+import { resolveStructuredRef, shiftFormula, type CellContext, type PluginContext, type WorkbookStore } from '@sheetpane/grid';
 
 /** The imported workbook, as a plugin hook receives it. */
 export type Book = PluginContext['book'];
@@ -71,7 +71,8 @@ export function dateSerial(y: number, m: number, d: number, d1904: boolean): num
 
 /**
  * Parses one operand (`formula1` / `formula2`): a number, quoted text, `DATE` / `TIME` of numbers, a cell or a
- * range; a defined name is followed (three levels) to its formula.
+ * range; a defined name is followed (three levels) to its formula; a table's structured reference
+ * (`Units[Name]`, `Units[[#Data],[Name]]`, W-61) is the table's cells, fixed — it does not shift per cell.
  *
  * @param f - The operand as the file stores it, with or without `=`.
  * @param book - The workbook (its date system and defined names).
@@ -108,6 +109,8 @@ export function parseOperand(f: string, book: Book, sheetIndex: number, depth = 
     const n = names.find((x) => x.localSheetId === sheetIndex) ?? names.find((x) => x.localSheetId === undefined);
     if (n) return parseOperand(n.formula, book, sheetIndex, depth + 1);
   }
+  const s = resolveStructuredRef(t, book.sheets);
+  if (s) return { k: 'range', sheet: s.sheet, box: s.range, absRow: true, absCol: true };
   return undefined;
 }
 

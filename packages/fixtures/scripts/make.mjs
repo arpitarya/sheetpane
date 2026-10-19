@@ -93,6 +93,12 @@ const PLACEHOLDER = '[Threaded comment]\n\nYour version of Excel allows you to r
 const PERSONS = [{ id: '{1F0C2D1E-6A5B-4B1C-9E2F-0A1B2C3D4E5F}', name: 'Arpit' }, { id: '{2A1D3E2F-7B6C-4C2D-8F3A-1B2C3D4E5F60}', name: 'Priya' }];
 const THREAD_ID = '{8C1B2A3D-4E5F-4061-8273-9A0B1C2D3E4F}';
 
+// ── tables (W-61) ─────────────────────────────────────────────────────────────
+const UNITS = [['mg/L', 'milligrams per litre'], ['ug/L', 'micrograms per litre'], ['%', 'percent'], ['ppm', 'parts per million']];
+const READINGS = [['Lead', 3, 'mg/L'], ['Zinc', 40, 'ug/L'], ['Moisture', 12, '%'], ['Copper', 7, 'ppm']];
+/** A table part: its range, the filter range (the totals row left out), columns, `tableStyleInfo` and extra attributes. */
+const tableXml = (id, name, ref, filter, columns, style, extra = '') => `${XML}<table xmlns="${NS}" id="${id}" name="${name}" displayName="${name}" ref="${ref}"${extra}><autoFilter ref="${filter}"/><tableColumns count="${columns.length}">${columns.map((c, i) => `<tableColumn id="${i + 1}" name="${esc(c.name)}"${c.label ? ` totalsRowLabel="${esc(c.label)}"` : ''}${c.fn ? ` totalsRowFunction="${c.fn}"` : ''}/>`).join('')}</tableColumns><tableStyleInfo ${style}/></table>`;
+
 // ── the sheets ────────────────────────────────────────────────────────────
 const sheets = [
   { name: 'Numbers', cols: [26, 18], cells: {
@@ -145,6 +151,16 @@ const sheets = [
     ['rId2', `${R}/vmlDrawing`, '../drawings/vmlDrawing1.vml'],
     ['rId3', 'http://schemas.microsoft.com/office/2017/10/relationships/threadedComment', '../threadedComments/threadedComment1.xml'],
   ] },
+  // W-61: two Excel tables; Readings' Unit column is a list over Units[Unit], through the defined name UnitList
+  // Units at A1:B5; Readings at A8:C13, under it, with a totals row
+  { name: 'Tables', cols: [12, 22, 10], cells: {
+    A1: 'Unit', B1: 'Meaning',
+    ...Object.fromEntries(UNITS.flatMap(([u, m], i) => [[`A${i + 2}`, u], [`B${i + 2}`, m]])),
+    A8: 'Parameter', B8: 'Value', C8: 'Unit',
+    ...Object.fromEntries(READINGS.flatMap(([p, v, u], i) => [[`A${i + 9}`, p], [`B${i + 9}`, v], [`C${i + 9}`, u]])),
+    A13: 'Total', B13: { f: 'SUM(B9:B12)', v: READINGS.reduce((n, r) => n + r[1], 0) },
+  }, tail: '<dataValidations count="1"><dataValidation type="list" allowBlank="1" showErrorMessage="1" errorTitle="Unit" error="Pick a unit from the Units table" sqref="C9:C12"><formula1>UnitList</formula1></dataValidation></dataValidations><tableParts count="2"><tablePart r:id="rId1"/><tablePart r:id="rId2"/></tableParts>',
+    rels: [['rId1', `${R}/table`, '../tables/table1.xml'], ['rId2', `${R}/table`, '../tables/table2.xml']] },
 ];
 
 const parts = {};
@@ -166,12 +182,14 @@ const shape = (id, row, col) => `<v:shape id="_x0000_s${id}" type="#_x0000_t202"
 parts['xl/drawings/vmlDrawing1.vml'] = `<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout><v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype>${shape(1025, 1, 0)}${shape(1026, 2, 1)}</xml>`;
 parts['xl/threadedComments/threadedComment1.xml'] = `${XML}<ThreadedComments xmlns="${TC}" xmlns:x="${NS}"><threadedComment ref="B3" dT="2026-09-30T10:00:00.00" personId="${PERSONS[0].id}" id="${THREAD_ID}"><text>Is this the September price?</text></threadedComment><threadedComment ref="B3" dT="2026-09-30T11:30:00.00" personId="${PERSONS[1].id}" id="{9D2C3B4E-5F60-4172-9384-AB1C2D3E4F50}" parentId="${THREAD_ID}"><text>Yes — the 30 Sep close.</text></threadedComment></ThreadedComments>`;
 parts['xl/persons/person.xml'] = `${XML}<personList xmlns="${TC}" xmlns:x="${NS}">${PERSONS.map((p) => `<person displayName="${p.name}" id="${p.id}" userId="${p.name}" providerId="None"/>`).join('')}</personList>`;
+parts['xl/tables/table1.xml'] = tableXml(1, 'Units', 'A1:B5', 'A1:B5', [{ name: 'Unit' }, { name: 'Meaning' }], 'name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"', ' totalsRowShown="0"');
+parts['xl/tables/table2.xml'] = tableXml(2, 'Readings', 'A8:C13', 'A8:C12', [{ name: 'Parameter', label: 'Total' }, { name: 'Value', fn: 'sum' }, { name: 'Unit' }], 'name="TableStyleMedium7" showFirstColumn="1" showLastColumn="0" showRowStripes="1" showColumnStripes="0"', ' totalsRowCount="1"');
 parts['xl/styles.xml'] = styles;
 const n = sheets.length;
-parts['xl/workbook.xml'] = `${XML}<workbook xmlns="${NS}" xmlns:r="${R}"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${sheets.map((s, i) => `<sheet name="${s.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`;
+parts['xl/workbook.xml'] = `${XML}<workbook xmlns="${NS}" xmlns:r="${R}"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${sheets.map((s, i) => `<sheet name="${s.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets><definedNames><definedName name="UnitList">Units[Unit]</definedName></definedNames></workbook>`;
 parts['xl/_rels/workbook.xml.rels'] = `${XML}<Relationships xmlns="${PR}">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${R}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${n + 1}" Type="${R}/styles" Target="styles.xml"/><Relationship Id="rId${n + 2}" Type="http://schemas.microsoft.com/office/2017/10/relationships/person" Target="persons/person.xml"/></Relationships>`;
 parts['_rels/.rels'] = `${XML}<Relationships xmlns="${PR}"><Relationship Id="rId1" Type="${R}/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
-parts['[Content_Types].xml'] = `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${overrides.join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/charts/chart2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/comments1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/><Override PartName="/xl/threadedComments/threadedComment1.xml" ContentType="application/vnd.ms-excel.threadedcomments+xml"/><Override PartName="/xl/persons/person.xml" ContentType="application/vnd.ms-excel.person+xml"/></Types>`;
+parts['[Content_Types].xml'] = `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${overrides.join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/charts/chart2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/><Override PartName="/xl/comments1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/><Override PartName="/xl/threadedComments/threadedComment1.xml" ContentType="application/vnd.ms-excel.threadedcomments+xml"/><Override PartName="/xl/persons/person.xml" ContentType="application/vnd.ms-excel.person+xml"/>${[1, 2].map((i) => `<Override PartName="/xl/tables/table${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>`).join('')}</Types>`;
 
 const enc = (x) => (typeof x === 'string' ? new TextEncoder().encode(x) : new Uint8Array(x));
 const files = new URL('../files/', import.meta.url);
@@ -223,7 +241,7 @@ const manifest = {
   version: 1,
   note: 'Hand-built by scripts/make.mjs unless appSaved names the app that saved it; hand-built files prove behaviour, not Excel compatibility.',
   files: [
-    { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread'] },
+    { name: 'showcase.xlsx', kind: 'xlsx', appSaved: null, sheets: sheets.map((s) => ({ name: s.name, headers: headersOf(s.cells) })), features: ['number formats', 'styles', 'formulas with cached values', 'data validation (two cells fail)', 'conditional formats', 'a picture', 'two charts', 'a note and a thread', 'two Excel tables, a list rule over a table column'] },
     { name: 'showcase.rules.json', kind: 'rules', appSaved: null, for: 'showcase.xlsx', errors: ['Validation!C3', 'Validation!B4', 'Formulas!B3', 'Formulas!B6', 'Formulas!B7', 'Numbers!B3'] },
     ...EDGE.map((e) => ({ name: e.name, kind: 'xlsx', appSaved: null, sheets: e.spec.sheets.map((s) => ({ name: s.name, hidden: !!s.hidden, headers: headersOf(s.cells) })), features: e.features })),
     { name: 'edge/legacy.xls', kind: 'refused', appSaved: null, features: ['a legacy .xls (compound file) header'] },

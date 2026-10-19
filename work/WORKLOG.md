@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-61 Excel tables: read, `Table[Column]` resolved, `@sheetpane/tables` draws them  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-61 in lane e (worktree `sheetpane-lanes/e`, branch `lane-e`), beside five other lanes.*
+- **Done:** import reads table parts (SR-IMPORT 11); `resolveStructuredRef` in `@sheetpane/export`'s `refs.ts` (SR-EXPORT 9a), re-exported by the grid; validation's list sources resolve it (SR-VALIDATION 3–4); new `@sheetpane/tables` and SR-TABLES (0122); `styles` and `condfmt` order themselves after `tables`; the showcase gains a Tables sheet (MCP goldens regenerated, `@sheetpane/tables` suggested); a *Tables* gallery tab in both demos and its demo-check step; llms and the Claude plugin regenerated. Item archived.
+- **Decided / left open:** read in: the style subset is Light 1–7 and Medium 1–7 drawn from the theme, every other style a bold header (the item's hazard); a table with no style draws nothing; a filled table cell takes the theme's dark ink so it reads in dark mode. Handed on: the Excel-saved table file and opening a download in Excel → W-30 DoD 6; shifting a table's `ref` → W-52 (noted in its Hazards). Not done: `[#This Row]`, custom table styles, totals recalculated by the table.
+- **Mistakes:** the resolver's first `@example` imported `@sheetpane/import`; `test/tsdoc-walk.ts` reads imports inside doc comments, so export appeared to import the reader and the walk lost `Cell` / `SheetState` (fixed by a self-contained example).
+- **Next:** the orchestrator merges lane e and renumbers 0122 if another lane took it.
+
+---
+
 ## 2026-10-19 — law L11 filed: the workbook never leaves the browser  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"Create a law. Everything should be within the browser. Nothing go back to the server. Meaning when you upload a CSV or when you upload an Excel file, it does not go to the server. It just stays within the browser."*

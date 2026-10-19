@@ -65,6 +65,7 @@ SR-GRID · SR-EXPORT · SR-IMPORT · SR-FORMULAS · SR-CHARTS · SR-ERRORS · SR
 - The largest item here: plan the parts in the order import tables → store → export → plugins → UI, each with a test before the next.
 - Pivot sources and external references are not rewritten — refuse, never corrupt.
 - W-46's selection layer and W-47's sizes must shift with the rows they belong to.
+- **From W-61 (closed 2026-10-19):** `ImportedSheet.tables` exists now (SR-IMPORT decision 11) — step 2 shifts each table's `ref` and `autoFilter` in memory, so `@sheetpane/tables` draws and `resolveStructuredRef` (SR-EXPORT 9a) resolves the moved cells; step 4 rewrites `ref` and `<autoFilter ref>` in each `xl/tables/tableN.xml`; an insert inside a table grows it, as in Excel; step 5's refusal covers a delete that takes a table's header row. W-61's own step 4 ("W-52 shifts their ref") is this item's.
 
 ## Reference
 

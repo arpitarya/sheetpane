@@ -48,6 +48,7 @@ export function styles(o: StylesOptions = {}): Plugin {
   return {
     id: 'styles',
     provides: ['decorate', 'exportPatch'],
+    after: ['tables'], // a cell's own format draws over its table's style, as in Excel (W-61)
     decorate: (cell) => decorateCell(cell, fileStyles),
     exportPatch: (patch, ctx) => writeStyles(patch, ctx),
   };

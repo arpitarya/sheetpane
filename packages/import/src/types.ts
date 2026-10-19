@@ -104,6 +104,52 @@ export interface Person { id: string; displayName: string; userId?: string; prov
 /** A pivot table on a worksheet: its name and where it sits. */
 export interface PivotTable { name: string; ref: string }
 
+/** One column of an Excel table (`<tableColumn>`): its header text and its totals-row entry. */
+export interface TableColumn {
+  /** The column's name — its header text, and the name a structured reference uses (`Units[Name]`). */
+  name: string;
+  /** The totals row's function (`sum`, `count`, `average`, `custom` …); absent when the column has none. */
+  totalsRowFunction?: string;
+  /** The totals row's text label (`Total`); absent when the column has none. */
+  totalsRowLabel?: string;
+}
+
+/** How a table is drawn: `<tableStyleInfo>`. */
+export interface TableStyleInfo {
+  /** The style's name, e.g. `TableStyleMedium2`; absent when the table names none (Excel then draws it plain). */
+  name?: string;
+  /** Bold first column (`showFirstColumn`). */
+  showFirstColumn: boolean;
+  /** Bold last column (`showLastColumn`). */
+  showLastColumn: boolean;
+  /** Banded rows (`showRowStripes`). */
+  showRowStripes: boolean;
+  /** Banded columns (`showColumnStripes`). */
+  showColumnStripes: boolean;
+}
+
+/** An Excel table (a ListObject): its own part, `xl/tables/tableN.xml`, linked from the sheet's `<tableParts>`. */
+export interface Table {
+  /** The name formulas use — `displayName` (the `name` attribute when it is absent), e.g. `Units`. */
+  name: string;
+  /** The table's `id`, unique in the workbook. */
+  id: number;
+  /** The whole table, header and totals rows included, e.g. `A1:C10`. */
+  ref: string;
+  /** Header rows: 1, or 0 when the header row is turned off (`headerRowCount`, default 1). */
+  headerRowCount: number;
+  /** Totals rows: 0, or 1 when the totals row is on (`totalsRowCount`, default 0). */
+  totalsRowCount: number;
+  /** The columns, left to right. */
+  columns: TableColumn[];
+  /** The style and its four switches. */
+  style: TableStyleInfo;
+  /** The table's own `<autoFilter ref>`; absent when its filter buttons are off. */
+  autoFilter?: string;
+  /** The part this table came from, e.g. `xl/tables/table1.xml`. */
+  path: string;
+}
+
 /** One row's or column's place in an outline: its group level and whether its group is collapsed. */
 export interface OutlineEntry {
   /** The `outlineLevel`, 1–7; 0 only when the entry exists for `collapsed` alone. */
@@ -167,6 +213,8 @@ export interface ImportedSheet extends Sheet {
   notes: Note[];
   threadedComments: ThreadedComment[];
   pivotTables: PivotTable[];
+  /** The sheet's Excel tables, in `<tableParts>` order (W-61); `[]` for CSV. */
+  tables: Table[];
 }
 
 /** What `read`, `fromXlsx` and `fromCsv` return: the sheets plus the workbook-wide tables. */

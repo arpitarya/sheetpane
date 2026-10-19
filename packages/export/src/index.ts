@@ -15,7 +15,7 @@ export { readZip, inflateEntry, rawData, writeZip, isZip, DEFAULT_LIMITS, type Z
 export { crc32 } from './crc32.js';
 export { escapeText, escapeAttr, unescapeXml, encodeOoxmlString, decodeOoxmlString, cleanXmlChars, utf8, fromUtf8 } from './xml.js';
 export { getAttr, setAttr, removeAttr, parseRels, resolveTarget, relsPathOf, setPane, setMergeCells, type Relationship } from './patch.js';
-export { colName, colIndex, parseRef, cellRef, parseRange, rangeRef, rangesIntersect, MAX_ROWS, MAX_COLS, type CellPos, type RangePos } from './refs.js';
+export { colName, colIndex, parseRef, cellRef, parseRange, rangeRef, rangesIntersect, resolveStructuredRef, MAX_ROWS, MAX_COLS, type CellPos, type RangePos, type StructuredRef, type TableShape } from './refs.js';
 export { shiftFormula } from './formula.js';
 export { checkSheetName } from './validate.js';
 

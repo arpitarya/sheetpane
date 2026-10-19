@@ -66,6 +66,13 @@ export const MANIFEST = {
             "Account",
             "Price"
           ]
+        },
+        {
+          "name": "Tables",
+          "headers": [
+            "Unit",
+            "Meaning"
+          ]
         }
       ],
       "features": [
@@ -76,7 +83,8 @@ export const MANIFEST = {
         "conditional formats",
         "a picture",
         "two charts",
-        "a note and a thread"
+        "a note and a thread",
+        "two Excel tables, a list rule over a table column"
       ]
     },
     {

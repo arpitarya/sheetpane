@@ -1,6 +1,6 @@
 ---
 name: sheetpane-plugins
-description: Use when a host needs more than review - number formats, live formulas, cell styles, data validation, conditional formats, pictures, charts or comments - and must pick and enable plugins. Not for writing a plugin (sheetpane-plugin-author).
+description: Use when a host needs more than review - number formats, live formulas, cell styles, data validation, conditional formats, pictures, charts, comments or Excel tables - and must pick plugins. Not for writing a plugin (sheetpane-plugin-author).
 license: MIT
 metadata:
   audience: host
@@ -22,6 +22,7 @@ workbook ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/010
 | pictures | `@sheetpane/images` | images at their anchors | [SR-IMAGES](https://github.com/arpitarya/sheetpane/blob/main/records/0107_IMAGES.md) |
 | charts | `@sheetpane/charts` (needs images) | bar, column, line, pie, scatter as SVG | [SR-CHARTS](https://github.com/arpitarya/sheetpane/blob/main/records/0113_CHARTS.md) |
 | comments | `@sheetpane/comments` | file comments in, the review out as threads | [SR-COMMENTS](https://github.com/arpitarya/sheetpane/blob/main/records/0112_COMMENTS.md) |
+| Excel tables | `@sheetpane/tables` | each table's header, banded rows and totals row in its style | [SR-TABLES](https://github.com/arpitarya/sheetpane/blob/main/records/0122_TABLES.md) |
 
 ## Enable
 
@@ -47,6 +48,9 @@ it on per element. Import `@sheetpane/x` for the headless plugin, or
   images' anchors — list both.
 - `@sheetpane/formulas` loads its WASM only on the first formula; a
   workbook without formulas never fetches it.
+- `@sheetpane/tables` only draws: the tables themselves are in every
+  sheet's `tables` (`@sheetpane/import`), and a list rule over `Units[Unit]`
+  is read by `@sheetpane/validation` without it.
 - `@sheetpane/validation` reads rules **saved in the workbook**; your own
   checks are [sheetpane-column-rules](../sheetpane-column-rules/SKILL.md) or a
   [rules file](../sheetpane-rules-file/SKILL.md).
