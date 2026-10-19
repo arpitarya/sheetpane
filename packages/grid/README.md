@@ -547,6 +547,19 @@ A blank reason is refused (SP-3018). Count open problems with
 `status === 'open' && !isResult(e)`. With `@sheetpane/comments`, the export adds a reply
 *Accepted: <reason>* to the error's comment thread.
 
+**The Edits view** (W-64): an *Edits n* chip beside *Problems* lists every
+change in the pane, newest first — the cell or range and kind, *was → now*,
+the time, and the errors that edit cleared or raised (each a link to the
+error). Picking a row selects the cell; **Revert** on a row and **Revert
+all** are each one undo step. It shows in Edit mode, and in View mode while
+there are edits. The store gives the same list to your code:
+
+```js
+const edits = workbook.edits(); // [{ key, sheet, ref, kind, was, now, at }], newest first
+workbook.editEffects(edits[0].key); // { cleared, raised, matched } — error ids
+workbook.revertEdits([edits[0].key]); // omit the keys to revert all
+```
+
 ## Results: passed and not checked
 
 A host that checks a sheet can report what passed as well as what failed:

@@ -30,9 +30,10 @@ decision 5.
 | attribute / property | `layers`; `layerNames` | the review layers shown, pane-wide; what the switch calls each (W-51) |
 | property | `errors`, `errorTypes`, `readOnly`, `workbook`, `renderDetail` (W-68, below) | |
 | method | `getErrors({ layer? })`, `setErrors(list or envelope, { plugins?, layer? })` | |
+| view | *Edits n* (W-64) | every change, newest first: cell and kind, was → now, time, links to the errors it cleared or raised; **Revert** / **Revert all**, one undo step each (SR-ERRORS decision 17). Store: `edits()`, `editEffects(key)`, `revertEdits(keys?)` |
 | event | `sheetpane-errors {v, errors, plugins, layers, changed}` | the list changed — the envelope to persist |
 | event | `sheetpane-reveal {error}` | **Show in sheet** was pressed: switch to the sheet's tab or open the pop-up |
-| event | `sheetpane-change`, `sheetpane-select`, `sheetpane-history` | as on the sheet, for actions taken here |
+| event | `sheetpane-change`, `sheetpane-select`, `sheetpane-history` | as on the sheet, for actions taken here (a Revert in the Edits view fires `sheetpane-change` per cell) |
 
 ## An error
 

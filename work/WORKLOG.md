@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-64 closed: the Edits view in the errors panel  ·  Claude Code (claude-opus-5-5, lane f)
+
+- **Asked:** *build W-64 in its own worktree lane, alongside the other lanes.*
+- **Done:** `store.edits()` (the change map as a list, newest first, each entry's time kept by the entry object so undo brings it back), `editEffects(key)` (errors cleared / raised / matched, compared with before the cell first changed), `revertEdits(keys?)` (one undo step; all when no keys), `editRef`, types `Edit` and `EditEffects`; in `<sheetpane-errors>` an *Edits n* chip after Problems (Edit mode always, View mode only with edits), rows with place, kind, was → now, time and error links, Revert and Revert all, ↓ ↑ Home End, pages of 100. Records SR-GRID 9a, new 24; SR-ERRORS §1, new 16, Consequences. `edits.test.ts` (13); errors / results tests updated for the chip now shown in Edit mode.
+- **Decided / left open:** read *hidden in View mode with no edits* literally — in Edit mode the *Problems · Edits* switch is always there, so other lanes' tests that list the view chips in Edit mode meet *Edits 0*. Unknown change kinds (W-52's `structure`) list as one row by name; reverting removes the entry.
+- **Mistakes:** the skill section first went over the 200-line cap (`skills.test.ts`); folded into one table row.
+- **Next:** the orchestrator merges lane f; W-52 checks its `structure` entry reads well in the Edits row.
+
+---
+
 ## 2026-10-19 — W-50 closed: pass and not-checked results, quiet by default  ·  Claude Code (claude-opus-5-5, lane f)
 
 - **Asked:** *build W-50 in its own worktree lane, alongside five other lanes.*

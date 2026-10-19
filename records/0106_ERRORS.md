@@ -36,6 +36,10 @@ say *Validation* and *PDF check* — each replaced whole by the host and kept
 whole. With two or more, a switch in the header shows one layer, or all;
 the sheet shows the same.
 
+**Every edit is one tab away.** *Edits n* beside *Problems* lists each change
+in the pane — the cell, what it was and is now, when, and the errors it
+cleared or raised — and each has its own **Revert** (W-64).
+
 ```mermaid
 flowchart LR
     S[("the pane's workbook")] --> L["list: filter · pick · Show in sheet · Resolve · Delete"]
@@ -44,6 +48,8 @@ flowchart LR
     L --> S
     F -->|Add error| S
     L -->|sheetpane-reveal| H["host switches tab / opens the pop-up"]
+    S --> E["Edits: was → now · cleared / raised · Revert"]
+    E -->|"Revert / Revert all (one undo step)"| S
 ```
 
 <details>
@@ -54,6 +60,7 @@ flowchart LR
                        --> New error form (Flag issue) --Add error--> workbook
    list --sheetpane-reveal--> host switches tab / opens the pop-up
    list --Accept… + a reason--> workbook (accepted: kept, not counted)
+   ( pane's workbook ) --> Edits (was -> now, cleared / raised) --Revert / Revert all--> workbook
 ```
 
 </details>
@@ -211,6 +218,36 @@ the store and the contract are the contract verdict's and
     (decision 8); `setErrors(list, { layer })` replaces one layer and leaves
     the notice as it was.
 
+17. **Edits (W-64):** an **Edits n** chip after the others in the view
+    switch (decision 15) — *n* the change map's size — lists every edit in
+    the pane from `store.edits()` (SR-GRID decision 24), newest first. It
+    shows in Edit mode, and in View mode only while the pane holds edits; in
+    Edit mode with no results the switch is *Problems n · Edits n*. A
+    **row** per change-map entry (`data-sp-edit="<key>"`, `data-sp-ref`):
+    its place (`Sheet!B3`, `Sheet!A1:J1`, or *Sheet · whole sheet*) and kind
+    (*Value*, *Formula*, *Style*, *Number format*, *Merge*, *Freeze panes*,
+    *Hidden rows* / *columns*, *Sheet visibility*, *Row* / *Column groups*;
+    any other kind by its own name — so W-52's structure edits list as one
+    row each), **was → now** (a cell's value as the cell shows it,
+    *(blank)* for none; other kinds in a few words), the time, and how many
+    errors it cleared or raised. Under it, one link per error from
+    `store.editEffects(key)` — *✓ Cleared error 3: Out of range*, *✕
+    Raised …*, *= Matches the suggestion of …* — which opens that error in
+    *Problems* (filters cleared, the row expanded and focused, its cell
+    selected); an error in a layer not shown (W-51, decision 16) is named
+    but not linked. **Picking** a row selects its cell or range, or opens the
+    sheet's tab for a whole-sheet edit. **Revert** (`data-sp="revert-edit"`,
+    named *Revert <place>*) on each row and **Revert all**
+    (`data-sp="revert-all"`, in a bar above the list with the count) call
+    `store.revertEdits` — each one undo step, firing `sheetpane-change` per
+    entry here; only in Edit mode and not `readonly`, as Undo. After a
+    Revert, focus goes to the next row's Revert, else the previous one's,
+    else the Edits chip. **Keys:** ↓ ↑ Home End move between rows; Enter
+    or Space picks; Tab reaches the row's Revert, then its links. The view
+    draws 100 rows, then **Show 100 more**. No filters (they are
+    *Problems*'), no form of its own; the empty view says what will be
+    listed.
+
 ### Consequences
 
 - **Enforced today:** `packages/grid/test/errors.test.ts` (form, list,
@@ -237,7 +274,16 @@ the store and the contract are the contract verdict's and
   ignore results, axe with a group open, 5,000 passes as two rows and an
   opened group drawing fewer than 20 rows as it scrolls; with W-55 and
   W-69, the Problems view keeping the scope groups and the Accepted chip,
-  and every count leaving out results and accepted errors alike).
+  and every count leaving out results and accepted errors alike);
+  `edits.test.ts` (W-64: `edits()` newest first, one step's edits in map
+  order, a kind it does not know as one entry; `revertEdits` one and all as
+  one undo step each, undo bringing the times back; `editEffects` cleared,
+  raised and matched, compared with before the cell first changed; with
+  W-51, an error in a layer not shown named but not linked; the view
+  in Edit mode and only with edits in View; rows, picking a cell, a range
+  and a whole-sheet edit; Revert and Revert all with focus, undo, View and
+  `readonly`; ↓ ↑ Home End Enter Tab; 250 edits in pages of 100; L7 both
+  ways; axe with links and in View).
 
 - **Known gap (found by W-55):** axe's label-in-name rule (WCAG 2.5.3) fails
   on every row and filter in the browser's default font. For example,

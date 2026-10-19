@@ -443,7 +443,7 @@ describe('accepted deviations (W-69)', () => {
     await frame();
     expect(excel.getErrors().find((x) => x.id === e.id)).toMatchObject({ status: 'accepted', acceptedBy: 'Ravi', reason: 'Approved by the customer on 18 Oct', author: 'Asha' });
     expect($(errors, '.opencount').textContent).toBe('1 open');
-    expect(filters(errors)).toEqual(['All 1', '✕ 0', '! 1', 'i 0', 'Accepted 1']);
+    expect(filters(errors)).toEqual(['Problems 1', 'Edits 0', 'All 1', '✕ 0', '! 1', 'i 0', 'Accepted 1']); // Edit mode: the Edits view beside Problems (W-64)
     expect(rows(errors)).toEqual([w.id]); // accepted items stop shouting
     expect($(excel, '.counts').textContent).toContain('✕ 0');
     const pin = shadow(excel).querySelector<HTMLElement>(`[data-pin="${e.id}"]`)!;

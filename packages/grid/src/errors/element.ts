@@ -5,8 +5,8 @@ import { cellRef, colName, parseRange, parseRef, rangeRef } from '@sheetpane/exp
 import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
-import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, DEFAULT_LAYER, SEVERITY, SEVERITY_ORDER, errorScope, isResult, layerOf, machineAuthored, resultsLevelOf, type ErrorType, type ErrorsEnvelope, type RenderDetail, type ResultSeverity, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
+import { createWorkbook, editRef, splitKey, type StoreEvent, type WorkbookStore } from '../pane/store.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, DEFAULT_LAYER, SEVERITY, SEVERITY_ORDER, errorScope, isResult, layerOf, machineAuthored, resultsLevelOf, type Edit, type ErrorType, type ErrorsEnvelope, type RenderDetail, type ResultSeverity, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
 import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
 import { ElementBase, ICON, esc, fire, layersAttr } from '../shared/dom.js';
@@ -71,7 +71,17 @@ ${DETAIL_CSS}
 .cells .vsp{position:relative}
 .cellrow{position:absolute;left:0;right:0;height:28px;display:flex;align-items:center;gap:8px;padding:0 12px 0 44px;border:0;background:none;color:var(--sp-ink);font:inherit;font-size:12px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden}
 .cellrow:hover{background:var(--sp-surface)}.cellrow .m{color:var(--sp-ink-3);overflow:hidden;text-overflow:ellipsis}
+.edbar{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--sp-line);font-size:12px;color:var(--sp-ink-2)}
+.edbar .spacer{flex:1}
+.ek{min-width:22px;line-height:20px;text-align:center;flex:none;color:var(--sp-ink-3)}
+.fx{display:flex;flex-wrap:wrap;gap:4px 10px;padding:0 12px 8px 44px;font-size:12px}
+.fxl{border:0;background:none;padding:0;font:inherit;font-size:12px;color:var(--sp-ink-2);cursor:pointer;text-align:left}
+button.fxl{text-decoration:underline;text-underline-offset:2px}button.fxl:hover{color:var(--sp-ink)}
+.fxl .g-cleared{color:var(--sp-pass)}.fxl .g-raised{color:var(--sp-fail)}
+.more{margin:8px 12px}
 `;
+/** The Edits view (W-64) draws this many rows, then *Show more* another page. */
+const EDITS_PAGE = 100;
 /** A result group's cell rows (W-50): 28 px each, drawn only where its box scrolls to. */
 const CELL_ROW = 28, CELLS_MAX = 280;
 
@@ -79,8 +89,8 @@ const sevOrder: Record<Severity, number> = SEVERITY_ORDER;
 const errNum = (e: SheetpaneError) => Number(/(\d+)$/.exec(e.id)?.[1] ?? 0);
 
 type Filter = 'all' | Severity;
-/** The list's view (W-50): the problems, or one kind of result, grouped. */
-type View = 'problems' | ResultSeverity;
+/** The list's view: the problems, one kind of result, grouped (W-50), or the pane's edits (W-64). */
+type View = 'problems' | ResultSeverity | 'edits';
 /** A result group: one check (passes) or one reason (not checked), with its entries. */
 interface Group { key: string; label: string; sev: ResultSeverity; entries: SheetpaneError[]; cells: number; where: string }
 type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
@@ -112,6 +122,10 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * @fires sheetpane-select `{ sheet, ref }` when picking a row selects its cell.
  * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
  * @fires sheetpane-reveal `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50).
+ *
+ * Views (W-50, W-64): *Problems* (the default); *✓ Passed* and *— Not checked* while the pane holds results; *Edits n* —
+ * every change in the pane, newest first, each with its place, kind, was → now, time, the errors it cleared or raised,
+ * and its own Revert — in Edit mode, and in View mode while there are edits.
  *
  * @csspart root - The panel's frame: the header, the form, the filters and the list.
  * @csspart detail - The host's region in an open row, after the message: what `renderDetail` returns (W-68).
@@ -163,6 +177,9 @@ export class SheetpaneErrors extends ElementBase {
   private groupEntries = new Map<string, SheetpaneError[]>();
   /** A control to focus again once the list is redrawn (a group toggled). */
   private refocus: string | undefined;
+  /** W-64: how many edits the Edits view draws; the Edits chip to focus once the last row is reverted. */
+  private editsLimit = EDITS_PAGE;
+  private focusEditsChip = false;
 
   // ── properties ───────────────────────────────────────────────────────────
   /** The pane's store; assigning one replaces the `pane` lookup. */
@@ -221,7 +238,7 @@ export class SheetpaneErrors extends ElementBase {
   connectedCallback(): void {
     if (!this.shadow) {
       this.shadow = this.attachShadow({ mode: 'open' });
-      this.shadow.innerHTML = `<style>${CSS}</style><div class="spe" part="root"><div class="hd"><span class="t">Errors</span><span class="chip opencount"></span><span class="layerbox"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-i" data-act="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button><button type="button" class="btn btn-g btn-i" data-act="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button></div><div class="summary" hidden><span class="sumtext"></span><button type="button" class="sw" role="switch" aria-checked="false" data-act="onsheet"><span class="tg" aria-hidden="true"></span>On sheet</button></div><div class="scrollarea"><div class="noticebox"></div><div class="formbox"></div><div class="filters" role="toolbar" aria-label="Filter errors"></div><div class="list" role="list"></div></div></div>`;
+      this.shadow.innerHTML = `<style>${CSS}</style><div class="spe" part="root"><div class="hd"><span class="t">Errors</span><span class="chip opencount"></span><span class="layerbox"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-i" data-act="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button><button type="button" class="btn btn-g btn-i" data-act="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button></div><div class="summary" hidden><span class="sumtext"></span><button type="button" class="sw" role="switch" aria-checked="false" data-act="onsheet"><span class="tg" aria-hidden="true"></span>On sheet</button></div><div class="scrollarea"><div class="noticebox"></div><div class="formbox"></div><div class="filters" role="toolbar" aria-label="Filter errors"></div><div class="edbar" hidden></div><div class="list" role="list"></div></div></div>`;
       this.shadow.addEventListener('click', (e) => this.onClick(e));
       this.shadow.addEventListener('input', (e) => this.onInput(e));
       this.shadow.addEventListener('change', (e) => this.onInput(e));
@@ -311,6 +328,18 @@ export class SheetpaneErrors extends ElementBase {
         if (s.setVisibleLayers(v ? [v] : null, this)) { this.expanded = undefined; this.focusNext = 'layer'; this.focusLayer = v ?? ''; }
         break;
       }
+      case 'edit-pick': this.showEdit(el.closest<HTMLElement>('[data-k]')!.dataset.k!); break;
+      case 'revert-edit': this.revertEdit(el.closest<HTMLElement>('[data-k]')!.dataset.k!); break;
+      case 'revert-all': if (!this.readOnly && s.revertEdits(undefined, this)) this.focusEditsChip = true; break;
+      case 'edits-more': this.editsLimit += EDITS_PAGE; this.refocus = `.item.edit:nth-child(${this.editsLimit - EDITS_PAGE + 1}) [data-act=edit-pick]`; this.schedule(); break;
+      case 'goto-error': // an edit's cleared or raised error: shown in the Problems view, opened (W-64)
+        if (!err) return;
+        this.view = 'problems'; this.filter = 'all'; this.authorFilter = 'all'; this.showAccepted = err.status === 'accepted';
+        this.expanded = err.id;
+        this.showPlace(err);
+        this.refocus = `[data-id="${globalThis.CSS.escape(err.id)}"] .issue`;
+        this.schedule();
+        break;
       case 'pick':
         if (!err) return;
         this.expanded = this.expanded === err.id ? undefined : err.id;
@@ -363,6 +392,13 @@ export class SheetpaneErrors extends ElementBase {
       if (e.key === 'Escape') { e.preventDefault(); this.closeAccept(); return; }
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.acceptNow(); return; }
     }
+    const at = e.composedPath()[0] as HTMLElement | undefined;
+    if (at?.dataset?.act === 'edit-pick' && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) { // W-64: the Edits list moves by row
+      const rows = Array.from(this.shadow.querySelectorAll<HTMLElement>('.list [data-act=edit-pick]')), i = rows.indexOf(at);
+      const to = e.key === 'Home' ? 0 : e.key === 'End' ? rows.length - 1 : i + (e.key === 'ArrowDown' ? 1 : -1);
+      if (rows[to]) { e.preventDefault(); rows[to]!.focus(); }
+      return;
+    }
     if (!typing && (e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) this._store!.redo(this); else this._store!.undo(this); return; }
     if (!typing && e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this._store!.redo(this); return; }
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && this.shadow.querySelector('.form')) { e.preventDefault(); this.add(); }
@@ -374,6 +410,23 @@ export class SheetpaneErrors extends ElementBase {
     const s = this._store!, scope = errorScope(err);
     if (scope === 'cell') { const r = parseRange(err.range); if (r) s.select({ sheet: err.sheet, ref: cellRef(r.top, r.left) }, this); }
     else if (scope === 'sheet' && s.getSnapshot().selection.sheet !== err.sheet && s.sheet(err.sheet)) s.select({ sheet: err.sheet, ref: 'A1' }, this); // as a tab click does
+  }
+
+  /** Selects an edit's cell or range (W-64); an edit about a whole sheet opens its tab, keeping the selection when it is already there. */
+  private showEdit(k: string): void {
+    const s = this._store!, { sheet, ref } = splitKey(k), r = parseRange(editRef(ref));
+    if (r) { const range = rangeRef(r), at = cellRef(r.top, r.left); s.select(range === at ? { sheet, ref: at } : { sheet, ref: at, range }, this); }
+    else if (s.getSnapshot().selection.sheet !== sheet && s.sheet(sheet)) s.select({ sheet, ref: 'A1' }, this);
+  }
+
+  /** Reverts one edit (W-64) — itself one undo step. Focus moves to the next row's Revert, else the previous one's, else the Edits chip. */
+  private revertEdit(k: string): void {
+    if (this.readOnly) return;
+    const keys = Array.from(this.shadow.querySelectorAll<HTMLElement>('.list [data-k]')).map((x) => x.dataset.k!), i = keys.indexOf(k);
+    if (!this._store!.revertEdits([k], this)) return;
+    const next = keys[i + 1] ?? keys[i - 1];
+    if (next) this.refocus = `[data-k="${globalThis.CSS.escape(next)}"] [data-act=revert-edit]`;
+    else this.focusEditsChip = true;
   }
 
   /** Closes the reason form; focus goes back to Accept…. */
@@ -429,7 +482,9 @@ export class SheetpaneErrors extends ElementBase {
     const open = errors.filter((e) => e.status === 'open');
     q('.opencount').textContent = `${open.length} open`;
     const rc = s.resultCounts(), hasResults = s.results !== 'off' && rc.pass + rc.skipped > 0;
-    if ((this.view === 'pass' && !(hasResults && rc.pass)) || (this.view === 'skipped' && !(hasResults && rc.skipped))) this.view = 'problems';
+    // W-64: the Edits view — in Edit mode, and in View mode while the pane holds edits
+    const editCount = snap.changes.size, hasEdits = editCount > 0 || snap.mode === 'edit';
+    if ((this.view === 'pass' && !(hasResults && rc.pass)) || (this.view === 'skipped' && !(hasResults && rc.skipped)) || (this.view === 'edits' && !hasEdits)) this.view = 'problems';
     q('.summary').hidden = !hasResults;
     if (hasResults) {
       const sum = `<span><b>${rc.open}</b> problem${rc.open === 1 ? '' : 's'}</span><span class="p">✓ ${rc.pass} passed</span><span class="sk">— ${rc.skipped} not checked</span>`;
@@ -457,11 +512,11 @@ export class SheetpaneErrors extends ElementBase {
     if (!accepted.length) this.showAccepted = false;
     const counted = errors.filter((e) => e.status !== 'accepted');
     const counts = { all: counted.length, error: counted.filter((e) => e.severity === 'error').length, warning: counted.filter((e) => e.severity === 'warning').length, note: counted.filter((e) => e.severity === 'note').length };
-    // Problems · Passed · Not checked — the result chips only when results exist; Problems is the default (W-50)
-    const viewBtns = hasResults
-      ? `${([['problems', `Problems ${counts.all}`, `Problems: ${counts.all}`], ['pass', `✓ Passed ${rc.pass}`, `Passed: ${rc.pass} cells`], ['skipped', `— Not checked ${rc.skipped}`, `Not checked: ${rc.skipped} cells`]] as const)
-        .filter(([v]) => v === 'problems' || rc[v] > 0)
-        .map(([v, label, name]) => `<button type="button" data-act="view" data-v="${v}" aria-pressed="${this.view === v}" aria-label="${name}">${label}</button>`).join('')}${this.view === 'problems' ? '<span class="sep" aria-hidden="true"></span>' : ''}`
+    // Problems · Passed · Not checked — the result chips only when results exist; Problems is the default (W-50); then Edits (W-64)
+    const views = ([['problems', `Problems ${counts.all}`, `Problems: ${counts.all}`], ['pass', `✓ Passed ${rc.pass}`, `Passed: ${rc.pass} cells`], ['skipped', `— Not checked ${rc.skipped}`, `Not checked: ${rc.skipped} cells`], ['edits', `Edits ${editCount}`, `Edits: ${editCount}`]] as const)
+      .filter(([v]) => v === 'problems' || (v === 'edits' ? hasEdits : hasResults && rc[v] > 0));
+    const viewBtns = views.length > 1
+      ? `${views.map(([v, label, name]) => `<button type="button" data-act="view" data-v="${v}" aria-pressed="${this.view === v}" aria-label="${name}">${label}</button>`).join('')}${this.view === 'problems' ? '<span class="sep" aria-hidden="true"></span>' : ''}`
       : '';
     const authors = new Set(errors.map((e) => this.authorKind(e)));
     const sevBtns = ([['all', `All ${counts.all}`, 'All severities'], ['error', `✕ ${counts.error}`, 'Errors'], ['warning', `! ${counts.warning}`, 'Warnings'], ['note', `i ${counts.note}`, 'Notes']] as const)
@@ -513,8 +568,14 @@ export class SheetpaneErrors extends ElementBase {
       return `${head}<div class="item${e.status === 'resolved' ? ' done' : ''}${on ? ' on' : ''}" role="listitem" data-id="${esc(e.id)}" data-sp-error="${esc(e.id)}" data-sp-ref="${esc(e.sheet)}!${esc(e.range)}"><button type="button" class="issue" data-act="pick" aria-expanded="${this.expanded === e.id}" aria-label="Error ${errNum(e)}: ${esc(types.get(e.type) ?? e.type)}, ${scope === 'workbook' ? 'whole workbook' : `${esc(e.sheet)} ${esc(place)}`}, ${sv.name}${e.status === 'open' ? '' : `, ${e.status}`}"><span class="n ${e.status === 'open' ? e.severity : e.status}" aria-hidden="true">${e.status === 'resolved' ? '✓' : e.status === 'accepted' ? 'A' : errNum(e)}</span><span class="bd"><span class="ty">${esc(types.get(e.type) ?? e.type)}</span>${scope !== 'cell' && !e.found && !e.expected ? '' : `<span class="ba"><span class="found">${esc(scope === 'cell' ? e.found : e.found || '—')}</span> → <span class="want">${esc(e.expected || '—')}</span></span>`}<span class="m">${esc(place)} · <span class="g g-${e.severity}" aria-hidden="true">${sv.glyph}</span> ${sv.name}${tags.length ? ` · ${esc(tags.join(' · '))}` : ''}</span></span></button>${detail}</div>`;
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
-    // the Problems view lists the errors (W-55's groups first); Passed and Not checked list grouped results (W-50)
-    const shown = this.view === 'problems' ? html : this.groupsHtml(snap.visibleErrors, this.view, types);
+    // the Problems view lists the errors (W-55's groups first); Passed and Not checked list grouped results (W-50); Edits the changes (W-64)
+    const edits = this.view === 'edits' ? s.edits() : [];
+    const canRevert = !this.readOnly && snap.mode === 'edit';
+    const edbar = q('.edbar');
+    edbar.hidden = this.view !== 'edits' || !edits.length;
+    const edbarHtml = edbar.hidden ? '' : `<span>${edits.length} edit${edits.length === 1 ? '' : 's'} · newest first</span><span class="spacer"></span>${canRevert ? '<button type="button" class="btn btn-g" data-act="revert-all" data-sp="revert-all">Revert all</button>' : ''}`;
+    if (edbar.dataset.html !== edbarHtml) { edbar.innerHTML = edbarHtml; edbar.dataset.html = edbarHtml; }
+    const shown = this.view === 'problems' ? html : this.view === 'edits' ? this.editsHtml(edits, canRevert, types) : this.groupsHtml(snap.visibleErrors, this.view, types);
     const hadReason = this.shadow.activeElement?.matches('[data-field=reason]') ?? false;
     const rebuilt = listEl.dataset.html !== shown;
     if (rebuilt) {
@@ -530,6 +591,7 @@ export class SheetpaneErrors extends ElementBase {
       listEl.querySelector<HTMLButtonElement>('[data-act=accept-ok]')!.disabled = !this.reasonDraft.trim();
       if (this.focusNext === 'reason' || (rebuilt && hadReason)) reason.focus();
     }
+    if (this.focusEditsChip) { this.focusEditsChip = false; q('.filters').querySelector<HTMLElement>('[data-act=view][data-v=edits]')?.focus(); }
     if (this.focusNext === 'accept') listEl.querySelector<HTMLElement>('[data-act=accept]')?.focus();
     else if (this.focusNext === 'chip') q('.filters').querySelector<HTMLElement>('[data-act=status]')?.focus();
     this.focusNext = undefined;
@@ -557,6 +619,34 @@ export class SheetpaneErrors extends ElementBase {
       const cells = open ? `<div class="cells" role="group" aria-label="${esc(g.label)}: ${g.cells} cell${g.cells === 1 ? '' : 's'}" style="height:${Math.min(n * CELL_ROW, CELLS_MAX)}px"><div class="vsp" style="height:${n * CELL_ROW}px"></div></div>` : '';
       return `<div class="item rgrp" role="listitem" data-g="${esc(g.key)}"><div class="grow"><button type="button" class="issue" data-act="group" aria-expanded="${open}"><span class="rg ${sev}" aria-hidden="true">${sv.glyph}</span><span class="bd"><span class="ty"><span class="vh">${sv.name}: </span>${esc(g.label)}</span><span class="m">${g.cells} cell${g.cells === 1 ? '' : 's'} · ${esc(whereOf(g.entries))}</span></span></button><button type="button" class="btn btn-g lnk" data-act="show-group" aria-label="Show ${esc(g.label)} in sheet">Show ▸</button></div>${cells}</div>`;
     }).join('');
+  }
+
+  /**
+   * The Edits view (W-64): one row per change-map entry, newest first — its place and kind, was → now, the time, and the
+   * errors it cleared or raised (each a link to the error in Problems); Revert per row in Edit mode. A page at a time.
+   */
+  private editsHtml(edits: readonly Edit[], canRevert: boolean, types: Map<string, string>): string {
+    if (!edits.length) return '<p class="empty">No edits yet. Each change to the workbook is listed here — what it was, what it is now — with its own Revert.</p>';
+    const s = this._store!, snap = s.getSnapshot(), byId = new Map(snap.errors.map((e) => [e.id, e]));
+    const shown = new Set(snap.visibleErrors.map((e) => e.id)); // W-51: an error in a hidden layer is named, not linked — Problems would not show it
+    const link = (id: string, how: 'cleared' | 'raised' | 'matched') => {
+      const e = byId.get(id), word = how === 'cleared' ? 'Cleared' : how === 'raised' ? 'Raised' : 'Matches the suggestion of';
+      const glyph = how === 'cleared' ? '✓' : how === 'raised' ? '✕' : '=';
+      const what = e ? `error ${errNum(e)}: ${types.get(e.type) ?? e.type}` : id;
+      return e && shown.has(id)
+        ? `<button type="button" class="fxl" data-act="goto-error" data-id="${esc(id)}"><span class="g-${how}" aria-hidden="true">${glyph}</span> ${word} ${esc(what)}</button>`
+        : `<span class="fxl"><span class="g-${how}" aria-hidden="true">${glyph}</span> ${word} ${esc(what)}</span>`;
+    };
+    const rows = edits.slice(0, this.editsLimit).map((ed) => {
+      const place = ed.ref ? `${ed.sheet}!${ed.ref}` : `${ed.sheet} · whole sheet`, kind = kindName(ed);
+      const fx = s.editEffects(ed.key);
+      const links = [...fx.cleared.map((id) => link(id, 'cleared')), ...fx.raised.map((id) => link(id, 'raised')), ...fx.matched.map((id) => link(id, 'matched'))];
+      const time = Date.parse(ed.at) ? new Date(ed.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
+      const summary = [fx.cleared.length ? `${fx.cleared.length} cleared` : '', fx.raised.length ? `${fx.raised.length} raised` : ''].filter(Boolean).join(' · ');
+      return `<div class="item edit" role="listitem" data-k="${esc(ed.key)}" data-sp-edit="${esc(ed.key)}" data-sp-ref="${esc(ed.sheet)}!${esc(ed.ref)}"><div class="grow"><button type="button" class="issue" data-act="edit-pick"><span class="ek" aria-hidden="true">✎</span><span class="bd"><span class="ty">${esc(place)} · ${esc(kind)}</span><span class="ba"><span class="vh">was </span><span class="found">${esc(editText(s, ed, ed.was))}</span> → <span class="vh">now </span><span class="want">${esc(editText(s, ed, ed.now))}</span></span><span class="m">${time ? `<time datetime="${esc(ed.at)}">${esc(time)}</time>` : ''}${time && summary ? ' · ' : ''}${esc(summary)}</span></span></button>${canRevert ? `<button type="button" class="btn btn-g lnk" data-act="revert-edit" data-sp="revert-edit" aria-label="Revert ${esc(place)}${ed.kind === 'value' ? '' : ` ${esc(kind.toLowerCase())}`}">Revert</button>` : ''}</div>${links.length ? `<div class="fx">${links.join('')}</div>` : ''}</div>`;
+    }).join('');
+    const rest = edits.length - Math.min(edits.length, this.editsLimit);
+    return rows + (rest ? `<div role="listitem"><button type="button" class="btn more" data-act="edits-more">Show ${Math.min(EDITS_PAGE, rest)} more of ${rest}</button></div>` : '');
   }
 
   /** Draws the cell rows an opened group's box shows, and a few either side — never all of them (W-50, virtualised). */
@@ -641,4 +731,39 @@ function hiddenTags(s: { hidden(sheet: string): { rows: number[]; cols: number[]
   if (h.rows.some((i) => i >= r.top && i <= r.bottom)) out.push('hidden row');
   if (h.cols.some((i) => i >= r.left && i <= r.right)) out.push('hidden column');
   return out;
+}
+
+/** An edit's kind in words (W-64); a kind this list does not know is named as it is. */
+function kindName(e: Edit): string {
+  switch (e.kind) {
+    case 'value': return 'Value';
+    case 'formula': return 'Formula';
+    case 'style': return 'Style';
+    case 'numFmt': return 'Number format';
+    case 'merge': return 'Merge';
+    case 'freeze': return 'Freeze panes';
+    case 'hidden': return e.key.endsWith('!#hiddenCols') ? 'Hidden columns' : 'Hidden rows';
+    case 'sheetState': return 'Sheet visibility';
+    case 'outline': return e.key.endsWith('!#outlineCols') ? 'Column groups' : 'Row groups';
+    default: { const k = String(e.kind); return k ? k[0]!.toUpperCase() + k.slice(1) : 'Change'; }
+  }
+}
+
+/** One side of an edit as text (W-64): a cell value as the cell shows it, `(blank)` for none; other kinds in a few words. */
+function editText(s: WorkbookStore, e: Edit, v: unknown): string {
+  if (v === undefined || v === null || v === '') return e.kind === 'value' || e.kind === 'formula' ? '(blank)' : '—';
+  const r = parseRange(e.ref);
+  if ((e.kind === 'value' || e.kind === 'formula') && r && (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string')) return s.format(e.sheet, cellRef(r.top, r.left), v);
+  if (e.kind === 'merge') return v ? 'merged' : 'not merged';
+  if (e.kind === 'freeze' && typeof v === 'object') { const f = v as { rows?: number; cols?: number }; return f.rows || f.cols ? `${f.rows ?? 0} row${f.rows === 1 ? '' : 's'}, ${f.cols ?? 0} column${f.cols === 1 ? '' : 's'}` : 'none'; }
+  if (e.kind === 'hidden' && Array.isArray(v)) {
+    if (!v.length) return 'none';
+    const cols = e.key.endsWith('!#hiddenCols'), names = (v as number[]).slice(0, 6).map((i) => (cols ? colName(i) : String(i + 1)));
+    return `${cols ? 'columns' : 'rows'} ${names.join(', ')}${v.length > 6 ? ' …' : ''}`;
+  }
+  if (e.kind === 'outline' && typeof v === 'object') { const n = Object.keys(v as object).length; return n ? `${n} grouped` : 'none'; }
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+  let json: string;
+  try { json = JSON.stringify(v); } catch { json = String(v); }
+  return json.length > 60 ? `${json.slice(0, 59)}…` : json;
 }

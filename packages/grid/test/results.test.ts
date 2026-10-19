@@ -212,12 +212,12 @@ describe('the list (W-50 DoD 4)', () => {
   it('the summary line and the chips show only when results exist; Problems is the default', async () => {
     const { excel, errors } = await pair();
     expect($(errors, '.summary').hidden).toBe(true);
-    expect($(errors, '[data-act=view]')).toBeNull();
+    expect($$(errors, '[data-act=view]').map((b) => b.dataset.v)).toEqual(['problems', 'edits']); // no result chips; Edits in Edit mode (W-64)
     excel.setErrors(review());
     await frame();
     expect($(errors, '.summary').hidden).toBe(false);
     expect($(errors, '.summary .sumtext').textContent).toBe('1 problem✓ 14 passed— 3 not checked');
-    expect($$(errors, '[data-act=view]').map((b) => [b.textContent, b.getAttribute('aria-pressed')])).toEqual([['Problems 1', 'true'], ['✓ Passed 14', 'false'], ['— Not checked 3', 'false']]);
+    expect($$(errors, '[data-act=view]').map((b) => [b.textContent, b.getAttribute('aria-pressed')])).toEqual([['Problems 1', 'true'], ['✓ Passed 14', 'false'], ['— Not checked 3', 'false'], ['Edits 0', 'false']]);
     expect($$(errors, '.list [data-sp-error]').map((r) => r.dataset.spRef)).toEqual(['Holdings!I6']);
   });
   it('Passed groups by check, Not checked by reason — a count, the range, Show ▸', async () => {
@@ -244,7 +244,7 @@ describe('the list (W-50 DoD 4)', () => {
     await frame();
     expect($(errors, '.opencount').textContent).toBe('3 open');
     expect($(errors, '.summary .sumtext').textContent).toBe('3 problems✓ 14 passed— 3 not checked');
-    expect($$(errors, '[data-act=view]').map((b) => b.textContent)).toEqual(['Problems 3', '✓ Passed 14', '— Not checked 3']);
+    expect($$(errors, '[data-act=view]').map((b) => b.textContent)).toEqual(['Problems 3', '✓ Passed 14', '— Not checked 3', 'Edits 0']);
     expect($(errors, '[data-act=filter][data-v=all]').textContent).toBe('All 3');
     expect($(errors, '[data-act=status][data-v=accepted]').textContent).toBe('Accepted 1');
     expect($$(errors, '.list .grp').map((g) => g.textContent)).toEqual(['Workbook', 'Holdings · whole sheet', 'Cells']);

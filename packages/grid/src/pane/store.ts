@@ -8,7 +8,7 @@ import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import { STYLE_PROPS, type CellContext, type DeriveInput, type DerivedChange, type ErrorDraft, type Plugin, type PluginContext, type RunStyle, type StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
 import { DEFAULT_LAYER, ERROR_META_MAX, RESULTS_LEVELS, SEVERITY_ORDER, copyError, isLayerName, isResult, layerOf, machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, ErrorsEnvelope, LoadState, Mode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, Edit, EditEffects, ErrorMeta, ErrorsEnvelope, LoadState, Mode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
 /** What {@link createWorkbook} takes. */
 export interface StoreOptions {
@@ -104,6 +104,25 @@ export function parseInput(text: string, original: Cell, source: 'xlsx' | 'csv')
   }
   return text;
 }
+
+/**
+ * The cell or range a change-map ref is about (W-64): `B3` → `B3`, `#style:B3` → `B3`, `#merge:A1:C1` → `A1:C1`,
+ * and `''` for a ref about the whole sheet (`#freeze`, `#hiddenRows`, `#sheetState`).
+ * @param ref - A change-map ref (the part of the key after `sheet!`).
+ * @returns The A1 cell or range, or `''`.
+ */
+export function editRef(ref: string): string {
+  if (!ref.startsWith('#')) return ref;
+  const m = /^#[A-Za-z]+:(.+)$/.exec(ref);
+  return m ? m[1]! : '';
+}
+
+/** The problems on an edit's cells, by id, as they stood before its cell first changed (W-64). */
+type Baseline = ReadonlyMap<string, { open: boolean; matches: boolean; machine: boolean }>;
+/** One sheet's problems (not results), indexed for an edit's cells (W-64). */
+interface ProblemSheet { cells: Map<string, SheetpaneError[]>; ranges: { r: Box; e: SheetpaneError }[] }
+/** An edit's range at most this many cells is looked up cell by cell; a larger one scans the sheet's problems. */
+const EDIT_LOOKUP_CELLS = 4096;
 
 /** A sheet's state as read: `state` (W-49), else the older `hidden` flag. */
 export const sheetStateOf = (s: ImportedSheet): SheetState => ((s as { state?: SheetState }).state ?? (s.hidden ? 'hidden' : 'visible'));
@@ -210,6 +229,12 @@ export class WorkbookStore {
   private layersDirty = false;
   /** Plugins already told their draft's layer is no name (SP-3021, once each). */
   private readonly badLayerWarned = new Set<string>();
+  // the edits list (W-64): when each change-map entry was written (a commit's sequence and time) and the problems on its
+  // cells before the cell first changed — keyed by the entry object, so undo and redo bring both back with the entry
+  private readonly editMeta = new WeakMap<ChangeEntry, { seq: number; at: number; base: Baseline | undefined }>();
+  private readonly effects = new WeakMap<ChangeEntry, { errors: readonly SheetpaneError[]; fx: EditEffects }>();
+  private editSeq = 0;
+  private problemIdx: { errors: readonly SheetpaneError[]; sheets: Map<string, ProblemSheet>; byId: Map<string, SheetpaneError> } | undefined;
   /** The host's column rules (W-27): a built-in `validate` provider, never part of the frozen plugin set. */
   private readonly rules: HostRules = new HostRules({
     bookSheets: () => this.snap.book?.sheets,
@@ -453,6 +478,7 @@ export class WorkbookStore {
     const before: Undoable = { changes: this.snap.changes, errors: this.snap.errors };
     for (const k of keys) { this.textCache.delete(k); const { sheet, ref } = splitKey(k); this.textCache.delete(key(sheet, baseRef(ref))); }
     const errors = this.withMatches(next.errors, next.changes);
+    this.stampEdits(before, next.changes, keys);
     if (o.record !== false) {
       const last = this.undoStack[this.undoStack.length - 1];
       if (o.coalesce && last && last.coalesce === o.coalesce) {
@@ -566,6 +592,132 @@ export class WorkbookStore {
       events.push({ type: 'change', origin, sheet, ref: baseRef(r), kind: prev.kind, was: prev.now, now: prev.was });
     }
     if (keys.length) this.commit({ changes, errors: this.snap.errors }, keys, origin, events);
+  }
+
+  // ── the edits list (W-64): the change map read as a list, newest first ──
+  /** Stamps the entries a commit wrote with its sequence and time, and the problems on their cells before they first changed. */
+  private stampEdits(before: Undoable, changes: ReadonlyMap<string, ChangeEntry>, keys: readonly string[]): void {
+    const seq = ++this.editSeq, at = Date.now();
+    for (const k of keys) {
+      const entry = changes.get(k), prev = before.changes.get(k);
+      if (!entry || entry === prev || this.editMeta.has(entry)) continue;
+      this.editMeta.set(entry, { seq, at, base: prev ? this.editMeta.get(prev)?.base : this.baselineOf(before.errors, k) });
+    }
+  }
+
+  /**
+   * Every edit in the pane — the change map as a list, newest first (W-64): one entry per change-map key, whatever its
+   * kind, so a paste lists each cell and a change a plugin keeps as one entry is one. Derived cells are not edits.
+   * @returns The edits, newest first; the edits one step made keep the change map's order.
+   * @example
+   * ```ts
+   * import { createWorkbook } from '@sheetpane/grid';
+   * const wb = createWorkbook();
+   * await wb.load(bytes, 'q3.xlsx');
+   * wb.setCell('Holdings', 'G7', '6.5');
+   * wb.edits(); // [{ key: 'Holdings!G7', sheet: 'Holdings', ref: 'G7', kind: 'value', was: 6.63, now: 6.5, at: '2026-10-19T…' }]
+   * ```
+   */
+  edits(): Edit[] {
+    const out: { e: Edit; seq: number }[] = [];
+    for (const [k, c] of this.snap.changes) {
+      const { sheet, ref } = splitKey(k), m = this.editMeta.get(c);
+      out.push({ seq: m?.seq ?? 0, e: { key: k, sheet, ref: editRef(ref), kind: c.kind, was: c.was, now: c.now, at: new Date(m?.at ?? 0).toISOString() } });
+    }
+    return out.sort((a, b) => b.seq - a.seq).map((x) => x.e); // stable: one step's edits stay in map order
+  }
+
+  /**
+   * What one edit did to the problems on its cells (W-64), compared with before its cell first changed: workbook, file
+   * and rule errors `cleared` (now resolved or gone) and `raised` (open now, not before), and a person's errors whose
+   * suggestion the cell now `matched`. An edit about a whole sheet has none.
+   * @param k - The edit's change-map key (`Edit.key`).
+   * @returns Error ids, each list in the errors' order.
+   */
+  editEffects(k: string): EditEffects {
+    const c = this.snap.changes.get(k);
+    const none: EditEffects = { cleared: [], raised: [], matched: [] };
+    const base = c && this.editMeta.get(c)?.base;
+    if (!c || !base) return none;
+    const errors = this.snap.errors, hit = this.effects.get(c);
+    if (hit?.errors === errors) return hit.fx;
+    const now = this.problemsOn(errors, k) ?? new Map<string, SheetpaneError>();
+    const byId = this.indexProblems(errors).byId;
+    const fx: EditEffects = { cleared: [], raised: [], matched: [] };
+    for (const [id, b] of base) {
+      if (!b.open || !b.machine) continue;
+      const e = byId.get(id);
+      if (!e || e.status === 'resolved') fx.cleared.push(id);
+    }
+    for (const e of now.values()) {
+      const b = base.get(e.id);
+      if (machineAuthored(e.author)) { if (e.status === 'open' && !b?.open) fx.raised.push(e.id); }
+      else if (e.matchesExpected && !b?.matches) fx.matched.push(e.id);
+    }
+    this.effects.set(c, { errors, fx });
+    return fx;
+  }
+
+  /**
+   * Reverts edits to the file as one undo step (W-64): each key's change-map entry goes, whatever its kind. Undo brings
+   * them back, each with its time.
+   * @param keys - Change-map keys (`Edit.key`); omitted, every edit in the pane (*Revert all*).
+   * @param origin - The element that asked.
+   * @returns How many edits were reverted.
+   */
+  revertEdits(keys?: readonly string[], origin?: Origin): number {
+    const changes = new Map(this.snap.changes);
+    const done: string[] = [], events: StoreEvent[] = [];
+    for (const k of keys ?? [...changes.keys()]) {
+      const prev = changes.get(k);
+      if (!prev) continue;
+      changes.delete(k); done.push(k);
+      const { sheet, ref } = splitKey(k);
+      events.push({ type: 'change', origin, sheet, ref: baseRef(ref), kind: prev.kind, was: prev.now, now: prev.was });
+    }
+    if (done.length) this.commit({ changes, errors: this.snap.errors }, done, origin, events);
+    return done.length;
+  }
+
+  /** The problems an edit's key covers before its cell first changed, or undefined for an edit about a whole sheet. */
+  private baselineOf(errors: readonly SheetpaneError[], k: string): Baseline | undefined {
+    const on = this.problemsOn(errors, k);
+    if (!on) return undefined;
+    const out = new Map<string, { open: boolean; matches: boolean; machine: boolean }>();
+    for (const e of on.values()) out.set(e.id, { open: e.status === 'open', matches: e.matchesExpected, machine: machineAuthored(e.author) });
+    return out;
+  }
+
+  /** The problems (not results) whose range meets an edit key's cells, by id; undefined when the key is about no cell. */
+  private problemsOn(errors: readonly SheetpaneError[], k: string): Map<string, SheetpaneError> | undefined {
+    const { sheet, ref } = splitKey(k), r = parseRange(editRef(ref));
+    if (!r) return undefined;
+    const out = new Map<string, SheetpaneError>();
+    const x = this.indexProblems(errors).sheets.get(sheet);
+    if (!x) return out;
+    if (areaOf(r) <= EDIT_LOOKUP_CELLS) {
+      for (let row = r.top; row <= r.bottom; row++) for (let col = r.left; col <= r.right; col++) for (const e of x.cells.get(`${row},${col}`) ?? []) out.set(e.id, e);
+    } else {
+      for (const [c, list] of x.cells) { const [row, col] = c.split(',').map(Number) as [number, number]; if (inBox(r, row, col)) for (const e of list) out.set(e.id, e); }
+    }
+    for (const y of x.ranges) if (rangesIntersect(y.r, r)) out.set(y.e.id, y.e);
+    return out;
+  }
+  private indexProblems(errors: readonly SheetpaneError[]): { sheets: Map<string, ProblemSheet>; byId: Map<string, SheetpaneError> } {
+    if (this.problemIdx?.errors === errors) return this.problemIdx;
+    const sheets = new Map<string, ProblemSheet>(), byId = new Map<string, SheetpaneError>();
+    for (const e of errors) {
+      byId.set(e.id, e);
+      if (isResult(e)) continue;
+      const r = parseRange(e.range);
+      if (!r) continue;
+      let x = sheets.get(e.sheet);
+      if (!x) sheets.set(e.sheet, (x = { cells: new Map(), ranges: [] }));
+      if (r.top === r.bottom && r.left === r.right) { const c = `${r.top},${r.left}`, l = x.cells.get(c); if (l) l.push(e); else x.cells.set(c, [e]); }
+      else x.ranges.push({ r, e });
+    }
+    this.problemIdx = { errors, sheets, byId };
+    return this.problemIdx;
   }
 
   // ── merged ranges: core, changed by plugins as kind `merge` (key `sheet!#merge:A1:C1`, now true | false) ──
