@@ -204,8 +204,11 @@ pnpm and a justfile; the testing verdict chose the runner.
    site` → `site/` (`scripts/build-site.mjs`: the HTML gallery at `/` with
    every file its import map names copied in, the React gallery at `/react/`
    with a relative base, the version in both headers, no third-party script)
-   — checks it with `demo-check`, and deploys it to GitHub Pages;
-   `publish.yml` publishes the packages when a GitHub Release is published
+   — checks it with `demo-check`, and deploys it to GitHub Pages (the
+   `github-pages` environment must allow the branch `main` for a manual run
+   and the tag pattern `v*` for a release: without the tag rule every
+   release's deploy was refused, 2026-10-19, fixed in the repository's
+   settings); `publish.yml` publishes the packages when a GitHub Release is published
    (decision 9).
 8b. **Starters and links (W-44):** `scripts/build-starters.mjs` (`just
     starters`) scaffolds every `create-sheetpane` template with the CLI itself

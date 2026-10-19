@@ -89,6 +89,7 @@ has a `BREAKING CHANGE:` footer.
 | `release tag vX != package version Y` | the release was created without `just release X` | delete the release and its tag, run `just release X`, release again |
 | `version sites disagree` | a file holding the version was edited by hand | `node scripts/release.mjs <version>` rewrites them all |
 | `provenance … repository … does not match` | a package's `repository.url` is not `git+https://github.com/arpitarya/sheetpane.git` | fix `repository` in that `package.json`; it must name this repository exactly |
+| `pages` deploy fails: *Tag "vX" is not allowed to deploy to github-pages due to environment protection rules* | the `github-pages` environment's deployment rules allow `main` only | *Settings → Environments → github-pages → Deployment branches and tags*: add the tag rule `v*` (set 2026-10-19); re-run the failed job |
 | a tarball check fails (`ships src/`, `no dist/`) | a package's `files` list changed | restore `files` to the build output; `npm pack --dry-run` shows what would ship |
 
 Never rename `publish.yml` or the `npm` environment. Every package's trusted
