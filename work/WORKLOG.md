@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-50's look (quiet, optional results), canvas v51 synced; an open-work prototype  ·  Claude (Cowork, claude-opus-5-5)
+
+- **Asked:** *"what will be the best design — shouldn't be very overwhelming and should be optional — then sync the designs and update the work item on how it should look"*; then *"review the open work file and create a html prototype to test out the look and feel"*.
+- **Done:** a new board, `Results-Pass-NotChecked` (canvas v51), with three levels: `results="off"`, `summary` (the default: one line of counts, nothing on the sheet) and `marks`. It also shows the On-sheet switch, passes grouped by check and not-checked grouped by reason, and the 9 px ✓ / — in a cell's bottom-left corner. Synced into `boards/` (the board and `canvas.json`; hashes match). W-50 has a *How it looks* section, and DoD 2 and 4 are rewritten. Reviewed OPEN-WORK and built `work/reference/design/prototypes/open-work-lab.html`, also published as a private artifact. It is one host page with W-50–W-53, W-55, W-56, W-60–W-66, W-68 and W-69 working, each switchable on and off, in light and dark.
+- **Decided / left open:** read in, in W-50: results never fill or pin a cell, a problem always wins, results stay out of every action count and out of the download, and the level is pane-wide. Prototype only: W-54, W-57, W-58, W-59 and W-67 have no screen of their own, so they are not in it.
+- **Mistakes:** none.
+- **Next:** Arpit tries the prototype; then W-50 in Claude Code.
+
+---
+
 ## 2026-10-19 — CI green on three OSes; publishing via GitHub Release over OIDC; v0.1.0 and v0.2.0 released, npm refuses until trusted  ·  Claude Code (claude-opus-5-5)
 
 - **Asked:** *"commit everything. push everything publish zero point one point zero … Create CI/CD pipeline … And publish the packages"*; then *"publish 0.2.0 through pipeline"*, a fux-modelled publishing spec (GitHub Release → `publish.yml`, OIDC, parity, three-OS matrix, `RELEASING.md`), *"merge everything to main … delete all the merged branches"*, *"Always follow the conventional commit message pattern and always have a proper release note"*, *"add a release item for 0.1.0"*.

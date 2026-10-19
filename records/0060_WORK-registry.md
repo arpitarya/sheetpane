@@ -101,7 +101,7 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-LAW-10 (0012) registered |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
-| `work/reference/design/README.md` | the design canvas changes — synced the same session (§Keeping this folder in sync) | 2026-10-18 | 2026-10-18 — synced to canvas v50 (Download split button) |
+| `work/reference/design/README.md` | the design canvas changes — synced the same session (§Keeping this folder in sync) | 2026-10-18 | 2026-10-19 — synced to canvas v51 (W-50 results board); the open-work prototype added |
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
 | `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-19 | 2026-10-19 — `npm create sheetpane` line removed (internal, the decider) |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |

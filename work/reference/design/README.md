@@ -2,7 +2,7 @@
 type: Reference
 description: "The sheetpane design canvas, snapshotted as source — what each board shows and how to read it. Reference material for W-01–W-03, the plugin items W-14–W-24 and W-29; the item files hold the spec."
 source: "https://claude.ai/code/artifact/ecabc2f4-ffde-4e9f-af38-cc0558b5cac7 (private Design canvas, Arpit)"
-snapshot: 2026-10-18
+snapshot: 2026-10-19
 ---
 
 # The sheetpane design — snapshot of 2026-10-18
@@ -78,7 +78,10 @@ a control's slot and plugin; they never ship.
 | [`All-Plugins`](boards/All-Plugins.dc.html) | every slot filled at 1440, at 1024 (More ▾ overflow) and in dark | W-14 |
 | [`Pane-Sync`](boards/Pane-Sync.dc.html) | an edit in one host tab raises a workbook warning in the other | W-18, W-02 (L7) |
 | [`Selection-And-Download`](boards/Selection-And-Download.dc.html) | the change of 2026-10-18 evening: selection actions docked in the cell bar (no floating bar), right-click menu, one Download button — before and after | W-31 |
+| [`Results-Pass-NotChecked`](boards/Results-Pass-NotChecked.dc.html) | pass (✓) and not-checked (—) results kept quiet: three levels (off · summary, the default · on the sheet), the On-sheet switch, grouped Passed / Not checked lists, the mark's corner, dark | W-50 |
 | [`Plugin-Decisions`](boards/Plugin-Decisions.dc.html) | the 19 calls the brief left open — which match the spec, which changed an item, which need a ruling | — |
+
+**Prototype (not a canvas board).** [`prototypes/open-work-lab.html`](prototypes/open-work-lab.html) is a clickable host page with every visible open item, W-50 to W-69. Each item can be switched on and off to test the look and feel; open it in a browser. Its published copy is a private artifact (2026-10-19). It is a sketch for feel, not a spec: the item files decide.
 
 **Prototype-only on these boards:** the sample references are adapted to the
 holdings workbook (`=F12*G12`, the fee-rate rule 0.00%–2.00%, a chart over
@@ -102,7 +105,7 @@ follow-up:
 
 **Check:** every file in `boards/` hashes the same as the canvas's `project/`
 file of the same name, and no canvas file is missing here. Last synced:
-2026-10-18 19:25 IST (canvas version 50).
+2026-10-19 11:25 IST (canvas version 51).
 
 ## Decisions the canvas records (Arpit, 2026-10-18)
 

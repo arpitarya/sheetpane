@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pass and not-checked results</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./proof.css">
+<link rel="stylesheet" href="./sheetpane.css">
+<link rel="stylesheet" href="./sp-plugins.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+.rs-sec{display:flex;flex-direction:column;gap:12px}
+.rs-lvls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.rs-card{display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.rs-card.def{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.rs-card .t{font:600 15px/1.3 var(--sans)}
+.rs-card .k{font:500 11px/1 var(--mono);color:var(--ink-3)}
+.rs-card .w{font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+/* the sheet snippet */
+.rs-g{display:grid;grid-template-columns:34px 1.6fr .8fr .9fr;font-size:12px;background:var(--sp-cell);color:var(--sp-ink);border-top:1px solid var(--sp-grid)}
+.rs-g>div{height:28px;display:flex;align-items:center;padding:0 7px;border-right:1px solid var(--sp-grid);border-bottom:1px solid var(--sp-grid);position:relative;white-space:nowrap;overflow:hidden}
+.rs-g .h{background:var(--sp-head);color:var(--sp-ink-2);font-size:11px;justify-content:center;height:22px}
+.rs-g .rh{background:var(--sp-head);color:var(--sp-ink-2);font-size:11px;justify-content:flex-end;gap:3px;padding:0 5px}
+.rs-g .n{justify-content:flex-end}
+.rs-g .e{background:color-mix(in srgb,var(--sp-fail-soft) 70%,var(--sp-cell))}
+.rs-pin{position:absolute;left:2px;top:2px;min-width:14px;height:14px;border-radius:7px;background:var(--sp-fail);color:#fff;font:700 9px/14px var(--mono);text-align:center;padding:0 3px}
+.rs-gl{font:700 10px/1 var(--mono)}
+.rs-gl.f{color:var(--sp-fail)}
+/* the result marks: a 9 px glyph, bottom-left, nothing else */
+.rs-m{position:absolute;left:3px;bottom:2px;font:700 9px/1 var(--mono);pointer-events:none}
+.rs-m.p{color:var(--sp-pass)}
+.rs-m.s{color:var(--sp-ink-3)}
+.rs-rg{font:700 10px/1 var(--mono)}
+.rs-rg.p{color:var(--sp-pass)}
+/* the errors panel bits */
+.rs-sum{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--sp-line);font-size:12px;color:var(--sp-ink-2)}
+.rs-sum b{color:var(--sp-ink);font-weight:600}
+.rs-sum .p{color:var(--sp-pass)}
+.rs-sum .s{color:var(--sp-ink-3)}
+.rs-sw{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:11.5px;color:var(--sp-ink-2)}
+.rs-tg{width:26px;height:15px;border-radius:8px;background:var(--sp-line-strong);position:relative;flex:none}
+.rs-tg::after{content:"";position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--sp-surface)}
+.rs-tg.on{background:var(--sp-ink)}
+.rs-tg.on::after{left:13px}
+.rs-chips{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--sp-line)}
+.rs-fc{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--sp-line-strong);font-size:12px;color:var(--sp-ink-2);background:var(--sp-surface)}
+.rs-fc.on{background:var(--sp-ink);border-color:var(--sp-ink);color:var(--sp-surface)}
+.rs-fc .c{font-size:11px;opacity:.8}
+.rs-row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:start;padding:10px 14px;border-bottom:1px solid var(--sp-line);font-size:12.5px}
+.rs-row .g{font:700 11px/18px var(--mono);text-align:center}
+.rs-row .d{color:var(--sp-ink-2);font-size:11.5px}
+.rs-row .r{font:500 11px/18px var(--mono);color:var(--sp-ink-3)}
+.rs-grp{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--sp-line);font-size:12.5px}
+.rs-grp .g{font:700 11px/1 var(--mono);text-align:center}
+.rs-grp .d{color:var(--sp-ink-2);font-size:11.5px}
+.rs-lnk{font-size:11.5px;color:var(--sp-accent-ink);white-space:nowrap}
+.rs-st{display:flex;gap:10px;align-items:center;height:28px;padding:0 10px;border-top:1px solid var(--sp-line);font-size:11.5px;color:var(--sp-ink-2);background:var(--sp-surface)}
+/* anatomy */
+.rs-anat{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:center}
+.rs-big{position:relative;width:280px;height:112px;border:1px solid var(--sp-grid);background:var(--sp-cell);font-size:24px;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;color:var(--sp-ink)}
+.rs-big .slot{position:absolute;font:500 10px/1.2 var(--mono);color:var(--ink-3)}
+.rs-big .mk{position:absolute;font:700 18px/1 var(--mono)}
+.rs-tbl{display:grid;grid-template-columns:auto auto 1fr;gap:8px 16px;font-size:12.5px;align-items:baseline}
+.rs-tbl .hd{font:500 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.rs-never{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rs-never>div{padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);font-size:12.5px;line-height:1.45;color:var(--ink-2)}
+.rs-never b{color:var(--ink);display:block;margin-bottom:2px}
+.rs-two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+</style>
+</helmet>
+<div class="ps" style="width: 1440px; min-height: 1700px; padding: 48px; gap: 28px">
+<header class="stack" style="gap: 8px">
+<span class="over">W-50 · Arpit, 2026-10-19 · pass and not-checked results</span>
+<h1 class="h1">Results stay quiet until you ask for them</h1>
+<p class="muted" style="max-width: 1060px">Problems are what a reviewer acts on, so they keep the sheet to themselves. Passed and not-checked cells add <b>one line of counts</b> to the errors panel by default. Marks on the sheet are <b>one switch away</b>, and the host can turn results off entirely. When marks are on, they are a 9 px glyph in a cell's bottom-left corner: no fill, no pin, no badge count.</p>
+</header>
+
+<section class="rs-sec" aria-label="Three levels">
+<h2 class="h2">Three levels — the host picks the start, the reviewer can step up one</h2>
+<div class="rs-lvls">
+
+<div class="rs-card">
+<span class="k">results="off"</span>
+<span class="t">Off</span>
+<div class="spx-e" style="border-radius: 6px">
+<div class="spx-e-hd"><b style="font-size: 13px">Review</b><span class="spx-e-cnt">6</span></div>
+<div class="rs-chips" style="border-bottom: 0"><span class="rs-fc on">Problems <span class="c">6</span></span></div>
+</div>
+<span class="w">Pass and not-checked entries are dropped on arrival. The panel and the sheet look exactly as they do today. Use this for hosts that only report faults.</span>
+</div>
+
+<div class="rs-card def">
+<span class="k">results="summary" · default</span>
+<span class="t">Summary — one line, nothing on the sheet</span>
+<div class="spx-e" style="border-radius: 6px">
+<div class="spx-e-hd"><b style="font-size: 13px">Review</b><span class="spx-e-cnt">6</span></div>
+<div class="rs-sum"><b>6 problems</b><span class="p">✓ 180 passed</span><span class="s">— 28 not checked</span><span class="rs-sw">On sheet <span class="rs-tg"></span></span></div>
+<div class="rs-chips" style="border-bottom: 0"><span class="rs-fc on">Problems <span class="c">6</span></span><span class="rs-fc">Passed <span class="c">180</span></span><span class="rs-fc">Not checked <span class="c">28</span></span></div>
+</div>
+<span class="w">The counts answer "how much was checked?" without adding a single mark to the sheet. The list still opens on <b>Problems</b>. The Passed and Not checked chips appear only when results exist.</span>
+</div>
+
+<div class="rs-card">
+<span class="k">results="marks" · or the switch</span>
+<span class="t">On the sheet — a glyph per cell</span>
+<div class="spx" style="border-radius: 6px">
+<div class="rs-g">
+<div class="h"></div><div class="h">B</div><div class="h">E</div><div class="h">H</div>
+<div class="rh">3</div><div>Dividend Growth ETF</div><div>DIVG</div><div class="n"><span class="rs-m p" aria-label="Passed">✓</span>0.35%</div>
+<div class="rh">4</div><div>Global Equity Fund</div><div>GLEQ</div><div class="n"><span class="rs-m p" aria-label="Passed">✓</span>0.80%</div>
+<div class="rh"><span class="rs-gl f">✕</span>5</div><div>Short Duration Bond</div><div>SDBD</div><div class="n e"><span class="rs-pin">1</span>2.40%</div>
+<div class="rh">6</div><div>Gold Savings</div><div>GOLD</div><div class="n"><span class="rs-m s" aria-label="Not checked">—</span></div>
+</div>
+</div>
+<span class="w">✓ for passed, — for not checked, in the corner nobody else uses. The data stays fully readable, and a problem always wins: a failed cell shows its pin, never a ✓.</span>
+</div>
+
+</div>
+</section>
+
+<section class="rs-sec" aria-label="The switch and the list">
+<h2 class="h2">In use — the switch on, then the Passed filter</h2>
+<div class="rs-two">
+
+<div class="stack" style="gap: 8px">
+<span class="xs muted">Sheet + panel, <b>On sheet</b> switched on. The row header keeps ✕ ! i for problems and adds nothing for results.</span>
+<div style="display: grid; grid-template-columns: 1fr 300px; gap: 12px">
+<div class="spx">
+<div class="spx-cb"><span class="spx-ref">H3</span><span class="spx-val ro">0.35%</span><span class="spx-sp"></span><span class="spx-chip spx-chip-pass">✓ Passed · Fee rate 0.00%–2.00%</span></div>
+<div class="rs-g">
+<div class="h"></div><div class="h">B · Holding</div><div class="h">E · Ticker</div><div class="h">H · Fee rate</div>
+<div class="rh">3</div><div>Dividend Growth ETF</div><div>DIVG</div><div class="n" style="outline: 2px solid var(--sp-accent); outline-offset: -2px"><span class="rs-m p">✓</span>0.35%</div>
+<div class="rh">4</div><div>Global Equity Fund</div><div>GLEQ</div><div class="n"><span class="rs-m p">✓</span>0.80%</div>
+<div class="rh"><span class="rs-gl f">✕</span>5</div><div>Short Duration Bond</div><div>SDBD</div><div class="n e"><span class="rs-pin">1</span>2.40%</div>
+<div class="rh">6</div><div>Gold Savings</div><div>GOLD</div><div class="n"><span class="rs-m s">—</span></div>
+<div class="rh">7</div><div>India Index Fund</div><div>INDX</div><div class="n"><span class="rs-m p">✓</span>0.10%</div>
+<div class="rh">8</div><div>Liquid Fund</div><div>LIQD</div><div class="n"><span class="rs-m p">✓</span>0.20%</div>
+</div>
+<div class="rs-st"><span>186 of 214 checked</span><span class="spx-faint">·</span><span>6 problems</span></div>
+</div>
+<div class="spx-e">
+<div class="spx-e-hd"><b style="font-size: 13px">Review</b><span class="spx-e-cnt">6</span></div>
+<div class="rs-sum"><b>6 problems</b><span class="p">✓ 180</span><span class="s">— 28</span><span class="rs-sw">On sheet <span class="rs-tg on"></span></span></div>
+<div class="rs-chips"><span class="rs-fc on">Problems <span class="c">6</span></span><span class="rs-fc">Passed</span><span class="rs-fc">Not checked</span></div>
+<div class="rs-row"><span class="g" style="color: var(--sp-fail)">✕</span><span>Fee rate above 2.00%<br><span class="d">Found 2.40% · should be ≤ 2.00%</span></span><span class="r">H5</span></div>
+<div class="rs-row"><span class="g" style="color: var(--sp-warn)">!</span><span>Ticker not in master list<br><span class="d">Found SDBD</span></span><span class="r">E5</span></div>
+</div>
+</div>
+<span class="xs muted">Selecting a passed cell names its check in the cell bar, the one place the ✓ is explained in words. The status line says <b>186 of 214 checked</b>, the host's coverage line.</span>
+</div>
+
+<div class="stack" style="gap: 8px">
+<span class="xs muted">The <b>Passed</b> filter: grouped by check, never 180 rows. <b>Not checked</b> is grouped by reason.</span>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+<div class="spx-e">
+<div class="spx-e-hd"><b style="font-size: 13px">Review</b><span class="spx-e-cnt">6</span></div>
+<div class="rs-chips"><span class="rs-fc">Problems <span class="c">6</span></span><span class="rs-fc on">Passed <span class="c">180</span></span></div>
+<div class="rs-grp"><span class="g" style="color: var(--sp-pass)">✓</span><span>Fee rate 0.00%–2.00%<br><span class="d">162 cells · H3:H214</span></span><span class="rs-lnk">Show ▸</span></div>
+<div class="rs-grp"><span class="g" style="color: var(--sp-pass)">✓</span><span>Units are whole numbers<br><span class="d">18 cells · F3:F20</span></span><span class="rs-lnk">Show ▸</span></div>
+<div class="rs-st" style="border-top: 0; height: auto; padding: 10px 14px">Show ▸ selects the range on the sheet and turns marks on for it only.</div>
+</div>
+<div class="spx-e">
+<div class="spx-e-hd"><b style="font-size: 13px">Review</b><span class="spx-e-cnt">6</span></div>
+<div class="rs-chips"><span class="rs-fc">Problems <span class="c">6</span></span><span class="rs-fc on">Not checked <span class="c">28</span></span></div>
+<div class="rs-grp"><span class="g" style="color: var(--sp-ink-3)">—</span><span>Blank in the source<br><span class="d">20 cells · H6, H31, H44 …</span></span><span class="rs-lnk">Show ▸</span></div>
+<div class="rs-grp"><span class="g" style="color: var(--sp-ink-3)">—</span><span>Column not in the spec<br><span class="d">8 cells · K3:K10</span></span><span class="rs-lnk">Show ▸</span></div>
+<div class="rs-st" style="border-top: 0; height: auto; padding: 10px 14px">The reason is the entry's message from the host.</div>
+</div>
+</div>
+<span class="xs muted">Groups key on the entry's <span class="mono">type</span> + <span class="mono">message</span>. A group expands to its cells (virtualised) only when opened.</span>
+</div>
+
+</div>
+</section>
+
+<section class="rs-sec" aria-label="Anatomy">
+<h2 class="h2">The mark — where it sits, and what it never does</h2>
+<div class="rs-anat">
+<div class="rs-big" aria-hidden="true">0.35%
+<span class="slot" style="left: 6px; top: 6px">person pin</span>
+<span class="slot" style="right: 6px; top: 6px">corner · ⚠ pin</span>
+<span class="slot" style="right: 6px; bottom: 6px">note mark</span>
+<span class="mk" style="left: 8px; bottom: 6px; color: var(--sp-pass)">✓</span>
+<span class="slot" style="left: 30px; bottom: 8px; color: var(--sp-pass)">result · 9 px</span>
+</div>
+<div class="rs-tbl">
+<span class="hd">mark</span><span class="hd">token</span><span class="hd">reads as</span>
+<span class="mono" style="color: var(--pass); font-weight: 700">✓</span><span class="mono xs">--sp-pass</span><span>Passed. <span class="mono xs">aria-label="Passed: Fee rate 0.00%–2.00%"</span></span>
+<span class="mono" style="color: var(--ink-3); font-weight: 700">—</span><span class="mono xs">--sp-skip (= ink-3)</span><span>Not checked, with the reason in its label. Grey on purpose: it is not a problem.</span>
+<span class="mono" style="color: var(--fail); font-weight: 700">✕ ! i</span><span class="mono xs">fail · warn · note</span><span>Unchanged. A cell with a problem never shows ✓ or —.</span>
+</div>
+</div>
+<div class="row" style="gap: 16px; align-items: stretch">
+<div class="spx spx-dark" style="width: 420px; border-radius: 6px">
+<div class="rs-g">
+<div class="h"></div><div class="h">B</div><div class="h">E</div><div class="h">H</div>
+<div class="rh">3</div><div>Dividend Growth ETF</div><div>DIVG</div><div class="n"><span class="rs-m p">✓</span>0.35%</div>
+<div class="rh"><span class="rs-gl f">✕</span>5</div><div>Short Duration Bond</div><div>SDBD</div><div class="n e"><span class="rs-pin">1</span>2.40%</div>
+<div class="rh">6</div><div>Gold Savings</div><div>GOLD</div><div class="n"><span class="rs-m s">—</span></div>
+</div>
+</div>
+<span class="xs muted" style="align-self: center; max-width: 520px">Dark: the same glyphs on W-29's dark ramp. <span class="mono">--sp-pass</span> and <span class="mono">--sp-skip</span> are defined for both themes, each at least 3:1 against the cell.</span>
+</div>
+</section>
+
+<section class="rs-sec" aria-label="Never">
+<h2 class="h2">What keeps it from being overwhelming</h2>
+<div class="rs-never">
+<div><b>No fill, no border, no pin</b>A result never tints a cell. Only a problem does, so a sea of passes stays white.</div>
+<div><b>Never in a count that asks for action</b>Tab counts, the Download badge and the panel's header count are problems only.</div>
+<div><b>A problem always wins</b>A cell with both a pass and a problem shows the problem.</div>
+<div><b>Off the sheet by default</b>Summary is the default; marks are one switch, shared by the pane and remembered per pane while it lives.</div>
+<div><b>Grouped, not listed</b>180 passes are two rows in the list, one per check, opened on demand.</div>
+<div><b>Not in the download by default</b>Comments export writes results only with <span class="mono">includeResults</span> (W-50 DoD 5).</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -204,6 +204,13 @@
       "w": 1440,
       "h": 1380,
       "title": "Change — selection actions docked in the cell bar; one neutral Download ▾ (upload format default, .xlsx or .csv)"
+    },
+    "Results-Pass-NotChecked.dc.html": {
+      "x": 4820,
+      "y": 0,
+      "w": 1440,
+      "h": 1700,
+      "title": "W-50 — pass and not-checked results: off · summary (default) · on the sheet"
     }
   },
   "order": [
@@ -232,7 +239,8 @@
     "Pane-Sync.dc.html",
     "Slot-Map.dc.html",
     "Plugin-Decisions.dc.html",
-    "Selection-And-Download.dc.html"
+    "Selection-And-Download.dc.html",
+    "Results-Pass-NotChecked.dc.html"
   ],
   "notes": {
     "t-top": {

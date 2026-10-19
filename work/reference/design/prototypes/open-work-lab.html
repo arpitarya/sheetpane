@@ -1,0 +1,742 @@
+<title>Sheetpane Open-Work Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a host page — feature drawer · <sheetpane-excel> · <sheetpane-errors>. Tokens: Proof + the --sp-* layer of the design canvas. */
+:root{
+  --ground:#F6F6F4;--surface:#FFFFFF;--cell:#FFFFFF;--sunken:#EFEFEB;--head:#F3F3F0;--grid:#E6E6E1;
+  --line:#E2E2DD;--line-strong:#CBCBC5;--ink:#16171A;--ink-2:#45484F;--ink-3:#63666E;
+  --accent:#2346C8;--accent-ink:#1A36A0;--accent-soft:#EBEEFB;
+  --pass:#16703E;--pass-soft:#E6F2EA;--fail:#B42318;--fail-soft:#FBE9E7;--warn:#875600;--warn-soft:#FBF0D9;
+  --note:#6B55CC;--note-soft:#EFEBFA;--changed:#C46A00;--changed-soft:#FDF1E3;--on-solid:#FFFFFF;
+  --band:#FAFAF8;--shadow:0 1px 2px rgba(22,23,26,.06),0 8px 24px rgba(22,23,26,.12);
+  --sans:'IBM Plex Sans',ui-sans-serif,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --r-sm:4px;--r:6px;--r-lg:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#16171A;--surface:color-mix(in srgb,#16171A 93%,#F6F6F4);--cell:color-mix(in srgb,#16171A 93%,#F6F6F4);
+  --sunken:color-mix(in srgb,#16171A 84%,#F6F6F4);--head:color-mix(in srgb,#16171A 88%,#F6F6F4);--grid:color-mix(in srgb,#16171A 82%,#F6F6F4);
+  --line:color-mix(in srgb,#16171A 78%,#F6F6F4);--line-strong:color-mix(in srgb,#16171A 62%,#F6F6F4);
+  --ink:#F6F6F4;--ink-2:color-mix(in srgb,#F6F6F4 80%,#16171A);--ink-3:color-mix(in srgb,#F6F6F4 62%,#16171A);
+  --accent:color-mix(in srgb,#2346C8 50%,#F6F6F4);--accent-ink:color-mix(in srgb,#2346C8 30%,#F6F6F4);--accent-soft:color-mix(in srgb,#2346C8 30%,#16171A);
+  --pass:color-mix(in srgb,#16703E 50%,#F6F6F4);--pass-soft:color-mix(in srgb,#16703E 30%,#16171A);
+  --fail:color-mix(in srgb,#B42318 55%,#F6F6F4);--fail-soft:color-mix(in srgb,#B42318 30%,#16171A);
+  --warn:color-mix(in srgb,#875600 40%,#F6F6F4);--warn-soft:color-mix(in srgb,#875600 38%,#16171A);
+  --note:color-mix(in srgb,#6B55CC 55%,#F6F6F4);--note-soft:color-mix(in srgb,#6B55CC 30%,#16171A);
+  --changed:color-mix(in srgb,#C46A00 70%,#F6F6F4);--changed-soft:color-mix(in srgb,#C46A00 30%,#16171A);
+  --on-solid:#16171A;--band:color-mix(in srgb,#16171A 90%,#F6F6F4);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#16171A;--surface:color-mix(in srgb,#16171A 93%,#F6F6F4);--cell:color-mix(in srgb,#16171A 93%,#F6F6F4);
+  --sunken:color-mix(in srgb,#16171A 84%,#F6F6F4);--head:color-mix(in srgb,#16171A 88%,#F6F6F4);--grid:color-mix(in srgb,#16171A 82%,#F6F6F4);
+  --line:color-mix(in srgb,#16171A 78%,#F6F6F4);--line-strong:color-mix(in srgb,#16171A 62%,#F6F6F4);
+  --ink:#F6F6F4;--ink-2:color-mix(in srgb,#F6F6F4 80%,#16171A);--ink-3:color-mix(in srgb,#F6F6F4 62%,#16171A);
+  --accent:color-mix(in srgb,#2346C8 50%,#F6F6F4);--accent-ink:color-mix(in srgb,#2346C8 30%,#F6F6F4);--accent-soft:color-mix(in srgb,#2346C8 30%,#16171A);
+  --pass:color-mix(in srgb,#16703E 50%,#F6F6F4);--pass-soft:color-mix(in srgb,#16703E 30%,#16171A);
+  --fail:color-mix(in srgb,#B42318 55%,#F6F6F4);--fail-soft:color-mix(in srgb,#B42318 30%,#16171A);
+  --warn:color-mix(in srgb,#875600 40%,#F6F6F4);--warn-soft:color-mix(in srgb,#875600 38%,#16171A);
+  --note:color-mix(in srgb,#6B55CC 55%,#F6F6F4);--note-soft:color-mix(in srgb,#6B55CC 30%,#16171A);
+  --changed:color-mix(in srgb,#C46A00 70%,#F6F6F4);--changed-soft:color-mix(in srgb,#C46A00 30%,#16171A);
+  --on-solid:#16171A;--band:color-mix(in srgb,#16171A 90%,#F6F6F4);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.4);
+  color-scheme:dark}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.faint{color:var(--ink-3)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* page */
+.page{display:flex;flex-direction:column;gap:14px;min-height:100%;padding-block:18px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font:600 20px/1.2 var(--sans);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.top .sub{font-size:13px;color:var(--ink-2)}
+.top .sp{flex:1}
+.over{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr) 340px;gap:14px;align-items:start}
+@media (max-width:1180px){.layout{grid-template-columns:260px minmax(0,1fr)}.panel{grid-column:2}}
+@media (max-width:820px){.layout{grid-template-columns:minmax(0,1fr)}.panel,.drawer{grid-column:auto}.drawer{position:static;max-height:none}}
+
+/* buttons, chips */
+.btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);border-radius:var(--r);font-size:12px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--sunken)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn-g{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn-i{width:28px;padding:0;justify-content:center}
+.btn svg{width:14px;height:14px}
+.seg{display:inline-flex;background:var(--sunken);border-radius:var(--r);padding:2px;gap:2px}
+.seg{flex-wrap:wrap}
+.seg button{white-space:nowrap;height:24px;padding:0 10px;border:0;background:transparent;border-radius:var(--r-sm);color:var(--ink-2);font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(22,23,26,.14)}
+.seg .n{font:600 10px/1 var(--mono);color:var(--ink-3)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:11.5px;font-weight:500;background:var(--sunken);color:var(--ink-2);white-space:nowrap}
+.chip-pass{background:var(--pass-soft);color:var(--pass)}
+.chip-fail{background:var(--fail-soft);color:var(--fail)}
+.chip-warn{background:var(--warn-soft);color:var(--warn)}
+.chip-info{background:var(--accent-soft);color:var(--accent-ink)}
+.chip svg{width:12px;height:12px}
+.kbd{font:500 10.5px/1 var(--mono);padding:2px 4px;border:1px solid var(--line-strong);border-radius:3px;color:var(--ink-3)}
+
+/* drawer */
+.drawer{display:flex;flex-direction:column;gap:12px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.drawer h2{font:600 13px/1.3 var(--sans);margin:0}
+.grp{display:flex;flex-direction:column;gap:2px}
+.grp .gh{display:flex;align-items:center;gap:8px;margin:6px 0 2px}
+.feat{display:grid;grid-template-columns:18px 1fr;gap:2px 8px;padding:6px 6px;border-radius:var(--r);align-items:start}
+.feat:hover{background:var(--sunken)}
+.feat input{margin:2px 0 0;accent-color:var(--ink)}
+.feat .t{font-size:12.5px;font-weight:500}
+.feat .t .id{font:600 10.5px/1 var(--mono);color:var(--ink-3);margin-right:4px}
+.feat .h{grid-column:2;font-size:11.5px;color:var(--ink-3);line-height:1.4}
+.hostbox{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px dashed var(--line-strong);border-radius:var(--r)}
+.hostbox label{font-size:12px;color:var(--ink-2);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hostbox select,.hostbox input{height:26px;border:1px solid var(--line-strong);border-radius:var(--r);background:var(--surface);padding:0 6px;font-size:12px;min-width:0}
+.log{font:11px/1.5 var(--mono);color:var(--ink-2);background:var(--sunken);border-radius:var(--r);padding:8px;min-height:64px;overflow-wrap:anywhere}
+.log div{white-space:normal}
+.log .ev{color:var(--accent-ink)}
+
+/* the sheet element */
+.sx{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;min-width:0;font-variant-numeric:tabular-nums}
+.tb{display:flex;align-items:center;gap:8px;height:42px;padding:0 10px;border-bottom:1px solid var(--line);white-space:nowrap;overflow-x:auto}
+.tb .fname{font-weight:600;font-size:13px}
+.tb .sp{flex:1}
+.split{display:inline-flex;position:relative}
+.split .btn:first-child{border-radius:var(--r) 0 0 var(--r)}
+.split .btn:last-child{border-radius:0 var(--r) var(--r) 0;border-left:0;width:24px;padding:0;justify-content:center}
+.badge{font:600 10px/1 var(--mono);padding:3px 5px;border-radius:999px;background:var(--sunken);color:var(--ink)}
+.cb{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ref{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:62px;height:26px;padding:0 8px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font:500 12px/1 var(--mono)}
+.ref svg{width:12px;height:12px;color:var(--ink-3)}
+.cin{flex:1 1 180px;min-width:120px;height:28px;border:1px solid var(--line-strong);border-radius:var(--r);padding:0 8px;background:var(--surface)}
+.cin[readonly]{background:var(--sunken);color:var(--ink-2)}
+.cval{flex:1 1 180px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+.cbacts{display:inline-flex;gap:4px;margin-left:auto;position:relative}
+.gridwrap{position:relative;overflow:auto;max-height:430px;background:var(--cell)}
+.grid{display:grid;position:relative;min-width:max-content;font-size:12.5px}
+.grid>div{position:relative;height:28px;display:flex;align-items:center;padding:0 8px;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);background:var(--cell);white-space:nowrap;overflow:hidden;cursor:cell;user-select:none}
+.grid .ch{height:24px;background:var(--head);color:var(--ink-2);font-size:11px;justify-content:center;position:sticky;top:0;z-index:4;cursor:default}
+.grid .corner{position:sticky;left:0;top:0;z-index:6;background:var(--head)}
+.grid .rh{position:sticky;left:0;z-index:3;background:var(--head);color:var(--ink-2);font-size:11px;justify-content:flex-end;gap:4px;padding:0 6px;cursor:context-menu}
+.grid .num{justify-content:flex-end}
+.grid .tbl-h{font-weight:600;background:color-mix(in srgb,var(--accent-soft) 70%,var(--cell));color:var(--ink)}
+.grid .band{background:var(--band)}
+.grid .sel{outline:2px solid var(--accent);outline-offset:-2px;z-index:2}
+.grid .efill{background:color-mix(in srgb,var(--fail-soft) 75%,var(--cell))}
+.grid .cmp{background:color-mix(in srgb,var(--accent-soft) 80%,var(--cell))}
+.grid .v{min-width:0;overflow:hidden;text-overflow:ellipsis;width:100%}
+.grid .num .v{text-align:right}
+.grid .derived{color:var(--ink-2)}
+.pin{position:absolute;left:2px;top:2px;min-width:14px;height:14px;border-radius:7px;font:700 9px/14px var(--mono);text-align:center;padding:0 3px;color:var(--on-solid);z-index:1}
+.pin.error{background:var(--fail)}.pin.warning{background:var(--warn)}.pin.note{background:var(--note)}
+.pin.resolved{background:var(--pass)}
+.corner-mk{position:absolute;right:0;top:0;width:0;height:0;border-left:7px solid transparent;border-top:7px solid var(--changed)}
+.res{position:absolute;left:3px;bottom:2px;font:700 9px/1 var(--mono);pointer-events:none}
+.res.pass{color:var(--pass)}.res.skipped{color:var(--ink-3)}
+.grid .haspin{padding-left:20px}
+.dmk{position:absolute;right:3px;bottom:2px;font:700 9px/1 var(--mono);color:var(--accent-ink)}
+.dd{position:absolute;right:2px;top:5px;width:16px;height:16px;border:1px solid var(--line-strong);border-radius:3px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-2);z-index:3;padding:0}
+.g{font:700 10px/1 var(--mono)}
+.g.error{color:var(--fail)}.g.warning{color:var(--warn)}.g.note{color:var(--note)}
+.hl{position:absolute;border:2px dashed var(--accent);border-radius:2px;pointer-events:none;z-index:5;background:color-mix(in srgb,var(--accent-soft) 35%,transparent)}
+.hl span{position:absolute;left:-2px;top:-20px;font:500 10.5px/1 var(--sans);background:var(--accent);color:var(--on-solid);padding:3px 6px;border-radius:3px;white-space:nowrap}
+.tabs{display:flex;gap:2px;padding:0 8px;border-top:1px solid var(--line);background:var(--ground);overflow-x:auto}
+.tab{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:0;border-top:2px solid transparent;background:transparent;color:var(--ink-2);font-size:13px;font-weight:500}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);border-top-color:var(--accent)}
+.tab .cnt{font:700 10px/1 var(--mono);padding:2px 5px;border-radius:999px;background:var(--fail-soft);color:var(--fail)}
+.status{display:flex;gap:12px;align-items:center;min-height:30px;padding:4px 10px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-2);flex-wrap:wrap}
+.status b{font-weight:600;color:var(--ink)}
+
+/* menus, popovers */
+.menu{position:absolute;z-index:40;min-width:220px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:4px;display:flex;flex-direction:column}
+.mi{display:flex;align-items:center;justify-content:space-between;gap:16px;height:30px;padding:0 10px;border:0;background:transparent;border-radius:var(--r);font-size:12.5px;text-align:left;color:var(--ink)}
+.mi:hover,.mi:focus-visible{background:var(--sunken)}
+.mi[disabled]{color:var(--ink-3);cursor:not-allowed}
+.mi .k{font:500 11px/1 var(--mono);color:var(--ink-3)}
+.msep{height:1px;background:var(--line);margin:4px 0}
+.mhd{font:500 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:8px 10px 4px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 14px;border-radius:var(--r-lg);font-size:12.5px;box-shadow:var(--shadow);z-index:60;max-width:min(560px,calc(100vw - 32px))}
+
+/* the errors element */
+.panel{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;min-width:0}
+.ph{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border-bottom:1px solid var(--line)}
+.ph b{font-size:13.5px}
+.ph .cnt{font:600 11px/1 var(--mono);padding:3px 6px;border-radius:999px;background:var(--sunken);color:var(--ink-2)}
+.ptabs{display:flex;gap:4px;margin-left:auto}
+.lrow{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.lrow .lbl{font-size:11px;color:var(--ink-3)}
+.sum{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+.sum b{color:var(--ink)}
+.sum .p{color:var(--pass)}
+.sw{display:inline-flex;align-items:center;gap:6px;margin-left:auto;border:0;background:transparent;padding:0;font-size:11.5px;color:var(--ink-2)}
+.sw .tg{width:26px;height:15px;border-radius:8px;background:var(--line-strong);position:relative}
+.sw .tg::after{content:"";position:absolute;left:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--surface);transition:left .12s}
+.sw[aria-checked="true"] .tg{background:var(--ink)}
+.sw[aria-checked="true"] .tg::after{left:13px}
+@media (prefers-reduced-motion:reduce){.sw .tg::after{transition:none}}
+.chips{display:flex;gap:6px;padding:9px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.fc{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line-strong);font-size:12px;color:var(--ink-2);background:var(--surface)}
+.fc[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.fc .c{font:600 10.5px/1 var(--mono);opacity:.8}
+.list{max-height:560px;overflow:auto}
+.sec{font:500 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px 6px;background:var(--ground);border-bottom:1px solid var(--line)}
+.it{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:start;padding:10px 14px;border-bottom:1px solid var(--line);width:100%;text-align:left;border-left:0;border-right:0;border-top:0;background:transparent}
+.it:hover{background:var(--sunken)}
+.it.on{background:var(--accent-soft)}
+.it.dim{opacity:.6}
+.it .gl{font:700 11px/18px var(--mono);text-align:center}
+.it .tt{font-size:12.5px;font-weight:500;min-width:0}
+.it .ds{display:block;font-size:11.5px;color:var(--ink-2);font-weight:400}
+.it .rf{font:500 11px/18px var(--mono);color:var(--ink-3)}
+.gl.error{color:var(--fail)}.gl.warning{color:var(--warn)}.gl.note{color:var(--note)}.gl.pass{color:var(--pass)}.gl.skipped{color:var(--ink-3)}.gl.change{color:var(--accent-ink)}
+.card{display:flex;flex-direction:column;gap:8px;padding:4px 14px 12px 42px;background:var(--accent-soft);border-bottom:1px solid var(--line);font-size:12px}
+.fnd{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fnd .x{font-family:var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:2px 6px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.hostd{border:1px dashed var(--line-strong);border-radius:var(--r);padding:8px 10px;background:var(--surface);display:flex;flex-direction:column;gap:3px}
+.hostd .k{font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.hostd a{color:var(--accent-ink)}
+textarea.reason{width:100%;min-height:52px;border:1px solid var(--line-strong);border-radius:var(--r);padding:6px 8px;background:var(--surface);resize:vertical}
+.grow{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.link{border:0;background:transparent;color:var(--accent-ink);font-size:11.5px;padding:0}
+.empty{padding:22px 14px;color:var(--ink-3);font-size:12.5px;text-align:center}
+.edit{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px}
+.edit .wn{font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+.edit .wn s{color:var(--ink-3)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+</style>
+
+<div class="page">
+  <header class="top">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+      <span class="over">sheetpane · open work W-50 – W-69 · prototype</span>
+      <h1>Open-Work Lab</h1>
+      <span class="sub">Every visible open item in one host page. Switch features on and off on the left to feel how much each adds.</span>
+    </div>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-act="theme" data-v="light" id="th-light">Light</button>
+      <button type="button" data-act="theme" data-v="dark" id="th-dark">Dark</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="drawer" aria-label="Features and host controls" id="drawer"></aside>
+    <section class="sx" aria-label="sheetpane-excel" id="sheet"></section>
+    <section class="panel" aria-label="sheetpane-errors" id="panel"></section>
+  </div>
+</div>
+<div id="float"></div>
+
+<script>
+(function(){
+'use strict';
+// ── data ───────────────────────────────────────────────────────────────
+const COLS='ABCDEFGHIJ'.split('');
+const HEAD=['#','Holding','Category','Subcategory','Ticker','Units','Price','Fee rate','Market value'];
+const W=[44,236,108,128,78,72,104,84,132];
+const LISTS={Equity:['Large cap','Mid cap','Index','Dividend'],Debt:['Short duration','Liquid','Corporate'],Commodity:['Gold','Silver']};
+const MASTER=['DIVG','GLEQ','GOLD','INDX','LIQD','MIDC','CORP'];
+const LOCKED=[0,4];
+let seq=10;
+const mk=(b,c,d,e,f,g,h)=>({id:'r'+(++seq),cells:[null,b,c,d,e,f,g,h,null]});
+const ROWS=[
+  mk('Dividend Growth ETF','Equity','Dividend','DIVG',120,512.40,0.0035),
+  mk('Global Equity Fund','Equity','Large cap','GLEQ',80,1210.00,0.0080),
+  mk('Short Duration Bond','Debt','Short duration','SDBD',300,104.25,0.0240),
+  mk({runs:[{t:'Gold Savings — '},{t:'closed',i:true},{t:' to new money'}]},'Commodity','Gold','GOLD',45,61.10,null),
+  mk('India Index Fund','Equity','Index','INDX',410,98.70,0.0010),
+  mk('Liquid Fund','Debt','Liquid','LIQD',1000,10.02,0.0020),
+  mk('Midcap Opportunities','Equity','Mid cap','MIDC',75.5,230.00,0.0120),
+  mk('Corporate Bond Fund','Debt','Corporate','CORP',150,210.30,0.0055)
+];
+// the base version for W-63, matched by Ticker
+const BASE={DIVG:{5:100},GLEQ:{6:1198.00},CORP:{7:0.0050}};
+const BASE_REMOVED=['NIFTY Next 50 ETF (NN50)'];
+
+const FEATS=[
+  {g:'G1',id:'W-50',t:'Pass and not-checked',h:'Results start as one line of counts. Try the On-sheet switch, or the results attribute below.'},
+  {g:'G1',id:'W-51',t:'Review layers',h:'Switch Review · Spec check · Compare in the errors header.'},
+  {g:'G1',id:'W-52',t:'Insert / delete rows',h:'Edit: right-click a row number, or Ctrl+Shift+= and Ctrl+−.'},
+  {g:'G1',id:'W-53',t:'Rich text',h:'B5 keeps its italic word. Edit it to see the warning.'},
+  {g:'G1',id:'W-55',t:'Sheet and workbook errors',h:'Errors with no cell, grouped above the cell errors.'},
+  {g:'G1',id:'W-56',t:'Hover and host highlight',h:'Hover cells, then use Highlight below.'},
+  {g:'G2',id:'W-60',t:'Dependent dropdowns',h:'Edit: change a Category, then open Subcategory ▾.'},
+  {g:'G2',id:'W-61',t:'Excel Tables',h:'Header and banded rows from the file’s table.'},
+  {g:'G2',id:'W-62',t:'Locked cells',h:'Edit: try typing in Ticker (E) or # (A).'},
+  {g:'G3',id:'W-63',t:'Compare with a base',h:'Pick the Compare layer: Δ cells changed since v2.'},
+  {g:'G3',id:'W-64',t:'Edits view',h:'Make an edit, then open the Edits tab. Revert one.'},
+  {g:'G3',id:'W-65',t:'File SHA-256',h:'In the toolbar; Download logs the export’s hash.'},
+  {g:'G3',id:'W-66',t:'Link to a cell',h:'⋯ › Copy link, or Open at below.'},
+  {g:'G3',id:'W-68',t:'Host detail in a card',h:'Open a Spec check error: the host’s block sits under it.'},
+  {g:'G3',id:'W-69',t:'Accepted deviations',h:'Open a problem › Accept… with a reason.'}
+];
+const GROUPS={G1:'Group 1 · the review flow needs it',G2:'Group 2 · the download carries it',G3:'Group 3 · nice to have'};
+
+const S={
+  mode:'edit',sheet:'Holdings',sel:{rid:ROWS[2].id,c:7},feats:new Set(FEATS.map(f=>f.id)),
+  rows:ROWS,changes:new Map(),struct:[],status:{},person:[
+    {key:'ERR-0001',id:'ERR-0001',sheet:'Holdings',rid:ROWS[1].id,c:6,sev:'warning',title:'Price is from 30 Sep',found:'₹1,210.00',expected:'Price as of 15 Oct',author:'person'},
+    {key:'ERR-0002',id:'ERR-0002',sheet:'Holdings',rid:ROWS[3].id,c:1,sev:'note',title:'Factsheet calls it “Gold Savings Fund”',found:'Gold Savings',expected:'Gold Savings Fund',author:'person'},
+    {key:'ERR-0003',id:'ERR-0003',sheet:'Summary',rid:null,c:null,sev:'error',title:'Totals don’t tie to the custodian statement',found:'Off by ₹12,400.00',expected:'Equal to statement',author:'person'}
+  ],
+  personSeq:3,results:'summary',onSheet:false,showKeys:null,layer:'all',filter:'problems',ptab:'errors',open:null,accepting:null,
+  highlight:null,hover:'',log:[],menu:null,dl:false,sha:'',editingRich:false,refusal:'',theme:null
+};
+const on=id=>S.feats.has(id);
+
+// ── helpers ────────────────────────────────────────────────────────────
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inr=n=>'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=f=>(f*100).toFixed(2)+'%';
+const units=n=>n.toLocaleString('en-IN',{maximumFractionDigits:2});
+const textOf=v=>v&&typeof v==='object'&&v.runs?v.runs.map(r=>r.t).join(''):v;
+const idx=rid=>S.rows.findIndex(r=>r.id===rid);
+const refOf=(rid,c)=>{const i=idx(rid);return i<0?null:COLS[c]+(i+2);};
+const SEV_G={error:'✕',warning:'!',note:'i',pass:'✓',skipped:'—',change:'Δ'};
+const SEV_N={error:'Error',warning:'Warning',note:'Note',pass:'Passed',skipped:'Not checked',change:'Changed'};
+const RANK={error:0,warning:1,note:2,change:3,skipped:4,pass:5};
+const LAYER_N={review:'Review',spec:'Spec check',compare:'Compare'};
+function mv(row){const f=row.cells[5],g=row.cells[6];return typeof f==='number'&&typeof g==='number'?f*g:null;}
+function disp(row,c,i){
+  const v=row.cells[c];
+  if(c===0)return String(i+1);
+  if(c===8){const m=mv(row);return m==null?'':inr(m);}
+  if(v==null||v==='')return '';
+  if(c===5)return typeof v==='number'?units(v):String(v);
+  if(c===6)return typeof v==='number'?inr(v):String(v);
+  if(c===7)return typeof v==='number'?pct(v):String(v);
+  return textOf(v);
+}
+function parse(c,s){
+  s=s.trim();if(s==='')return null;
+  if(c===5||c===6){const n=Number(s.replace(/[₹,\s]/g,''));return isNaN(n)?s:n;}
+  if(c===7){const p=s.endsWith('%');const n=Number(s.replace(/[%,\s]/g,''));if(isNaN(n))return s;return p||n>=1?n/100:n;}
+  return s;
+}
+function summaryRows(){
+  let tot=0,fw=0,wt=0;S.rows.forEach(r=>{const m=mv(r);if(m!=null){tot+=m;if(typeof r.cells[7]==='number'){fw+=m*r.cells[7];wt+=m;}}});
+  return [['Total market value',inr(tot),'Sum of Holdings!I'],['Weighted fee rate',wt?pct(fw/wt):'',`Blank fee rates left out`],['Holdings',String(S.rows.length),'Rows in the table']];
+}
+function log(ev,detail){S.log.unshift({ev,detail,t:new Date()});S.log=S.log.slice(0,7);}
+async function sha256(text){try{if(!crypto.subtle)return '';const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){return '';}}
+
+// ── the entries every layer produces ───────────────────────────────────
+function entries(){
+  const out=[];
+  for(const e of S.person){if(!on('W-55')&&e.rid==null)continue;out.push({...e,layer:'review'});}
+  // workbook validation: the dependent dropdown (W-60)
+  if(on('W-60'))S.rows.forEach(r=>{const cat=r.cells[2],sub=r.cells[3];if(cat&&sub&&LISTS[cat]&&!LISTS[cat].includes(sub))out.push({key:'dv:'+r.id,sheet:'Holdings',rid:r.id,c:3,sev:'warning',title:`“${sub}” isn’t a ${cat} subcategory`,found:sub,expected:LISTS[cat].join(' · '),author:'workbook',layer:'review'});});
+  // the host's spec check (pdfsuite) — errors, passes and not-checked
+  S.rows.forEach(r=>{
+    const tk=r.cells[4]||r.id,fee=r.cells[7],u=r.cells[5],meta=(sec,pg,rule)=>({spec:'Fund spec v3',sec,pg,rule});
+    if(fee==null||fee==='')out.push({key:'fee:'+r.id,sheet:'Holdings',rid:r.id,c:7,sev:'skipped',title:'Fee rate 0.00%–2.00%',reason:'Blank in the source',author:'host',layer:'spec'});
+    else if(typeof fee==='number'&&fee>0.02)out.push({key:'fee:'+r.id,sheet:'Holdings',rid:r.id,c:7,sev:'error',title:'Fee rate above 2.00%',found:pct(fee),expected:'≤ 2.00%',author:'host',layer:'spec',check:'Fee rate 0.00%–2.00%',meta:meta('§4.2 Fees',7,'Total expense ratio must be between 0% and 2%')});
+    else out.push({key:'fee:'+r.id,sheet:'Holdings',rid:r.id,c:7,sev:'pass',title:'Fee rate 0.00%–2.00%',author:'host',layer:'spec'});
+    if(typeof u==='number'&&!Number.isInteger(u))out.push({key:'u:'+r.id,sheet:'Holdings',rid:r.id,c:5,sev:'error',title:'Units must be whole',found:units(u),expected:'A whole number',author:'host',layer:'spec',check:'Units are whole numbers',meta:meta('§2.1 Holdings',3,'Units are reported in whole units')});
+    else if(u==null)out.push({key:'u:'+r.id,sheet:'Holdings',rid:r.id,c:5,sev:'skipped',title:'Units are whole numbers',reason:'Blank in the source',author:'host',layer:'spec'});
+    else out.push({key:'u:'+r.id,sheet:'Holdings',rid:r.id,c:5,sev:'pass',title:'Units are whole numbers',author:'host',layer:'spec'});
+    if(r.cells[4]&&!MASTER.includes(r.cells[4]))out.push({key:'tk:'+r.id,sheet:'Holdings',rid:r.id,c:4,sev:'warning',title:'Ticker not in the master list',found:r.cells[4],expected:'One of '+MASTER.length+' master tickers',author:'host',layer:'spec',check:'Ticker in the master list',meta:meta('Annex A',12,'Every ticker appears in the master list')});
+    else if(r.cells[4])out.push({key:'tk:'+r.id,sheet:'Holdings',rid:r.id,c:4,sev:'pass',title:'Ticker in the master list',author:'host',layer:'spec'});
+    else out.push({key:'tk:'+r.id,sheet:'Holdings',rid:r.id,c:4,sev:'skipped',title:'Ticker in the master list',reason:'Row added after the spec ran',author:'host',layer:'spec'});
+  });
+  if(on('W-55'))out.push({key:'wb:fees',id:'',sheet:'',rid:null,c:null,sev:'warning',title:'Expected a “Fees” sheet',found:'Sheets: Holdings, Summary',expected:'Holdings, Summary, Fees',author:'host',layer:'spec',meta:{spec:'Fund spec v3',sec:'§1 Structure',pg:2,rule:'The workbook has three sheets'}});
+  // compare with base v2 (W-63), keyed by Ticker
+  if(on('W-63')&&on('W-51')){
+    S.rows.forEach(r=>{const tk=r.cells[4];const b=tk&&BASE[tk];
+      if(!tk||!MASTER.includes(tk)&&tk!=='SDBD'){out.push({key:'cmp:add:'+r.id,sheet:'Holdings',rid:r.id,c:1,sev:'change',title:'Row added since v2',found:textOf(r.cells[1])||'(new row)',author:'compare',layer:'compare'});return;}
+      if(b)for(const c in b){const now=r.cells[c];const was=b[c];out.push({key:'cmp:'+r.id+':'+c,sheet:'Holdings',rid:r.id,c:+c,sev:'change',title:'Changed since v2',found:disp({cells:Object.assign([],r.cells,{[c]:was})},+c,0),expected:disp(r,+c,idx(r.id)),author:'compare',layer:'compare'});}
+    });
+    for(const n of BASE_REMOVED)if(on('W-55'))out.push({key:'cmp:rm:'+n,sheet:'Holdings',rid:null,c:null,sev:'change',title:'Row removed since v2',found:n,author:'compare',layer:'compare'});
+  }
+  // the user's own edits vs base also show as compare changes
+  for(const e of out){const st=S.status[e.key];e.status=st?st.status:'open';if(st){e.reason2=st.reason;e.at=st.at;}}
+  return out.filter(e=>on('W-50')||(e.sev!=='pass'&&e.sev!=='skipped')).filter(e=>S.results!=='off'||(e.sev!=='pass'&&e.sev!=='skipped'));
+}
+const visible=e=>!on('W-51')||S.layer==='all'||e.layer===S.layer;
+const isProblem=e=>['error','warning','note'].includes(e.sev)&&e.status==='open';
+const refLabel=e=>e.sheet===''?'Workbook':e.rid==null?e.sheet:((e.sheet!==S.sheet?e.sheet+'!':'')+(refOf(e.rid,e.c)||'#REF!'));
+
+// ── render: the drawer ─────────────────────────────────────────────────
+function renderDrawer(){
+  const d=document.getElementById('drawer');
+  let h='<h2>Features</h2><div class="legend"><span><span class="g error">✕</span>error</span><span><span class="g warning">!</span>warning</span><span><span class="g note">i</span>note</span><span style="color:var(--pass)">✓ pass</span><span class="faint">— not checked</span></div>';
+  for(const g of ['G1','G2','G3']){
+    h+=`<div class="grp"><div class="gh"><span class="over">${GROUPS[g]}</span></div>`;
+    for(const f of FEATS.filter(x=>x.g===g))h+=`<label class="feat"><input type="checkbox" id="f-${f.id}" data-act="feat" data-id="${f.id}" ${on(f.id)?'checked':''}><span class="t"><span class="id">${f.id}</span>${esc(f.t)}</span><span class="h">${esc(f.h)}</span></label>`;
+    h+='</div>';
+  }
+  h+=`<div class="row" style="display:flex;gap:6px"><button class="btn" type="button" data-act="allfeats" data-v="1">All on</button><button class="btn" type="button" data-act="allfeats" data-v="0">All off</button></div>`;
+  h+=`<h2>Host page</h2><div class="hostbox">
+    <label for="h-results">results= <select id="h-results" data-act="results" ${on('W-50')?'':'disabled'}><option value="off" ${S.results==='off'?'selected':''}>off</option><option value="summary" ${S.results==='summary'?'selected':''}>summary (default)</option><option value="marks" ${S.results==='marks'?'selected':''}>marks</option></select></label>
+    <label for="h-ref">Open at (ref) <span style="display:flex;gap:4px"><input id="h-ref" value="Holdings!H4" size="11" ${on('W-66')?'':'disabled'}><button class="btn" type="button" data-act="openat" ${on('W-66')?'':'disabled'}>Go</button></span></label>
+    <span style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" type="button" data-act="hl" ${on('W-56')?'':'disabled'}>Highlight H2:H9</button><button class="btn btn-g" type="button" data-act="hlclear" ${on('W-56')&&S.highlight?'':'disabled'}>Clear</button></span>
+  </div>
+  <div class="over">Events the host hears</div>
+  <div class="log" aria-live="polite">${on('W-56')?`<div><span class="ev">sheetpane-hover</span> ${esc(S.hover||'—')}</div>`:''}${S.log.map(l=>`<div><span class="ev">${esc(l.ev)}</span> ${esc(l.detail)}</div>`).join('')||(on('W-56')?'':'<div class="faint">Nothing yet</div>')}</div>`;
+  d.innerHTML=h;
+}
+
+// ── render: the sheet ──────────────────────────────────────────────────
+const ICON={dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  flag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+  table:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 10h18M9 10v9"/></svg>'};
+
+function cellState(E){
+  // per cell: worst open problem, result, compare, change
+  const m=new Map();
+  for(const e of E){if(e.sheet!==S.sheet||e.rid==null||!visible(e))continue;const k=e.rid+':'+e.c;const o=m.get(k)||{};
+    if(isProblem(e)){if(!o.prob||RANK[e.sev]<RANK[o.prob.sev])o.prob=e;}
+    else if(e.sev==='change')o.cmp=e;
+    else if(e.sev==='pass'||e.sev==='skipped')o.res=e;
+    else if(e.status==='resolved'&&!o.prob)o.resolved=e;
+    m.set(k,o);}
+  return m;
+}
+function marksOn(e){return on('W-50')&&S.results!=='off'&&(S.results==='marks'||S.onSheet||(S.showKeys&&S.showKeys.has(e.key)));}
+function locked(c){return on('W-62')&&S.sheet==='Holdings'&&LOCKED.includes(c);}
+
+function renderSheet(E){
+  const el=document.getElementById('sheet');const edit=S.mode==='edit';
+  const cs=cellState(E);
+  const nChanges=S.changes.size+S.struct.length;
+  const tabCnt=sh=>E.filter(e=>e.sheet===sh&&visible(e)&&isProblem(e)).length;
+  const selRow=S.rows[idx(S.sel.rid)];const selI=idx(S.sel.rid);
+  // toolbar
+  let h=`<div class="tb"><span class="fname">holdings.xlsx</span><span class="chip">14.2 KB</span>`;
+  if(on('W-65'))h+=`<button class="chip" type="button" data-act="copysha" title="SHA-256 of the uploaded bytes — click to copy">SHA-256 <span class="mono">${S.sha?esc(S.sha.slice(0,4)+'…'+S.sha.slice(-4)):'unavailable'}</span></button>`;
+  h+=`<span class="sp"></span><div class="seg" role="group" aria-label="Mode"><button type="button" data-act="mode" data-v="view" aria-pressed="${!edit}">View</button><button type="button" data-act="mode" data-v="edit" aria-pressed="${edit}">Edit</button></div>
+   <span class="split"><button class="btn" type="button" data-act="download">${ICON.dl}Download .xlsx${nChanges?`<span class="badge">${nChanges}</span>`:''}</button><button class="btn" type="button" data-act="dlmenu" aria-label="Choose download format" aria-haspopup="menu" aria-expanded="${S.dl}">▾</button></span></div>`;
+  // cell bar
+  if(S.sheet==='Holdings'&&selRow){
+    const c=S.sel.c,ref=COLS[c]+(selI+2),v=selRow.cells[c],lk=locked(c);
+    const k=S.sel.rid+':'+c,st=cs.get(k)||{};
+    const derived=c===0||c===8;const raw=typeof v==='object'&&v&&v.runs?textOf(v):(v==null?'':(c===7&&typeof v==='number'?pct(v):String(v)));
+    h+=`<div class="cb"><span class="ref">${lk?ICON.lock:''}${ref}</span>`;
+    if(edit&&!derived)h+=`<input class="cin" id="cin" aria-label="Cell value" value="${esc(raw)}" ${lk?'readonly':''}>`;
+    else h+=`<span class="cval">${esc(disp(selRow,c,selI))||'<span class="faint">(empty)</span>'}</span>`;
+    if(lk)h+=`<span class="chip">${ICON.lock}Locked in the file${edit?' · edits refused':''}</span>`;
+    if(S.refusal)h+=`<span class="chip chip-fail">${esc(S.refusal)}</span>`;
+    if(on('W-53')&&v&&v.runs&&edit)h+=`<span class="chip chip-warn" title="The cell has formatted runs">${S.editingRich?'Saving drops this cell’s italic run':'Rich text · 1 italic run'}</span>`;
+    if(st.res&&!st.prob&&on('W-50')&&S.results!=='off'&&visible(st.res))h+=`<span class="chip ${st.res.sev==='pass'?'chip-pass':''}">${SEV_G[st.res.sev]} ${st.res.sev==='pass'?'Passed':'Not checked'} · ${esc(st.res.sev==='pass'?st.res.title:st.res.reason)}</span>`;
+    if(on('W-61'))h+=`<span class="chip chip-info">${ICON.table}Table Holdings · ${esc(HEAD[c])}</span>`;
+    h+=`<span class="cbacts">${edit?`<button class="btn" type="button" data-act="flag">${ICON.flag}Flag issue <span class="kbd">F</span></button>`:''}<button class="btn btn-g btn-i" type="button" data-act="more" aria-label="More actions" aria-haspopup="menu">${ICON.more}</button></span></div>`;
+  } else {
+    h+=`<div class="cb"><span class="ref">${S.sheet==='Summary'?'B'+(S.sel.sr||2):''}</span><span class="cval faint">Summary is worked out from Holdings</span></div>`;
+  }
+  // grid
+  h+=`<div class="gridwrap" id="gw">`;
+  if(S.sheet==='Holdings'){
+    const tmpl=['44px'].concat(W.map(w=>w+'px')).join(' ');
+    h+=`<div class="grid" id="grid" tabindex="0" role="grid" aria-label="Holdings" style="grid-template-columns:${tmpl}">`;
+    h+=`<div class="ch corner"></div>`+W.map((_,c)=>`<div class="ch" role="columnheader">${COLS[c]}</div>`).join('');
+    // row 1: the table header
+    h+=`<div class="rh">1</div>`+HEAD.map((t,c)=>`<div class="${on('W-61')?'tbl-h':''}" style="font-weight:600">${esc(t)}${on('W-61')&&c>0&&c<8?'<span class="faint" style="margin-left:auto;font-size:9px">▾</span>':''}</div>`).join('');
+    S.rows.forEach((row,i)=>{
+      // worst glyph for the row header
+      let worst=null;for(let c=0;c<9;c++){const o=cs.get(row.id+':'+c);if(o&&o.prob&&(!worst||RANK[o.prob.sev]<RANK[worst]))worst=o.prob.sev;}
+      h+=`<div class="rh" data-act="rowmenu" data-rid="${row.id}" role="rowheader">${worst?`<span class="g ${worst}" aria-label="${SEV_N[worst]}">${SEV_G[worst]}</span>`:''}${i+2}</div>`;
+      for(let c=0;c<9;c++){
+        const o=cs.get(row.id+':'+c)||{};const sel=S.sel.rid===row.id&&S.sel.c===c;
+        const cls=[c===0||c>=5?'num':'',sel?'sel':'',on('W-61')&&i%2===1?'band':'',o.prob&&o.prob.sev==='error'?'efill':'',o.cmp&&!o.prob?'cmp':'',c===8?'derived':'',(o.prob||o.resolved)&&c>0&&c<5?'haspin':''].filter(Boolean).join(' ');
+        const v=row.cells[c];let txt;
+        if(c===1&&v&&v.runs&&on('W-53'))txt=v.runs.map(r=>r.i?`<i>${esc(r.t)}</i>`:esc(r.t)).join('');else txt=esc(disp(row,c,i));
+        let mk='';
+        if(o.prob)mk+=`<span class="pin ${o.prob.sev}" aria-label="${SEV_N[o.prob.sev]}: ${esc(o.prob.title)}">${SEV_G[o.prob.sev]}</span>`;
+        else if(o.resolved)mk+=`<span class="pin resolved" aria-label="Resolved">✓</span>`;
+        if(S.changes.has('Holdings|'+row.id+'|'+c))mk+=`<span class="corner-mk" aria-label="Changed"></span>`;
+        if(o.cmp&&!o.prob)mk+=`<span class="dmk" aria-label="Changed since v2">Δ</span>`;
+        if(o.res&&!o.prob&&marksOn(o.res))mk+=`<span class="res ${o.res.sev}" aria-label="${o.res.sev==='pass'?'Passed: '+esc(o.res.title):'Not checked: '+esc(o.res.reason)}">${SEV_G[o.res.sev]}</span>`;
+        if(sel&&edit&&on('W-60')&&(c===2||c===3))mk+=`<button class="dd" type="button" data-act="ddopen" aria-label="Choose from the list">▾</button>`;
+        h+=`<div class="${cls}" role="gridcell" aria-selected="${sel}" data-rid="${row.id}" data-c="${c}">${mk}<span class="v">${txt}</span></div>`;
+      }
+    });
+    h+=`</div>`;
+    if(S.highlight&&on('W-56')){const x=44+W.slice(0,7).reduce((a,b)=>a+b,0),y=24+28;h+=`<div class="hl" style="left:${x}px;top:${y}px;width:${W[7]}px;height:${28*S.rows.length}px"><span>${esc(S.highlight)}</span></div>`;}
+  } else {
+    const rows=summaryRows();
+    h+=`<div class="grid" role="grid" aria-label="Summary" style="grid-template-columns:44px 210px 160px 240px"><div class="ch corner"></div><div class="ch">A</div><div class="ch">B</div><div class="ch">C</div>`;
+    h+=`<div class="rh">1</div><div style="font-weight:600">Measure</div><div style="font-weight:600">Value</div><div style="font-weight:600">Note</div>`;
+    rows.forEach((r,i)=>{h+=`<div class="rh">${i+2}</div><div>${esc(r[0])}</div><div class="num derived"><span class="v">${esc(r[1])}</span></div><div class="faint">${esc(r[2])}</div>`;});
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  // tabs
+  h+=`<div class="tabs" role="tablist" aria-label="Sheets">${['Holdings','Summary'].map(sh=>{const n=tabCnt(sh);return `<button class="tab" type="button" role="tab" data-act="sheet" data-v="${sh}" aria-selected="${S.sheet===sh}">${sh}${n?`<span class="cnt" aria-label="${n} open">${n}</span>`:''}</button>`;}).join('')}</div>`;
+  // status line
+  const spec=E.filter(e=>e.layer==='spec'&&e.rid!=null);const checked=spec.filter(e=>e.sev!=='skipped').length;
+  let st=[`<span><b>${S.sheet}</b> · ${S.sheet==='Holdings'?S.rows.length+' rows':'3 rows'}</span>`];
+  if(on('W-50')&&S.results!=='off'&&S.sheet==='Holdings')st.push(`<span>${checked} of ${spec.length} checks run</span>`);
+  if(on('W-62')&&S.sheet==='Holdings')st.push(`<span>${ICON.lock.replace('<svg','<svg style="width:11px;height:11px;vertical-align:-1px"')} Protected · A and E locked</span>`);
+  if(on('W-63')&&on('W-51')&&(S.layer==='compare'||S.layer==='all')){const ch=E.filter(e=>e.layer==='compare');st.push(`<span>vs v2: ${ch.filter(e=>e.title.startsWith('Changed')).length} cells changed · ${ch.filter(e=>e.title.startsWith('Row added')).length} added · ${ch.filter(e=>e.title.startsWith('Row removed')).length} removed</span>`);}
+  if(on('W-52')&&edit&&S.sheet==='Holdings')st.push(`<span class="faint">Right-click a row number to insert or delete</span>`);
+  h+=`<div class="status" role="status">${st.join('<span class="faint">·</span>')}</div>`;
+  el.innerHTML=h;
+}
+
+// ── render: the errors panel ───────────────────────────────────────────
+function renderPanel(E){
+  const el=document.getElementById('panel');
+  const V=E.filter(visible);
+  const probs=V.filter(isProblem),passes=V.filter(e=>e.sev==='pass'),skips=V.filter(e=>e.sev==='skipped'),acc=V.filter(e=>e.status==='accepted'),changes=V.filter(e=>e.sev==='change');
+  const hasRes=on('W-50')&&S.results!=='off'&&(passes.length+skips.length)>0;
+  if(!hasRes&&(S.filter==='passed'||S.filter==='skipped'))S.filter='problems';
+  if(!(on('W-69')&&acc.length)&&S.filter==='accepted')S.filter='problems';
+  let h=`<div class="ph"><b>Review</b><span class="cnt" aria-label="${probs.length} open problems">${probs.length}</span>`;
+  if(on('W-64'))h+=`<span class="ptabs seg" role="tablist"><button type="button" role="tab" data-act="ptab" data-v="errors" aria-pressed="${S.ptab==='errors'}">Errors</button><button type="button" role="tab" data-act="ptab" data-v="edits" aria-pressed="${S.ptab==='edits'}">Edits <span class="n">${S.changes.size+S.struct.length}</span></button></span>`;
+  h+=`</div>`;
+  if(on('W-64')&&S.ptab==='edits'){el.innerHTML=h+renderEdits(E);return;}
+  if(on('W-51')){
+    const cnt=l=>E.filter(e=>(l==='all'||e.layer===l)&&(isProblem(e)||e.sev==='change')).length;
+    const ls=['all','review','spec'].concat(on('W-63')?['compare']:[]);
+    h+=`<div class="lrow"><span class="lbl">Layer</span><span class="seg" role="group" aria-label="Review layers">${ls.map(l=>`<button type="button" data-act="layer" data-v="${l}" aria-pressed="${S.layer===l}">${l==='all'?'All':LAYER_N[l]} <span class="n">${cnt(l)}</span></button>`).join('')}</span></div>`;
+  }
+  if(hasRes){
+    h+=`<div class="sum"><b>${probs.length} problems</b><span class="p">✓ ${passes.length} passed</span><span class="faint">— ${skips.length} not checked</span>${S.results==='marks'?'<span class="faint" style="margin-left:auto">marks on (host)</span>':`<button class="sw" type="button" role="switch" data-act="onsheet" aria-checked="${S.onSheet}">On sheet <span class="tg"></span></button>`}</div>`;
+  }
+  const chips=[['problems','Problems',probs.length+(changes.length?` · Δ ${changes.length}`:'')]];
+  if(hasRes){chips.push(['passed','Passed',passes.length]);chips.push(['skipped','Not checked',skips.length]);}
+  if(on('W-69')&&acc.length)chips.push(['accepted','Accepted',acc.length]);
+  if(chips.length>1)h+=`<div class="chips">${chips.map(c=>`<button class="fc" type="button" data-act="filter" data-v="${c[0]}" aria-pressed="${S.filter===c[0]}">${c[1]} <span class="c">${c[2]}</span></button>`).join('')}</div>`;
+  h+=`<div class="list">`;
+  if(S.filter==='passed'||S.filter==='skipped'){
+    const src=S.filter==='passed'?passes:skips;const by=new Map();
+    for(const e of src){const k=S.filter==='passed'?e.title:e.reason;(by.get(k)||by.set(k,[]).get(k)).push(e);}
+    for(const [k,list] of by){const rows=list.map(e=>idx(e.rid)+2).filter(n=>n>1).sort((a,b)=>a-b);const col=COLS[list[0].c];
+      const range=rows.length>1?`${col}${rows[0]}:${col}${rows[rows.length-1]}`:col+rows[0];
+      h+=`<div class="grow"><span class="gl ${list[0].sev}">${SEV_G[list[0].sev]}</span><span class="it" style="padding:0;border:0;display:block;background:none"><span class="tt">${esc(k)}</span><span class="ds">${list.length} cell${list.length>1?'s':''} · ${range}</span></span><button class="link" type="button" data-act="showgroup" data-v="${esc(k)}" data-f="${S.filter}">Show ▸</button></div>`;}
+    if(!by.size)h+=`<div class="empty">Nothing here.</div>`;
+  } else {
+    const src=S.filter==='accepted'?acc:V.filter(e=>isProblem(e)||e.sev==='change'||e.status==='resolved');
+    const order=(a,b)=>(a.status==='resolved')-(b.status==='resolved')||RANK[a.sev]-RANK[b.sev]||(idx(a.rid)-idx(b.rid))||(a.c-b.c);
+    const wb=src.filter(e=>e.sheet===''),sh=src.filter(e=>e.sheet!==''&&e.rid==null),cells=src.filter(e=>e.rid!=null);
+    if(on('W-55')&&wb.length)h+=`<div class="sec">Workbook</div>`+wb.sort(order).map(item).join('');
+    if(on('W-55')&&sh.length)h+=`<div class="sec">Whole sheet</div>`+sh.sort(order).map(item).join('');
+    if(cells.length){if(on('W-55')&&(wb.length||sh.length))h+=`<div class="sec">Cells</div>`;h+=cells.sort(order).map(item).join('');}
+    if(!src.length)h+=`<div class="empty">${S.filter==='accepted'?'No accepted deviations.':'No open problems in this layer.'}</div>`;
+  }
+  h+=`</div>`;
+  el.innerHTML=h;
+}
+function item(e){
+  const open=S.open===e.key;const sev=e.status==='accepted'?'pass':e.sev;
+  let h=`<button class="it ${open?'on':''} ${e.status==='resolved'?'dim':''}" type="button" data-act="open" data-v="${esc(e.key)}" aria-expanded="${open}"><span class="gl ${e.sev}" aria-label="${SEV_N[e.sev]}">${SEV_G[e.sev]}</span><span class="tt">${esc(e.title)}<span class="ds">${e.found?esc(e.found)+(e.expected?' → '+esc(e.expected):''):''}${e.status==='resolved'?' · resolved':''}${e.status==='accepted'?' · accepted: '+esc(e.reason2):''}</span></span><span class="rf">${esc(refLabel(e))}</span></button>`;
+  if(!open)return h;
+  const canShow=e.sheet!=='';
+  h+=`<div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">${LAYER_N[e.layer]}</span><span class="chip">${e.author==='person'?'You':e.author==='workbook'?'Workbook rule':e.author==='host'?'Host check':'Compare'}</span>${e.id?`<span class="chip mono">${e.id}</span>`:''}</div>`;
+  if(e.found)h+=`<div class="fnd"><span class="faint">${e.sev==='change'?'Was':'Found'}</span><span class="x">${esc(e.found)}</span>${e.expected?`<span class="faint">${e.sev==='change'?'now':'should be'}</span><span class="x">${esc(e.expected)}</span>`:''}</div>`;
+  if(on('W-68')&&e.meta)h+=`<div class="hostd" part="detail"><span class="k">From the host · ${esc(e.meta.spec)}</span><span>${esc(e.meta.sec)} · page ${e.meta.pg}</span><span class="faint">“${esc(e.meta.rule)}”</span><a href="#" data-act="noop">Open in the spec ↗</a></div>`;
+  if(S.accepting===e.key){
+    h+=`<label for="acc-r" class="faint">Why is this deviation acceptable? (required)</label><textarea class="reason" id="acc-r" placeholder="e.g. Waiver from the fund board, 12 Oct"></textarea><div class="acts"><button class="btn" type="button" data-act="accept-do" data-v="${esc(e.key)}">Accept</button><button class="btn btn-g" type="button" data-act="accept-cancel">Cancel</button></div>`;
+  } else {
+    h+=`<div class="acts"><button class="btn" type="button" data-act="show" data-v="${esc(e.key)}" ${canShow?'':'disabled title="A workbook error has no place in a sheet"'}>${e.rid==null&&canShow?'Open sheet':'Show in sheet'}</button>`;
+    if(e.sev!=='change'){
+      if(e.status==='accepted')h+=`<button class="btn" type="button" data-act="unaccept" data-v="${esc(e.key)}">Withdraw acceptance</button>`;
+      else{if(e.author==='person')h+=`<button class="btn" type="button" data-act="resolve" data-v="${esc(e.key)}">${e.status==='resolved'?'Reopen':'Resolve'}</button>`;
+        if(on('W-69')&&e.status==='open')h+=`<button class="btn" type="button" data-act="accept" data-v="${esc(e.key)}">Accept…</button>`;}
+      if(e.author==='person')h+=`<button class="btn btn-g" type="button" data-act="delete" data-v="${esc(e.key)}">Delete</button>`;
+    }
+    h+=`</div>`;
+  }
+  return h+`</div>`;
+}
+function renderEdits(E){
+  const list=[...S.changes.values()].map(x=>({...x,kind:'value'})).concat(S.struct.map(x=>({...x,kind:'structure'}))).sort((a,b)=>b.t-a.t);
+  if(!list.length)return `<div class="empty">No edits yet. Switch to Edit, change a cell, and it lands here with what it was.</div>`;
+  let h=`<div class="lrow"><span class="lbl">${list.length} edit${list.length>1?'s':''} · newest first</span><button class="btn" type="button" data-act="revertall" style="margin-left:auto">Revert all</button></div>`;
+  for(const x of list){
+    const tm=x.t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    if(x.kind==='structure'){h+=`<div class="edit"><span>${esc(x.text)}<span class="wn" style="display:block">structure · ${tm}</span></span><button class="btn" type="button" data-act="revert-s" data-v="${x.id}">Revert</button></div>`;continue;}
+    const ref=refOf(x.rid,x.c)||'#REF!';const row=S.rows[idx(x.rid)];
+    const now=row?disp(row,x.c,idx(x.rid)):'';const was=disp({cells:Object.assign([],row?row.cells:[],{[x.c]:x.was})},x.c,0);
+    const raised=E.filter(e=>e.rid===x.rid&&e.c===x.c&&isProblem(e)).map(e=>SEV_G[e.sev]+' '+e.title);
+    h+=`<div class="edit"><button class="link" type="button" data-act="goto" data-rid="${x.rid}" data-c="${x.c}" style="text-align:left;color:var(--ink);font-size:12px"><b class="mono">${ref}</b> · ${esc(HEAD[x.c])}<span class="wn" style="display:block"><s>${esc(was)||'(empty)'}</s> → ${esc(now)||'(empty)'} · ${tm}</span>${raised.length?`<span class="wn" style="display:block;color:var(--fail)">now: ${esc(raised.join(', '))}</span>`:''}</button><button class="btn" type="button" data-act="revert" data-v="${esc(x.key)}">Revert</button></div>`;
+  }
+  return h;
+}
+
+// ── menus ──────────────────────────────────────────────────────────────
+function renderFloat(){
+  const f=document.getElementById('float');
+  if(!S.menu){f.innerHTML='';return;}
+  const m=S.menu;let h=`<div class="menu" role="menu" style="left:${m.x}px;top:${m.y}px" id="menu">`;
+  if(m.kind==='cell'){
+    h+=`<button class="mi" role="menuitem" type="button" data-act="copyref"><span>Copy ref</span><span class="k">${esc(m.ref)}</span></button><button class="mi" role="menuitem" type="button" data-act="copyval"><span>Copy value</span><span class="k">Ctrl+C</span></button>`;
+    if(on('W-66'))h+=`<button class="mi" role="menuitem" type="button" data-act="copylink"><span>Copy link</span><span class="k">#sheetpane</span></button>`;
+    if(on('W-52')&&S.mode==='edit')h+=rowItems();
+  } else if(m.kind==='row'){h+=`<div class="mhd">Row ${idx(S.sel.rid)+2}</div>`+rowItems(true);}
+  else if(m.kind==='dd'){
+    const row=S.rows[idx(S.sel.rid)],c=S.sel.c;const opts=c===2?Object.keys(LISTS):(LISTS[row.cells[2]]||null);
+    h+=`<div class="mhd">${c===2?'Category':'Subcategory · '+esc(row.cells[2]||'')}</div>`;
+    if(!opts)h+=`<div class="empty" style="padding:10px">Pick a category first</div>`;
+    else h+=opts.map(o=>`<button class="mi" role="menuitemradio" aria-checked="${row.cells[c]===o}" type="button" data-act="ddpick" data-v="${esc(o)}"><span>${esc(o)}</span><span class="k">${row.cells[c]===o?'✓':''}</span></button>`).join('');
+    if(c===3)h+=`<div class="msep"></div><div class="faint" style="font-size:11px;padding:4px 10px 6px">This list follows column C (INDIRECT)</div>`;
+  } else if(m.kind==='dl'){
+    h+=`<button class="mi" role="menuitem" type="button" data-act="download"><span>Download as .xlsx</span><span class="chip" style="height:18px;font-size:10px">default</span></button><button class="mi" role="menuitem" type="button" data-act="download" data-v="csv"><span>Download as .csv</span><span class="k">this sheet</span></button>`;
+  }
+  f.innerHTML=h+`</div>`;
+  const first=f.querySelector('.mi:not([disabled])');if(first&&m.focus)first.focus();
+}
+function rowItems(head){
+  return `${head?'':'<div class="msep"></div>'}<button class="mi" role="menuitem" type="button" data-act="ins" data-v="0"><span>Insert row above</span><span class="k">Ctrl+Shift+=</span></button><button class="mi" role="menuitem" type="button" data-act="ins" data-v="1"><span>Insert row below</span><span class="k"></span></button><button class="mi" role="menuitem" type="button" data-act="del"><span>Delete row</span><span class="k">Ctrl+−</span></button>`;
+}
+function openMenu(kind,anchor,extra){
+  const r=anchor.getBoundingClientRect();
+  S.menu=Object.assign({kind,x:Math.min(r.left+window.scrollX,window.scrollX+innerWidth-250),y:r.bottom+window.scrollY+4,focus:true},extra||{});
+  render();
+}
+
+// ── actions ────────────────────────────────────────────────────────────
+let toastT;
+function toast(msg){let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t);}t.textContent=msg;clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2600);}
+function copy(text,label){try{navigator.clipboard.writeText(text).then(()=>toast(label+' copied: '+text),()=>toast(label+': '+text));}catch(e){toast(label+': '+text);}}
+function select(rid,c,why){S.sel={rid,c};S.refusal='';S.editingRich=false;const ref=refOf(rid,c);if(ref)log('sheetpane-select',`{sheet:"Holdings", ref:"${ref}"}`+(why?' · '+why:''));}
+function setCell(rid,c,val){
+  const row=S.rows[idx(rid)];if(!row)return;
+  const key='Holdings|'+rid+'|'+c;const prev=S.changes.get(key);const old=row.cells[c];
+  const was=prev?prev.was:old;
+  row.cells[c]=val;
+  const same=JSON.stringify(was)===JSON.stringify(val);
+  if(same)S.changes.delete(key);else S.changes.set(key,{key,rid,c,was,now:val,t:new Date()});
+  log('sheetpane-change',`{ref:"${refOf(rid,c)}", now:${JSON.stringify(textOf(val))}}`);
+}
+function commitInput(){
+  const inp=document.getElementById('cin');if(!inp)return;const c=S.sel.c;
+  if(locked(c)){S.refusal='Refused · SP-6005 · Locked in the file';render();return;}
+  const row=S.rows[idx(S.sel.rid)];const cur=row.cells[c];
+  const raw=cur&&cur.runs?textOf(cur):(cur==null?'':(c===7&&typeof cur==='number'?pct(cur):String(cur)));
+  if(inp.value===raw){return;}
+  setCell(S.sel.rid,c,parse(c,inp.value));S.editingRich=false;render();
+}
+function insertRow(after){
+  const i=idx(S.sel.rid);const at=i+(after?1:0);const r={id:'r'+(++seq),cells:[null,'','','','',null,null,null,null]};
+  S.rows.splice(at,0,r);const sid='s'+seq;
+  S.struct.push({id:sid,t:new Date(),text:`Inserted row ${at+2}`,undo:()=>{const j=idx(r.id);if(j>=0)S.rows.splice(j,1);for(const k of [...S.changes.keys()])if(k.includes('|'+r.id+'|'))S.changes.delete(k);}});
+  select(r.id,1,'inserted');log('sheetpane-change','{kind:"structure", insertRows:{at:'+(at+2)+', count:1}}');toast(`Row ${at+2} inserted — refs below it moved down`);
+}
+function deleteRow(){
+  const i=idx(S.sel.rid);if(i<0)return;const r=S.rows[i];S.rows.splice(i,1);
+  const lost=S.person.filter(e=>e.rid===r.id);lost.forEach(e=>{e.rid=null;e.c=null;e.title+=' (its row was deleted)';});
+  S.struct.push({id:'s'+(++seq),t:new Date(),text:`Deleted row ${i+2} (${textOf(r.cells[1])||'empty'})`,undo:()=>{S.rows.splice(i,0,r);}});
+  const nx=S.rows[Math.min(i,S.rows.length-1)];if(nx)select(nx.id,S.sel.c);
+  log('sheetpane-change','{kind:"structure", deleteRows:{at:'+(i+2)+', count:1}}');
+  toast(lost.length?`Row ${i+2} deleted — ${lost.map(e=>e.id).join(', ')} now belongs to the whole sheet`:`Row ${i+2} deleted — refs below it moved up`);
+}
+function findEntry(key){return entries().find(e=>e.key===key);}
+async function doDownload(fmt){
+  const body=JSON.stringify(S.rows.map(r=>r.cells))+fmt;const h=await sha256(body);
+  log('sheetpane-export',`{format:"${fmt}", changes:${S.changes.size+S.struct.length}${on('W-65')?`, sha256:"${h?h.slice(0,12)+'…':'unavailable'}"`:''}}`);
+  toast(`Prototype: holdings.${fmt} would download now${on('W-65')&&h?' · SHA-256 '+h.slice(0,8)+'…':''}`);render();
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');
+  if(S.menu&&!e.target.closest('.menu')&&!(t&&['more','dlmenu','ddopen','rowmenu'].includes(t.dataset.act))){S.menu=null;S.dl=false;if(!t){render();return;}}
+  if(!t){const cell=e.target.closest('.grid [data-rid][data-c]');if(cell){if(document.getElementById('cin'))commitInput();select(cell.dataset.rid,+cell.dataset.c);render();document.getElementById('grid')?.focus({preventScroll:true});}return;}
+  const a=t.dataset.act,v=t.dataset.v;
+  switch(a){
+    case 'theme':S.theme=v;document.documentElement.setAttribute('data-theme',v);break;
+    case 'feat':return;
+    case 'results':return;
+    case 'allfeats':S.feats=new Set(v==='1'?FEATS.map(f=>f.id):[]);break;
+    case 'mode':S.mode=v;log('sheetpane-mode',`"${v}"`);break;
+    case 'sheet':S.sheet=v;S.menu=null;break;
+    case 'layer':S.layer=v;S.open=null;break;
+    case 'filter':S.filter=v;S.open=null;break;
+    case 'ptab':S.ptab=v;break;
+    case 'onsheet':S.onSheet=!S.onSheet;S.showKeys=null;log('sheetpane-results-view',`"${S.onSheet?'marks':'summary'}"`);break;
+    case 'showgroup':{const E=entries().filter(visible).filter(x=>(t.dataset.f==='passed'?x.sev==='pass'&&x.title===v:x.sev==='skipped'&&x.reason===v));S.showKeys=new Set(E.map(x=>x.key));if(E[0]){S.sheet='Holdings';select(E[0].rid,E[0].c,'Show ▸');}break;}
+    case 'open':S.open=S.open===v?null:v;S.accepting=null;{const x=findEntry(v);if(x&&x.rid&&S.open){S.sheet=x.sheet;select(x.rid,x.c);}}break;
+    case 'show':{const x=findEntry(v);if(x){S.sheet=x.sheet;if(x.rid)select(x.rid,x.c,'Show in sheet');}break;}
+    case 'resolve':{const st=S.status[v];S.status[v]=st&&st.status==='resolved'?undefined:{status:'resolved'};if(!S.status[v])delete S.status[v];break;}
+    case 'delete':S.person=S.person.filter(x=>x.key!==v);S.open=null;break;
+    case 'accept':S.accepting=v;setTimeout(()=>document.getElementById('acc-r')?.focus(),0);break;
+    case 'accept-cancel':S.accepting=null;break;
+    case 'accept-do':{const r=document.getElementById('acc-r');const reason=r&&r.value.trim();if(!reason){r&&(r.style.borderColor='var(--fail)');toast('A reason is required to accept a deviation');return;}S.status[v]={status:'accepted',reason,at:new Date()};S.accepting=null;S.open=null;toast('Accepted — it leaves the problem count and is kept in the download');break;}
+    case 'unaccept':delete S.status[v];break;
+    case 'flag':{const n=++S.personSeq;const id='ERR-'+String(n).padStart(4,'0');S.person.push({key:id,id,sheet:'Holdings',rid:S.sel.rid,c:S.sel.c,sev:'error',title:'Flagged for review',found:disp(S.rows[idx(S.sel.rid)],S.sel.c,idx(S.sel.rid))||'(blank)',expected:'',author:'person'});S.open=id;S.layer=on('W-51')&&S.layer!=='all'?'review':S.layer;S.filter='problems';break;}
+    case 'more':if(S.menu){S.menu=null;break;}openMenu('cell',t,{ref:refOf(S.sel.rid,S.sel.c)});return;
+    case 'rowmenu':if(S.mode!=='edit'||!on('W-52'))return;select(t.dataset.rid,S.sel.c||1);openMenu('row',t);return;
+    case 'dlmenu':S.dl=!S.dl;if(S.dl){openMenu('dl',t);return;}S.menu=null;break;
+    case 'download':S.menu=null;S.dl=false;doDownload(v==='csv'?'csv':'xlsx');return;
+    case 'ddopen':openMenu('dd',t);return;
+    case 'ddpick':{setCell(S.sel.rid,S.sel.c,v);S.menu=null;break;}
+    case 'copyref':copy(refOf(S.sel.rid,S.sel.c),'Ref');S.menu=null;break;
+    case 'copyval':copy(disp(S.rows[idx(S.sel.rid)],S.sel.c,idx(S.sel.rid)),'Value');S.menu=null;break;
+    case 'copylink':copy(`https://host.example/review#sheetpane=q3:Holdings!${refOf(S.sel.rid,S.sel.c)}`,'Link');S.menu=null;break;
+    case 'copysha':if(S.sha)copy(S.sha,'SHA-256');else toast('No SHA-256 on an insecure page — never a substitute hash');return;
+    case 'ins':S.menu=null;insertRow(v==='1');break;
+    case 'del':S.menu=null;deleteRow();break;
+    case 'revert':{const x=S.changes.get(v);if(x){const row=S.rows[idx(x.rid)];if(row)row.cells[x.c]=x.was;S.changes.delete(v);toast('Reverted '+(refOf(x.rid,x.c)||''));}break;}
+    case 'revert-s':{const i=S.struct.findIndex(x=>x.id===v);if(i>=0){S.struct[i].undo();S.struct.splice(i,1);toast('Reverted');}break;}
+    case 'revertall':for(const x of S.changes.values()){const row=S.rows[idx(x.rid)];if(row)row.cells[x.c]=x.was;}S.changes.clear();while(S.struct.length)S.struct.pop().undo();toast('Every edit reverted');break;
+    case 'goto':S.sheet='Holdings';select(t.dataset.rid,+t.dataset.c);break;
+    case 'hl':S.highlight='Spec §4.2 · fee rates';log('highlight()','{ranges:["H2:H'+(S.rows.length+1)+'"], tone:"info"}');break;
+    case 'hlclear':S.highlight=null;log('clearHighlight()','');break;
+    case 'openat':{const val=(document.getElementById('h-ref').value||'').trim();const m=/^(?:Holdings!)?([A-I])(\d+)$/i.exec(val);const i=m?+m[2]-2:-1;if(m&&S.rows[i]){S.sheet='Holdings';select(S.rows[i].id,COLS.indexOf(m[1].toUpperCase()),'ref attribute');}else toast('No such cell: '+val);break;}
+    case 'noop':e.preventDefault();toast('The host’s own link — opens its spec viewer');return;
+  }
+  render();
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.act==='feat'){if(t.checked)S.feats.add(t.dataset.id);else S.feats.delete(t.dataset.id);if(!on('W-51'))S.layer='all';if(!on('W-63')&&S.layer==='compare')S.layer='all';render();}
+  else if(t.dataset.act==='results'){S.results=t.value;S.onSheet=false;S.showKeys=null;log('results attribute','"'+t.value+'"');render();}
+});
+document.addEventListener('contextmenu',e=>{
+  const cell=e.target.closest('.grid [data-rid][data-c]');const rh=e.target.closest('.rh[data-rid]');
+  if(!cell&&!rh)return;e.preventDefault();
+  if(cell){select(cell.dataset.rid,+cell.dataset.c);S.menu={kind:'cell',x:e.pageX,y:e.pageY,ref:refOf(cell.dataset.rid,+cell.dataset.c),focus:true};}
+  else{if(S.mode!=='edit'||!on('W-52')){toast('Insert and delete are in Edit');return;}select(rh.dataset.rid,S.sel.c||1);S.menu={kind:'row',x:e.pageX,y:e.pageY,focus:true};}
+  render();
+});
+document.addEventListener('mouseover',e=>{
+  if(!on('W-56'))return;const cell=e.target.closest('.grid [data-rid][data-c]');if(!cell)return;
+  const ref='Holdings!'+refOf(cell.dataset.rid,+cell.dataset.c);if(ref===S.hover)return;S.hover=ref;
+  const l=document.querySelector('.log .ev');if(l&&l.textContent==='sheetpane-hover')l.parentElement.innerHTML=`<span class="ev">sheetpane-hover</span> {sheet:"Holdings", ref:"${esc(ref.split('!')[1])}"}`;
+});
+document.addEventListener('focusin',e=>{if(e.target.id==='cin'){const v=S.rows[idx(S.sel.rid)]?.cells[S.sel.c];if(v&&v.runs&&on('W-53')&&!S.editingRich){S.editingRich=true;const chip=document.querySelector('.cb .chip-warn');if(chip)chip.textContent='Saving drops this cell’s italic run';}}});
+document.addEventListener('keydown',e=>{
+  const inInput=e.target.id==='cin';
+  if(e.key==='Escape'){if(S.menu){S.menu=null;render();return;}if(inInput){S.editingRich=false;render();return;}}
+  if(inInput){if(e.key==='Enter'){e.preventDefault();commitInput();const i=idx(S.sel.rid);if(S.rows[i+1])select(S.rows[i+1].id,S.sel.c);render();document.getElementById('grid')?.focus({preventScroll:true});}return;}
+  if(S.menu){const items=[...document.querySelectorAll('#menu .mi:not([disabled])')];const k=items.indexOf(document.activeElement);
+    if(e.key==='ArrowDown'){e.preventDefault();(items[k+1]||items[0])?.focus();}if(e.key==='ArrowUp'){e.preventDefault();(items[k-1]||items[items.length-1])?.focus();}return;}
+  if(e.target.closest('input,select,textarea,.drawer'))return;
+  if(S.sheet!=='Holdings')return;
+  const mod=e.ctrlKey||e.metaKey;const i=idx(S.sel.rid);
+  if(mod&&e.shiftKey&&(e.key==='='||e.key==='+')&&S.mode==='edit'&&on('W-52')){e.preventDefault();insertRow(false);render();return;}
+  if(mod&&!e.shiftKey&&(e.key==='-'||e.key==='−')&&S.mode==='edit'&&on('W-52')){e.preventDefault();deleteRow();render();return;}
+  const mv2=(dr,dc)=>{const ni=Math.max(0,Math.min(S.rows.length-1,i+dr));const nc=Math.max(0,Math.min(8,S.sel.c+dc));select(S.rows[ni].id,nc);render();};
+  if(!e.target.closest('.sx'))return;
+  if(e.key==='ArrowDown'){e.preventDefault();mv2(1,0);}else if(e.key==='ArrowUp'){e.preventDefault();mv2(-1,0);}
+  else if(e.key==='ArrowRight'||e.key==='Tab'&&!e.shiftKey){e.preventDefault();mv2(0,1);}else if(e.key==='ArrowLeft'||e.key==='Tab'&&e.shiftKey){e.preventDefault();mv2(0,-1);}
+  else if(S.mode==='edit'&&(e.key==='Enter'||e.key==='F2')){e.preventDefault();document.getElementById('cin')?.focus();}
+  else if(S.mode==='edit'&&(e.key==='f'||e.key==='F')&&!mod){document.querySelector('[data-act="flag"]')?.click();}
+  else if(S.mode==='edit'&&e.key.length===1&&!mod){const inp=document.getElementById('cin');if(inp&&!inp.readOnly){inp.focus();inp.value=e.key;e.preventDefault();}else if(locked(S.sel.c)){S.refusal='Refused · SP-6005 · Locked in the file';render();}}
+});
+
+// ── render all ─────────────────────────────────────────────────────────
+function render(){
+  const E=entries();
+  const hadGrid=document.activeElement&&document.activeElement.id==='grid';
+  const gw=document.getElementById('gw');const sc=gw?[gw.scrollLeft,gw.scrollTop]:null;
+  renderDrawer();renderSheet(E);renderPanel(E);renderFloat();
+  const g2=document.getElementById('gw');if(g2&&sc){g2.scrollLeft=sc[0];g2.scrollTop=sc[1];}
+  const sel=document.querySelector('.grid .sel');if(sel&&g2){const r=sel.getBoundingClientRect(),w=g2.getBoundingClientRect();if(r.bottom>w.bottom)g2.scrollTop+=r.bottom-w.bottom+8;else if(r.top<w.top+52)g2.scrollTop-=w.top+52-r.top;if(r.right>w.right)g2.scrollLeft+=r.right-w.right+8;else if(r.left<w.left+44)g2.scrollLeft-=w.left+44-r.left;}
+  if(hadGrid)document.getElementById('grid')?.focus({preventScroll:true});
+  const tl=document.getElementById('th-light'),td=document.getElementById('th-dark');
+  const dark=S.theme?S.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  tl.setAttribute('aria-pressed',String(!dark));td.setAttribute('aria-pressed',String(dark));
+}
+sha256('holdings.xlsx · 14.2 KB · prototype bytes').then(h=>{S.sha=h;log('sheetpane-load',`{name:"holdings.xlsx", sheets:2${h?`, sha256:"${h.slice(0,12)}…"`:''}}`);render();});
+render();
+})();
+</script>
