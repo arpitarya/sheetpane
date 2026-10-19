@@ -8,7 +8,7 @@ import type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneError
 export type { SheetpaneErrorsAttributes, SheetpaneErrorsEventMap, SheetpaneErrorsProperties, SheetpaneExcelAttributes, SheetpaneExcelEventMap, SheetpaneExcelProperties } from './elements.js';
 
 /** `<sheetpane-excel>` in a Vue 3 template: attributes, properties and `@sheetpane-…` listeners (`onSheetpane…` props). */
-export type SheetpaneExcelVueProps = SheetpaneExcelAttributes & SheetpaneExcelProperties & {
+export type SheetpaneExcelVueProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omit<SheetpaneExcelProperties, 'ref'> & {
   /** `{ status: 'ready', name, kind, sheets, readMs, sha256 }` when a file is read (`sha256`: the file's SHA-256, W-65), or the refusal `{ status: 'error', code, spCode, message, name, detail? }`. */
   onSheetpaneLoad?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
@@ -21,6 +21,8 @@ export type SheetpaneExcelVueProps = SheetpaneExcelAttributes & SheetpaneExcelPr
   onSheetpaneVisibility?: ((event: SheetpaneExcelEventMap['sheetpane-visibility']) => void) | undefined;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   onSheetpaneResize?: ((event: SheetpaneExcelEventMap['sheetpane-resize']) => void) | undefined;
+  /** `{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56). */
+  onSheetpaneHover?: ((event: SheetpaneExcelEventMap['sheetpane-hover']) => void) | undefined;
   /** `{ sheet }` when the selection moves to another sheet. */
   onSheetpaneSheet?: ((event: SheetpaneExcelEventMap['sheetpane-sheet']) => void) | undefined;
   /** `{ mode }` when the pane switches between View and Edit. */

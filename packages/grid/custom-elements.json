@@ -112,6 +112,23 @@
               },
               "default": "'on'",
               "fieldName": "flagging"
+            },
+            {
+              "name": "ref",
+              "description": "The cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3019) and the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "ref"
+            },
+            {
+              "name": "link",
+              "description": "`none` (the default) or `hash`: the selection is kept in the URL fragment as `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link* joins the cell menu. The rest of the fragment is the host's and is kept as it was.",
+              "type": {
+                "text": "'none' | 'hash'"
+              },
+              "default": "'none'",
+              "fieldName": "link"
             }
           ],
           "members": [
@@ -263,6 +280,28 @@
               "reflects": true
             },
             {
+              "kind": "field",
+              "name": "ref",
+              "privacy": "public",
+              "type": {
+                "text": "string | null"
+              },
+              "description": "The `ref` attribute: the cell or range selected once a file is read (W-66); `null`, `undefined` or `''` removes it.",
+              "attribute": "ref",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "link",
+              "privacy": "public",
+              "type": {
+                "text": "'none' | 'hash'"
+              },
+              "description": "`none` (the default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu (W-66).",
+              "attribute": "link",
+              "reflects": true
+            },
+            {
               "kind": "method",
               "name": "load",
               "privacy": "public",
@@ -364,6 +403,43 @@
                   }
                 }
               ],
+              "return": {
+                "type": {
+                  "text": "void"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "highlight",
+              "privacy": "public",
+              "description": "Outlines cells from outside without selecting them (W-56): a pass-through outline on the overlay —\nnot a change, not undone, not in the download, and the selection stays where it is. Each call\nreplaces the last; the outline goes on a sheet switch unless `pinned`, and with a new file. A range\nthat is not A1 (`B3`, `B3:D8`, `Data!B3`, `'Q3 data'!B3:D8`) or names a sheet the workbook lacks is\nskipped. A view setting of this element, like zoom.\n@param ranges - One range or several; an object gives one its own sheet or tone.\n@param options - `tone`, `label` (said once by the status line), `sheet`, `pinned`, `reveal`.\n@returns How many ranges are outlined; 0 before a file is loaded.",
+              "parameters": [
+                {
+                  "name": "ranges",
+                  "type": {
+                    "text": "HighlightRange | readonly HighlightRange[]"
+                  }
+                },
+                {
+                  "name": "options",
+                  "optional": true,
+                  "type": {
+                    "text": "HighlightOptions"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "number"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "clearHighlight",
+              "privacy": "public",
+              "description": "Removes the outline `highlight()` drew (W-56).",
               "return": {
                 "type": {
                   "text": "void"
@@ -551,6 +627,13 @@
                 "text": "CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>"
               },
               "description": "`{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47)."
+            },
+            {
+              "name": "sheetpane-hover",
+              "type": {
+                "text": "CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string } } | null>"
+              },
+              "description": "`{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56)."
             },
             {
               "name": "sheetpane-sheet",

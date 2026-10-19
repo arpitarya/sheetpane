@@ -6,7 +6,7 @@ item: W-56
 filed: 2026-10-19
 filed_by: "Arpit (Cowork, claude-opus-5-5)"
 updated: 2026-10-19
-updated_by: "Arpit (Cowork, claude-opus-5-5)"
+updated_by: "Arpit (Claude Code, claude-opus-5-5)"
 ball: agent
 ---
 
@@ -16,9 +16,9 @@ ball: agent
 
 | step | what we do | what it gives us | state |
 |---|---|---|---|
-| 1 | `sheetpane-hover` `{ sheet, ref } | null`, throttled to one per frame, pointer only | a host can follow the pointer | ⏳ |
-| 2 | `highlight(ranges, { tone, label })` / `clearHighlight()`: a pass-through outline on the overlay layer, not a change, not in undo, not exported | a host can point at cells | ⏳ |
-| 3 | Scroll into view on request (`{ reveal: true }`) | the highlighted cell is visible | ⏳ |
+| 1 | `sheetpane-hover` `{ sheet, ref } | null`, throttled to one per frame, pointer only | a host can follow the pointer | ✅ |
+| 2 | `highlight(ranges, { tone, label })` / `clearHighlight()`: a pass-through outline on the overlay layer, not a change, not in undo, not exported | a host can point at cells | ✅ |
+| 3 | Scroll into view on request (`{ reveal: true }`) | the highlighted cell is visible | ✅ |
 
 **Arpit, 2026-10-19:** *"look at PDF suite and think about what all features could be needed just from Excel point of view that can be added into sheet pane … consider it built and consider it published. What else?"* — then *"do some research. What can be created as plugin? What should be part of existing packages? Classify it into those and create work items for all of these. Group 1, Group 2, and Group 3."*
 
@@ -38,10 +38,10 @@ ball: agent
 
 | DoD | what | state |
 |---|---|---|
-| 1 · event | typed in `elements.d.ts` and the manifest; never fires on touch | ⏳ |
-| 2 · method | tones `info · pass · fail`; several ranges; cleared on sheet switch unless pinned | ⏳ |
-| 3 · a11y | the highlight's label is announced via the status line once | ⏳ |
-| 4 · tests · docs | browser tests; skills `sheetpane-events`, `sheetpane-react`; CHANGELOG | ⏳ |
+| 1 · event | typed in `elements.d.ts` and the manifest; never fires on touch | ✅ `sheetpane-hover {sheet, ref, column}` or `null` — one `requestAnimationFrame` per frame, only when the cell changes (a merge's top-left, frozen panes read where they stick, re-read on scroll); typed in `custom-elements.json`, `elements.d.ts` and the four framework typings (the manifest reads a `` `null` `` payload); a finger never fires it, a pen does |
+| 2 · method | tones `info · pass · fail`; several ranges; cleared on sheet switch unless pinned | ✅ `highlight(ranges, { tone, label, sheet, pinned, reveal })` → the count drawn, `clearHighlight()`; `B3`, `B3:D8`, `Data!B3`, `{ ref, sheet?, tone? }`; boxes 2 px outside the cells in the overlay, `pointer-events: none`; not a change, not undone, not exported, the selection untouched; cleared on a sheet switch unless pinned and by a new file; `reveal` scrolls it in (4 px to spare) and shows a hidden row or column under it |
+| 3 · a11y | the highlight's label is announced via the status line once | ✅ the label sits in the status line (`role="status"`), whose nodes are now replaced only when its text changes — a test sees no rewrite while the label stays; axe in View and Edit. Not heard with a real screen reader |
+| 4 · tests · docs | browser tests; skills `sheetpane-events`, `sheetpane-react`; CHANGELOG | ✅ `packages/grid/test/highlight.test.ts` (12, incl. the hazard: 250,000 rows, 4 pointer moves a frame while scrolling, the host highlighting each hovered cell — 301 frames, 300 hover events, worst 16.8 ms, none dropped, load ≈ 115); both skills, the grid README, SR-GRID 9 and 11c, CHANGELOG |
 
 ## Blockers
 

@@ -18,6 +18,10 @@ export function Review({ file, src }: { file: File | null; src: string }) {
         onsheetpane-export={(e) => console.log(e.detail.blob.size, e.detail.format)} />
       <sheetpane-errors pane="q3" author="Reviewer" readonly onsheetpane-errors={(e) => setReview(e.detail.errors)} onsheetpane-reveal={(e) => console.log(e.detail.error.id)} />
       <sheetpane-excel pane="q3" display="popup" open onsheetpane-close={() => undefined} />
+      {/* W-66: `ref` stays React's; the attribute is set from a ref callback */}
+      <sheetpane-excel pane="q3" link="hash" ref={(el) => el?.setAttribute('ref', 'Data!F9')} />
+      {/* @ts-expect-error — `link` is `none` or `hash` */}
+      <sheetpane-excel link="query" />
       {/* @ts-expect-error — not a mode */}
       <sheetpane-excel mode="write" />
       {/* @ts-expect-error — a change's detail has no `value` */}

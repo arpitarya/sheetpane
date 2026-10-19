@@ -15,6 +15,8 @@ export interface SheetpaneExcelEventMap {
   'sheetpane-visibility': CustomEvent<{ sheet: string; axis: 'row' | 'col' | 'sheet'; indexes: number[]; hidden: boolean; via: 'menu' | 'key' | 'marker' | 'reveal' }>;
   /** `{ sheet, axis, indexes, px, via }` when a column width or row height is set by a drag, a fit, the header menu or a reset — on release, never during a drag (W-47). */
   'sheetpane-resize': CustomEvent<{ sheet: string; axis: 'col' | 'row'; indexes: number[]; px: number | number[]; via: 'drag' | 'fit' | 'menu' | 'reset' }>;
+  /** `{ sheet, ref, column }` when a mouse or pen pointer moves onto another cell (a merge's top-left), at most once per frame, or `null` when it leaves the cells; never for a finger (W-56). */
+  'sheetpane-hover': CustomEvent<{ sheet: string; ref: string; column: { index: number; letter: string; header: string } } | null>;
   /** `{ sheet }` when the selection moves to another sheet. */
   'sheetpane-sheet': CustomEvent<{ sheet: string }>;
   /** `{ mode }` when the pane switches between View and Edit. */
@@ -61,6 +63,10 @@ export interface SheetpaneExcelAttributes {
   'rules-src'?: string | undefined;
   /** `on` (the default) or `off`: no Flag issue anywhere. */
   flagging?: 'on' | 'off' | undefined;
+  /** The cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8`; setting it later selects it then. One that names no cell is warned (SP-3019) and the sheet opens at A1. React, Vue and Solid keep `ref` for their own refs — set it with `setAttribute`. */
+  ref?: string | undefined;
+  /** `none` (the default) or `hash`: the selection is kept in the URL fragment as `#sheetpane=<pane>:<Sheet>!<ref>`, read when a file is read and on back and forward, and *Copy link* joins the cell menu. The rest of the fragment is the host's and is kept as it was. */
+  link?: 'none' | 'hash' | undefined;
 }
 
 /** The properties a framework may set on `<sheetpane-excel>`, typed as the element declares them. */
@@ -93,6 +99,10 @@ export interface SheetpaneExcelProperties {
   sizes?: SheetpaneExcel['sizes'] | undefined;
   /** The `src` attribute; `null`, `undefined` or `''` removes it. */
   src?: SheetpaneExcel['src'] | undefined;
+  /** The `ref` attribute: the cell or range selected once a file is read (W-66); `null`, `undefined` or `''` removes it. */
+  ref?: SheetpaneExcel['ref'] | undefined;
+  /** `none` (the default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu (W-66). */
+  link?: SheetpaneExcel['link'] | undefined;
 }
 
 /** The events `<sheetpane-errors>` dispatches, by name; each bubbles and is composed. */

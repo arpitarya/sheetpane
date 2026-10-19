@@ -205,6 +205,8 @@ committed manifest drifts from the elements.
 | attribute | `plugins` | the enabled plugin ids, e.g. `numfmt formulas` |
 | attribute | `header-row` | the row holding column titles (default `1`) — every event names the column by it, and column rules match by it |
 | attribute | `theme` | `light` (default), `dark` or `auto` (follows the page's `prefers-color-scheme`) |
+| attribute / property | `ref` | the cell or range selected once a file is read, scrolled into view: `B4`, `Data!B4`, `'Q3 data'!B4:D8` — see [Opening at a cell](#opening-at-a-cell-and-links) |
+| attribute / property | `link` | `none` (default) or `hash`: the selection kept in the URL fragment, and *Copy link* in the cell menu |
 | attribute / property | `on-invalid` / `onInvalid` | what a failing column rule does by default: `flag` (default) or `block` |
 | attribute / property | `rules-src` / `rules` | a rules file by URL, or as an object — see [Rules file](#rules-file) |
 | attribute / property | `flagging` | `on` (default) or `off`: no Flag issue, no composer, no pop-up card — errors are read in `<sheetpane-errors>` |
@@ -216,6 +218,7 @@ committed manifest drifts from the elements.
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
 | method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
+| method | `highlight(ranges, { tone, label, sheet, pinned, reveal }?)`, `clearHighlight()` | outline cells without selecting them — and `sheetpane-hover` — see *Pointing at cells* under [Following an edit](#following-an-edit) |
 | event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
 
 ### Following an edit
@@ -244,8 +247,8 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
 
 **Keys:** arrows, Shift+arrows, Home/End, Ctrl+Home/End, PageUp/PageDown;
 Enter or F2 edits; typing replaces; Delete clears; Ctrl/⌘+V pastes tab-separated cells; **F flags an issue**;
-**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy value and
-plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
+**right-click, Shift+F10 or the Menu key** opens the selection actions (Flag issue, Copy ref, Copy link with
+`link="hash"`, Copy value and plugin actions) under the cell — the same actions sit at the right end of the cell bar, never over the cells; Esc
 cancels or closes the pop-up; Ctrl/⌘+Z undo, Ctrl+Y / ⌘+Shift+Z redo. The `?`
 button lists them, plugins' shortcuts included.
 
@@ -267,6 +270,48 @@ them with the `sizes` property and the `sheetpane-resize` event:
 ```js
 excel.addEventListener('sheetpane-resize', () => localStorage.setItem('sizes', JSON.stringify(excel.sizes)));
 excel.sizes = JSON.parse(localStorage.getItem('sizes') ?? '{}'); // { Sheet1: { cols: { B: 120 }, rows: { 4: 40 } } }
+```
+
+**Pointing at cells from outside (W-56):** `sheetpane-hover` names the cell under a mouse or pen pointer —
+`{sheet, ref, column}`, a merge by its top-left, at most once per frame and only when the cell changes —
+and `null` when the pointer leaves the cells; a finger never hovers. `highlight(ranges, options?)` outlines
+cells without selecting them: `B3`, `B3:D8`, `Data!B3` or `{ ref, sheet?, tone? }`, in `tone` `info`
+(default), `pass` or `fail`. The outline lets the pointer through; it is not a change, not undone, not in the
+download. Each call replaces the last; a sheet switch clears it unless `pinned: true`, and so does a new
+file; `reveal: true` scrolls the first range into view; a `label` is shown in the status line and said once
+by screen readers. It returns how many ranges it outlined (a bad ref or a missing sheet is skipped);
+`clearHighlight()` removes it. Together they make "hover a box, its cell lights up — hover a cell, its box
+does":
+
+```js
+excel.addEventListener('sheetpane-hover', (e) => pdf.outline(e.detail && boxFor(e.detail.ref))); // null: none
+pdf.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' : 'fail', label: box.name }) : excel.clearHighlight());
+```
+
+### Opening at a cell, and links
+
+`ref` opens the file at a cell — the selection once it is read, scrolled into view; set later, it selects
+then. A cell or range, with or without its sheet (`B4`, `Data!B4`, `'Q3 data'!B4:D8`). One that names no
+cell warns `SP-3019` in the console and the sheet opens at A1.
+
+```html
+<sheetpane-excel pane="q3" src="/files/q3.xlsx" ref="Data!F9"></sheetpane-excel>
+```
+
+`link="hash"` keeps the selection in the URL, so a reload or a shared link opens at the same cell, and adds
+*Copy link* to the cell menu. It is off by default. Only one parameter of the fragment is sheetpane's —
+`sheetpane=<pane>:<Sheet>!<ref>` — and the rest is left as it was: after a hash router's path it goes with
+`?` (`#/reports/12?sheetpane=q3:Data!F9`), after an anchor or your own parameters with `&`. It is written
+with `history.replaceState` once the selection settles — no history entry, no `hashchange` for your router
+— and read when a file is read and on back and forward. A link wins over `ref`. Give each sheet its own
+`pane` when a page has two. The fragment never leaves the browser: it is not part of any request.
+
+**React, Vue and Solid** keep `ref` for their own refs, so their typings leave it out. Set it from a ref
+callback, or call `select()` once the file is read:
+
+```jsx
+<sheetpane-excel pane="q3" src={url} ref={(el) => el?.setAttribute('ref', 'Data!F9')} />
+<sheetpane-excel pane="q3" src={url} onsheetpane-load={(e) => e.detail.status === 'ready' && e.currentTarget.select('Data', 'F9')} />
 ```
 
 ## Column rules

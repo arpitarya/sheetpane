@@ -9,6 +9,7 @@ import { define } from './shared/dom.js';
 // tooling at the declarations and their TSDoc (W-36)
 export { SheetpaneExcel } from './excel/element.js';
 export { SheetpaneErrors } from './errors/element.js';
+export type { HighlightOptions, HighlightRange, HighlightTone } from './excel/element.js';
 export { WorkbookStore, createWorkbook, parseInput, formulaRefs, key as cellKey, splitKey, kindRef, baseRef, SLOTTED_KINDS, HISTORY_CAP, type StoreOptions, type StoreEvent, type Origin } from './pane/store.js';
 export { acquirePane, releasePane, paneStore } from './pane/registry.js';
 export { checkDocument, describeRule, RULE_TYPE, CELL_RULE_TYPE, type RulesDocument, type DocProblem, type ColumnRule, type ColumnRules, type ColumnRulesConfig, type OnInvalid, type RuleContext, type RuleOutcome, type RulePhase, type RuleResult, type ValidateFn } from './pane/rules.js';

@@ -38,8 +38,6 @@ here. Read that record before changing anything below it.
 
 - 🟢 **W-54** `agent` · **G1** · Run the rules file, column rules and the workbook's validation in Node, with no page. Filed by Arpit (Cowork). [detail](open/W-54-checks-in-node.md)
 
-- 🟢 **W-56** `agent` · **G1** · A hover event and a host highlight that does not move the selection. Filed by Arpit (Cowork). [detail](open/W-56-hover-and-highlight.md)
-
 - 🟢 **W-58** `agent` · **G2** · Write the rules file into the download as Excel's own dropdowns and checks. Filed by Arpit (Cowork). [detail](open/W-58-rules-file-as-excel-dropdowns.md)
 
 - 🟢 **W-59** `agent` · **G2** · New plugin `@sheetpane/review`: the review written into the download as its own sheet, flagged cells coloured. Filed by Arpit (Cowork). [detail](open/W-59-review-sheet-plugin.md)
@@ -53,8 +51,6 @@ here. Read that record before changing anything below it.
 - 🟡 **W-63** `agent` · **G3** · New plugin `@sheetpane/compare`: what changed between two versions of a workbook. Waiting on W-51. Filed by Arpit (Cowork). [detail](open/W-63-compare-plugin.md)
 
 - 🟢 **W-64** `agent` · **G3** · An *Edits* view in the errors panel: every change, before → after, revert one. Filed by Arpit (Cowork). [detail](open/W-64-edits-view.md)
-
-- 🟢 **W-66** `agent` · **G3** · Open straight at a cell: a `ref` attribute and opt-in links in the URL. Filed by Arpit (Cowork). [detail](open/W-66-link-to-a-cell.md)
 
 - 🟡 **W-67** `agent` · **G3** · A static HTML snippet of a range with its marks, made in Node. Waiting on W-54. Filed by Arpit (Cowork). [detail](open/W-67-static-html-render.md)
 

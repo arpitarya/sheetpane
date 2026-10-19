@@ -144,6 +144,12 @@ flowchart LR
   `sheetpane-plugins` and `sheetpane-plugin-author` name rich text with W-53
   (a sheet's `runs`, `decorateRuns`, `richText` on `sheetpane-editstart`), so the
   drift check covers them.
+- **Taught since W-56 (2026-10-19):** `sheetpane-events` and `sheetpane-react`
+  cover `sheetpane-hover`, `highlight()` and `clearHighlight()`; the drift
+  check (decision 5) reads them against the element's source.
+- **Taught since W-66 (2026-10-19):** `sheetpane-embed` covers `ref`,
+  `link="hash"` and *Copy link*, and that React, Vue and Solid set `ref`
+  with `setAttribute` (their own `ref` is the framework's).
 
 ### Alternatives considered
 

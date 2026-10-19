@@ -110,6 +110,23 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 - **Decided / left open:** read in: only `read()` hashes (`fromXlsx` / `fromCsv` may be given text, not the file); a refused file is not hashed; SP-1009 warns on every unhashed load or export rather than once per page; the event key is always present (`string | undefined`). `@sheetpane/mcp` does not report the hash yet — not asked.
 - **Mistakes:** the empty-message vector was misremembered in the first test draft (`…afbe4c…` for `…afbf4c…`); `shasum -a 256` settled it before anything was committed.
 - **Next:** the queue's next agent item.
+## 2026-10-19 — W-66 open at a cell: `ref`, `link="hash"`, Copy link (closed)  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-66 in lane c (a worktree beside other lanes), close it, commit, do not push.*
+- **Done:** `ref` attribute and property — the pane's selection once a file is read, scrolled into view; set later, selects then; one naming no cell warns SP-3019 (new, `docs/ERRORS.md`, lock) and opens at A1. `link="hash"` (default `none`) — one fragment parameter, `sheetpane=<pane>:<Sheet>!<ref>`, the host's router path and parameters kept byte for byte (`excel/link.ts`, pure); written with `replaceState` 300 ms after the selection settles (no entry, no `hashchange`, `history.state` kept); read on load (wins over `ref`) and on `hashchange` / `popstate`; off removes it. *Copy link* after *Copy ref* in the cell and ⋯ menus when on. Fixed on the way: the status line now renders before the grid — its first content after a load shrank the scroller after a scroll-to-selection, so `ref` (and a host's `select()` right after load) landed 18 px under the edge. React, Vue and Solid typings `Omit` `ref` (the framework's own); `build-manifest.mjs` does it. `link.test.ts` 12 ✓, `link.node.test.ts` 6 ✓; SR-GRID 9, 11d, 13, the manifest note, Codes, Consequences; SR-CODES; SR-SKILLS; `sheetpane-embed`; grid README; CHANGELOG; item archived.
+- **Decided / left open:** the name `ref` is the decider's, kept — but React (pdfsuite's framework), Vue and Solid treat `ref` as their own, so there it is set with `setAttribute` or replaced by `link` / `select()`; a JSX-safe alias is the decider's call. The fragment is replaced, not pushed: back and forward step between links followed, not cells clicked. L11: the fragment is never sent (stated in SR-GRID 11d; L11's record is on main, not this lane).
+- **Mistakes:** the first link grammar split the pane at the first `:` — a range's own `:` (`Sheet1!B4:D8`) broke it; the pane now ends at the `:` before the last `!`.
+- **Next:** the orchestrator merges lane c (SP-3019 may need renumbering against other lanes).
+
+---
+
+## 2026-10-19 — W-56 hover and highlight (closed)  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *build W-56 in lane c (a worktree beside other lanes), close it, commit, do not push.*
+- **Done:** `sheetpane-hover {sheet, ref, column}` / `null` — mouse and pen only, one `requestAnimationFrame` per frame, only on a new cell (a merge's top-left, frozen panes, re-read on scroll); `highlight(ranges, { tone, label, sheet, pinned, reveal })` → count, `clearHighlight()` — boxes 2 px outside the cells in the overlay, `pointer-events: none`, `info` · `pass` · `fail`, not a change, cleared on a sheet switch unless pinned and by a new file, `reveal` scrolls it in and shows a hidden row or column under it; the status line (a live region) now rewrites its nodes only when its text changes, so the label is said once. Manifest reads a `null` payload; typings, README, two skills, plugin copy, llms regenerated. `highlight.test.ts` 12 ✓; the hazard run — 250,000 rows, 4 moves a frame while scrolling, the host highlighting each hovered cell: 301 frames, 300 events, worst 16.8 ms, none dropped (load ≈ 115 from the parallel lanes). SR-GRID 9, 11c, Consequences; SR-SKILLS Consequences; CHANGELOG; item archived.
+- **Decided / left open:** a bad ref or a missing sheet is skipped, not thrown (no new SP code; `highlight()` returns the count drawn); the highlight is per element, like zoom. Not done: hearing the label with a real screen reader.
+- **Mistakes:** the first `reveal` scroll put the cell flush with the edge, hiding the outline's 2 px — the scroll now keeps 4 px.
+- **Next:** the orchestrator merges lane c.
 
 ---
 

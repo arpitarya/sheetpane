@@ -141,6 +141,10 @@ dialog::backdrop{background:rgba(22,23,26,.42)}
 .c .mk{position:absolute;z-index:2;right:2px;top:50%;transform:translateY(-50%);border:0;background:transparent;padding:0 2px;cursor:pointer;color:var(--sp-ink-3)}
 .overlay{position:absolute;inset:0;pointer-events:none;z-index:4}
 .overlay>*{pointer-events:auto}
+.overlay>.hl,.hlbox{pointer-events:none}
+.hlbox{position:absolute;box-sizing:border-box;border:2px solid var(--sp-accent);border-radius:var(--sp-r-sm);box-shadow:0 0 0 2px var(--sp-accent-soft)}
+.hlbox.pass{border-color:var(--sp-pass);box-shadow:0 0 0 2px var(--sp-pass-soft)}
+.hlbox.fail{border-color:var(--sp-fail);box-shadow:0 0 0 2px var(--sp-fail-soft)}
 .pin{position:absolute;min-width:18px;height:18px;padding:0 4px;border-radius:9px;border:0;font-size:10px;font-weight:700;line-height:18px;color:var(--sp-on-solid);text-align:center;box-shadow:0 0 0 2px var(--sp-cell),0 1px 4px rgba(22,23,26,.3);cursor:pointer;font-variant-numeric:tabular-nums}
 .pin.error{background:var(--sp-fail)}.pin.warning{background:var(--sp-warn)}.pin.note{background:var(--sp-accent)}.pin.resolved{background:var(--sp-pass)}.pin.accepted{background:var(--sp-surface);color:var(--sp-ink-2);box-shadow:0 0 0 2px var(--sp-cell),inset 0 0 0 1.5px var(--sp-ink-3)}
 .pin.on{box-shadow:0 0 0 2px var(--sp-cell),0 0 0 4px var(--sp-ink)}

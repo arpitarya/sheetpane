@@ -91,6 +91,8 @@ flowchart LR
 - **W-57** added SP-2015 (error, `bad-rule`): a data-validation rule,
   conditional format or differential format `toXlsx` / `patchXlsx` cannot
   write as Excel reads it (SR-EXPORT decision 6).
+- **W-66** added SP-3019 (warning): the `ref` attribute or a `#sheetpane=`
+  link names no cell (SR-GRID decision 11d).
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

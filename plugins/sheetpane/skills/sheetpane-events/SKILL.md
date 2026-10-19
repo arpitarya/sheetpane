@@ -1,6 +1,6 @@
 ---
 name: sheetpane-events
-description: Use when a host reacts to what the user does in the sheet - selection, typing, saving, cancelling, refusing a value with sheetpane-beforechange, or switching sheets. Not for column checks (sheetpane-column-rules) or the error list (sheetpane-errors).
+description: Use when a host reacts to what the user does in the sheet - selection, hover, typing, saving, refusing a value, sheet tabs - or outlines cells with highlight(). Not for column checks (sheetpane-column-rules) or the error list (sheetpane-errors).
 license: MIT
 metadata:
   audience: host
@@ -35,6 +35,27 @@ excel.addEventListener('sheetpane-beforechange', (e) => {
   if (e.detail.column.header === 'Units' && Number(e.detail.now) < 0) e.preventDefault();
 });
 excel.addEventListener('sheetpane-change', (e) => save(e.detail)); // after it is stored
+```
+
+## Pointing at cells — hover and highlight (W-56)
+
+`sheetpane-hover` names the cell under a **mouse or pen** pointer:
+`{sheet, ref, column}` (a merge by its top-left), at most once per frame and
+only when the cell changes, `null` when the pointer leaves the cells. A finger
+never hovers. It is not a selection.
+
+`excel.highlight(ranges, options?)` outlines cells **without selecting them**
+— `'B3'`, `'B3:D8'`, `'Data!B3'` or `{ ref, sheet?, tone? }`; options `tone`
+(`info` · `pass` · `fail`), `label` (shown in the status line, said once by a
+screen reader), `pinned` (kept across a sheet switch), `reveal` (scroll it into
+view). The outline lets clicks through, is not a change, not undone, not
+exported. Each call replaces the last; `clearHighlight()` removes it; it
+returns how many ranges it drew (a bad ref or a missing sheet is skipped).
+
+```js
+// "hover a box, its cell lights up — hover a cell, its box does"
+excel.addEventListener('sheetpane-hover', (e) => viewer.outline(e.detail ? boxFor(e.detail.ref) : null));
+viewer.onHover = (box) => (box ? excel.highlight(box.cell, { tone: box.ok ? 'pass' : 'fail', label: box.name }) : excel.clearHighlight());
 ```
 
 ## Other events
