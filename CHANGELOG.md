@@ -8,6 +8,19 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+## 0.4.2 — every package published by CI with provenance; no change to the packages (2026-10-19)
+
+The package code is the same as 0.4.0 and 0.4.1. All 20 packages now trust
+the release workflow, so this version of each — `@sheetpane/tables`,
+`review` and `compare` included, whose 0.4.0 was published by hand — comes
+from CI with signed provenance.
+
+```bash
+npm i @sheetpane/grid@0.4.2
+```
+
+**Before you upgrade from 0.4.1:** nothing to change.
+
 ## 0.4.1 — the playground deploys with each release; no change to the packages (2026-10-19)
 
 The package code is the same as 0.4.0. This release puts all 20 packages on

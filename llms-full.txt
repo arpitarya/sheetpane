@@ -5901,8 +5901,8 @@ pnpm and a justfile; the testing verdict chose the runner.
 - **Enforced today:** decisions 6, 7 and 10 by `just check` / `just
   pack-check`, locally and in CI.
 - **Owed by the decider:** the first publish by hand (any package not yet on
-  npm), a trusted publisher per package (`tables`, `review` and `compare`
-  have none yet, 2026-10-19) (`publish.yml`, environment `npm`,
+  npm), a trusted publisher per package (all 20 have one since 0.4.1,
+  2026-10-19) (`publish.yml`, environment `npm`,
   *Allow npm publish*) and the `npm` environment in GitHub — `RELEASING.md`
   §One time; the `@sheetpane` organisation exists.
 - **Still open:** the licence check over the whole lockfile (backlog B-008);
