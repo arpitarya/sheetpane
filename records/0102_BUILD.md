@@ -290,8 +290,7 @@ pnpm and a justfile; the testing verdict chose the runner.
     stylesheet the HTML demo inlines.
 11a. **The plugin gallery (W-32):** both demos carry a second tab row —
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
-    Validation · Conditional formats · Images · Charts · Comments · All
-    plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
+    Validation · Conditional formats · Images · Charts · Comments · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
     its header menu, the marker unhides it) · Tables (W-61: `tables
     validation` on the showcase's Tables sheet — both tables in their style
     colours, and C9 typed "furlong" fails the list over `Units[Unit]`) · Compare (W-63:
@@ -300,14 +299,17 @@ pnpm and a justfile; the testing verdict chose the runner.
     `demo-check` reads the status line's 4 sheets · 7 rows · 2 cells, the
     amber price, the 7 listed changes and Alt+F5 to D4) · Review sheet (W-59:
     `@sheetpane/review` — the download gains a Review sheet listing the
-    review, flagged cells coloured) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    review, flagged cells coloured) · All plugins (every plugin on one pane,
+    SR-LAW-12; `test/plugins-in-demos.test.ts` fails when a package that
+    calls `registerPlugin` is not imported by a demo, has no tab of its own
+    or is missing from All plugins, 2026-10-19) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
     `?url` import in React; W-42) on its
     own `pane`, mounted when the tab first opens and kept after; a plugin's
     peer loads with it (condfmt with styles, charts with images). Both demos
-    depend on all eight plugins, and the HTML import map lists them with
+    depend on every plugin, and the HTML import map lists them with
     `numfmt` (its ESM build, `dist/index.mjs`) and `@ironcalc/wasm`.
     `demo-check` asserts per tab: Vanilla plain (1.25, no overlay, no errors);
     1 1/4; the yellow fill; B6 recalculated; two rule errors; a data bar; the

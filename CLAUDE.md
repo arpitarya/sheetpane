@@ -69,6 +69,8 @@ Each law is stated in exactly one record and is **not restated here**:
 - **L9** — memory means a JavaScript object, for now — [SR-LAW-9](records/0011_LAW-9-memory-is-a-javascript-object.md)
 - **L10** — the examples are maintained with every package change — [SR-LAW-10](records/0012_LAW-10-examples-maintained.md)
 - **L11** — the workbook never leaves the browser — [SR-LAW-11](records/0013_LAW-11-workbook-stays-in-the-browser.md)
+- **L12** — every plugin is in the demos, and All plugins has them all — [SR-LAW-12](records/0014_LAW-12-every-plugin-in-the-demos.md)
+- **L13** — every dropdown is wholly visible, inside the viewport, on top — [SR-LAW-13](records/0015_LAW-13-popups-always-visible.md)
 
 [SR-LAWS](records/0001_LAWS.md) assigns the handles and routes each to its
 record; that is all it does. Add a law by adding a record in the law range and

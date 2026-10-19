@@ -33,15 +33,15 @@ export const TABS: readonly GalleryTab[] = [
   { id: 'images', label: 'Images', plugins: 'images', sheet: 'Images', blurb: 'The picture anchored to B3:E9, scaled with zoom.' },
   { id: 'charts', label: 'Charts', plugins: 'images charts', sheet: 'Charts', blurb: 'Needs images. A column and a line chart drawn at their anchors; Show source cells selects the data.' },
   { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'The note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
-  { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
   { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'Right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
   { id: 'tables', label: 'Tables', plugins: 'tables validation', sheet: 'Tables', blurb: 'Excel tables drawn by their own style — Units in blue (Medium 2), Readings in green (Medium 7) with its first column and totals row. Readings’ Unit column is a list over Units[Unit] (the defined name UnitList): type “furlong” in C9 and it fails; add it to Units and it passes.' },
   { id: 'compare', label: 'Compare', plugins: 'compare', sheet: 'Holdings', src: compareNow, base: compareBase, blurb: 'This file against its earlier version (base.xlsx, read in the page), keyed by Account: the changed price is amber, the added row green, the moved row blue, a red line where a row was removed; the status line sums it up and each change is in the errors list. Alt+F5 / Alt+Shift+F5 step through them; Compare… picks another base.' },
   { id: 'review-sheet', label: 'Review sheet', plugins: 'review', sheet: 'Numbers', blurb: 'Flag an issue (press F on a cell, or use the error list), then Download: the file gains a Review sheet listing every error with a link to its cell, and a hidden name marks it so a host can skip it on re-upload. Tick Colour flagged cells in the Download ▾ menu to fill each flagged cell by severity, its own format kept.' },
+  { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments visibility tables compare review', sheet: 'Numbers', blurb: 'Every plugin on one pane — each one listed above, together. A new plugin joins this tab and gets its own (SR-LAW-12).' },
   { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json, passed as the rules prop) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
 ];
 /** Review · the plugins one by one · together. */
-const SEP_AFTER = new Set(['review', 'comments']);
+const SEP_AFTER = new Set(['review', 'review-sheet']);
 
 /** The tab row (APG tabs: arrows move between tabs, Home/End to the ends). */
 export function GalleryTabs({ active, onOpen }: { active: string; onOpen: (id: string) => void }) {

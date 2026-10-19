@@ -48,7 +48,7 @@ record to become wrong?*
 
 | range | holds | a new record takes |
 |---|---|---|
-| `0001`–`0050` | the **Law** records only — `0001` SR-LAWS, `0002` SR-LAW-0, `0003` SR-LAW-1, `0004` SR-LAW-2, `0005` SR-LAW-3, `0006` SR-LAW-4, `0007` SR-LAW-5, `0008` SR-LAW-6, `0009` SR-LAW-7, `0010` SR-LAW-8, `0011` SR-LAW-9, `0012` SR-LAW-10, `0013` SR-LAW-11 | the next free number after the highest law |
+| `0001`–`0050` | the **Law** records only — `0001` SR-LAWS, `0002` SR-LAW-0, `0003` SR-LAW-1, `0004` SR-LAW-2, `0005` SR-LAW-3, `0006` SR-LAW-4, `0007` SR-LAW-5, `0008` SR-LAW-6, `0009` SR-LAW-7, `0010` SR-LAW-8, `0011` SR-LAW-9, `0012` SR-LAW-10, `0013` SR-LAW-11, `0014` SR-LAW-12, `0015` SR-LAW-13 | the next free number after the highest law |
 | `0051`–`0100` | the **WORK** records only — how work is done | the next free number after the highest |
 | `0101`– | every other record | the next free number after the highest |
 
@@ -115,6 +115,8 @@ Start from `TEMPLATE.md`.
 | [0011](0011_LAW-9-memory-is-a-javascript-object.md) | **SR-LAW-9** | **L9** — memory means a JavaScript object, for now | accepted | yes — nothing stores data yet; L6's veto command checks it |
 | [0012](0012_LAW-10-examples-maintained.md) | **SR-LAW-10** | **L10** — the examples are maintained with every package change | accepted | partly — the examples working is checked (`just demo-check`, the React recipes, `test/starters.test.ts`); being current is not (B-035) |
 | [0013](0013_LAW-11-workbook-stays-in-the-browser.md) | **SR-LAW-11** | **L11** — the workbook never leaves the browser | accepted | yes — no network call in any package source but the three allowed reads (`test/packages.test.ts`, SR-BUILD decision 7) |
+| [0014](0014_LAW-12-every-plugin-in-the-demos.md) | **SR-LAW-12** | **L12** — every plugin is in the demos, and All plugins has them all | accepted | yes — `test/plugins-in-demos.test.ts`; *All plugins* runs clean in `just demo-check` |
+| [0015](0015_LAW-13-popups-always-visible.md) | **SR-LAW-13** | **L13** — every dropdown is wholly visible, inside the viewport, on top | accepted | yes — `packages/grid/test/float.test.ts`; a dropdown left out of `FLOATS` is not caught |
 | [0051](0051_WORK-open-queue.md) | **SR-WORK-OPEN-QUEUE** | How `OPEN-WORK.md` works — the queue discipline in ten groups | accepted | yes |
 | [0052](0052_WORK-backlog.md) | **SR-WORK-BACKLOG** | How `BACKLOG.md` works — the named-but-unclaimed in five classes | accepted | yes |
 | [0053](0053_WORK-lifecycle.md) | **SR-WORK-LIFECYCLE** | How a feature travels — compare, proposal, handoff in the item file, the model line, one record | accepted | yes |

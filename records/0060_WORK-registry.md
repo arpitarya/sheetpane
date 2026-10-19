@@ -98,7 +98,7 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `work/proposals/README.md` | an idea is filed, graduates, or is rejected | 2026-10-18 | 2026-10-18 — second proposal: Dismiss for workbook errors (B-029) |
 | `docs/GLOSSARY.md` | a term is coined or redefined | 2026-10-19 | 2026-10-19 — static table (W-67) |
 | `docs/ARCHITECTURE.md` | a package, element, flow or contract changes; a verdict is reopened | 2026-10-19 | 2026-10-19 — the static entry (W-67) |
-| `records/README.md` | a record's state, ownership or number changes | 2026-10-18 | 2026-10-18 — SR-LAW-10 (0012) registered |
+| `records/README.md` | a record's state, ownership or number changes | 2026-10-19 | 2026-10-19 — SR-LAW-12 (0014) and SR-LAW-13 (0015) registered |
 | `records/TEMPLATE.md` | the convention changes | 2026-10-18 | 2026-10-18 — created at setup |
 | `work/reference/README.md` | a reference document is added, removed or refreshed | 2026-10-18 | 2026-10-18 — plugin boards row for W-14–W-24, W-29 |
 | `work/reference/design/README.md` | the design canvas changes — synced the same session (§Keeping this folder in sync) | 2026-10-18 | 2026-10-19 — synced to canvas v51 (W-50 results board); the open-work prototype added |
