@@ -3,19 +3,45 @@
 Every package is versioned in lockstep (SR-BUILD): one version for all of
 `@sheetpane/*` and `create-sheetpane`. Each heading is
 `## <version> — <what this release is> (<date>)`: the summary is the GitHub
-Release title (`v0.2.0 — the first release on npm`), the section its note.
+Release title (`v0.3.0 — CI in about two minutes; no change to the packages`), the section its note.
 Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
-## 0.2.0 — the first release on npm (2026-10-19)
+## 0.3.0 — CI in about two minutes; no change to the packages (2026-10-19)
 
-The first release on npm: all 17 packages at `0.2.0`. `v0.1.0` was tagged but
-never published, so this is the first version you can install.
+The package code is the same as 0.1.0 and 0.2.0; this release changes how
+sheetpane is checked and published. It is the first version meant to
+reach npm from CI, through `publish.yml` with signed provenance.
 
 ```bash
-npm i @sheetpane/grid
+npm i @sheetpane/grid@0.3.0
 ```
+
+**Before you upgrade from 0.1.0:** sheetpane needs **Node 22 or later**
+wherever it runs in Node (0.2.0's change). Browsers are unaffected.
+
+### Release and tooling
+
+- **CI runs its jobs in parallel**: typecheck, coverage, the pack check
+  and demos, the three-OS matrix, the templates, and the test suite in
+  four shards balanced by measured time. The pnpm store and Chromium are
+  cached.
+- **`publish.yml` asks npm about every package before uploading any.** It
+  prints npm's reason for each refusal, so a release is never left half on
+  npm.
+- **Release titles say what the release is** (`v0.3.0 — …`), taken from
+  the CHANGELOG heading.
+- **A test helper that took 117 s now takes 0.3 s**: the TSDoc check reads
+  each declaration file once.
+- Every GitHub Action moved to its current major.
+
+## 0.2.0 — the release pipeline and Node 22+, never on npm (2026-10-19)
+
+**Released on GitHub only.** Its publish run stopped before uploading
+anything: no package on npm trusted `publish.yml` yet. Install
+[0.3.0](https://github.com/arpitarya/sheetpane/releases/tag/v0.3.0), which
+has the same package code, or 0.1.0.
 
 **Before you upgrade:** sheetpane now needs **Node 22 or later** wherever it
 runs in Node: SSR imports, tests, the MCP server, the CLIs. Node 20 is past
@@ -36,10 +62,34 @@ end of life. Browsers are unaffected.
   (cause, meaning, fix) when `ERRORS.md` has CRLF line endings.
 - **MIT `LICENSE` in every package.**
 
-The *Changed* and *Added* lists below are the work first tagged as 0.1.0.
-This is the first version where you can install them.
+The package code is 0.1.0's; its *Changed* and *Added* lists are under
+[0.1.0](https://github.com/arpitarya/sheetpane/releases/tag/v0.1.0).
+## 0.1.0 — the first cut, published to npm by hand (2026-10-19)
 
-### Changed
+**On npm.** Published from the `v0.1.0` tag by hand, the one version that
+did not come from CI. CI at the tag passed every test and all six
+templates; the only failure was a stale generated `llms-full.txt`.
+
+The first complete cut of sheetpane, 17 packages at one version:
+
+- **`<sheetpane-excel>` and `<sheetpane-errors>`** (`@sheetpane/grid`): open,
+  edit and review `.xlsx` and `.csv` in the page. The sheet and its error
+  list stay in sync through one in-memory workbook. Download hands back the
+  original file with only your changes written in.
+- **Review:** column rules, a JSON rules file and the workbook's own
+  validation, with errors flagged on cells and listed beside the sheet.
+- **Editing basics:** range selection, copy and paste, undo and redo, find,
+  zoom, freeze panes, resize, and hidden rows, columns and sheets, with a
+  dark theme.
+- **Nine plugins:** `numfmt`, `formulas`, `styles`, `validation`, `condfmt`,
+  `images`, `charts`, `comments`, `visibility`.
+- **For hosts and agents:** `@sheetpane/testing`, `@sheetpane/fixtures`,
+  `@sheetpane/skills` and `@sheetpane/mcp`; typings for React, Vue, Svelte
+  and Solid; the custom-elements manifest.
+- **Requirements:** browsers with `DecompressionStream`; Node 20+ for
+  imports in Node (0.2.0 raises this to 22+). MIT licence.
+
+### Changed in detail
 
 - **Hidden rows, columns and sheets are honoured and marked** (W-49): the
   grid no longer draws what the file hides as ordinary rows and tabs. A
@@ -84,7 +134,7 @@ This is the first version where you can install them.
   options (comments: "Write review as Excel comments"). `sheetpane-export`
   gains `format` and `converted`.
 
-### Added
+### Added in detail
 
 - **`@sheetpane/visibility`** (W-49): hide and unhide rows, columns and
   sheets, and group outlines, in Edit — the selection bar, the cell, header
@@ -137,31 +187,3 @@ This is the first version where you can install them.
 - React hook recipes in `examples/react` (W-28).
 - A plugin gallery in both demos: Vanilla, a tab per plugin and All plugins on
   one showcase workbook (W-32).
-
-## 0.1.0 — tagged, never published to npm (2026-10-19)
-
-**Tagged, never published to npm.** Install
-[0.2.0](https://github.com/arpitarya/sheetpane/releases/tag/v0.2.0) instead:
-the same code, plus the release pipeline, and the first version on npm. The
-first publish needed the npm account's one-time code and was handed to CI
-instead. 0.2.0's notes list in full what this tag contains. CI at the tag passed every test
-and all six templates; the only failure was a stale generated `llms-full.txt`.
-
-The first complete cut of sheetpane, 17 packages at one version:
-
-- **`<sheetpane-excel>` and `<sheetpane-errors>`** (`@sheetpane/grid`): open,
-  edit and review `.xlsx` and `.csv` in the page. The sheet and its error
-  list stay in sync through one in-memory workbook. Download hands back the
-  original file with only your changes written in.
-- **Review:** column rules, a JSON rules file and the workbook's own
-  validation, with errors flagged on cells and listed beside the sheet.
-- **Editing basics:** range selection, copy and paste, undo and redo, find,
-  zoom, freeze panes, resize, and hidden rows, columns and sheets, with a
-  dark theme.
-- **Nine plugins:** `numfmt`, `formulas`, `styles`, `validation`, `condfmt`,
-  `images`, `charts`, `comments`, `visibility`.
-- **For hosts and agents:** `@sheetpane/testing`, `@sheetpane/fixtures`,
-  `@sheetpane/skills` and `@sheetpane/mcp`; typings for React, Vue, Svelte
-  and Solid; the custom-elements manifest.
-- **Requirements:** browsers with `DecompressionStream`; Node 20+ for
-  imports in Node (0.2.0 raises this to 22+). MIT licence.
