@@ -131,6 +131,7 @@ and events.
 | [`images`](packages/images/README.md) | pictures anchored in the sheet |
 | [`comments`](packages/comments/README.md) | notes and threaded comments, read and written |
 | [`visibility`](packages/visibility/README.md) | hide, unhide and group rows, columns and sheets |
+| [`review`](packages/review/README.md) | the review as a sheet in the download, flagged cells filled |
 
 ```html
 <script type="module">import '@sheetpane/grid'; import '@sheetpane/formulas/ui';</script>

@@ -35,6 +35,7 @@ Rules: [SR-WORK-ARCHIVE](../records/0057_WORK-archive.md).
 | `W-43-create-sheetpane.md` | 2026-10-18 | [SR-CREATE](../records/0120_CREATE.md) · [SR-BUILD](../records/0102_BUILD.md) decisions 7, 8 |
 | `W-49-hide-and-show.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 21c · [SR-VISIBILITY](../records/0121_VISIBILITY.md) · [SR-IMPORT](../records/0104_IMPORT.md) 10 · [SR-EXPORT](../records/0103_EXPORT.md) 3 |
 | `W-44-live-playground.md` | 2026-10-19 | [SR-BUILD](../records/0102_BUILD.md) 8, 8b, 9 · [`RELEASING.md`](../RELEASING.md) — the playground at https://arpitarya.github.io/sheetpane/, the starters, and publishing from CI |
+| `W-59-review-sheet-plugin.md` | 2026-10-19 | [SR-REVIEW](../records/0123_REVIEW.md) · [SR-CODES](../records/0117_CODES.md) (SP-5901 – SP-5905) · [SR-BUILD](../records/0102_BUILD.md) 11a; opening a download in real Excel → W-30 DoD 3 |
 | `W-69-accepted-deviations.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5c · [SR-ERRORS](../records/0106_ERRORS.md) 3, 7, 14 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3, 5 · [SR-CODES](../records/0117_CODES.md) (SP-3018) |
 | `W-68-error-detail-slot.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5b · [SR-ERRORS](../records/0106_ERRORS.md) 1, 13 · [SR-CODES](../records/0117_CODES.md) (SP-3016, SP-3017) |
 | `W-55-sheet-and-workbook-errors.md` | 2026-10-19 | [SR-GRID](../records/0105_GRID.md) 5a · [SR-ERRORS](../records/0106_ERRORS.md) 3, 4 · [SR-COMMENTS](../records/0112_COMMENTS.md) 3 · [SR-CODES](../records/0117_CODES.md) (SP-5804) |

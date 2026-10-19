@@ -199,6 +199,7 @@ packages/
   images/                 @sheetpane/images — W-20
   charts/                 @sheetpane/charts — W-21; peer: @sheetpane/images
   comments/               @sheetpane/comments — W-22
+  review/                 @sheetpane/review — W-59; export-only (the Review sheet, flagged-cell fills)
     (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls)
 examples/                 W-09 — html/ (one index.html) and react/ (Vite + React 19)
 ```

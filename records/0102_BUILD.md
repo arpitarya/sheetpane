@@ -249,7 +249,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
-    its header menu, the marker unhides it) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    its header menu, the marker unhides it) · Review sheet (W-59:
+    `@sheetpane/review` — the download gains a Review sheet listing the
+    review, flagged cells coloured) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a

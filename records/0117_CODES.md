@@ -53,7 +53,7 @@ flowchart LR
 2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
-   5800 comments) · 6xxx column rules and the rules file · 7xxx mcp
+   5800 comments, 5900 review) · 6xxx column rules and the rules file · 7xxx mcp
    (W-39: SP-7001…7007, the MCP server's tool errors — SR-MCP decision 7;
    `@sheetpane/mcp` also reports the 60xx rules notes `check_rules` finds).
 3. **Never reuse:** a code is never renumbered or removed; a dead one stays in
@@ -84,7 +84,10 @@ flowchart LR
   not by number. Example: SP-5804, from W-55, comes after SP-7007, and
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
-  refused), after them.
+  refused), after them. SP-5901 – SP-5905, from W-59 (`@sheetpane/review`:
+  the Review sheet not written, a sheet's cells not coloured, a range too
+  large to colour whole, no styles part, a fill that is not a colour — SR-REVIEW
+  decisions 8–9), come after SP-3018.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

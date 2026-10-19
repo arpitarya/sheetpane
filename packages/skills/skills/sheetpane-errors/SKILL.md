@@ -71,6 +71,8 @@ excel.workbook.addError({ sheet: '', range: '', type: 'other', severity: 'warnin
 - **Code that parses `range` as A1 must handle `""`.**
 - `@sheetpane/comments` does not write them (a comment needs a cell):
   `lastExport.skipped` lists each as `no-cell`, SP-5804.
+  `@sheetpane/review` lists them on its Review sheet (*Whole sheet* /
+  *Whole workbook*) and never colours them.
 
 ### The host's data and detail (W-68)
 
@@ -111,7 +113,8 @@ excel.workbook.updateError(e.id, { status: 'open' }); // Reopen: who, when and w
   counts leave accepted errors out. The **Accepted n** chip lists them.
 - **Count open errors with `status === 'open'`**, not `!== 'resolved'`.
 - `@sheetpane/comments` writes a reply *Accepted: <reason>* by who accepted
-  it, and marks the thread done.
+  it, and marks the thread done. `@sheetpane/review` lists it with status
+  *Accepted*, *Accepted: <reason>*, who and when, and never fills its cell.
 - A blank reason, or a `workbook` / `file` error, is refused (SP-3018).
   `setErrors` brings an accepted error without a reason back as `open`.
 

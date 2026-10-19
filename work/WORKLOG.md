@@ -24,6 +24,29 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-59 closed: `@sheetpane/review`, the review as its own sheet  ·  Claude Code (claude-opus-5-5, lane h)
+
+- **Asked:** *build W-59 in the lane-h worktree and close it* (the orchestrator's brief; lane h from lane a at `82f2c7d`).
+- **Done:** a new export-only plugin, `@sheetpane/review` (SR-REVIEW 0123), on the existing `exportPatch` context. No core hook was added and SR-EXPORT is unchanged.
+  - On download, a *Review* sheet lists every error except the file's own comments. It is a new worksheet part with its relationship, content type and `<sheet>`. Cells are inline strings, the header row is frozen, and the Cell column is an internal hyperlink. Workbook and whole-sheet errors are listed as *Whole workbook* and *Whole sheet*. An accepted error reads *Accepted: <reason>*, with who and when.
+  - A hidden defined name, `_sheetpane_review`, marks the sheet, and `reviewSheetOf(book)` finds it. Beside a user's own *Review* sheet the new one is `Review (2)`. Exported again, the plugin rewrites its own sheet in place.
+  - *Colour flagged cells* (opt-in) fills each open error's cells by severity on cloned `xf`s. Every other cell stays byte-identical. Accepted and resolved errors are never filled.
+  - The Download menu gains two items, and the plugin has `severities` and `layers` options. New codes: SP-5901 – SP-5905.
+  - Docs and checks: the gallery tab *Review sheet* in both demos with a demo-check step (53 ✓); the skills *sheetpane-plugins* and *sheetpane-errors*; READMEs; `docs/ERRORS.md`. The package is wired into the vitest project, tsdoc, llms, demo-packed, RELEASING and the lockfile.
+  - Records: SR-REVIEW (new), SR-BUILD 11a, SR-CODES, SR-COMMENTS 3 (a pointer). Opening a download in real Excel is added to W-30 DoD 3.
+- **Decided / left open:**
+  - *Colour flagged cells* is off by default and the sheet is on.
+  - The header is marked with a grey fill, not bold, so that no `<font>` is written.
+  - The plugin replaces its own earlier Review sheet unless that sheet gained parts of its own in Excel.
+  - A range over 10,000 cells colours only the cells the file has (SP-5903).
+  - An empty selection writes nothing.
+  - Until W-50 and W-51 merge, `severities` is `string[]` and `layer` is read defensively. The orchestrator tightens the types.
+  - SP-59xx codes take the next free plugin range and may be renumbered at the merge.
+- **Mistakes:** a test regex typo (a stray `)`) kept the package test file from loading, so the suite passed with five fewer tests. The run's count gave it away, and the typo was fixed.
+- **Next:** the orchestrator merges lane h and npm's first publish of `@sheetpane/review`.
+
+---
+
 ## 2026-10-19 — W-69 closed: accepted deviations  ·  Claude Code (claude-opus-5-5, lane a)
 
 - **Asked:** *build W-69 in the lane-a worktree and close it* (the orchestrator's brief).

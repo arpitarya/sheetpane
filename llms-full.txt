@@ -140,6 +140,7 @@ and events.
 | [`images`](packages/images/README.md) | pictures anchored in the sheet |
 | [`comments`](packages/comments/README.md) | notes and threaded comments, read and written |
 | [`visibility`](packages/visibility/README.md) | hide, unhide and group rows, columns and sheets |
+| [`review`](packages/review/README.md) | the review as a sheet in the download, flagged cells filled |
 
 ```html
 <script type="module">import '@sheetpane/grid'; import '@sheetpane/formulas/ui';</script>
@@ -1948,6 +1949,138 @@ Spec: [SR-VISIBILITY](../../records/0121_VISIBILITY.md). MIT.
 
 ---
 
+<!-- source: packages/review/README.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/review/README.md) -->
+
+# @sheetpane/review
+
+**The review written into the download as a sheet of its own. Every error is listed on a *Review* sheet with a link to its cell. Optionally, each flagged cell is filled by severity, so a reviewer can work the list in Excel, fix the file and upload it again.**
+
+A plugin for `@sheetpane/grid`. It uses one hook, `exportPatch`, on the
+in-memory workbook, so it works for `<sheetpane-excel>` and for a store with
+no page. `@sheetpane/grid` is a peer and `@sheetpane/export` is a dependency.
+Versioned in lockstep with them. There is no `/ui` entry: the plugin adds two
+items to the Download menu and nothing else. Everything is written into the
+bytes the browser saves. Nothing is sent anywhere (SR-LAW-11).
+
+## Use
+
+```html
+<script type="module">
+  import '@sheetpane/grid';
+  import '@sheetpane/review'; // registers "review"
+</script>
+
+<sheetpane-excel pane="q3" plugins="review" src="/files/holdings.xlsx" mode="edit" author="Arpit"></sheetpane-excel>
+<sheetpane-errors pane="q3"></sheetpane-errors>
+```
+
+The Download menu gains **Add a Review sheet** (on by default) and **Colour
+flagged cells** (off by default). Each one applies to the next download.
+
+Without a page:
+
+```ts
+import { createWorkbook } from '@sheetpane/grid';
+import { review } from '@sheetpane/review';
+
+const plugin = review({ fill: true });           // colour flagged cells by default
+const store = createWorkbook({ plugins: [plugin] });
+await store.load(bytes, 'holdings.xlsx');
+const { blob } = await store.exportFile();        // the file, plus a Review sheet
+plugin.lastExport;                                // { sheet, listed, counts, filled, skipped }
+```
+
+## Options
+
+| option | default | what |
+|---|---|---|
+| `sheet` | `true` | Add the Review sheet. `export({ review: false })` leaves it out of one export. |
+| `fill` | `false` | Colour each flagged cell. `export({ reviewFills: true })` colours one export. |
+| `sheetName` | `'Review'` | The sheet's name. Characters Excel forbids are dropped, and the name is cut to 31 characters. |
+| `severities` | `['error', 'warning', 'note']` | The severities listed and coloured. Results such as `pass` and `skipped` are written only when you name them. `export({ reviewSeverities })` overrides it for one export. |
+| `layers` | every layer | The layers listed and coloured. An error with no `layer` belongs to `review`. `export({ reviewLayers })` overrides it for one export. |
+| `fills` | pale red, yellow, blue | A fill per severity, as `#RRGGBB`, `RRGGBB` or ARGB. `null` turns a severity's fill off. A value that is not a colour throws SP-5905. |
+
+## The Review sheet
+
+One row per error, below a header row that stays frozen. The workbook's own
+errors come first. Then, for each sheet in the file's order, its whole-sheet
+errors, then its cells from top to bottom and left to right.
+
+| column | value |
+|---|---|
+| ID | `ERR-0003` |
+| Sheet | the sheet's name; empty for an error about the workbook |
+| Cell | `I6` or `A14:J14`, as a link that opens the cell in Excel. A whole-sheet error reads *Whole sheet* and links to its A1. A workbook error reads *Whole workbook* and has no link. |
+| Severity · Type | `Error` · `Wrong value` |
+| Found · Expected · Message · Author | as in the review |
+| Status | `Open`, `Resolved` or `Accepted` |
+| Accepted · Accepted by · Accepted at | for an accepted error: *Accepted: \<reason\>*, who accepted it and when (UTC) |
+
+- **A user's own sheet is never overwritten.** If the file already has a
+  sheet called *Review* (in any case), the new one is *Review (2)*.
+- **The file's own comments are not listed.** These are errors with `author:
+  'file'`, which came from the file in the first place.
+- **Every cell is an inline string.** `sharedStrings.xml` is never touched,
+  and the links are internal hyperlinks, which need no relationship.
+- **No font is written** (SR-LAW-5). The header row is marked with a grey
+  fill instead of bold text.
+
+## Uploading an annotated file again
+
+A hidden, workbook-scoped defined name, `_sheetpane_review`, marks the sheet.
+`reviewSheetOf(book)` reads that name, so a host can leave the sheet out:
+
+```ts
+import { read } from '@sheetpane/import';
+import { reviewSheetOf } from '@sheetpane/review';
+
+const book = await read(bytes, { name: 'holdings.xlsx' });
+const skip = reviewSheetOf(book);                  // 'Review', or undefined
+const data = book.sheets.filter((s) => s.name !== skip);
+```
+
+When a file that already has a Review sheet is exported again, the plugin
+rewrites that sheet in place rather than adding a second one. There is one
+exception: if someone gave the sheet parts of its own in Excel, such as
+comments or a drawing, it is left alone and a new sheet is added.
+
+## Colouring flagged cells
+
+Each **open** error at a cell has its cells filled by severity. **Accepted**
+and **resolved** errors are not problems, so they are never filled.
+Whole-sheet and workbook errors are listed but not coloured. They appear in
+`lastExport.skipped` as `no-cell`.
+
+- **The cell's own format stays.** Its `xf` is cloned with a solid fill and
+  the cell points at the clone, so the number format, font, borders and
+  alignment are kept. One clone is made per format and colour. Existing
+  formats and fills are never edited, only added to.
+- **Nothing else changes.** Only the `s` of a flagged cell is written. Every
+  other row and cell keeps its exact bytes. A flagged cell the file does not
+  have is added empty, styled from its row or column.
+- **Two errors on one cell:** the worse severity's fill wins.
+- **A range over 10,000 cells** colours only the cells the file already has
+  in it (`range-capped`, SP-5903).
+- **No styles part:** nothing is coloured (`no-styles`, SP-5904), and the
+  sheet is still written.
+
+## What it does not do
+
+- It writes into an `.xlsx` download of an `.xlsx`. A CSV, or a CSV converted
+  to `.xlsx`, carries no plugin parts.
+- An empty review writes nothing.
+- Whether Excel opens the file without a repair prompt and follows each link
+  to its cell is checked by the decider on real Excel (W-30). These tests
+  check the parts sheetpane writes and reads, not Excel itself.
+
+Spec: [SR-REVIEW](../../records/0123_REVIEW.md). MIT.
+
+**Using an AI coding agent?** `npx sheetpane-skills install` puts sheetpane's skills for Claude Code, Kiro and Codex into your repository.
+
+
+---
+
 <!-- source: packages/fixtures/README.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/packages/fixtures/README.md) -->
 
 # @sheetpane/fixtures
@@ -2344,6 +2477,7 @@ packages/
   images/                 @sheetpane/images — W-20
   charts/                 @sheetpane/charts — W-21; peer: @sheetpane/images
   comments/               @sheetpane/comments — W-22
+  review/                 @sheetpane/review — W-59; export-only (the Review sheet, flagged-cell fills)
     (each: package.json · README.md · tsconfig.json · src/index.ts, and src/ui.ts where it adds controls)
 examples/                 W-09 — html/ (one index.html) and react/ (Vite + React 19)
 ```
@@ -2451,7 +2585,7 @@ code's title and severity; this page holds the long text. The repo test
 | 2xxx | `@sheetpane/export` — writing a file, the ZIP walk, `download()` (21xx) |
 | 3xxx | `@sheetpane/grid` — the store, the plugin host, `<sheetpane-excel>` |
 | 4xxx | `<sheetpane-errors>` — none raised yet |
-| 5xxx | plugins — 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation · 5500 condfmt · 5600 images · 5700 charts · 5800 comments |
+| 5xxx | plugins — 5100 numfmt · 5200 formulas · 5300 styles · 5400 validation · 5500 condfmt · 5600 images · 5700 charts · 5800 comments · 5900 review |
 | 6xxx | column rules and the rules file |
 | 7xxx | `@sheetpane/mcp` — reserved |
 
@@ -2518,6 +2652,11 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-5802](#sp-5802) | Not a worksheet | error |
 | [SP-5803](#sp-5803) | Comments not written for a sheet | error |
 | [SP-5804](#sp-5804) | Error with no cell not written as a comment | note |
+| [SP-5901](#sp-5901) | Review sheet not written | error |
+| [SP-5902](#sp-5902) | Flagged cells not coloured on a sheet | error |
+| [SP-5903](#sp-5903) | Range too large to colour whole | note |
+| [SP-5904](#sp-5904) | No styles part to colour cells | note |
+| [SP-5905](#sp-5905) | Review fill is not a colour | error |
 | [SP-6001](#sp-6001) | Column rule pattern is not a regular expression | error |
 | [SP-6002](#sp-6002) | Column-rules validate function failed | error |
 | [SP-6003](#sp-6003) | Value refused by a rule | warning |
@@ -3040,7 +3179,47 @@ The store, the plugin host and `<sheetpane-excel>`.
 
 - **Meaning:** an error about a whole sheet (`range: ""`) or the whole workbook (`sheet: ""`, W-55) is not written as an Excel comment — a comment needs a cell, and sheetpane never puts it on A1. It is listed in `lastExport.skipped` with `reason: 'no-cell'` and this code.
 - **Likely cause:** the host or a rule raised a sheet- or workbook-level finding ("no Pages List", "a listed tab has no sheet").
-- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, list the review in a sheet of its own (W-59).
+- **Fix:** nothing to fix; the error stays in the review. To carry it in the file, add `@sheetpane/review`, which lists it on a Review sheet of its own.
+
+### SP-5901
+
+**Review sheet not written** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** the workbook part could not be read or extended, so no Review sheet was added; the export goes on, with any fills already written. `lastExport.sheet` is `undefined`.
+- **Likely cause:** a damaged `xl/workbook.xml`, or one with no `<sheets>`.
+- **Fix:** read the error logged after this line; re-save the workbook in Excel and export again.
+
+### SP-5902
+
+**Flagged cells not coloured on a sheet** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** a sheet part (or the styles part) could not be read, so that sheet's flagged cells were left exactly as they were. Each error is in `lastExport.skipped` with `reason: 'unreadable-part'` and this code.
+- **Likely cause:** a sheet part with no `<sheetData>`, a chart sheet, or a damaged part.
+- **Fix:** read the error logged after this line; the Review sheet still lists the errors.
+
+### SP-5903
+
+**Range too large to colour whole** · note · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** an error's range covers more than 10,000 cells (`MAX_FILL_CELLS`), so only the cells the file already has inside it were coloured; no empty cells were added. It is in `lastExport.skipped` with `reason: 'range-capped'` and this code, and in `filled`.
+- **Likely cause:** an error raised on whole columns or a very large block.
+- **Fix:** nothing to fix; narrow the error's range if every cell should be coloured.
+
+### SP-5904
+
+**No styles part to colour cells** · note · [SR-REVIEW](../records/0123_REVIEW.md) decision 9
+
+- **Meaning:** the file has no readable styles part, so no cell was coloured; the Review sheet is still written, with an unstyled header. Each error is in `lastExport.skipped` with `reason: 'no-styles'` and this code.
+- **Likely cause:** a minimal workbook written by a script.
+- **Fix:** re-save the workbook in Excel, which adds the part.
+
+### SP-5905
+
+**Review fill is not a colour** · error · [SR-REVIEW](../records/0123_REVIEW.md) decision 8 · `TypeError`
+
+- **Meaning:** `review({ fills })` was given a value that is not a hex colour; the plugin is not created.
+- **Likely cause:** a colour name (`'red'`) or a short hex (`'#f00'`).
+- **Fix:** pass `#RRGGBB`, `RRGGBB` or ARGB `AARRGGBB`, or `null` to colour none.
 
 ---
 
@@ -4929,7 +5108,9 @@ pnpm and a justfile; the testing verdict chose the runner.
     Review (the demo above) · Vanilla · Number formats · Styles · Formulas ·
     Validation · Conditional formats · Images · Charts · Comments · All
     plugins · Hide and show (W-49: `@sheetpane/visibility` — hide a row from
-    its header menu, the marker unhides it) · Rules file (W-33: the showcase's rules sample — `rules-src` in
+    its header menu, the marker unhides it) · Review sheet (W-59:
+    `@sheetpane/review` — the download gains a Review sheet listing the
+    review, flagged cells coloured) · Rules file (W-33: the showcase's rules sample — `rules-src` in
     HTML, the `rules` prop in React — with `flagging="off"`). Every gallery
     tab opens one showcase workbook from `@sheetpane/fixtures` (SR-FIXTURES:
     the HTML import path `./node_modules/@sheetpane/fixtures/files/…`, a
@@ -7052,8 +7233,8 @@ with a host switch (2026-10-18). The error schema and the read-only rule for
    range. An error with no cell, about a whole sheet or the workbook (W-55,
    SR-GRID 5a), is not written, because a comment needs a cell and sheetpane
    never puts one on A1. It is reported in `lastExport.skipped` as `{ id,
-   reason: 'no-cell', code: 'SP-5804' }`. The review sheet (W-59) is where
-   these errors go into the file. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
+   reason: 'no-cell', code: 'SP-5804' }`. `@sheetpane/review` (SR-REVIEW) is
+   where these errors go into the file: listed on its Review sheet. First comment `<id> · <Severity> · <Type name> · Found: <found>`,
    newline, the message; `expected` as a reply `Should be: <expected>`. All
    errors on one cell share one thread, `done="1"` only when every one is
    resolved or accepted. **An accepted error (W-69, SR-GRID 5c)** gets one
@@ -7762,7 +7943,7 @@ flowchart LR
 2. **Ranges:** 1xxx import · 2xxx export (21xx `download()`) · 3xxx grid ·
    4xxx `<sheetpane-errors>` · 5xxx plugins (5100 numfmt, 5200 formulas,
    5300 styles, 5400 validation, 5500 condfmt, 5600 images, 5700 charts,
-   5800 comments) · 6xxx column rules and the rules file · 7xxx mcp
+   5800 comments, 5900 review) · 6xxx column rules and the rules file · 7xxx mcp
    (W-39: SP-7001…7007, the MCP server's tool errors — SR-MCP decision 7;
    `@sheetpane/mcp` also reports the 60xx rules notes `check_rules` finds).
 3. **Never reuse:** a code is never renumbered or removed; a dead one stays in
@@ -7793,7 +7974,10 @@ flowchart LR
   not by number. Example: SP-5804, from W-55, comes after SP-7007, and
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
-  refused), after them.
+  refused), after them. SP-5901 – SP-5905, from W-59 (`@sheetpane/review`:
+  the Review sheet not written, a sheet's cells not coloured, a range too
+  large to colour whole, no styles part, a fill that is not a colour — SR-REVIEW
+  decisions 8–9), come after SP-3018.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool
@@ -8203,3 +8387,197 @@ is never listed here.*
 **Code**
 
 - [`packages/visibility/src/index.ts`](../packages/visibility/src/index.ts) · [`ui.ts`](../packages/visibility/src/ui.ts)
+
+
+---
+
+<!-- source: records/0123_REVIEW.md (https://github.com/arpitarya/sheetpane/blob/v0.3.0/records/0123_REVIEW.md) -->
+
+# SR-REVIEW — @sheetpane/review
+
+## §1 — For humans
+
+**The review travels inside the file.** On download, the plugin adds a
+*Review* sheet: one row per error, each with a link to its cell. A reviewer
+works the list in Excel, fixes the file and uploads it again. Optionally,
+every flagged cell is filled by its severity.
+
+**The user's own cells and formatting stay.** A flagged cell keeps its
+format: only its fill changes. Every other cell keeps its exact bytes, and a
+sheet the user already called *Review* is never overwritten.
+
+```mermaid
+flowchart LR
+    E["the review (store errors)"] --> X["exportPatch"]
+    X --> S["Review sheet: id · sheet · cell link · severity · … · status · Accepted"]
+    X --> F["flagged cells: cloned xf + solid fill"]
+    X --> N["defined name _sheetpane_review"]
+    N --> H["re-upload: reviewSheetOf(book) → skip it"]
+```
+
+<details>
+<summary><b>ASCII twin</b> — the same diagram, for terminals and diffs</summary>
+
+```text
+   the review (store errors) -> exportPatch
+       -> Review sheet (one row per error, Cell = internal hyperlink)
+       -> flagged cells: their own xf cloned with a solid fill (optional)
+       -> defined name _sheetpane_review  -> re-upload: reviewSheetOf(book) -> skip
+```
+
+</details>
+
+---
+
+## §2 — For agents
+
+### Context
+
+pdfsuite's spec intake (SR-SPEC-INTAKE decision 14) needs an *annotated
+workbook*: every error cell filled red and a sheet listing the errors, to fix
+in Excel and re-upload. `@sheetpane/comments` (SR-COMMENTS) already writes the
+review as comments. This plugin writes the same review as a table. W-59.
+
+### Decision
+
+1. **The package:** `@sheetpane/review` — `review(options)` (`id: 'review'`,
+   `provides: ['exportPatch']`, `lastExport`), registered as `review` on
+   import. Also exported: `reviewSheetOf`, `REVIEW_NAME`, `COLUMNS`,
+   `PROBLEM_SEVERITIES`, `DEFAULT_FILLS`, `MAX_FILL_CELLS` and the
+   `ReviewOptions`, `ReviewReport`, `SkipReason` and `ReviewPlugin` types.
+   `@sheetpane/grid` is a peer; `@sheetpane/export` (its OOXML helpers) is
+   the one runtime dependency. String XML only, so it runs in Node. **No new
+   core hook:** the existing `exportPatch` context writes a part, adds a
+   relationship and sets a content type, which is all this needs (SR-EXPORT
+   is unchanged). There are no controls. `exportOptions` adds two items to
+   the Download menu (W-34): *Add a Review sheet* (`review`, default
+   `options.sheet !== false`) and *Colour flagged cells* (`reviewFills`,
+   default `options.fill === true`).
+2. **What is listed:** every error in the store except the file's own
+   comments (`author: 'file'`). Only the severities in `severities` are
+   listed: the default is `error`, `warning` and `note`, and results such as
+   `pass` and `skipped` (W-50) appear only when named. Only the layers in
+   `layers` are listed (W-51): the default is every layer, and an error with
+   no `layer` is `review`. `export({ reviewSeverities, reviewLayers })`
+   overrides both for one export. **An empty selection writes nothing.**
+   *Until W-50 and W-51 merge, `layer` is read defensively and `severities`
+   is `string[]`; the orchestrator tightens the types after the merge.*
+3. **The sheet:** a new worksheet part (`xl/worksheets/sheetN.xml`, the first
+   free N), a worksheet relationship from the workbook, an `<Override>`
+   content type, and a `<sheet>` added last (`sheetId` = max + 1). The
+   relationships namespace is bound on the root if it is missing. Cells are
+   **inline strings**, so `sharedStrings` is never touched, at most 32,767
+   characters each and cleaned of characters XML forbids. Columns, left to
+   right: ID, Sheet, Cell, Severity, Type, Found, Expected, Message, Author,
+   Status, Accepted, Accepted by, Accepted at. The header row is frozen.
+   Rows come in this order: workbook errors, then each sheet in the file's
+   order, with its whole-sheet errors first and then its cells from top to
+   bottom and left to right.
+4. **Links:** the Cell column holds an internal `<hyperlink location>`
+   (`'Q3 ''final'''!B2`), which needs no relationship. A whole-sheet error
+   (W-55) reads *Whole sheet* and links to its A1. A workbook error reads
+   *Whole workbook* and has no link. An error whose sheet the file lacks has
+   no link.
+5. **Names:** the name is `sheetName` (default `Review`), with `[ ] : * ? / \`
+   and apostrophes at either end removed, cut to 31 characters. If a sheet
+   already has that name (compared ignoring case, as Excel does), the plugin
+   adds `Review (2)`, `(3)`… within 31 characters. **A user's sheet is never
+   overwritten.**
+6. **The marker:** a workbook-scoped, hidden defined name `_sheetpane_review`
+   over the table (`'Review'!$A$1:$M$n`), placed in schema position.
+   `reviewSheetOf(book)` reads it from what `@sheetpane/import` returns, so a
+   host can skip the sheet on re-upload. **Exported again**, a file whose
+   marker names an existing sheet with no relationships of its own has that
+   sheet rewritten in place, keeping its name and position. If someone gave
+   the sheet comments or a drawing in Excel, it is left alone and a new sheet
+   is added.
+7. **Accepted errors (W-69, SR-ERRORS 14, SR-GRID 5c):** listed with Status
+   *Accepted* and *Accepted: \<reason\>*, with who (`acceptedBy`, else the
+   author) and when (`acceptedAt`, UTC). They are **never filled** and are
+   counted apart from open errors in `lastExport.counts` (`{ open, accepted,
+   resolved }`). Resolved errors are listed and never filled.
+8. **Fills (optional):** each **open** error at a cell, whose severity has a
+   colour, fills the cells of its range. The defaults are `error` FFFFC7CE,
+   `warning` FFFFEB9C and `note` FFDDEBF7, and `fills` overrides them (`null`
+   turns one off; a value that is not a colour throws SP-5905). The cell's
+   own `xf` is **cloned** with a solid fill (`fillId`, `applyFill="1"`), once
+   per format and colour. Fills and formats are only ever **appended** to
+   `styles.xml`, and its counts are updated. Only a flagged cell's `s` is
+   written. **Every other row and cell is byte-identical.** A flagged cell
+   the file lacks is added empty, styled from its row (`customFormat`) or
+   column, in column order. A missing row is created in row order, and
+   `spans` and `<dimension>` are widened. When a cell has two severities, the
+   worse one wins. The header row takes a grey fill, not bold: **no font is
+   written** (SR-LAW-5).
+9. **Not coloured, reported in `lastExport.skipped`:** `no-cell` (a
+   whole-sheet or workbook error, W-55 — listed only), `no-sheet`,
+   `bad-range`, `range-capped` (a range over `MAX_FILL_CELLS` = 10,000 colours
+   only the cells the file has, SP-5903), `no-styles` (no readable styles
+   part, SP-5904; the sheet is still written) and `unreadable-part` (the
+   sheet could not be read, so it is left as it was, SP-5902). If the
+   workbook part cannot be read, no sheet is written (SP-5901, logged).
+10. **Scope:** an `.xlsx` download of an `.xlsx` only. Core never runs
+    `exportPatch` for a CSV, or for a CSV converted to `.xlsx` (SR-LAW-3).
+    The parts go into the bytes the browser saves, and nothing is sent
+    anywhere (SR-LAW-11).
+
+### Consequences
+
+- **Enforced today:** `packages/review/test/` (Chromium):
+  - `sheet.test.ts` covers the part, relationship, content type, `<sheet>`
+    and marker (all well-formed), the order, the text, the links, every
+    other part byte-identical to a plain export, the `Review (2)` collision,
+    name cleaning, an apostrophe in a link, export twice → one sheet, the
+    switches, the severity and layer filters, accepted rows and counts, and
+    the read-back through `@sheetpane/import` (`reviewSheetOf`) and
+    `@sheetpane/testing` (`readFile`, `valueAt`).
+  - `fills.test.ts` covers the cloned formats (number format, font, border
+    and alignment kept), untouched cells byte-identical, added cells and
+    rows, spans and dimension, the worse fill winning, accepted and resolved
+    never filled, `no-cell`, dedup, custom fills, SP-5905, SP-5903 and
+    SP-5904.
+  - `roundtrip.test.ts` runs the showcase and the exceljs fixture with
+    `@sheetpane/comments` on the same export.
+  - `package.test.ts` checks for no font, no DOM, no network call (L11) and
+    the dependencies.
+  - The demos' gallery tab *Review sheet* and its `demo-check` step (L10).
+- **Not done:** opening a download in real Excel, with every link going to
+  its cell and no repair prompt, is part of W-30 DoD 3. An autoFilter on the
+  header is not written.
+
+### Alternatives considered
+
+- **Shared strings:** rejected. Extending `sharedStrings.xml` touches a part
+  every sheet reads; inline strings are local to the new sheet.
+- **A new core hook to add a sheet:** rejected. The `exportPatch` context
+  already writes parts, relationships and content types.
+- **Bold header:** rejected. It writes a `<font>`, and the header is marked
+  with a fill instead (SR-LAW-5's spirit: sheetpane adds no font).
+- **Always adding a new sheet on re-export:** rejected. Review sheets would
+  pile up. The marker lets the plugin replace its own sheet, and a sheet
+  someone extended in Excel is still kept.
+
+### Reference (required)
+
+- [`packages/review/`](../packages/review/)
+
+### Veto condition
+
+**Reopen this decision if:** Excel or LibreOffice repairs a downloaded file,
+does not follow a link (W-30), or hosts need the Review sheet kept beside an
+earlier one rather than replacing it.
+
+**How to check it:** `pnpm exec vitest run --project review`
+
+---
+
+## References
+
+*Every source this record cites, gathered in one place. An archived document
+is never listed here.*
+
+**Records** — [SR-EXPORT](0103_EXPORT.md) · [SR-GRID](0105_GRID.md) · [SR-ERRORS](0106_ERRORS.md) · [SR-COMMENTS](0112_COMMENTS.md) · [SR-CODES](0117_CODES.md) · [SR-BUILD](0102_BUILD.md)
+
+**Code**
+
+- [`packages/review/src/index.ts`](../packages/review/src/index.ts) · [`write.ts`](../packages/review/src/write.ts) · [`sheet.ts`](../packages/review/src/sheet.ts) · [`fills.ts`](../packages/review/src/fills.ts) · [`rows.ts`](../packages/review/src/rows.ts)

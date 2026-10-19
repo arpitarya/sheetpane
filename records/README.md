@@ -144,6 +144,7 @@ Start from `TEMPLATE.md`.
 | [0119](0119_MCP.md) | **SR-MCP** | `@sheetpane/mcp` — an MCP server agents can ask | accepted | yes |
 | [0120](0120_CREATE.md) | **SR-CREATE** | `create-sheetpane` — a working app in one command | accepted | yes |
 | [0121](0121_VISIBILITY.md) | **SR-VISIBILITY** | `@sheetpane/visibility` — hide and unhide as changes | accepted | yes |
+| [0123](0123_REVIEW.md) | **SR-REVIEW** | `@sheetpane/review` — the review as a sheet of its own, flagged cells filled | accepted | yes |
 | [0117](0117_CODES.md) | **SR-CODES** | stable `SP-xxxx` error codes, one registry, `docs/ERRORS.md` | accepted | yes |
 
 ---
@@ -219,6 +220,7 @@ directions.
 | `packages/testing/` | SR-TESTING | `@sheetpane/testing` — host test helpers |
 | `packages/mcp/` | SR-MCP | `@sheetpane/mcp` — the MCP server (W-39) |
 | `packages/visibility/` | SR-VISIBILITY | `@sheetpane/visibility` — hide, unhide, group (W-49) |
+| `packages/review/` | SR-REVIEW | `@sheetpane/review` — the Review sheet and flagged-cell fills (W-59) |
 | `plugins/sheetpane/`, `.claude-plugin/marketplace.json`, `scripts/build-plugin.mjs` | SR-SKILLS | the Claude Code plugin and marketplace, generated from `@sheetpane/skills` (W-45) |
 | `packages/create-sheetpane/`, `scripts/create-check.mjs` | SR-CREATE | `npm create sheetpane` and its end-to-end check (W-43) |
 | `packages/skills/` | SR-SKILLS | `@sheetpane/skills` — agent skills, the installer |

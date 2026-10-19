@@ -74,6 +74,12 @@ async function gallery(page, name) {
   await t.x.locator('.hmk[data-hid="rows:2-2"]').click();
   await t.x.locator('#c2_0').waitFor();
   check(gone && (await t.x.evaluate((el) => el.workbook.hidden('Numbers').rows.length)) === 0, `${name}: Hide and show hides row 3 from its header menu, marks it, and a marker click unhides it`);
+  // W-59: Review sheet — flag a cell, download: the file carries a Review sheet listing it, linked to its cell
+  t = await tab('Review sheet', 'review-sheet', 'Numbers');
+  const flagged = await t.x.evaluate((el) => el.workbook.addError({ sheet: 'Numbers', range: 'B6', type: 'wrong-value', severity: 'error', message: 'demo-check' }).id);
+  const reviewed = await t.x.evaluate(async (el) => Array.from(new Uint8Array(await (await el.export({ reviewFills: true })).arrayBuffer())));
+  const rv = await readValues(new Uint8Array(reviewed), 'showcase.xlsx');
+  check(rv.names.at(-1) === 'Review' && valueAt(rv, 'Review!A2') === flagged && valueAt(rv, 'Review!C2') === 'B6' && valueAt(rv, 'Numbers!B6') === 1.25, `${name}: Review sheet — the download lists the flagged cell on a Review sheet, its own cells unchanged`);
   await page.getByRole('tablist', { name: 'Plugin gallery' }).getByRole('tab', { name: 'Review', exact: true }).click();
 }
 

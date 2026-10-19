@@ -1,6 +1,6 @@
 ---
 name: sheetpane-plugins
-description: Use when a host needs more than review - number formats, live formulas, cell styles, data validation, conditional formats, pictures, charts or comments - and must pick and enable plugins. Not for writing a plugin (sheetpane-plugin-author).
+description: Use when a host needs more than review - number formats, live formulas, styles, data validation, conditional formats, pictures, charts, comments or a Review sheet - and must pick and enable plugins. Not for writing a plugin (sheetpane-plugin-author).
 license: MIT
 metadata:
   audience: host
@@ -22,6 +22,7 @@ workbook ([SR-GRID](https://github.com/arpitarya/sheetpane/blob/main/records/010
 | pictures | `@sheetpane/images` | images at their anchors | [SR-IMAGES](https://github.com/arpitarya/sheetpane/blob/main/records/0107_IMAGES.md) |
 | charts | `@sheetpane/charts` (needs images) | bar, column, line, pie, scatter as SVG | [SR-CHARTS](https://github.com/arpitarya/sheetpane/blob/main/records/0113_CHARTS.md) |
 | comments | `@sheetpane/comments` | file comments in, the review out as threads | [SR-COMMENTS](https://github.com/arpitarya/sheetpane/blob/main/records/0112_COMMENTS.md) |
+| the review as a sheet | `@sheetpane/review` | a *Review* sheet in the download, each error linked to its cell; flagged cells filled by severity (opt-in) | [SR-REVIEW](https://github.com/arpitarya/sheetpane/blob/main/records/0123_REVIEW.md) |
 
 ## Enable
 
@@ -47,6 +48,9 @@ it on per element. Import `@sheetpane/x` for the headless plugin, or
   images' anchors — list both.
 - `@sheetpane/formulas` loads its WASM only on the first formula; a
   workbook without formulas never fetches it.
+- `@sheetpane/review` writes only into an `.xlsx` download of an `.xlsx`.
+  On re-upload, skip its sheet with `reviewSheetOf(book)` (a defined name
+  marks it); a user's own *Review* sheet is never overwritten (`Review (2)`).
 - `@sheetpane/validation` reads rules **saved in the workbook**; your own
   checks are [sheetpane-column-rules](../sheetpane-column-rules/SKILL.md) or a
   [rules file](../sheetpane-rules-file/SKILL.md).

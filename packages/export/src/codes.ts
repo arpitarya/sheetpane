@@ -6,8 +6,8 @@
 //
 // Ranges: 1xxx import · 2xxx export · 3xxx grid · 4xxx errors element ·
 // 5xxx plugins (5100 numfmt · 5200 formulas · 5300 styles · 5400 validation ·
-// 5500 condfmt · 5600 images · 5700 charts · 5800 comments) · 6xxx rules ·
-// 7xxx mcp.
+// 5500 condfmt · 5600 images · 5700 charts · 5800 comments · 5900 review) ·
+// 6xxx rules · 7xxx mcp.
 
 /** One registry entry: a code's short title and how serious it is. */
 export interface CodeInfo {
@@ -93,6 +93,12 @@ const TABLE = {
   'SP-5802': { title: 'Not a worksheet', severity: 'error' },
   'SP-5803': { title: 'Comments not written for a sheet', severity: 'error' },
   'SP-5804': { title: 'Error with no cell not written as a comment', severity: 'note' },
+  // 5900 · @sheetpane/review
+  'SP-5901': { title: 'Review sheet not written', severity: 'error' },
+  'SP-5902': { title: 'Flagged cells not coloured on a sheet', severity: 'error' },
+  'SP-5903': { title: 'Range too large to colour whole', severity: 'note' },
+  'SP-5904': { title: 'No styles part to colour cells', severity: 'note' },
+  'SP-5905': { title: 'Review fill is not a colour', severity: 'error' },
 
   // ── 6xxx · column rules and the rules file ──────────────────────────────
   'SP-6001': { title: 'Column rule pattern is not a regular expression', severity: 'error' },

@@ -10,6 +10,7 @@ import '@sheetpane/images';
 import '@sheetpane/charts/ui';
 import '@sheetpane/comments';
 import '@sheetpane/visibility/ui';
+import '@sheetpane/review';
 import type { SheetpaneExcel } from '@sheetpane/grid';
 import { Fragment, useEffect, useRef, type KeyboardEvent } from 'react';
 import showcase from '@sheetpane/fixtures/files/showcase.xlsx?url';
@@ -30,6 +31,7 @@ export const TABS: readonly GalleryTab[] = [
   { id: 'comments', label: 'Comments', plugins: 'comments', sheet: 'Comments', blurb: 'The note on A2 and the thread on B3 arrive as file comments in the error list; Download writes the review back as comments.' },
   { id: 'all', label: 'All plugins', plugins: 'numfmt styles formulas validation condfmt images charts comments', sheet: 'Numbers', blurb: 'All eight plugins on one pane.' },
   { id: 'visibility', label: 'Hide and show', plugins: 'visibility', sheet: 'Numbers', blurb: 'Right-click a row or column header (or select and press Ctrl+Alt+9 / Ctrl+Alt+0) to hide; the ◂▸ / ▴▾ marker shows where, and a click unhides. Hidden parts download hidden; a file’s own hidden rows, columns and sheets are marked in every tab.' },
+  { id: 'review-sheet', label: 'Review sheet', plugins: 'review', sheet: 'Numbers', blurb: 'Flag an issue (press F on a cell, or use the error list), then Download: the file gains a Review sheet listing every error with a link to its cell, and a hidden name marks it so a host can skip it on re-upload. Tick Colour flagged cells in the Download ▾ menu to fill each flagged cell by severity, its own format kept.' },
   { id: 'rules', label: 'Rules file', plugins: '', sheet: 'Validation', rules: true, blurb: 'A rules file (@sheetpane/fixtures’ showcase.rules.json, passed as the rules prop) checks the showcase on load: six cells fail and are listed in the errors panel. flagging="off": no Flag issue, no pop-up card — the panel is the one place errors are read.' },
 ];
 /** Review · the plugins one by one · together. */
