@@ -216,11 +216,12 @@ committed manifest drifts from the elements.
 | property | `workbook` | the pane's store (get, or set your own from `createWorkbook()`) |
 | property | `errors`, `errorTypes` | the review; the error-type catalog |
 | property | `renderDetail` | your extra detail in the error card (W-68, under *Saving and restoring a review*) |
+| attribute / property | `layers` | the review layers shown, space-separated — the pane's, shared with `<sheetpane-errors>`; none shows every layer (W-51, under *Saving and restoring a review*) |
 | method | `load(src, name?)` | read a file (any of the above) |
 | method | `export(options?, { format? })` | `Promise<Blob>` — the upload with every change; `format: 'csv'` from an `.xlsx` is the current sheet, `'xlsx'` from a `.csv` one sheet |
-| method | `select(sheet, ref)`, `getErrors()`, `setErrors(list)`, `undo()`, `redo()` | |
+| method | `select(sheet, ref)`, `getErrors({ layer? })`, `setErrors(list or envelope, { layer? })`, `undo()`, `redo()` | |
 | method | `highlight(ranges, { tone, label, sheet, pinned, reveal }?)`, `clearHighlight()` | outline cells without selecting them — and `sheetpane-hover` — see *Pointing at cells* under [Following an edit](#following-an-edit) |
-| event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {errors, plugins}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
+| event | `sheetpane-load` (`{ status: 'ready', name, kind, sheets, readMs, sha256 }`), `sheetpane-errors {v, errors, plugins, layers, changed}`, `sheetpane-layers {visible, layers}`, `sheetpane-mode {mode}`, `sheetpane-history`, `sheetpane-export {blob, kind, name, format, converted, sha256, original?}` (cancelable — prevent it to save the file yourself; `original: true` when Download hands back the untouched file, `converted` when ▾ chose the other format), `sheetpane-close` — `sha256` is the SHA-256 of the file opened / the blob handed back, `undefined` without Web Crypto (SP-1009) | bubbling, composed |
 
 ### Following an edit
 
@@ -462,19 +463,42 @@ const errors = await check(await readFile('q3.xlsx'), {
 | attribute | `pane`, `author`, `plugins` | as above |
 | attribute | `readonly` | hides the form, Resolve, Accept… and Delete — a sign-off screen |
 | attribute / property | `results` | as above; the panel's *On sheet* switch moves the pane between `summary` and `marks` |
-| property / method | `errors`, `errorTypes`, `getErrors()`, `setErrors(list, { plugins })` | |
+| property / method | `errors`, `errorTypes`, `getErrors({ layer? })`, `setErrors(list or envelope, { plugins?, layer? })` | |
 | property | `renderDetail` | your extra detail in an open row — see below (W-68) |
-| event | `sheetpane-errors {errors, plugins}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
+| attribute / property | `layers`; `layerNames` | the review layers shown (as on the sheet); what the switch calls each, e.g. `{ pdf: 'PDF check' }` (W-51) |
+| event | `sheetpane-errors {v, errors, plugins, layers, changed}`, `sheetpane-layers {visible, layers}`, `sheetpane-reveal {error}` | **Show in sheet**: switch to the sheet's tab or open the pop-up |
 
 ## Saving and restoring a review
 
 Errors are plain JSON (`SheetpaneError`, schema `v: 1`). Listen to
-`sheetpane-errors`, store `detail.errors` and `detail.plugins` where you like,
-and give them back after the file loads:
+`sheetpane-errors`, store its `detail` — the envelope `{ v: 2, errors,
+plugins, layers, changed }` — where you like, and give it back after the
+file loads:
 
 ```js
-excel.addEventListener('sheetpane-load', () => errors.setErrors(saved.errors, { plugins: saved.plugins }));
+excel.addEventListener('sheetpane-load', () => errors.setErrors(saved));
 ```
+
+A review saved before W-51 (`{ errors, plugins }`) restores the same way, into
+the `review` layer.
+
+**Review layers** (W-51): several sets of errors in one pane — say a
+validation run and a PDF check — each replaced whole without touching the
+others. Every error has a `layer` (`review` unless named):
+
+```js
+errors.setErrors(validationFindings, { layer: 'validation' });
+errors.setErrors(pdfFindings, { layer: 'pdf' }); // validation is kept
+errors.layerNames = { pdf: 'PDF check' };
+errors.layers = ['pdf']; // or layers="pdf" on either element; null shows all
+```
+
+With two or more layers the panel's header shows a switch — **All**, then
+each layer with its open count. What is shown is the pane's: the sheet's
+pins, marks and counts, the list and the comments an export writes all
+follow it (`export({ layers: [...] })` names another set). Replacing a layer
+keeps undo; a person's new error goes into the layer they are looking at.
+Names are ids: 1–64 characters, no spaces (SP-3021).
 
 An error whose cell no longer shows what was found is tagged *stale*, never
 moved.

@@ -7,8 +7,8 @@ import { formatCode, general, ImportError, read, sha256, subsetCode, type Import
 import { checkPlugins, mergeDecorations } from '../plugins/host.js';
 import { STYLE_PROPS, type CellContext, type DeriveInput, type DerivedChange, type ErrorDraft, type Plugin, type PluginContext, type RunStyle, type StyleSubset } from '../plugins/types.js';
 import { HostRules, type ColumnRulesConfig } from './rules.js';
-import { ERROR_META_MAX, RESULTS_LEVELS, SEVERITY_ORDER, copyError, isResult, machineAuthored } from './types.js';
-import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, LoadState, Mode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
+import { DEFAULT_LAYER, ERROR_META_MAX, RESULTS_LEVELS, SEVERITY_ORDER, copyError, isLayerName, isResult, layerOf, machineAuthored } from './types.js';
+import type { ChangeEntry, ChangeKind, Composing, DerivedCell, ErrorMeta, ErrorsEnvelope, LoadState, Mode, ResultsLevel, Selection, SheetState, SheetpaneError, Snapshot, Source } from './types.js';
 
 /** What {@link createWorkbook} takes. */
 export interface StoreOptions {
@@ -26,7 +26,10 @@ export type Origin = object | undefined;
 export type StoreEvent =
   | { type: 'load'; origin: Origin }
   | { type: 'change'; origin: Origin; sheet: string; ref: string; kind: ChangeKind; was: unknown; now: unknown }
-  | { type: 'errors'; origin: Origin }
+  /** `layers`: the layers whose errors changed (W-51), filled in by the store. */
+  | { type: 'errors'; origin: Origin; layers?: string[] }
+  /** The visible layers changed (W-51): the `layers` attribute or the switch. */
+  | { type: 'layers'; origin: Origin }
   | { type: 'select'; origin: Origin; sheet: string; ref: string }
   | { type: 'mode'; origin: Origin; mode: Mode }
   | { type: 'history'; origin: Origin; reason: 'undo' | 'redo' | 'cleared' };
@@ -141,6 +144,23 @@ function restoredStatus(e: SheetpaneError): SheetpaneError {
   return { ...e, acceptedBy: typeof e.acceptedBy === 'string' ? e.acceptedBy : '', acceptedAt: typeof e.acceptedAt === 'string' ? e.acceptedAt : '' };
 }
 
+/** An error's layer as a restore keeps it (W-51): its own name, or `review` — an unusable one logged as SP-3021. */
+function keptLayer(e: { id?: string; layer?: unknown }): string {
+  if (e.layer === undefined) return DEFAULT_LAYER;
+  if (isLayerName(e.layer)) return e.layer;
+  console.warn(spMessage('SP-3021', `${e.id || 'an error'}: its layer ${JSON.stringify(e.layer)} is not a layer name, so it went into "${DEFAULT_LAYER}"`));
+  return DEFAULT_LAYER;
+}
+/** The layers whose errors differ between two lists of the pane's errors (W-51): an error added, removed or changed. */
+function changedLayers(a: readonly SheetpaneError[], b: readonly SheetpaneError[]): Set<string> {
+  const out = new Set<string>();
+  if (a === b) return out;
+  const was = new Map(a.map((e) => [e.id, e]));
+  for (const e of b) { const w = was.get(e.id); if (w !== e) { out.add(layerOf(e)); if (w) out.add(layerOf(w)); } was.delete(e.id); }
+  for (const e of was.values()) out.add(layerOf(e));
+  return out;
+}
+
 const same = (a: unknown, b: unknown) => a === b || (typeof a === 'number' && typeof b === 'number' && Object.is(a, b)) || JSON.stringify(a) === JSON.stringify(b);
 
 /**
@@ -184,6 +204,12 @@ export class WorkbookStore {
   private resultsLevel: ResultsLevel = 'summary';
   private focus: { sheet: string; range: string } | undefined;
   private resultIdx: { errors: readonly SheetpaneError[]; sheets: Map<string, ResultSheet>; counts: ResultCounts } | undefined;
+  /** The pane's layers in the order first named (W-51); `shown` the visible ones, `null` for every layer. */
+  private known: string[] = [];
+  private shown: string[] | null = null;
+  private layersDirty = false;
+  /** Plugins already told their draft's layer is no name (SP-3021, once each). */
+  private readonly badLayerWarned = new Set<string>();
   /** The host's column rules (W-27): a built-in `validate` provider, never part of the frozen plugin set. */
   private readonly rules: HostRules = new HostRules({
     bookSheets: () => this.snap.book?.sheets,
@@ -202,7 +228,7 @@ export class WorkbookStore {
     this.plugins = checkPlugins(o.plugins ?? []);
     this.snap = {
       load: { status: 'empty' }, source: undefined, book: undefined,
-      changes: new Map(), derived: new Map(), errors: [],
+      changes: new Map(), derived: new Map(), errors: [], layers: [], visibleLayers: [], visibleErrors: [],
       selection: { sheet: '', ref: 'A1' }, mode: 'view', composing: null,
       canUndo: false, canRedo: false, version: 0,
     };
@@ -217,7 +243,18 @@ export class WorkbookStore {
   on(fn: (e: StoreEvent) => void): () => void { this.eventListeners.add(fn); return () => this.eventListeners.delete(fn); }
 
   private set(patch: Partial<Snapshot>, events: StoreEvent[] = []): void {
-    this.snap = { ...this.snap, ...patch, canUndo: this.undoStack.length > 0, canRedo: this.redoStack.length > 0, version: this.snap.version + 1 };
+    const prev = this.snap;
+    const next: { -readonly [K in keyof Snapshot]: Snapshot[K] } = { ...prev, ...patch, canUndo: this.undoStack.length > 0, canRedo: this.redoStack.length > 0, version: prev.version + 1 };
+    if (next.errors !== prev.errors || this.layersDirty) { // W-51: the layers named so far, the visible ones and their errors
+      const seen = new Set(this.known);
+      for (const l of [...next.errors.map(layerOf), ...(this.shown ?? [])]) if (!seen.has(l)) { seen.add(l); this.known.push(l); }
+      if (this.layersDirty || this.known.length !== prev.layers.length) { next.layers = [...this.known]; next.visibleLayers = this.shown ? [...this.shown] : next.layers; }
+      const vis = this.shown && new Set(this.shown);
+      next.visibleErrors = vis ? next.errors.filter((e) => vis.has(layerOf(e))) : next.errors;
+      this.layersDirty = false;
+    }
+    for (const e of events) if (e.type === 'errors' && !e.layers) { const c = changedLayers(prev.errors, next.errors); e.layers = next.layers.filter((l) => c.has(l)); }
+    this.snap = next;
     for (const fn of [...this.listeners]) fn();
     for (const e of events) for (const fn of [...this.eventListeners]) fn(e);
   }
@@ -251,6 +288,7 @@ export class WorkbookStore {
     if (seq !== this.loadSeq) return;
     const source: Source = { name, kind: book.source, size: bytes.length, bytes, readMs: Math.round(performance.now() - t0), ...(book.sha256 ? { sha256: book.sha256 } : {}) };
     this.undoStack = []; this.redoStack = []; this.textCache.clear(); this.pluginErrors.clear(); this.focus = undefined;
+    this.known = []; this.layersDirty = true; // W-51: a new workbook starts with the visible layers named, and no others
     const first = book.sheets[book.activeSheet] ?? book.sheets[0]!;
     this.set({ load: { status: 'ready' }, source, book, changes: new Map(), derived: new Map(), errors: [], composing: null, selection: { sheet: first.name, ref: 'A1' } }, [{ type: 'load', origin }]);
     this.rules.reset(); // column rules: the `load` phase (time-sliced; it re-runs validate when done)
@@ -696,11 +734,16 @@ export class WorkbookStore {
   }
 
   /** Adds a person's error with a new id; `cellChanged` also writes `expected` into the cell in the same undo step. `range: ''` is the whole sheet, and with `sheet: ''` the workbook (W-55): no cell, so `found` is `''` and nothing is written. `meta` is the host's data (W-68): kept as JSON, or dropped with SP-3016. */
-  addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string; meta?: ErrorMeta }, origin?: Origin): SheetpaneError {
+  addError(d: { sheet: string; range: string; type: string; severity: SheetpaneError['severity']; expected?: string; message?: string; cellChanged?: boolean; author?: string; meta?: ErrorMeta; layer?: string }, origin?: Origin): SheetpaneError {
+    let layer = this.defaultLayer;
+    if (d.layer !== undefined) {
+      if (isLayerName(d.layer)) layer = d.layer;
+      else console.warn(spMessage('SP-3021', `addError: ${JSON.stringify(d.layer)} is not a layer name, so the error went into "${layer}"`));
+    }
     const e: SheetpaneError = withMeta({
       v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity,
       found: this.foundFor(d.sheet, d.range), expected: d.expected ?? '', message: d.message ?? '',
-      cellChanged: !!d.cellChanged, status: 'open', matchesExpected: false, author: d.author ?? '', createdAt: new Date().toISOString(),
+      cellChanged: !!d.cellChanged, status: 'open', matchesExpected: false, author: d.author ?? '', createdAt: new Date().toISOString(), layer,
     }, d.meta);
     if (this.resultsLevel === 'off' && isResult(e)) return e; // `results="off"`: a result is dropped on arrival (W-50)
     let changes = this.snap.changes;
@@ -728,7 +771,7 @@ export class WorkbookStore {
   updateError(id: string, patch: { status?: SheetpaneError['status']; severity?: SheetpaneError['severity']; expected?: string; message?: string; type?: string; meta?: ErrorMeta | undefined; reason?: string; acceptedBy?: string }, origin?: Origin): boolean {
     const cur = this.snap.errors.find((e) => e.id === id);
     if (!cur) return false;
-    const { meta, reason, acceptedBy, ...rest } = patch;
+    const { meta, reason, acceptedBy, layer: _layer, ...rest } = patch as typeof patch & { layer?: unknown }; // an edit never moves an error to another layer (W-51)
     let out = { ...cur, ...rest } as SheetpaneError;
     if (out.status === 'accepted') {
       if (reason !== undefined) out.reason = typeof reason === 'string' ? reason.trim() : reason;
@@ -772,17 +815,108 @@ export class WorkbookStore {
     this.commit({ changes: this.snap.changes, errors: this.snap.errors.filter((e) => e.id !== id) }, [], origin, [{ type: 'errors', origin }]);
   }
 
-  /** A copy of every error in the pane, `meta` included (W-68). */
-  getErrors(): SheetpaneError[] { return this.snap.errors.map(copyError); }
+  /**
+   * A copy of the pane's errors, `meta` included (W-68): every layer's, or with `layer` that layer's only (W-51).
+   * @param o - `layer`: one layer's name; an unusable one is logged as SP-3021 and gives `[]`.
+   * @returns The errors, each with its `layer`.
+   */
+  getErrors(o: { layer?: string } = {}): SheetpaneError[] {
+    if (o.layer === undefined) return this.snap.errors.map(copyError);
+    if (!isLayerName(o.layer)) { console.warn(spMessage('SP-3021', `getErrors: ${JSON.stringify(o.layer)} is not a layer name`)); return []; }
+    return this.snap.errors.filter((e) => layerOf(e) === o.layer).map(copyError);
+  }
 
-  /** The host restores a saved review. Not a user action: the undo stack is cleared (W-23). Each `meta` is kept as JSON, or dropped with SP-3016 (W-68). */
-  setErrors(list: readonly SheetpaneError[], origin?: Origin): void {
-    const errors = this.arriving(list).map((e) => restoredStatus(withMeta({ ...e, v: 1 as const, matchesExpected: false }, e.meta)));
-    for (const e of errors) { const n = /^ERR-(\d+)$/.exec(e.id); if (n) this.nextError = Math.max(this.nextError, Number(n[1]) + 1); }
+  /** Bumps the id counter past an `ERR-n` id, so a new error never reuses it. */
+  private reserve(id: string): void { const n = /^ERR-(\d+)$/.exec(id); if (n) this.nextError = Math.max(this.nextError, Number(n[1]) + 1); }
+
+  /**
+   * The host restores a saved review, or replaces one layer (W-51). Each `meta` is kept as JSON, or dropped with SP-3016 (W-68).
+   *
+   * - **The whole review** (no `layer`): a list, or the `sheetpane-errors` envelope — each error in its own `layer`, one
+   *   without it in `review`; the envelope's `layers` come back too, an empty one included. Not a user action: the undo
+   *   stack is cleared (W-23).
+   * - **One layer** (`layer`): the list becomes that layer's errors, each stamped with it; every other layer is left as it
+   *   is. An id another layer holds (or a blank one) gets a new one. The undo stack is kept, and every step in it sees the
+   *   new layer, so undo neither brings back the replaced errors nor takes away the new ones.
+   *
+   * @param review - The errors, or a saved envelope (`{ v?, errors, plugins?, layers? }`; one saved before W-51 has no `v`).
+   * @param o - `layer`: the one layer to replace; an unusable name is logged as SP-3021 and nothing changes.
+   * @param origin - The element that asked.
+   * @example
+   * ```ts
+   * import { createWorkbook } from '@sheetpane/grid';
+   * const wb = createWorkbook();
+   * wb.setErrors(validationResults, { layer: 'validation' });
+   * wb.setErrors(pdfResults, { layer: 'pdf' }); // the validation layer is untouched
+   * wb.setVisibleLayers(['pdf']);
+   * ```
+   */
+  setErrors(review: readonly SheetpaneError[] | ErrorsEnvelope, o: { layer?: string } = {}, origin?: Origin): void {
+    const env = Array.isArray(review) ? undefined : (review as ErrorsEnvelope);
+    const list: readonly SheetpaneError[] = env ? (Array.isArray(env.errors) ? env.errors : []) : (review as readonly SheetpaneError[]);
+    if (o.layer !== undefined) {
+      if (!isLayerName(o.layer)) { console.warn(spMessage('SP-3021', `setErrors: ${JSON.stringify(o.layer)} is not a layer name, so nothing changed`)); return; }
+      this.replaceLayer(list, o.layer, origin);
+      return;
+    }
+    const errors = this.arriving(list).map((e) => restoredStatus(withMeta({ ...e, v: 1 as const, matchesExpected: false, layer: keptLayer(e) }, e.meta)));
+    for (const e of errors) this.reserve(e.id);
     this.undoStack = []; this.redoStack = [];
     this.pluginErrors.clear(); // ids now name the restored list's errors; validate re-adopts its own by what they say, never by id
+    this.known = (env && Array.isArray(env.layers) ? env.layers : []).filter((l, i, a) => keptLayer({ layer: l }) === l && a.indexOf(l) === i);
+    this.layersDirty = true;
     this.set({ errors: this.withMatches(errors, this.snap.changes) }, [{ type: 'errors', origin }, { type: 'history', origin, reason: 'cleared' }]);
     this.runValidate(this.allSheets(), origin);
+  }
+
+  /** `setErrors(list, { layer })` (W-51): one layer replaced; the other layers, and the undo stack rebased onto the new layer, kept. */
+  private replaceLayer(list: readonly SheetpaneError[], layer: string, origin: Origin): void {
+    const mine = (e: SheetpaneError) => layerOf(e) === layer;
+    const history = [...this.undoStack, ...this.redoStack];
+    const taken = new Set(this.snap.errors.filter((e) => !mine(e)).map((e) => e.id));
+    for (const h of history) for (const e of [...h.before.errors, ...h.after.errors]) if (!mine(e)) taken.add(e.id);
+    const incoming = this.arriving(list).map((e) => restoredStatus(withMeta({ ...e, v: 1 as const, matchesExpected: false, layer }, e.meta)));
+    for (const e of incoming) this.reserve(e.id);
+    const fresh = incoming.map((e) => { const ok = typeof e.id === 'string' && e.id !== '' && !taken.has(e.id); const x = ok ? e : { ...e, id: this.newId() }; taken.add(x.id); return x; });
+    const swap = (errors: readonly SheetpaneError[]) => [...errors.filter((e) => !mine(e)), ...fresh];
+    for (const h of history) { h.before = { changes: h.before.changes, errors: swap(h.before.errors) }; h.after = { changes: h.after.changes, errors: swap(h.after.errors) }; }
+    const gone = new Set(this.snap.errors.filter(mine).map((e) => e.id));
+    for (const [k, id] of this.pluginErrors) if (gone.has(id)) this.pluginErrors.delete(k); // a provider re-adopts its own by what they say
+    if (!this.known.includes(layer)) this.known.push(layer); // a check that found nothing is still a layer
+    this.layersDirty = true;
+    this.set({ errors: this.withMatches(swap(this.snap.errors), this.snap.changes) }, [{ type: 'errors', origin }]);
+    this.runValidate(this.allSheets(), origin);
+  }
+
+  /**
+   * Shows the errors of some layers only (W-51): the sheet's marks, pins and counts, the tab counts, the error list and
+   * the comments an export writes all follow. `null` or `[]` shows every layer. Naming a layer that has no errors yet
+   * adds it to the pane's layers. Not undone; it is view state, like the mode.
+   * @param names - The layers to show, or `null` for every layer.
+   * @param origin - The element that asked.
+   * @returns `false` when a name is unusable (logged as SP-3021) — nothing changes.
+   */
+  setVisibleLayers(names: readonly string[] | null | undefined, origin?: Origin): boolean {
+    const list = names && names.length ? [...new Set(names)] : null;
+    const bad = list?.find((l) => !isLayerName(l));
+    if (list && bad !== undefined) { console.warn(spMessage('SP-3021', `layers: ${JSON.stringify(bad)} is not a layer name, so the visible layers did not change`)); return false; }
+    if ((list ?? []).join(' ') === (this.shown ?? []).join(' ')) return true;
+    this.shown = list; this.layersDirty = true;
+    this.set({}, [{ type: 'layers', origin }]);
+    return true;
+  }
+
+  /** The layer a new error goes into when none is named (W-51): `review` while it is visible, else the first visible layer — so what a person adds stays in sight. */
+  get defaultLayer(): string { const v = this.shown; return !v || v.includes(DEFAULT_LAYER) ? DEFAULT_LAYER : v[0]!; }
+
+  /**
+   * What `sheetpane-errors` carries (W-51, `v: 2`): every error, the plugin ids and the pane's layers — what a host saves
+   * and gives back to `setErrors()`.
+   * @param changed - The layers whose errors changed in this event.
+   * @returns A new envelope; its errors are copies.
+   */
+  envelope(changed: readonly string[] = []): ErrorsEnvelope {
+    return { v: 2, errors: this.getErrors(), plugins: this.pluginIds, layers: [...this.snap.layers], changed: [...changed] };
   }
 
   // ── undo / redo (W-23): one stack per pane ──────────────────────────────
@@ -849,7 +983,7 @@ export class WorkbookStore {
     const at = new Map(errors.map((e, i) => [e.id, i]));
     // restored errors a provider may adopt (setErrors): by what they say, built once
     let adoptable: Map<string, number[]> | undefined;
-    const contentKey = (e: { sheet: string; range: string; type: string; author: string }) => `${e.sheet}|${e.range}|${e.type}|${e.author}`;
+    const contentKey = (e: { sheet: string; range: string; type: string; author: string; layer?: string }) => `${e.sheet}|${e.range}|${e.type}|${e.author}|${layerOf(e)}`;
     const adopt = (d: ErrorDraft): number => {
       if (!adoptable) {
         adoptable = new Map();
@@ -863,12 +997,17 @@ export class WorkbookStore {
         let drafts: ErrorDraft[];
         try { drafts = p.validate!(sheet, this.pluginContext()); } catch (e) { console.error(spMessage('SP-3013', `sheetpane: plugin "${p.id}" validate failed`), e); continue; }
         const seen = new Set<string>();
-        for (const d of drafts) {
-          if (this.resultsLevel === 'off' && isResult(d)) continue; // `results="off"` (W-50)
-          const k = `${p.id}|${d.sheet}|${d.range}|${d.type}${d.key ? `|${d.key}` : ''}`;
+        for (const raw of drafts) {
+          if (this.resultsLevel === 'off' && isResult(raw)) continue; // `results="off"` (W-50)
+          // W-51: a draft lands in `review` unless its plugin names a layer
+          let layer = DEFAULT_LAYER;
+          if (raw.layer !== undefined && isLayerName(raw.layer)) layer = raw.layer;
+          else if (raw.layer !== undefined && !this.badLayerWarned.has(p.id)) { this.badLayerWarned.add(p.id); console.warn(spMessage('SP-3021', `plugin "${p.id}": ${JSON.stringify(raw.layer)} is not a layer name, so its errors went into "${DEFAULT_LAYER}"`)); }
+          const d = { ...raw, layer };
+          const k = `${p.id}|${d.sheet}|${d.range}|${d.type}${d.key ? `|${d.key}` : ''}${layer === DEFAULT_LAYER ? '' : `|@${layer}`}`;
           seen.add(k);
           const id = this.pluginErrors.get(k);
-          const mine = (e: SheetpaneError | undefined) => !!e && e.sheet === d.sheet && e.range === d.range && e.type === d.type && e.author === d.author;
+          const mine = (e: SheetpaneError | undefined) => !!e && e.sheet === d.sheet && e.range === d.range && e.type === d.type && e.author === d.author && layerOf(e) === layer;
           let i = id !== undefined ? at.get(id) ?? -1 : -1;
           if (i >= 0 && !mine(errors[i])) i = -1;
           if (i < 0) { // a restored review may already hold this error: adopt it rather than add a second
@@ -876,7 +1015,7 @@ export class WorkbookStore {
             if (i >= 0) this.pluginErrors.set(k, errors[i]!.id);
           }
           if (i < 0) {
-            const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString() }; // `key` stays out of the error
+            const e: SheetpaneError = { v: 1, id: this.newId(), sheet: d.sheet, range: d.range, type: d.type, severity: d.severity, found: d.found, expected: d.expected, message: d.message, cellChanged: !!d.cellChanged, status: d.status ?? 'open', matchesExpected: false, author: d.author, createdAt: new Date().toISOString(), layer }; // `key` stays out of the error
             if (d.code) e.code = d.code;
             this.pluginErrors.set(k, e.id);
             at.set(e.id, errors.length);
@@ -949,7 +1088,7 @@ export class WorkbookStore {
   /** Problems (entries) and results (cells) in the pane — what the summary line and the status line say. */
   resultCounts(): ResultCounts { return this.indexResults().counts; }
   private indexResults(): { sheets: Map<string, ResultSheet>; counts: ResultCounts } {
-    const errors = this.snap.errors;
+    const errors = this.snap.visibleErrors; // W-51: what the visible layers hold
     if (this.resultIdx?.errors === errors) return this.resultIdx;
     const sheets = new Map<string, ResultSheet>(), counts: ResultCounts = { problems: 0, open: 0, pass: 0, skipped: 0 };
     for (const e of errors) {

@@ -96,6 +96,7 @@ code's title and severity; this page holds the long text. The repo test
 | [SP-3018](#sp-3018) | Error not accepted | warning |
 | [SP-3019](#sp-3019) | Cell to open at not found | warning |
 | [SP-3020](#sp-3020) | Nothing to check | error |
+| [SP-3021](#sp-3021) | Layer name not valid | warning |
 | [SP-5101](#sp-5101) | Selection too large to format | warning |
 | [SP-5102](#sp-5102) | Not a style sheet | error |
 | [SP-5103](#sp-5103) | Workbook has no style sheet | error |
@@ -572,6 +573,14 @@ The store, the plugin host and `<sheetpane-excel>`.
 - **Meaning:** `check()` from `@sheetpane/grid/check` (or `@sheetpane/validation/check`) was given something that is not a file's bytes.
 - **Likely cause:** a path or a parsed workbook passed instead of the bytes; an unresolved promise (`readFile` without `await`).
 - **Fix:** pass the bytes — `await readFile(path)` in Node, a `File` or `Blob` in a page — and the file's `name` in the options.
+
+### SP-3021
+
+**Layer name not valid** · warning · [SR-GRID](../records/0105_GRID.md) decision 5d
+
+- **Meaning:** a review layer (W-51) was named with something that is not a name: not a string, empty, over 64 characters, or holding a space. `setErrors(list, { layer })`, `getErrors({ layer })` and the `layers` property change nothing; an error restored or written with such a `layer` goes into `review`.
+- **Likely cause:** a display label used as the name (`'PDF check'`), or a layer read from a file that was never set.
+- **Fix:** name layers with short ids — `validation`, `pdf` — and give `<sheetpane-errors>` the words to show in `layerNames` (`{ pdf: 'PDF check' }`).
 
 ---
 

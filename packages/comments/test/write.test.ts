@@ -401,3 +401,28 @@ describe('results stay out of the review unless the host asks (W-50 DoD 5)', () 
     expect(plugin.lastExport).toBeUndefined();
   });
 });
+
+describe('review layers (W-51)', () => {
+  const written = (plugin: CommentsPlugin) => [...(plugin.lastExport?.written ?? [])].sort();
+  it('an export writes the layers shown by default, any named set by option; reading back skips every layer’s own threads', async () => {
+    const plugin = comments();
+    const s = await storeOn(await plain(), plugin);
+    const mine = s.addError({ sheet: 'Holdings', range: 'I6', type: 'wrong-value', severity: 'error', expected: '0.75%', author: 'Arpit' });
+    const finding = (id: string, range: string): SheetpaneError => ({ v: 1, id, sheet: 'Holdings', range, type: 'other', severity: 'warning', found: '', expected: '', message: id, cellChanged: false, status: 'open', matchesExpected: false, author: 'checker', createdAt: '2026-10-19T09:00:00.000Z' });
+    s.setErrors([finding('V-1', 'B2')], { layer: 'validation' });
+    s.setErrors([finding('P-1', 'C4')], { layer: 'pdf' });
+    await exported(s); // every layer shown
+    expect(written(plugin)).toEqual([mine.id, 'P-1', 'V-1'].sort());
+    s.setVisibleLayers(['pdf']);
+    await exported(s);
+    expect(written(plugin)).toEqual(['P-1']);
+    const both = await exported(s, { layers: ['validation', 'review'] }); // named, whatever is shown
+    expect(written(plugin)).toEqual([mine.id, 'V-1'].sort());
+    await exported(s, { layers: [] });
+    expect(plugin.lastExport).toBeUndefined(); // an empty set writes nothing
+    // the file read back with the whole review restored: none of its threads come back as file notes
+    const back = await storeOn(both);
+    back.setErrors(s.envelope());
+    expect(back.getErrors().filter((e) => e.author === 'file')).toEqual([]);
+  });
+});

@@ -138,6 +138,14 @@
               },
               "default": "'summary'",
               "fieldName": "results"
+            },
+            {
+              "name": "layers",
+              "description": "Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "layers"
             }
           ],
           "members": [
@@ -185,6 +193,17 @@
                 "text": "File | Blob | ArrayBuffer | Uint8Array | null"
               },
               "description": "Loads a file, like `load()`; `null` does nothing."
+            },
+            {
+              "kind": "field",
+              "name": "layers",
+              "privacy": "public",
+              "type": {
+                "text": "string[]"
+              },
+              "description": "The review layers shown (W-51) — the pane's, shared with `<sheetpane-errors>`: every layer until the `layers`\nattribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer.",
+              "attribute": "layers",
+              "reflects": true
             },
             {
               "kind": "field",
@@ -403,7 +422,16 @@
               "kind": "method",
               "name": "getErrors",
               "privacy": "public",
-              "description": "A copy of the pane's errors, to save a review.",
+              "description": "A copy of the pane's errors, to save a review; `{ layer }` gives one layer's (W-51).",
+              "parameters": [
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ layer?: string }"
+                  }
+                }
+              ],
               "return": {
                 "type": {
                   "text": "SheetpaneError[]"
@@ -414,12 +442,19 @@
               "kind": "method",
               "name": "setErrors",
               "privacy": "public",
-              "description": "Restores a saved review; not a user action, so the undo stack is cleared.",
+              "description": "Restores a saved review — a list or the `sheetpane-errors` envelope — clearing the undo stack; `{ layer }` replaces that layer only (W-51).",
               "parameters": [
                 {
                   "name": "list",
                   "type": {
-                    "text": "SheetpaneError[]"
+                    "text": "SheetpaneError[] | ErrorsEnvelope"
+                  }
+                },
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ layer?: string }"
                   }
                 }
               ],
@@ -623,9 +658,16 @@
             {
               "name": "sheetpane-errors",
               "type": {
-                "text": "CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>"
+                "text": "CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>"
               },
-              "description": "`{ errors, plugins }` when the pane's errors change."
+              "description": "`{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed."
+            },
+            {
+              "name": "sheetpane-layers",
+              "type": {
+                "text": "CustomEvent<{ visible: string[]; layers: string[] }>"
+              },
+              "description": "`{ visible, layers }` when the visible review layers change (W-51)."
             },
             {
               "name": "sheetpane-select",
@@ -1024,6 +1066,14 @@
               },
               "default": "'summary'",
               "fieldName": "results"
+            },
+            {
+              "name": "layers",
+              "description": "Space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements; with two or more layers the header shows a switch.",
+              "type": {
+                "text": "string"
+              },
+              "fieldName": "layers"
             }
           ],
           "members": [
@@ -1097,10 +1147,39 @@
               "reflects": true
             },
             {
+              "kind": "field",
+              "name": "layers",
+              "privacy": "public",
+              "type": {
+                "text": "string[]"
+              },
+              "description": "The review layers shown (W-51) — the pane's, shared with `<sheetpane-excel>`: every layer until the `layers`\nattribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer.",
+              "attribute": "layers",
+              "reflects": true
+            },
+            {
+              "kind": "field",
+              "name": "layerNames",
+              "privacy": "public",
+              "type": {
+                "text": "Readonly<Record<string, string>>"
+              },
+              "description": "What the switch and the rows call each layer (W-51), e.g. `{ pdf: 'PDF check' }`; a layer not named here shows its name (`review` as *Review*)."
+            },
+            {
               "kind": "method",
               "name": "getErrors",
               "privacy": "public",
-              "description": "A copy of the pane's errors, to save a review.",
+              "description": "A copy of the pane's errors, to save a review; `{ layer }` gives one layer's (W-51).",
+              "parameters": [
+                {
+                  "name": "o",
+                  "optional": true,
+                  "type": {
+                    "text": "{ layer?: string }"
+                  }
+                }
+              ],
               "return": {
                 "type": {
                   "text": "SheetpaneError[]"
@@ -1111,19 +1190,19 @@
               "kind": "method",
               "name": "setErrors",
               "privacy": "public",
-              "description": "Restores a saved review. `plugins` (from the saved `sheetpane-errors` envelope) shows a notice when it differs from this pane's set.",
+              "description": "Restores a saved review — a list, or the `sheetpane-errors` envelope with its layers — or, with `layer`, replaces that\nlayer only (W-51). `plugins` (from the saved envelope; read from it when it is passed whole) shows a notice when it\ndiffers from this pane's set.",
               "parameters": [
                 {
                   "name": "list",
                   "type": {
-                    "text": "SheetpaneError[]"
+                    "text": "SheetpaneError[] | ErrorsEnvelope"
                   }
                 },
                 {
                   "name": "o",
                   "optional": true,
                   "type": {
-                    "text": "{ plugins?: string[] }"
+                    "text": "{ plugins?: string[]; layer?: string }"
                   }
                 }
               ],
@@ -1149,9 +1228,16 @@
             {
               "name": "sheetpane-errors",
               "type": {
-                "text": "CustomEvent<{ errors: SheetpaneError[]; plugins: string[] }>"
+                "text": "CustomEvent<{ v: 2; errors: SheetpaneError[]; plugins: string[]; layers: string[]; changed: string[] }>"
               },
-              "description": "`{ errors, plugins }` when the pane's errors change — the envelope to save a review."
+              "description": "`{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed."
+            },
+            {
+              "name": "sheetpane-layers",
+              "type": {
+                "text": "CustomEvent<{ visible: string[]; layers: string[] }>"
+              },
+              "description": "`{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51)."
             },
             {
               "name": "sheetpane-change",

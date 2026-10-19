@@ -78,6 +78,7 @@ const TABLE = {
   'SP-3018': { title: 'Error not accepted', severity: 'warning' },
   'SP-3019': { title: 'Cell to open at not found', severity: 'warning' },
   'SP-3020': { title: 'Nothing to check', severity: 'error' },
+  'SP-3021': { title: 'Layer name not valid', severity: 'warning' },
 
   // ── 4xxx · <sheetpane-errors> — none raised yet ─────────────────────────
 

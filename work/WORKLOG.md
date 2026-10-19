@@ -95,6 +95,26 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-19 — W-51 closed: review layers  ·  Claude Code (claude-opus-5-5, lane a)
+
+- **Asked:** *build W-51 in the lane-a worktree and close it* (the orchestrator's brief).
+- **Done:** every error the store holds carries a `layer` — `review` unless named. `setErrors(list, { layer })` replaces that layer only; `setErrors(list)` and the new `setErrors(envelope)` restore the whole review; `getErrors({ layer })` reads one. The visible layers are the pane's (`setVisibleLayers`, the `layers` attribute and property on both elements) and `snapshot.visibleErrors` is what every surface reads: the sheet's pins, marks, toolbar and tab counts, error stepping and card, the error list, the validation status count and the comments export.
+  - `<sheetpane-errors>`: with two or more layers, a *Review layers* switch in the header — All, then each layer with its open count, named by the new `layerNames`; rows name their layer while several are shown; `sheetpane-layers {visible, layers}` on the element acted on.
+  - The `sheetpane-errors` detail is the envelope `v: 2` — `{ v, errors, plugins, layers, changed }` (`ErrorsEnvelope`, `store.envelope()`); a pre-layers envelope or bare list restores into `review`.
+  - A `validate` draft may name a `layer` (its key and the adoption after a restore include it); `updateError` never moves an error; `export({ layers })` names the set the comments plugin writes.
+  - SP-3021 is new (a name that is not one). Records changed: SR-GRID 2, 5d, 7, 9, 17 and the codes line; SR-ERRORS §1, 1, 2, 16 and Consequences; SR-COMMENTS 3 and Consequences; SR-VALIDATION 7; SR-CODES. Both skills, both READMEs, `docs/ERRORS.md` and the CHANGELOG are updated; `llms-full.txt`, the plugin copies of the skills, `custom-elements.json` and the framework typings are regenerated.
+- **Decided / left open:**
+  - The visible layers live in the store, like the mode: one setting per pane, so the sheet and the list cannot disagree (L7). Not undone. Not in the envelope — what is shown is the host's or the user's view, not the review.
+  - Every layer is shown until something names one. The switch is All plus one button per layer (one layer at a time); several at once only from the attribute.
+  - Replacing one layer keeps undo and rebases every step onto the new layer, so an edit made before a re-run can still be undone; restoring the whole review still clears it, as before.
+  - A person's new error goes into the layer shown (`review` while it is shown), so it never vanishes as it is added.
+  - An empty layer named by `setErrors([], { layer })` stays a layer (a check that found nothing). Nothing removes a layer short of a whole restore — a backlog candidate.
+  - An id another layer holds, or a blank one, is renamed silently on a layered set.
+- **Mistakes:** the `sheetpane-errors` skill went over its 200-line cap on the first draft; trimmed. The full suite run alongside seven other lanes (load ≈ 29) timed out three unrelated tests; each passed rerun alone.
+- **Next:** the orchestrator merges lane a; W-63's ball is the orchestrator's to move.
+
+---
+
 ## 2026-10-19 — W-69 closed: accepted deviations  ·  Claude Code (claude-opus-5-5, lane a)
 
 - **Asked:** *build W-69 in the lane-a worktree and close it* (the orchestrator's brief).

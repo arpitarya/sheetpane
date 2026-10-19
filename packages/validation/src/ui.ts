@@ -15,10 +15,10 @@ const ARROW = '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" strok
  * Open validation errors in a snapshot.
  *
  * @param snap - A snapshot of the store.
- * @returns How many errors by the `workbook` author, of type `validation`, are open.
+ * @returns How many errors by the `workbook` author, of type `validation`, are open in the layers shown (W-51).
  */
 export function openWarnings(snap: Snapshot): number {
-  return snap.errors.filter((e) => e.author === AUTHOR && e.type === ERROR_TYPE && e.status === 'open').length;
+  return snap.visibleErrors.filter((e) => e.author === AUTHOR && e.type === ERROR_TYPE && e.status === 'open').length;
 }
 
 /**

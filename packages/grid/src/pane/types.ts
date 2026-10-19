@@ -66,6 +66,73 @@ export interface SheetpaneError {
   acceptedAt?: string;
   /** Why it was accepted (W-69) — required, never blank, while `status` is `accepted`; written into the export as *Accepted: <reason>*. */
   reason?: string;
+  /**
+   * The review layer the error belongs to (W-51), e.g. `"validation"` or `"pdf"`: a named set of errors the host replaces
+   * whole with `setErrors(list, { layer })` and the user shows with the layers switch. Every error the store holds carries
+   * one; an error given without it (a review saved before W-51) is in {@link DEFAULT_LAYER}. A name is 1–64 characters
+   * with no spaces ({@link isLayerName}). An edit never moves an error to another layer.
+   */
+  layer?: string;
+}
+
+/** The layer an error is in when nobody names one (W-51): `"review"` — people's errors and the plugins' land here. */
+export const DEFAULT_LAYER = 'review';
+
+/**
+ * Whether a value may name a review layer (W-51): a string of 1–64 characters with no whitespace, so the `layers`
+ * attribute can list several separated by spaces.
+ *
+ * @param x - Any value.
+ * @returns True for a usable layer name.
+ * @example
+ * ```ts
+ * import { isLayerName } from '@sheetpane/grid';
+ * isLayerName('pdf'); // true
+ * isLayerName('PDF check'); // false — a space
+ * ```
+ */
+export const isLayerName = (x: unknown): x is string => typeof x === 'string' && /^\S{1,64}$/.test(x);
+
+/**
+ * The layer an error is in (W-51): its `layer`, else {@link DEFAULT_LAYER}.
+ *
+ * @param e - The error, or just its `layer`.
+ * @returns The layer's name.
+ * @example
+ * ```ts
+ * import { layerOf } from '@sheetpane/grid';
+ * layerOf({ layer: 'pdf' }); // 'pdf'
+ * layerOf({}); // 'review'
+ * ```
+ */
+export const layerOf = (e: Pick<SheetpaneError, 'layer'>): string => e.layer ?? DEFAULT_LAYER;
+
+/**
+ * What `sheetpane-errors` carries and a host saves to restore a review (W-51 bumps it to `v: 2`): every error with its
+ * `layer`, the pane's plugin ids, and the pane's layers in order — an empty one included, so a check that found nothing
+ * comes back as a layer. `changed` names the layers whose errors changed in this event (ignored on restore).
+ * `setErrors(envelope)` restores it; an envelope saved before W-51 (`{ errors, plugins }`, no `v`) restores into
+ * `review`.
+ *
+ * @example
+ * ```ts
+ * import '@sheetpane/grid';
+ * import type { ErrorsEnvelope } from '@sheetpane/grid';
+ * const list = document.querySelector('sheetpane-errors')!;
+ * list.addEventListener('sheetpane-errors', (e) => localStorage.setItem('review', JSON.stringify((e as CustomEvent<ErrorsEnvelope>).detail)));
+ * const saved = JSON.parse(localStorage.getItem('review') ?? 'null') as ErrorsEnvelope | null;
+ * if (saved) list.setErrors(saved);
+ * ```
+ */
+export interface ErrorsEnvelope {
+  /** `2` since W-51; absent in an envelope saved before it. */
+  v?: 2;
+  errors: SheetpaneError[];
+  plugins?: string[];
+  /** The pane's layers in the order they were first named. */
+  layers?: string[];
+  /** The layers whose errors changed in this event. */
+  changed?: string[];
 }
 
 /**
@@ -162,7 +229,14 @@ export interface Snapshot {
   readonly changes: ReadonlyMap<string, ChangeEntry>;
   /** `sheet!ref` → a value a plugin derived. */
   readonly derived: ReadonlyMap<string, DerivedCell>;
+  /** Every error in the pane, in every layer (W-51). */
   readonly errors: readonly SheetpaneError[];
+  /** The pane's review layers in the order they were first named (W-51): by `setErrors(list, { layer })`, by the `layers` attribute, or by an error. */
+  readonly layers: readonly string[];
+  /** The layers shown (W-51): what the `layers` attribute or the switch chose, else every layer. */
+  readonly visibleLayers: readonly string[];
+  /** The errors in the visible layers — what every surface draws and counts (W-51, SR-LAW-7). The same array as `errors` while every layer is shown. */
+  readonly visibleErrors: readonly SheetpaneError[];
   readonly selection: Selection;
   readonly mode: Mode;
   readonly composing: Composing | null;

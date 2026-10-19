@@ -30,7 +30,6 @@ here. Read that record before changing anything below it.
 
 ### build
 
-- 🟢 **W-51** `agent` · **G1** · Review layers: several sets of errors in one pane, switched without losing any. Filed by Arpit (Cowork). [detail](open/W-51-review-layers.md)
 
 - 🟢 **W-52** `agent` · **G1** · Insert and delete rows and columns in Edit, with every reference shifted. Filed by Arpit (Cowork). [detail](open/W-52-insert-delete-rows-columns.md)
 

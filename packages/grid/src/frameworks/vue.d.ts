@@ -13,8 +13,10 @@ export type SheetpaneExcelVueProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omi
   onSheetpaneLoad?: ((event: SheetpaneExcelEventMap['sheetpane-load']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   onSheetpaneChange?: ((event: SheetpaneExcelEventMap['sheetpane-change']) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   onSheetpaneErrors?: ((event: SheetpaneExcelEventMap['sheetpane-errors']) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  onSheetpaneLayers?: ((event: SheetpaneExcelEventMap['sheetpane-layers']) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   onSheetpaneSelect?: ((event: SheetpaneExcelEventMap['sheetpane-select']) => void) | undefined;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
@@ -45,8 +47,10 @@ export type SheetpaneExcelVueProps = Omit<SheetpaneExcelAttributes, 'ref'> & Omi
 
 /** `<sheetpane-errors>` in a Vue 3 template: attributes, properties and `@sheetpane-…` listeners (`onSheetpane…` props). */
 export type SheetpaneErrorsVueProps = SheetpaneErrorsAttributes & SheetpaneErrorsProperties & {
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   onSheetpaneErrors?: ((event: SheetpaneErrorsEventMap['sheetpane-errors']) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  onSheetpaneLayers?: ((event: SheetpaneErrorsEventMap['sheetpane-layers']) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   onSheetpaneChange?: ((event: SheetpaneErrorsEventMap['sheetpane-change']) => void) | undefined;
   /** `{ sheet, ref }` when picking a row selects its cell. */

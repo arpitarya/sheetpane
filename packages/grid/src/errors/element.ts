@@ -6,10 +6,10 @@ import { pluginsFromIds } from '../plugins/host.js';
 import type { Theme } from '../tokens.js';
 import { acquirePane, attach, detach, isPrimary, releasePane } from '../pane/registry.js';
 import { createWorkbook, type StoreEvent, type WorkbookStore } from '../pane/store.js';
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, SEVERITY, SEVERITY_ORDER, errorScope, isResult, machineAuthored, resultsLevelOf, type ErrorType, type RenderDetail, type ResultSeverity, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, DEFAULT_LAYER, SEVERITY, SEVERITY_ORDER, errorScope, isResult, layerOf, machineAuthored, resultsLevelOf, type ErrorType, type ErrorsEnvelope, type RenderDetail, type ResultSeverity, type ResultsLevel, type SheetpaneError, type Severity } from '../pane/types.js';
 import { BASE_CSS } from '../excel/styles.js';
 import { DETAIL_CSS, DetailRegion, acceptedHtml, inDetail } from '../shared/detail.js';
-import { ElementBase, ICON, esc, fire } from '../shared/dom.js';
+import { ElementBase, ICON, esc, fire, layersAttr } from '../shared/dom.js';
 
 const CSS = `.grp{padding:8px 12px 2px;font-size:11px;font-weight:600;color:var(--sp-ink-3);text-transform:uppercase;letter-spacing:.04em}
 ${BASE_CSS}
@@ -53,6 +53,8 @@ ${BASE_CSS}
 .field{display:flex;flex-direction:column;gap:4px}
 .field>span{font-size:12px;font-weight:500;color:var(--sp-ink-2)}
 .ex{padding:10px;border-radius:var(--sp-r);background:var(--sp-ground);border:1px dashed var(--sp-line-strong);font-size:12px;color:var(--sp-ink-2);display:flex;flex-direction:column;gap:4px}
+.hd .seg>button{height:24px;padding:0 8px;font-size:12px}
+.hd .seg .lc{font-variant-numeric:tabular-nums;color:var(--sp-ink-3)}
 .notice{margin:8px 12px 0;padding:8px 10px;border-radius:var(--sp-r);background:var(--sp-warn-soft);border:1px solid var(--sp-warn);font-size:12px}
 ${DETAIL_CSS}
 .summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--sp-line);font-size:12px;color:var(--sp-ink-2)}
@@ -95,15 +97,17 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * - `plugins` — space-separated registered plugin ids; fixed per pane.
  * - `theme` — `light` (the default), `dark` or `auto`.
  * - `results` — `summary` (the default), `marks` or `off`: how `pass` and `skipped` results show, pane-wide (W-50).
+ * - `layers` — space-separated review layers to show (W-51); none shows every layer. Shared by the pane's elements; with two or more layers the header shows a switch.
  *
- * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`, `results`, `renderDetail`.
+ * Properties: `workbook`, `errors`, `errorTypes`, `readOnly`, `theme`, `results`, `renderDetail`, `layers`, `layerNames`.
  *
- * Methods: `getErrors()`, `setErrors(list, { plugins? })`, `renderNow()`.
+ * Methods: `getErrors({ layer? })`, `setErrors(list | envelope, { plugins?, layer? })`, `renderNow()`.
  *
  * Every event bubbles and is composed; an action's event fires once, on the element where it
  * happened.
  *
- * @fires sheetpane-errors `{ errors, plugins }` when the pane's errors change — the envelope to save a review.
+ * @fires sheetpane-errors `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed.
+ * @fires sheetpane-layers `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51).
  * @fires sheetpane-change `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo).
  * @fires sheetpane-select `{ sheet, ref }` when picking a row selects its cell.
  * @fires sheetpane-history `{ reason, canUndo, canRedo }` on undo, redo, or the stack cleared by `setErrors()`.
@@ -121,14 +125,16 @@ type AuthorFilter = 'all' | 'person' | 'workbook' | 'host' | 'file';
  * document.body.append(list);
  * list.addEventListener('sheetpane-errors', (e) => localStorage.setItem('review', JSON.stringify((e as CustomEvent).detail)));
  * const saved = JSON.parse(localStorage.getItem('review') ?? 'null');
- * if (saved) list.setErrors(saved.errors, { plugins: saved.plugins });
+ * if (saved) list.setErrors(saved); // the envelope: every layer, and the plugins notice
+ * list.setErrors(pdfFindings, { layer: 'pdf' }); // one layer replaced; the others kept
+ * list.layerNames = { pdf: 'PDF check' };
  * ```
  * @see https://github.com/arpitarya/sheetpane/blob/main/records/0106_ERRORS.md
  * @see https://github.com/arpitarya/sheetpane/blob/main/packages/grid/README.md#sheetpane-errors
  */
 export class SheetpaneErrors extends ElementBase {
   /** The attributes the element reacts to. */
-  static observedAttributes = ['pane', 'readonly', 'author', 'plugins', 'results'];
+  static observedAttributes = ['pane', 'readonly', 'author', 'plugins', 'results', 'layers'];
 
   private _store: WorkbookStore | undefined;
   private _explicitStore: WorkbookStore | undefined;
@@ -146,9 +152,12 @@ export class SheetpaneErrors extends ElementBase {
   private detailRegion = new DetailRegion();
   /** W-69: the Accepted chip is on (only accepted errors listed); the error whose Accept form is open, and its reason so far. */
   private showAccepted = false;
+  /** W-51: the switch's button to focus after a re-draw (`''` is All). */
+  private focusLayer = '';
   private accepting: string | undefined;
   private reasonDraft = '';
-  private focusNext: 'reason' | 'accept' | 'chip' | undefined;
+  private focusNext: 'reason' | 'accept' | 'chip' | 'layer' | undefined;
+  private _layerNames: Readonly<Record<string, string>> = {};
   private view: View = 'problems';
   private openGroups = new Set<string>();
   private groupEntries = new Map<string, SheetpaneError[]>();
@@ -158,7 +167,7 @@ export class SheetpaneErrors extends ElementBase {
   // ── properties ───────────────────────────────────────────────────────────
   /** The pane's store; assigning one replaces the `pane` lookup. */
   get workbook(): WorkbookStore | undefined { return this._store; }
-  set workbook(s: WorkbookStore | undefined) { this._explicitStore = s; if (this.isConnected) { this.unbind(); this.bind(); this.schedule(); } }
+  set workbook(s: WorkbookStore | undefined) { this._explicitStore = s; if (this.isConnected) { this.unbind(); this.bind(); this.applyLayers(); this.schedule(); } }
   /** A copy of the pane's errors; assigning restores a saved review, like `setErrors()`. */
   get errors(): SheetpaneError[] { return this._store?.getErrors() ?? []; }
   set errors(list: SheetpaneError[]) { this.setErrors(list); }
@@ -183,19 +192,36 @@ export class SheetpaneErrors extends ElementBase {
   get results(): ResultsLevel { return this._store?.results ?? resultsLevelOf(this.getAttribute('results')); }
   set results(v: ResultsLevel) { this.setAttribute('results', v); }
 
-  /** A copy of the pane's errors, to save a review. */
-  getErrors(): SheetpaneError[] { return this.errors; }
-  /** Restores a saved review. `plugins` (from the saved `sheetpane-errors` envelope) shows a notice when it differs from this pane's set. */
-  setErrors(list: SheetpaneError[], o: { plugins?: string[] } = {}): void {
-    this.savedPlugins = o.plugins;
-    this.ensureStore().setErrors(list, this);
+  /**
+   * The review layers shown (W-51) — the pane's, shared with `<sheetpane-excel>`: every layer until the `layers`
+   * attribute or the switch names some. Setting it sets the attribute; `null` or `[]` shows every layer.
+   */
+  get layers(): string[] { return [...(this._store?.getSnapshot().visibleLayers ?? layersAttr(this.getAttribute('layers')) ?? [])]; }
+  set layers(v: readonly string[] | null) { if (v && v.length) this.setAttribute('layers', v.join(' ')); else this.removeAttribute('layers'); this._store?.setVisibleLayers(v, this); }
+  /** What the switch and the rows call each layer (W-51), e.g. `{ pdf: 'PDF check' }`; a layer not named here shows its name (`review` as *Review*). */
+  get layerNames(): Readonly<Record<string, string>> { return this._layerNames; }
+  set layerNames(m: Readonly<Record<string, string>>) { this._layerNames = { ...(m ?? {}) }; this.schedule(); }
+
+  /** A copy of the pane's errors, to save a review; `{ layer }` gives one layer's (W-51). */
+  getErrors(o: { layer?: string } = {}): SheetpaneError[] { return this._store?.getErrors(o) ?? []; }
+  /**
+   * Restores a saved review — a list, or the `sheetpane-errors` envelope with its layers — or, with `layer`, replaces that
+   * layer only (W-51). `plugins` (from the saved envelope; read from it when it is passed whole) shows a notice when it
+   * differs from this pane's set.
+   */
+  setErrors(list: SheetpaneError[] | ErrorsEnvelope, o: { plugins?: string[]; layer?: string } = {}): void {
+    if (o.layer === undefined) this.savedPlugins = o.plugins ?? (Array.isArray(list) ? undefined : list.plugins);
+    this.ensureStore().setErrors(list, o.layer === undefined ? {} : { layer: o.layer }, this);
   }
+  private layerName(l: string): string { return this._layerNames[l] ?? (l === DEFAULT_LAYER ? 'Review' : l); }
+  /** The `layers` attribute, given to the store (connect, a new store). */
+  private applyLayers(): void { if (this.hasAttribute('layers')) this._store?.setVisibleLayers(layersAttr(this.getAttribute('layers')), this); }
 
   /** Builds the shadow root once and binds to the pane's store. */
   connectedCallback(): void {
     if (!this.shadow) {
       this.shadow = this.attachShadow({ mode: 'open' });
-      this.shadow.innerHTML = `<style>${CSS}</style><div class="spe" part="root"><div class="hd"><span class="t">Errors</span><span class="chip opencount"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-i" data-act="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button><button type="button" class="btn btn-g btn-i" data-act="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button></div><div class="summary" hidden><span class="sumtext"></span><button type="button" class="sw" role="switch" aria-checked="false" data-act="onsheet"><span class="tg" aria-hidden="true"></span>On sheet</button></div><div class="scrollarea"><div class="noticebox"></div><div class="formbox"></div><div class="filters" role="toolbar" aria-label="Filter errors"></div><div class="list" role="list"></div></div></div>`;
+      this.shadow.innerHTML = `<style>${CSS}</style><div class="spe" part="root"><div class="hd"><span class="t">Errors</span><span class="chip opencount"></span><span class="layerbox"></span><span class="spacer" style="flex:1"></span><button type="button" class="btn btn-g btn-i" data-act="undo" aria-label="Undo (Ctrl+Z)" title="Undo">${ICON.undo}</button><button type="button" class="btn btn-g btn-i" data-act="redo" aria-label="Redo (Ctrl+Shift+Z)" title="Redo">${ICON.redo}</button></div><div class="summary" hidden><span class="sumtext"></span><button type="button" class="sw" role="switch" aria-checked="false" data-act="onsheet"><span class="tg" aria-hidden="true"></span>On sheet</button></div><div class="scrollarea"><div class="noticebox"></div><div class="formbox"></div><div class="filters" role="toolbar" aria-label="Filter errors"></div><div class="list" role="list"></div></div></div>`;
       this.shadow.addEventListener('click', (e) => this.onClick(e));
       this.shadow.addEventListener('input', (e) => this.onInput(e));
       this.shadow.addEventListener('change', (e) => this.onInput(e));
@@ -204,6 +230,7 @@ export class SheetpaneErrors extends ElementBase {
       this.shadow.addEventListener('scroll', (e) => { const t = e.target as HTMLElement; if (t.classList?.contains('cells')) this.fillCells(t); }, true);
     }
     this.bind();
+    this.applyLayers();
     this.schedule();
   }
   /** Releases the pane's store. */
@@ -211,8 +238,9 @@ export class SheetpaneErrors extends ElementBase {
   /** Reacts to an observed attribute. */
   attributeChangedCallback(name: string, old: string | null, val: string | null): void {
     if (!this.isConnected || old === val) return;
-    if (name === 'pane' || name === 'plugins') { this.unbind(); this.bind(); }
+    if (name === 'pane' || name === 'plugins') { this.unbind(); this.bind(); this.applyLayers(); }
     else if (name === 'results' && val !== null) this._store?.setResults(resultsLevelOf(val));
+    else if (name === 'layers') this._store?.setVisibleLayers(layersAttr(val), this);
     this.schedule();
   }
 
@@ -242,7 +270,8 @@ export class SheetpaneErrors extends ElementBase {
     const mine = e.origin === this || (e.origin === undefined && isPrimary(this._store!, this));
     if (!mine) return;
     const s = this._store!;
-    if (e.type === 'errors') fire(this, 'sheetpane-errors', { errors: s.getErrors(), plugins: s.pluginIds });
+    if (e.type === 'errors') fire(this, 'sheetpane-errors', s.envelope(e.layers));
+    else if (e.type === 'layers') fire(this, 'sheetpane-layers', { visible: [...s.getSnapshot().visibleLayers], layers: [...s.getSnapshot().layers] });
     else if (e.type === 'change') fire(this, 'sheetpane-change', { sheet: e.sheet, ref: e.ref, kind: e.kind, was: e.was, now: e.now });
     else if (e.type === 'select') fire(this, 'sheetpane-select', { sheet: e.sheet, ref: e.ref });
     else if (e.type === 'history') fire(this, 'sheetpane-history', { reason: e.reason, canUndo: s.getSnapshot().canUndo, canRedo: s.getSnapshot().canRedo });
@@ -277,6 +306,11 @@ export class SheetpaneErrors extends ElementBase {
         break;
       }
       case 'show-group': this.showGroup(el.closest<HTMLElement>('[data-g]')!.dataset.g!); break;
+      case 'layer': { // W-51: one layer, or every layer
+        const v = el.dataset.v;
+        if (s.setVisibleLayers(v ? [v] : null, this)) { this.expanded = undefined; this.focusNext = 'layer'; this.focusLayer = v ?? ''; }
+        break;
+      }
       case 'pick':
         if (!err) return;
         this.expanded = this.expanded === err.id ? undefined : err.id;
@@ -390,7 +424,8 @@ export class SheetpaneErrors extends ElementBase {
     const snap = s.getSnapshot();
     const q = (sel: string) => this.shadow.querySelector(sel) as HTMLElement;
     // counts that ask for action count problems only; results are counted apart (W-50)
-    const errors = snap.errors.filter((e) => !isResult(e));
+    // W-51: what the visible layers hold — the sheet draws the same
+    const errors = snap.visibleErrors.filter((e) => !isResult(e));
     const open = errors.filter((e) => e.status === 'open');
     q('.opencount').textContent = `${open.length} open`;
     const rc = s.resultCounts(), hasResults = s.results !== 'off' && rc.pass + rc.skipped > 0;
@@ -402,6 +437,14 @@ export class SheetpaneErrors extends ElementBase {
       if (st.dataset.html !== sum) { st.innerHTML = sum; st.dataset.html = sum; }
       q('.sw').setAttribute('aria-checked', String(s.results === 'marks'));
     }
+    // W-51: the layers switch, with two or more layers — All, then each layer with its open count
+    const multi = snap.layers.length > 1;
+    const allOn = snap.visibleLayers.length === snap.layers.length;
+    const lb = q('.layerbox');
+    const layersHtml = multi ? `<div class="seg" role="group" aria-label="Review layers"><button type="button" data-act="layer" data-v="" aria-pressed="${allOn}">All</button>${snap.layers.map((l) => `<button type="button" data-act="layer" data-v="${esc(l)}" data-sp-layer="${esc(l)}" aria-pressed="${snap.visibleLayers.includes(l)}">${esc(this.layerName(l))} <span class="lc">${snap.errors.filter((e) => e.status === 'open' && !isResult(e) && layerOf(e) === l).length}</span></button>`).join('')}</div>` : '';
+    if (lb.dataset.html !== layersHtml) { lb.innerHTML = layersHtml; lb.dataset.html = layersHtml; }
+    if (this.focusNext === 'layer') { [...lb.querySelectorAll<HTMLElement>('[data-act=layer]')].find((b) => b.dataset.v === this.focusLayer)?.focus(); this.focusNext = undefined; }
+    const tagLayer = multi && snap.visibleLayers.length > 1;
     (q('[data-act=undo]') as HTMLButtonElement).disabled = !snap.canUndo || this.readOnly;
     (q('[data-act=redo]') as HTMLButtonElement).disabled = !snap.canRedo || this.readOnly;
     q('[data-act=undo]').hidden = q('[data-act=redo]').hidden = this.readOnly || snap.mode !== 'edit';
@@ -462,7 +505,7 @@ export class SheetpaneErrors extends ElementBase {
       const place = scope === 'workbook' ? 'workbook' : scope === 'sheet' ? 'whole sheet' : e.range;
       const r = parseRange(e.range);
       const on = this.expanded === e.id || (!!r && e.sheet === sel.sheet && parseRef(sel.ref) && r.top === parseRef(sel.ref)!.row && r.left <= parseRef(sel.ref)!.col && r.right >= parseRef(sel.ref)!.col);
-      const tags = [e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : e.status === 'accepted' ? 'accepted' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : '', ...hiddenTags(s, e)].filter(Boolean);
+      const tags = [tagLayer ? this.layerName(layerOf(e)) : '', e.cellChanged ? 'cell changed' : '', e.status === 'resolved' ? 'resolved' : e.status === 'accepted' ? 'accepted' : '', e.matchesExpected ? 'matches suggestion' : '', s.isStale(e) ? 'stale' : '', ...hiddenTags(s, e)].filter(Boolean);
       const ro = this.readOnly || machineAuthored(e.author);
       const sv = SEVERITY[e.severity];
       const time = e.createdAt ? new Date(e.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
@@ -471,7 +514,7 @@ export class SheetpaneErrors extends ElementBase {
     }).join('') : `<p class="empty">${errors.length ? 'Nothing matches this filter.' : 'Nothing flagged yet. Select a cell in the sheet, then Flag issue.'}</p>`;
     const listEl = q('.list');
     // the Problems view lists the errors (W-55's groups first); Passed and Not checked list grouped results (W-50)
-    const shown = this.view === 'problems' ? html : this.groupsHtml(snap.errors, this.view, types);
+    const shown = this.view === 'problems' ? html : this.groupsHtml(snap.visibleErrors, this.view, types);
     const hadReason = this.shadow.activeElement?.matches('[data-field=reason]') ?? false;
     const rebuilt = listEl.dataset.html !== shown;
     if (rebuilt) {

@@ -4,7 +4,7 @@
 // every other error is written as an Excel threaded comment at its cell, with
 // the legacy comment and VML parts older Excel needs. Headless; no runtime
 // dependency; `@sheetpane/grid` is a peer.
-import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, isResult, registerPlugin, type Plugin, type PluginContext, type SheetpaneError } from '@sheetpane/grid';
+import { BUILTIN_TYPE_NAMES, DEFAULT_ERROR_TYPES, isResult, layerOf, registerPlugin, type Plugin, type PluginContext, type SheetpaneError } from '@sheetpane/grid';
 import { errorGuids } from './guid.js';
 import { readComments } from './read.js';
 import { writeReview, type WriteReport } from './write.js';
@@ -27,13 +27,24 @@ export interface CommentsPlugin extends Plugin {
 /** Names for the types the core and the plugins write; the host's own `errorTypes` live on the element, not the store. */
 const typeName = (id: string) => DEFAULT_ERROR_TYPES.find((t) => t.id === id)?.name ?? BUILTIN_TYPE_NAMES[id] ?? id;
 
-/** The review in the store: every error not read from the file — its results (`pass`, `skipped`) only when `results` (W-50). */
-const reviewOf = (ctx: PluginContext, results = true): SheetpaneError[] => ctx.snapshot().errors.filter((e) => e.author !== 'file' && (results || !isResult(e)));
+/** The review in the store: every error not read from the file, in every layer, results included — what reading the file back skips. */
+const reviewOf = (ctx: PluginContext): SheetpaneError[] => ctx.snapshot().errors.filter((e) => e.author !== 'file');
+/**
+ * The review one export writes (W-51): the errors not read from the file in the layers shown — or, with
+ * `export({ layers: ['validation', 'pdf'] })`, in the layers named — its results (`pass`, `skipped`) only when
+ * `results` (W-50).
+ */
+function writtenOf(ctx: PluginContext, results = false): SheetpaneError[] {
+  const named = ctx.exportOptions?.layers;
+  const snap = ctx.snapshot();
+  const pick = Array.isArray(named) ? new Set(named.filter((l): l is string => typeof l === 'string')) : undefined;
+  return (pick ? snap.errors.filter((e) => pick.has(layerOf(e))) : snap.visibleErrors).filter((e) => e.author !== 'file' && (results || !isResult(e)));
+}
 
 /**
  * The comments plugin, both ways. On load (`validate`), the file's notes and threaded comments become read-only
  * `file` notes in the error pane. On export (`exportPatch`), every other error is written as an Excel threaded
- * comment at the top-left cell of its range — with the legacy comment and VML parts older Excel needs — extending
+ * comment at the top-left cell of its range — the layers shown, or those `export({ layers })` names (W-51) — with the legacy comment and VML parts older Excel needs — extending
  * existing parts, never replacing them. A cell holding someone's note is left alone, and an error about a whole sheet
  * or the workbook (no cell, W-55) is not written; both are reported in `lastExport`.
  * String XML only, so it runs in Node. Importing this module registers it as `comments`.
@@ -57,6 +68,7 @@ const reviewOf = (ctx: PluginContext, results = true): SheetpaneError[] => ctx.s
  * excel.setAttribute('plugins', 'comments');
  * const withReview = await excel.export();
  * const withoutReview = await excel.export({ comments: false }); // this export only
+ * const pdfOnly = await excel.export({ layers: ['pdf'] }); // one layer, whatever the switch shows (W-51)
  * ```
  */
 export function comments(options: CommentsOptions = {}): CommentsPlugin {
@@ -74,7 +86,7 @@ export function comments(options: CommentsOptions = {}): CommentsPlugin {
     async exportPatch(patch, ctx) {
       last = undefined;
       if (options.write === false || ctx.exportOptions?.comments === false) return;
-      const review = reviewOf(ctx, ctx.exportOptions?.includeResults === true); // a downloaded review stays a list of problems (W-50)
+      const review = writtenOf(ctx, ctx.exportOptions?.includeResults === true); // a downloaded review stays a list of problems (W-50)
       if (!review.length) return;
       last = await writeReview(patch, review, { typeName });
     },

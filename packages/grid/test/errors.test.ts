@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
 import axe from 'axe-core';
-import type { SheetpaneErrors, SheetpaneExcel } from '../src/index.js';
-import { cellEl, cleanup, frame, sampleXlsx, shadow } from './helpers.js';
+import type { SheetpaneError, SheetpaneErrors, SheetpaneExcel } from '../src/index.js';
+import { cellEl, cleanup, frame, sampleXlsx, shadow, until } from './helpers.js';
 
 afterEach(cleanup);
 const $ = (el: Element, sel: string) => shadow(el).querySelector(sel) as HTMLElement;
@@ -555,5 +555,139 @@ describe('accepted deviations (W-69)', () => {
     await frame();
     const r2 = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } });
     expect([...r0.violations, ...r1.violations, ...r2.violations].map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  });
+});
+
+describe('review layers (W-51)', () => {
+  const finding = (id: string, range: string, severity: 'error' | 'warning' | 'note' = 'warning'): SheetpaneError => ({ v: 1, id, sheet: 'Holdings', range, type: 'other', severity, found: '', expected: '', message: `${id} at ${range}`, cellChanged: false, status: 'open', matchesExpected: false, author: 'checker', createdAt: '2026-10-19T09:00:00.000Z' });
+  const rows = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll<HTMLElement>('.item')].map((r) => r.dataset.id);
+  const pins = (excel: SheetpaneExcel) => [...shadow(excel).querySelectorAll<HTMLElement>('.pin[data-pin]')].map((p) => p.dataset.pin).sort();
+  const seg = (errors: SheetpaneErrors) => [...shadow(errors).querySelectorAll<HTMLButtonElement>('.layerbox button')].map((b) => `${b.textContent}${b.getAttribute('aria-pressed') === 'true' ? '*' : ''}`);
+  async function layered(attrs: Record<string, string> = {}) {
+    const p = await pair('excel-first', attrs);
+    const s = p.excel.workbook!;
+    const mine = s.addError({ sheet: 'Holdings', range: 'G7', type: 'wrong-value', severity: 'error', author: 'Asha' });
+    await frame();
+    return { ...p, s, mine };
+  }
+
+  it('one layer: no switch; a second layer: All and each layer with its open count, named by layerNames', async () => {
+    const { errors } = await layered();
+    expect(shadow(errors).querySelector('.layerbox .seg')).toBeNull();
+    errors.layerNames = { pdf: 'PDF check' };
+    errors.setErrors([finding('P-1', 'D5', 'error'), finding('P-2', 'B9')], { layer: 'pdf' });
+    await frame();
+    const group = $(errors, '.layerbox .seg');
+    expect(group.getAttribute('role')).toBe('group');
+    expect(group.getAttribute('aria-label')).toBe('Review layers');
+    expect(seg(errors)).toEqual(['All*', 'Review 1*', 'PDF check 2*']);
+    expect(rows(errors)).toHaveLength(3);
+    expect($(errors, `[data-id="P-1"] .m`).textContent).toContain('PDF check'); // with several layers shown, each row says which
+  });
+
+  it('the switch shows one layer in every surface — the list, the sheet’s pins, marks, counts and tab counts (L7); keyboard and events', async () => {
+    const { excel, errors, mine } = await layered();
+    errors.setErrors([finding('P-1', 'D5', 'error'), finding('P-2', 'B9')], { layer: 'pdf' });
+    await frame();
+    const onErrors = vi.fn(), onExcel = vi.fn();
+    errors.addEventListener('sheetpane-layers', (e) => onErrors((e as CustomEvent).detail));
+    excel.addEventListener('sheetpane-layers', onExcel);
+    ($(errors, '[data-act=layer][data-v=pdf]') as HTMLButtonElement).click();
+    await frame();
+    expect(onErrors).toHaveBeenCalledExactlyOnceWith({ visible: ['pdf'], layers: ['review', 'pdf'] });
+    expect(onExcel).not.toHaveBeenCalled(); // an action's event fires on the element where it happened
+    expect(seg(errors)).toEqual(['All', 'Review 1', 'pdf 2*']);
+    expect(shadow(errors).activeElement).toBe($(errors, '[data-act=layer][data-v=pdf]'));
+    expect(rows(errors)).toEqual(['P-1', 'P-2']);
+    expect($(errors, '.opencount').textContent).toBe('2 open');
+    expect(pins(excel)).toEqual(['P-1', 'P-2']);
+    expect(cellEl(excel, 6, 6)!.className).not.toContain('m-error'); // G7 is the review layer's
+    expect(cellEl(excel, 4, 3)!.className).toContain('m-error');
+    expect($(excel, '.counts').textContent).toBe('✕ 1 ! 1 i 0');
+    expect(shadow(excel).querySelector('[data-sheet="Holdings"] .cnt')!.textContent).toBe('2');
+    expect(excel.layers).toEqual(['pdf']);
+    expect(errors.layers).toEqual(['pdf']);
+    // keyboard: Shift+Tab to All, Enter shows every layer again
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    expect(shadow(errors).activeElement).toBe($(errors, '[data-act=layer][data-v=""]'));
+    await userEvent.keyboard('{Enter}');
+    await frame();
+    expect(seg(errors)).toEqual(['All*', 'Review 1*', 'pdf 2*']);
+    expect(pins(excel)).toEqual([mine.id, 'P-1', 'P-2'].sort());
+    expect(onErrors).toHaveBeenLastCalledWith({ visible: ['review', 'pdf'], layers: ['review', 'pdf'] });
+  });
+
+  it('the layers attribute, on either element, is the pane’s; a person’s new error lands in the layer shown', async () => {
+    const { excel, errors } = await layered();
+    errors.setErrors([finding('P-1', 'D5')], { layer: 'pdf' });
+    excel.setAttribute('layers', 'pdf');
+    await frame();
+    expect(errors.layers).toEqual(['pdf']);
+    expect(rows(errors)).toEqual(['P-1']);
+    errors.layers = ['review'];
+    await frame();
+    expect(errors.getAttribute('layers')).toBe('review');
+    expect(excel.layers).toEqual(['review']);
+    expect(pins(excel)).toHaveLength(1);
+    errors.layers = null;
+    await frame();
+    expect(errors.hasAttribute('layers')).toBe(false);
+    expect(excel.layers).toEqual(['review', 'pdf']);
+    // Flag issue while only pdf is shown: the new error is in pdf, in sight
+    excel.layers = ['pdf'];
+    excel.select('Holdings', 'C3');
+    await frame();
+    $(excel, '.grid').focus();
+    await userEvent.keyboard('f');
+    await frame();
+    await userEvent.keyboard('{Meta>}{Enter}{/Meta}');
+    await frame();
+    const added = errors.getErrors().at(-1)!;
+    expect(added.layer).toBe('pdf');
+    expect(rows(errors)).toContain(added.id);
+    // an element mounted with the attribute applies it to the pane it joins
+    const late = document.createElement('sheetpane-errors') as SheetpaneErrors;
+    late.setAttribute('pane', excel.getAttribute('pane')!);
+    late.setAttribute('layers', 'review');
+    document.body.append(late);
+    await frame();
+    expect(excel.layers).toEqual(['review']);
+  });
+
+  it('sheetpane-errors is the v2 envelope naming the layer that changed; setErrors(envelope) restores the layers and the plugins notice', async () => {
+    const { excel, errors } = await layered();
+    const got = vi.fn();
+    errors.addEventListener('sheetpane-errors', (e) => got((e as CustomEvent).detail));
+    errors.setErrors([finding('P-1', 'D5')], { layer: 'pdf' });
+    errors.setErrors([], { layer: 'compare' });
+    expect(got).toHaveBeenCalledTimes(2);
+    const env = got.mock.calls[1]![0];
+    expect(got.mock.calls[0]![0]).toMatchObject({ v: 2, layers: ['review', 'pdf'], changed: ['pdf'] });
+    expect(env).toMatchObject({ v: 2, plugins: [], layers: ['review', 'pdf', 'compare'], changed: [] });
+    expect(env.errors.map((e: SheetpaneError) => e.layer)).toEqual(['review', 'pdf']);
+    // a layered set is not a restore: no history event, and the plugins notice stays as it was
+    const history = vi.fn();
+    errors.addEventListener('sheetpane-history', history);
+    errors.setErrors([finding('P-2', 'D6')], { layer: 'pdf' });
+    expect(history).not.toHaveBeenCalled();
+    excel.workbook!.load(await sampleXlsx(), 'again.xlsx');
+    await until(() => excel.workbook!.getSnapshot().load.status === 'ready');
+    errors.setErrors({ ...JSON.parse(JSON.stringify(env)), plugins: ['numfmt'] });
+    await frame();
+    expect(excel.getErrors()).toEqual(env.errors);
+    expect(seg(errors)).toEqual(['All*', 'Review 1*', 'pdf 1*', 'compare 0*']);
+    expect($(errors, '.notice').textContent).toContain('formatted differently');
+    expect(history).toHaveBeenCalledOnce();
+  });
+
+  it('no axe violations with the switch and a layer chosen', async () => {
+    const { errors } = await layered();
+    errors.setErrors([finding('P-1', 'D5')], { layer: 'pdf' });
+    await frame();
+    ($(errors, '[data-act=layer][data-v=pdf]') as HTMLButtonElement).click();
+    await frame();
+    const r = await axe.run(errors, { rules: { 'label-content-name-mismatch': { enabled: false } } }); // the known gap (SR-ERRORS Consequences)
+    expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   });
 });

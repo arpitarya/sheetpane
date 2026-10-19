@@ -86,7 +86,8 @@ flowchart LR
   not by number. Example: SP-5804, from W-55, comes after SP-7007, and
   SP-3016 and SP-3017, from W-68 (a dropped error `meta`, a throwing
   `renderDetail`), come after SP-5804, and SP-3018, from W-69 (an acceptance
-  refused), after them.
+  refused), after them; SP-3021, from W-51 (an unusable review-layer name),
+  after SP-5901.
 - **W-65** added SP-1009 (warning): no SHA-256 where Web Crypto is missing —
   the file's fingerprint is `undefined`, never a substitute (SR-IMPORT
   decision 11).
@@ -104,6 +105,9 @@ flowchart LR
   `@sheetpane/grid/check` given something other than a file's bytes (SR-GRID
   decision 22f). Issued as SP-3016 in its lane; renumbered at the merge, as
   W-68 had taken SP-3016.
+- **W-51** added SP-3021 (warning): a review-layer name that is not one
+  (SR-GRID decision 5d). Issued as SP-3019 in its lane; renumbered at the
+  merge, as W-66 had taken SP-3019.
 - Hosts that matched message text keep working; they should move to `spCode`
   / `codeOf()`.
 - Consumers: the troubleshoot skill (W-35) and the MCP `explain_code` tool

@@ -117,6 +117,7 @@ neutral or switch writing off.
 
 - `comments({ write: false })`: never write. Notes and threads are still read.
 - `export({ comments: false })` on `<sheetpane-excel>` (or `store.exportFile({ options: { comments: false } })`): skip the parts for that one export.
+- **Review layers** (W-51): an export writes the errors of the layers shown — what the layers switch or the `layers` attribute chose. `export({ layers: ['validation', 'pdf'] })` writes the layers named instead, whatever is shown; `layers: []` writes none.
 
 There is no menu item for this. The host decides, and a host that wants an
 end-user toggle can put one in its own `format-row` slot.

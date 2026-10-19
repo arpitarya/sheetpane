@@ -26,10 +26,12 @@ excel.addEventListener('sheetpane-export', async (e) => {
   await fetch(`/api/files/${id}`, { method: 'PUT', body: e.detail.blob });
 });
 errors.addEventListener('sheetpane-errors', (e) =>
-  fetch(`/api/reviews/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(e.detail.errors) }));
+  fetch(`/api/reviews/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(e.detail) }));
 ```
 
-`export()` returns the same blob without a click
+Save the whole `detail` — the envelope `{ v: 2, errors, plugins, layers,
+changed }` (W-51): each error carries its `layer`, and `layers` keeps a layer
+that has no errors. `export()` returns the same blob without a click
 ([SR-LAW-6](https://github.com/arpitarya/sheetpane/blob/main/records/0008_LAW-6-edits-in-memory-export-with-changes.md)).
 
 ## Restore
@@ -42,6 +44,11 @@ excel.addEventListener('sheetpane-load', async (e) => {
 }, { once: true });
 excel.src = `/api/files/${id}`;
 ```
+
+`setErrors(envelope)` restores every layer; an older save — a bare list, or
+`{ errors, plugins }` — restores into the `review` layer. One layer from its
+own endpoint goes back with `excel.setErrors(list, { layer: 'pdf' })`, which
+leaves the other layers and undo alone.
 
 `setErrors` is a host restore: it clears undo and keeps ids; machine errors
 (rules, the workbook's own validation) are matched by content, not doubled

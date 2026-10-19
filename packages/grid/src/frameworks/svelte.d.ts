@@ -12,8 +12,10 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'on:sheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'on:sheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'on:sheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  'on:sheetpane-layers'?: ((event: SheetpaneExcelEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'on:sheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
@@ -44,8 +46,10 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
   'onsheetpane-load'?: ((event: SheetpaneExcelEventMap['sheetpane-load'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` for each change, undo and redo included. */
   'onsheetpane-change'?: ((event: SheetpaneExcelEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'onsheetpane-errors'?: ((event: SheetpaneExcelEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change (W-51). */
+  'onsheetpane-layers'?: ((event: SheetpaneExcelEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, ref, range, column, value }` when the selection settles — `range` (`B3:D8`) when more than one cell is selected; a drag fires once, on release. */
   'onsheetpane-select'?: ((event: SheetpaneExcelEventMap['sheetpane-select'] & { currentTarget: EventTarget & SheetpaneExcel }) => void) | undefined;
   /** `{ sheet, axis, indexes, hidden, via }` when rows, columns or a sheet are hidden, unhidden or shown for viewing (`via: 'reveal'`) (W-49). */
@@ -76,8 +80,10 @@ export type SheetpaneExcelSvelteProps = SheetpaneExcelAttributes & SheetpaneExce
 
 /** `<sheetpane-errors>` in Svelte: attributes, properties, `on:sheetpane-…` (Svelte 4) and `onsheetpane-…` (Svelte 5) listeners. */
 export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneErrorsProperties & {
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'on:sheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  'on:sheetpane-layers'?: ((event: SheetpaneErrorsEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   'on:sheetpane-change'?: ((event: SheetpaneErrorsEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref }` when picking a row selects its cell. */
@@ -86,8 +92,10 @@ export type SheetpaneErrorsSvelteProps = SheetpaneErrorsAttributes & SheetpaneEr
   'on:sheetpane-history'?: ((event: SheetpaneErrorsEventMap['sheetpane-history'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ error }` on Show in sheet, so the host can switch tab or open the pop-up — for a whole-sheet error too (its tab is opened); never for a workbook-level one (W-55); for a result group's Show ▸, its first entry (W-50). */
   'on:sheetpane-reveal'?: ((event: SheetpaneErrorsEventMap['sheetpane-reveal'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
-  /** `{ errors, plugins }` when the pane's errors change — the envelope to save a review. */
+  /** `{ v, errors, plugins, layers, changed }` when the pane's errors change — the envelope to save a review (`v: 2`, W-51); `changed` names the layers whose errors changed. */
   'onsheetpane-errors'?: ((event: SheetpaneErrorsEventMap['sheetpane-errors'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
+  /** `{ visible, layers }` when the visible review layers change — the switch or the `layers` attribute (W-51). */
+  'onsheetpane-layers'?: ((event: SheetpaneErrorsEventMap['sheetpane-layers'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref, kind, was, now }` when a cell changes from here ("Also change the cell", undo, redo). */
   'onsheetpane-change'?: ((event: SheetpaneErrorsEventMap['sheetpane-change'] & { currentTarget: EventTarget & SheetpaneErrors }) => void) | undefined;
   /** `{ sheet, ref }` when picking a row selects its cell. */
