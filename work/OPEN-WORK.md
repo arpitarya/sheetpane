@@ -22,8 +22,8 @@ here. Read that record before changing anything below it.
 
 | what the decider decides | filed | age |
 |---|---|---|
-
-*Empty since 2026-10-19 — next gate: W-30 and W-48, the decider's hands-on runs (testing).*
+| Place the four `.github/` issue and PR templates — the path is protected from remote writes ([W-71](open/W-71-public-repo-docs.md)) | 2026-10-20 | 0 d |
+| ↳ **blocks:** W-71 | | |
 
 ---
 
@@ -32,6 +32,8 @@ here. Read that record before changing anything below it.
 ### build
 
 - 🟢 **W-70** `agent` · The nightly Firefox + WebKit run, green: it has never passed (paste and range Delete in Firefox, font-name quoting, fit-to-data widths, an axe rule in WebKit). Filed by Claude Code. [detail](open/W-70-nightly-cross-browser-green.md)
+
+- 🔴 **W-71** `agent` · README, CONTRIBUTING, SECURITY and CODE_OF_CONDUCT landed; blocked on the decider placing the `.github/` templates. Filed by Arpit (Cowork). [detail](open/W-71-public-repo-docs.md)
 
 ### testing
 

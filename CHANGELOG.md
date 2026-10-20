@@ -8,6 +8,10 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+### Added
+
+- The repository: `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`. The README gains a plain-words section, who sheetpane is for, a roadmap and an FAQ, and says that 0.5.0 is on npm.
+
 ## 0.5.0 — the grid edits like Excel: in the cell, fill handle, drop to open (2026-10-19)
 
 `@sheetpane/grid` now edits in the cell, has a fill handle, and opens a file

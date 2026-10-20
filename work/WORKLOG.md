@@ -24,6 +24,20 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-20 — W-71: the README checked and finished; the public-repo docs  ·  Cowork (Opus 5.5)
+
+- **Asked:** *"i like the files that got created for codelaw add/create/update similar kind of file for sheetpane and fux"*.
+- **Done:**
+  - Checked the README against npm (all checked packages at 0.5.0, MIT) and the live playground (loads, shows 0.5.0). Ran the README's three-line snippet on `@sheetpane/grid@0.5.0` from npm in Chromium: the sheet and four errors rendered; the only requests were the `src` and `rules-src` GETs.
+  - `README.md`: the stale "0.1.0 is about to ship" note replaced by "0.5.0 is on npm"; added *In plain words*, *Is sheetpane for you?*, *Roadmap* (from OPEN-WORK and BACKLOG) and *FAQ*; the file-issue link points at the new template; Contributing links the new docs. `npm create sheetpane` stays out (the decider's 2026-10-19 ruling).
+  - `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`; a CHANGELOG line under Unreleased; registry rows; W-71 filed.
+- **Decided / left open:** `.github/` is protected from remote writes, so the four templates (file issue, bug, feature, PR) were sent to the decider to place (W-71, 🔴). The README's logo-first header trips markdownlint's first-line-heading rule — kept as designed.
+- **Mistakes:** none.
+- **Found while testing** (not fixed): with `src` and `rules-src` set as attributes, each was fetched twice on load; the errors panel numbers its four errors 5–8 rather than 1–4; `@sheetpane/grid` lists `@sheetpane/skills` as a runtime dependency, so every host installs the agent skills.
+- **Next:** the decider places the `.github/` templates; W-70 for an agent.
+
+---
+
 ## 2026-10-19 — the demos drop the view switch: sheet and errors always side by side  ·  Claude (Cowork, claude-opus-5-5)
 
 - **Asked:** *"remove all and just keep sheet plus errors as default … since there is only one, maybe we don't need the tab at all"*

@@ -31,6 +31,15 @@
 
 ---
 
+## In plain words
+
+- Your users have spreadsheets. You want them to open one **inside your app**, fix it, and get it back.
+- sheetpane is a spreadsheet you drop into a web page. It opens `.xlsx` and `.csv`, lets people edit, and **points at the cells that are wrong**, with what the right value should be.
+- It all happens in the browser tab: **the file is never uploaded anywhere.**
+- When they press Download, they get **their own file back**, with only the cells they changed updated.
+
+---
+
 ## Three lines of HTML
 
 ```html
@@ -85,9 +94,7 @@ The rules behind it are [this JSON file](docs/readme/holdings.rules.json), with 
 
 ## Get started
 
-> [!NOTE]
-> **`0.1.0` is about to ship.** Until it is on npm, the install commands and the
-> playground links will not work yet.
+**`0.5.0` is on npm**, with all 20 packages on one version, published from CI with signed provenance.
 
 ```sh
 npm install @sheetpane/grid
@@ -165,6 +172,23 @@ Anything else is refused with a clear message — never half-read.
 
 ---
 
+## Is sheetpane for you?
+
+**Choose sheetpane when:**
+
+- your users bring **their own `.xlsx` or `.csv`** and must review or correct it inside your app (uploads, imports, reconciliations, data checks);
+- the file **must not leave the browser**, for compliance, privacy or simply trust;
+- you need the download to be **their file**, not a re-generated copy that loses their formatting;
+- you want one component that works in **any framework**, typed, and testable.
+
+**Look elsewhere when:**
+
+- you need a **full spreadsheet app**: real-time collaboration, server storage, pivot recalculation, macros;
+- your files are **`.xls`, `.xlsm`, `.ods` or `.numbers`**. They are refused by design;
+- you need a **data grid for your own records** (sorting and paging an API's rows). sheetpane is built around a workbook file.
+
+---
+
 ## How far it is proven
 
 **Every feature has tests**, in Node and a real browser: Chromium on every
@@ -189,8 +213,50 @@ Until 1.0 the API may change between minor versions — the
 
 </details>
 
-**Found a file that opens wrongly?** [Open an issue](https://github.com/arpitarya/sheetpane/issues/new)
+**Found a file that opens wrongly?** [Open a file issue](https://github.com/arpitarya/sheetpane/issues/new?template=file_issue.yml)
 with the file (or a minimal copy) attached — it is the most useful thing you can send.
+
+---
+
+## Roadmap
+
+From the live queue ([`OPEN-WORK`](work/OPEN-WORK.md)) and the [backlog](work/BACKLOG.md). Nothing here is promised by a date.
+
+| | what | state |
+|---|---|---|
+| 🔜 | **Files saved by Excel, Google Sheets, LibreOffice and Numbers** in the import tests (W-30) | needs those files saved by hand |
+| 🔜 | **Firefox and WebKit green every night**, not just Chromium (W-70) | in progress |
+| 🔜 | **The agent skills tried in Claude Code, Kiro and Codex** on a real prompt (W-48) | needs a hands-on run |
+| 🔜 | Every sheet-protection switch honoured in Edit: format, sort, filter (B-038) | named |
+| 🔜 | Excel 2010 `x14:` validation and conditional-format rules read and written (B-041) | named |
+| 💭 | **Live pivot tables**, recalculated in the grid ([proposal](work/proposals/pivots.md)) | waiting for a host to ask |
+| 💭 | **Dismiss** a workbook's own validation warning for one review ([proposal](work/proposals/dismiss-workbook-errors.md)) | proposed |
+| 💭 | Keep the workbook in IndexedDB as well as memory (B-025) | deferred |
+
+---
+
+## FAQ
+
+**Is my file uploaded anywhere?**
+No. sheetpane reads, edits and checks it in the tab. Its only network requests are the GETs for the `src` and `rules-src` you set ([law L11](records/0013_LAW-11-workbook-stays-in-the-browser.md)).
+
+**Do formulas work?**
+With the [`formulas`](packages/formulas/README.md) plugin, yes: it recalculates as you edit, using IronCalc in WebAssembly, loaded only when you use it. Without it, a formula cell shows the value saved in the file.
+
+**How do I save the edited file?**
+Press Download, or call `export()` on `<sheetpane-excel>` for a `Blob` with every change. sheetpane keeps every change in memory; storing the file is your app's job ([law L6](records/0008_LAW-6-edits-in-memory-export-with-changes.md)).
+
+**Can I use the reader and writer without the UI?**
+Yes. [`@sheetpane/import`](packages/import/README.md) reads `.xlsx` / `.csv` into a plain JavaScript object, in a page or in Node. [`@sheetpane/export`](packages/export/README.md) turns one back into a file.
+
+**Which frameworks?**
+Any. The elements are standard web components; React, Vue, Svelte, Solid and Angular each need one line of setup ([guide](packages/grid/README.md#vue-svelte-solid-angular)).
+
+**Will the API change?**
+Until 1.0 it can change between minor versions. The [CHANGELOG](CHANGELOG.md) says what changed and what to do, under *Before you upgrade*.
+
+**Where do the error rules come from?**
+Three places: a JSON rules file, column rules you set in code, and the workbook's own data validation (with the [`validation`](packages/validation/README.md) plugin). Every error code is listed in [`docs/ERRORS.md`](docs/ERRORS.md).
 
 ---
 
@@ -217,8 +283,9 @@ open source ([law L2](records/0004_LAW-2-foss-dependencies.md)).
 
 ## Contributing
 
-**Welcome — especially failing files and bug reports.** You need **Node 22+**,
-**pnpm 10** and [**just**](https://just.systems).
+**Welcome — especially failing files and bug reports.** Read [CONTRIBUTING.md](CONTRIBUTING.md); report security issues privately ([SECURITY.md](SECURITY.md)); everyone follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+You need **Node 22+**, **pnpm 10** and [**just**](https://just.systems).
 
 ```sh
 just install     # pnpm install --frozen-lockfile
@@ -253,6 +320,6 @@ the evidence**. Start at [`CLAUDE.md`](CLAUDE.md) if you are one.
 
 <div align="center">
 
-[MIT](LICENSE) © Arpit Arya
+[MIT licence](LICENSE) © Arpit Arya — free for commercial and private use
 
 </div>

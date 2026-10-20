@@ -87,11 +87,11 @@ Documents rot silently; a trigger and a date make staleness visible.
 |---|---|---|---|
 | `CLAUDE.md` | any rule or pointer changes | 2026-10-18 | 2026-10-18 — §The laws: the L10 line |
 | `work/README.md` | a file is added to or removed from `work/` | 2026-10-18 | 2026-10-18 — `reference/` added to the map |
-| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-18 | 2026-10-18 — W-49 filed (🟢) |
+| `work/OPEN-WORK.md` | the same change as the work it tracks | 2026-10-20 | 2026-10-20 — W-71 filed (🔴, templates) |
 | `work/BACKLOG.md` | a record names something nobody is doing | 2026-10-18 | 2026-10-18 — B-035 (examples current, ungated) |
 | `work/open/README.md` | the item-file contract changes | 2026-10-18 | 2026-10-18 — created at setup |
-| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-18 | 2026-10-18 — law L10 in §1 and §3 |
-| `work/IMPLEMENTATION.md` | something lands | 2026-10-18 | 2026-10-18 — law L10 filed |
+| `work/INTERVIEW.md` | direction, a decision or the live state changes — during the session | 2026-10-20 | 2026-10-20 — W-71 in §1 and §2 |
+| `work/IMPLEMENTATION.md` | something lands | 2026-10-20 | 2026-10-20 — W-71 (part) |
 | `work/LESSONS.md` | a failure teaches something durable | 2026-10-18 | 2026-10-18 — the rename-only commit, twice; the gate |
 | `work/MACHINE.md` | a surface breaks in a way the code did not cause | 2026-10-18 | 2026-10-18 — Firefox does not launch on macOS 27 |
 | `work/compare/README.md` | a fork opens, closes, or its trigger fires | 2026-10-18 | 2026-10-18 — the contract verdict's decision 9 rewritten (undo built) |
@@ -105,14 +105,17 @@ Documents rot silently; a trigger and a date make staleness visible.
 | `packages/export/README.md` | `@sheetpane/export`'s public API changes | 2026-10-18 | 2026-10-18 — the API: toXlsx, patchXlsx, toCsv, download |
 | `packages/grid/README.md` | `@sheetpane/grid`'s public API changes | 2026-10-19 | 2026-10-19 — `@sheetpane/grid/static` (W-67) |
 | `packages/import/README.md` | its content changes | 2026-10-18 | 2026-10-18 — created: the API, CSV, refusals |
-| `README.md` | the packages, the commands or the demos change | 2026-10-19 | 2026-10-19 — rewritten as the landing page; `npm create sheetpane` removed (internal, the decider) |
+| `README.md` | the packages, the commands or the demos change | 2026-10-20 | 2026-10-20 — W-71: 0.5.0 on npm; plain words, who it is for, roadmap, FAQ; links to the new docs |
 | `docs/readme/` | the grid's look or `examples/html/sample.xlsx` changes — rerun `node docs/readme/capture.mjs` | 2026-10-19 | 2026-10-19 — created: logo, screenshots, demo GIF, the rules file they show, the capture script |
 | `packages/images/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the images plugin |
 | `packages/validation/README.md` | its API changes | 2026-10-19 | 2026-10-19 — `@sheetpane/validation/check` (W-54) |
 | `packages/numfmt/README.md` | its API changes | 2026-10-18 | 2026-10-18 — created: the numfmt plugin |
-| `CHANGELOG.md` | a public-facing change lands | 2026-10-19 | 2026-10-19 — W-67, the static entry |
+| `CHANGELOG.md` | a public-facing change lands | 2026-10-20 | 2026-10-20 — W-71: the new repo docs under Unreleased |
 | `RELEASING.md` | the release flow, a workflow it names, or the one-time npm steps change | 2026-10-19 | 2026-10-19 — created: GitHub Release → `publish.yml`, OIDC, no token |
 | `docs/ERRORS.md` | a code is added, retired or its docs change | 2026-10-19 | 2026-10-19 — SP-3027, SP-3028 (W-67) |
+| `CONTRIBUTING.md` | the build, test or contribution steps, or a law it names, change | 2026-10-20 | 2026-10-20 — created (W-71) |
+| `SECURITY.md` | the reporting channel, the scope or the supported versions change | 2026-10-20 | 2026-10-20 — created (W-71) |
+| `CODE_OF_CONDUCT.md` | the code or its contact changes | 2026-10-20 | 2026-10-20 — created (W-71) |
 
 ---
 
