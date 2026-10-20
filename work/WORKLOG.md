@@ -24,6 +24,16 @@ entry is corrected by a new one. Distinct from `INTERVIEW.md`, which is the
 
 ---
 
+## 2026-10-20 — 0.5.1 released: the repo docs, no change to the packages  ·  Claude Code (claude-opus-5-5)
+
+- **Asked:** *commit everything, and release a new patch version.*
+- **Done:** W-71's docs committed (`2ed1c10`); the CHANGELOG's Unreleased became 0.5.1 (`ec8f31c`); `just release 0.5.1` (`181d52d`), `ci.yml` green, `just publish 0.5.1` — `publish.yml` published all 20 packages at 0.5.1 from CI.
+- **Decided / left open:** none — still waiting on the decider: the `.github/` templates (W-71), W-30, W-48, B-044–B-046.
+- **Mistakes:** none.
+- **Next:** W-70.
+
+---
+
 ## 2026-10-20 — W-71: the README checked and finished; the public-repo docs  ·  Cowork (Opus 5.5)
 
 - **Asked:** *"i like the files that got created for codelaw add/create/update similar kind of file for sheetpane and fux"*.
