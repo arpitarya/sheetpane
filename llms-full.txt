@@ -1,11 +1,11 @@
 # sheetpane — the full public contract
 
-> Everything llms.txt links to, inlined: the package READMEs, the docs, the laws and the component records. Version 0.5.0; links pinned to v0.5.0.
+> Everything llms.txt links to, inlined: the package READMEs, the docs, the laws and the component records. Version 0.5.1; links pinned to v0.5.1.
 
 
 ---
 
-<!-- source: README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/README.md) -->
+<!-- source: README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/README.md) -->
 
 <div align="center">
 
@@ -37,6 +37,15 @@
 <sub>A real capture, not a mock-up: <code>sample.xlsx</code> checked by <a href="docs/readme/holdings.rules.json">a 9-line rules file</a>. Regenerate it with <code>node docs/readme/capture.mjs</code>.</sub>
 
 </div>
+
+---
+
+## In plain words
+
+- Your users have spreadsheets. You want them to open one **inside your app**, fix it, and get it back.
+- sheetpane is a spreadsheet you drop into a web page. It opens `.xlsx` and `.csv`, lets people edit, and **points at the cells that are wrong**, with what the right value should be.
+- It all happens in the browser tab: **the file is never uploaded anywhere.**
+- When they press Download, they get **their own file back**, with only the cells they changed updated.
 
 ---
 
@@ -94,9 +103,7 @@ The rules behind it are [this JSON file](docs/readme/holdings.rules.json), with 
 
 ## Get started
 
-> [!NOTE]
-> **`0.1.0` is about to ship.** Until it is on npm, the install commands and the
-> playground links will not work yet.
+**`0.5.0` is on npm**, with all 20 packages on one version, published from CI with signed provenance.
 
 ```sh
 npm install @sheetpane/grid
@@ -174,6 +181,23 @@ Anything else is refused with a clear message — never half-read.
 
 ---
 
+## Is sheetpane for you?
+
+**Choose sheetpane when:**
+
+- your users bring **their own `.xlsx` or `.csv`** and must review or correct it inside your app (uploads, imports, reconciliations, data checks);
+- the file **must not leave the browser**, for compliance, privacy or simply trust;
+- you need the download to be **their file**, not a re-generated copy that loses their formatting;
+- you want one component that works in **any framework**, typed, and testable.
+
+**Look elsewhere when:**
+
+- you need a **full spreadsheet app**: real-time collaboration, server storage, pivot recalculation, macros;
+- your files are **`.xls`, `.xlsm`, `.ods` or `.numbers`**. They are refused by design;
+- you need a **data grid for your own records** (sorting and paging an API's rows). sheetpane is built around a workbook file.
+
+---
+
 ## How far it is proven
 
 **Every feature has tests**, in Node and a real browser: Chromium on every
@@ -198,8 +222,50 @@ Until 1.0 the API may change between minor versions — the
 
 </details>
 
-**Found a file that opens wrongly?** [Open an issue](https://github.com/arpitarya/sheetpane/issues/new)
+**Found a file that opens wrongly?** [Open a file issue](https://github.com/arpitarya/sheetpane/issues/new?template=file_issue.yml)
 with the file (or a minimal copy) attached — it is the most useful thing you can send.
+
+---
+
+## Roadmap
+
+From the live queue ([`OPEN-WORK`](work/OPEN-WORK.md)) and the [backlog](work/BACKLOG.md). Nothing here is promised by a date.
+
+| | what | state |
+|---|---|---|
+| 🔜 | **Files saved by Excel, Google Sheets, LibreOffice and Numbers** in the import tests (W-30) | needs those files saved by hand |
+| 🔜 | **Firefox and WebKit green every night**, not just Chromium (W-70) | in progress |
+| 🔜 | **The agent skills tried in Claude Code, Kiro and Codex** on a real prompt (W-48) | needs a hands-on run |
+| 🔜 | Every sheet-protection switch honoured in Edit: format, sort, filter (B-038) | named |
+| 🔜 | Excel 2010 `x14:` validation and conditional-format rules read and written (B-041) | named |
+| 💭 | **Live pivot tables**, recalculated in the grid ([proposal](work/proposals/pivots.md)) | waiting for a host to ask |
+| 💭 | **Dismiss** a workbook's own validation warning for one review ([proposal](work/proposals/dismiss-workbook-errors.md)) | proposed |
+| 💭 | Keep the workbook in IndexedDB as well as memory (B-025) | deferred |
+
+---
+
+## FAQ
+
+**Is my file uploaded anywhere?**
+No. sheetpane reads, edits and checks it in the tab. Its only network requests are the GETs for the `src` and `rules-src` you set ([law L11](records/0013_LAW-11-workbook-stays-in-the-browser.md)).
+
+**Do formulas work?**
+With the [`formulas`](packages/formulas/README.md) plugin, yes: it recalculates as you edit, using IronCalc in WebAssembly, loaded only when you use it. Without it, a formula cell shows the value saved in the file.
+
+**How do I save the edited file?**
+Press Download, or call `export()` on `<sheetpane-excel>` for a `Blob` with every change. sheetpane keeps every change in memory; storing the file is your app's job ([law L6](records/0008_LAW-6-edits-in-memory-export-with-changes.md)).
+
+**Can I use the reader and writer without the UI?**
+Yes. [`@sheetpane/import`](packages/import/README.md) reads `.xlsx` / `.csv` into a plain JavaScript object, in a page or in Node. [`@sheetpane/export`](packages/export/README.md) turns one back into a file.
+
+**Which frameworks?**
+Any. The elements are standard web components; React, Vue, Svelte, Solid and Angular each need one line of setup ([guide](packages/grid/README.md#vue-svelte-solid-angular)).
+
+**Will the API change?**
+Until 1.0 it can change between minor versions. The [CHANGELOG](CHANGELOG.md) says what changed and what to do, under *Before you upgrade*.
+
+**Where do the error rules come from?**
+Three places: a JSON rules file, column rules you set in code, and the workbook's own data validation (with the [`validation`](packages/validation/README.md) plugin). Every error code is listed in [`docs/ERRORS.md`](docs/ERRORS.md).
 
 ---
 
@@ -226,8 +292,9 @@ open source ([law L2](records/0004_LAW-2-foss-dependencies.md)).
 
 ## Contributing
 
-**Welcome — especially failing files and bug reports.** You need **Node 22+**,
-**pnpm 10** and [**just**](https://just.systems).
+**Welcome — especially failing files and bug reports.** Read [CONTRIBUTING.md](CONTRIBUTING.md); report security issues privately ([SECURITY.md](SECURITY.md)); everyone follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+You need **Node 22+**, **pnpm 10** and [**just**](https://just.systems).
 
 ```sh
 just install     # pnpm install --frozen-lockfile
@@ -262,14 +329,14 @@ the evidence**. Start at [`CLAUDE.md`](CLAUDE.md) if you are one.
 
 <div align="center">
 
-[MIT](LICENSE) © Arpit Arya
+[MIT licence](LICENSE) © Arpit Arya — free for commercial and private use
 
 </div>
 
 
 ---
 
-<!-- source: packages/grid/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/grid/README.md) -->
+<!-- source: packages/grid/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/grid/README.md) -->
 
 # @sheetpane/grid
 
@@ -986,7 +1053,7 @@ The specs are the records [SR-GRID](../../records/0105_GRID.md) and
 
 ---
 
-<!-- source: packages/export/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/export/README.md) -->
+<!-- source: packages/export/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/export/README.md) -->
 
 # @sheetpane/export
 
@@ -1202,7 +1269,7 @@ The spec is the record [SR-EXPORT](../../records/0103_EXPORT.md).
 
 ---
 
-<!-- source: packages/import/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/import/README.md) -->
+<!-- source: packages/import/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/import/README.md) -->
 
 # @sheetpane/import
 
@@ -1269,7 +1336,7 @@ The spec is the record [SR-IMPORT](../../records/0104_IMPORT.md).
 
 ---
 
-<!-- source: packages/numfmt/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/numfmt/README.md) -->
+<!-- source: packages/numfmt/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/numfmt/README.md) -->
 
 # @sheetpane/numfmt
 
@@ -1380,7 +1447,7 @@ How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plug
 
 ---
 
-<!-- source: packages/formulas/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/formulas/README.md) -->
+<!-- source: packages/formulas/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/formulas/README.md) -->
 
 # @sheetpane/formulas
 
@@ -1493,7 +1560,7 @@ How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plug
 
 ---
 
-<!-- source: packages/styles/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/styles/README.md) -->
+<!-- source: packages/styles/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/styles/README.md) -->
 
 # @sheetpane/styles
 
@@ -1599,7 +1666,7 @@ How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plug
 
 ---
 
-<!-- source: packages/validation/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/validation/README.md) -->
+<!-- source: packages/validation/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/validation/README.md) -->
 
 # @sheetpane/validation
 
@@ -1830,7 +1897,7 @@ the rule rows when you need them.
 
 ---
 
-<!-- source: packages/condfmt/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/condfmt/README.md) -->
+<!-- source: packages/condfmt/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/condfmt/README.md) -->
 
 # @sheetpane/condfmt
 
@@ -1948,7 +2015,7 @@ How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plug
 
 ---
 
-<!-- source: packages/images/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/images/README.md) -->
+<!-- source: packages/images/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/images/README.md) -->
 
 # @sheetpane/images
 
@@ -2034,7 +2101,7 @@ LibreOffice are owed by W-30.
 
 ---
 
-<!-- source: packages/charts/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/charts/README.md) -->
+<!-- source: packages/charts/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/charts/README.md) -->
 
 # @sheetpane/charts
 
@@ -2168,7 +2235,7 @@ How plugins plug in: [`work/compare/plugins.compare.md`](../../work/compare/plug
 
 ---
 
-<!-- source: packages/comments/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/comments/README.md) -->
+<!-- source: packages/comments/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/comments/README.md) -->
 
 # @sheetpane/comments
 
@@ -2308,7 +2375,7 @@ Spec: [`work/open/W-22-comments.md`](../../work/open/W-22-comments.md).
 
 ---
 
-<!-- source: packages/visibility/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/visibility/README.md) -->
+<!-- source: packages/visibility/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/visibility/README.md) -->
 
 # @sheetpane/visibility
 
@@ -2348,7 +2415,7 @@ Spec: [SR-VISIBILITY](../../records/0121_VISIBILITY.md). MIT.
 
 ---
 
-<!-- source: packages/tables/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/tables/README.md) -->
+<!-- source: packages/tables/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/tables/README.md) -->
 
 # @sheetpane/tables
 
@@ -2395,7 +2462,7 @@ Spec: [SR-TABLES](../../records/0122_TABLES.md). MIT.
 
 ---
 
-<!-- source: packages/compare/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/compare/README.md) -->
+<!-- source: packages/compare/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/compare/README.md) -->
 
 # @sheetpane/compare
 
@@ -2467,7 +2534,7 @@ Spec: [SR-COMPARE](../../records/0124_COMPARE.md). MIT.
 
 ---
 
-<!-- source: packages/review/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/review/README.md) -->
+<!-- source: packages/review/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/review/README.md) -->
 
 # @sheetpane/review
 
@@ -2599,7 +2666,7 @@ Spec: [SR-REVIEW](../../records/0123_REVIEW.md). MIT.
 
 ---
 
-<!-- source: packages/fixtures/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/fixtures/README.md) -->
+<!-- source: packages/fixtures/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/fixtures/README.md) -->
 
 # @sheetpane/fixtures
 
@@ -2639,7 +2706,7 @@ The spec is the record [SR-FIXTURES](../../records/0115_FIXTURES.md).
 
 ---
 
-<!-- source: packages/testing/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/testing/README.md) -->
+<!-- source: packages/testing/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/testing/README.md) -->
 
 # @sheetpane/testing
 
@@ -2689,7 +2756,7 @@ The spec is the record [SR-TESTING](../../records/0118_TESTING.md).
 
 ---
 
-<!-- source: packages/skills/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/skills/README.md) -->
+<!-- source: packages/skills/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/skills/README.md) -->
 
 # @sheetpane/skills
 
@@ -2760,7 +2827,7 @@ the elements do not have. The spec is the record
 
 ---
 
-<!-- source: packages/mcp/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/packages/mcp/README.md) -->
+<!-- source: packages/mcp/README.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/packages/mcp/README.md) -->
 
 # @sheetpane/mcp
 
@@ -2801,7 +2868,7 @@ Spec: [SR-MCP](../../records/0119_MCP.md). MIT.
 
 ---
 
-<!-- source: docs/ARCHITECTURE.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/docs/ARCHITECTURE.md) -->
+<!-- source: docs/ARCHITECTURE.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/docs/ARCHITECTURE.md) -->
 
 # sheetpane — architecture
 
@@ -3040,7 +3107,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 
 ---
 
-<!-- source: docs/GLOSSARY.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/docs/GLOSSARY.md) -->
+<!-- source: docs/GLOSSARY.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/docs/GLOSSARY.md) -->
 
 # Glossary
 
@@ -3081,7 +3148,7 @@ How it is all tested — Vitest, real browsers, fixtures, goldens — is the
 
 ---
 
-<!-- source: docs/ERRORS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/docs/ERRORS.md) -->
+<!-- source: docs/ERRORS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/docs/ERRORS.md) -->
 
 # Error codes
 
@@ -4162,7 +4229,7 @@ throws: each problem is one `note` error, `author: 'host'`, with its `code`.
 
 ---
 
-<!-- source: records/0001_LAWS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0001_LAWS.md) -->
+<!-- source: records/0001_LAWS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0001_LAWS.md) -->
 
 # SR-LAWS — the laws have exactly one home each
 
@@ -4250,7 +4317,7 @@ carries a law's normative text.
 
 ---
 
-<!-- source: records/0002_LAW-0-authority.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0002_LAW-0-authority.md) -->
+<!-- source: records/0002_LAW-0-authority.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0002_LAW-0-authority.md) -->
 
 # SR-LAW-0 — L0, the records are the only source of truth
 
@@ -4366,7 +4433,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0003_LAW-1-retired-records-archived.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0003_LAW-1-retired-records-archived.md) -->
+<!-- source: records/0003_LAW-1-retired-records-archived.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0003_LAW-1-retired-records-archived.md) -->
 
 # SR-LAW-1 — L1, a retired record is archived, never deleted
 
@@ -4459,7 +4526,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0004_LAW-2-foss-dependencies.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0004_LAW-2-foss-dependencies.md) -->
+<!-- source: records/0004_LAW-2-foss-dependencies.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0004_LAW-2-foss-dependencies.md) -->
 
 # SR-LAW-2 — L2, every dependency is free and open source
 
@@ -4568,7 +4635,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0005_LAW-3-xlsx-and-csv-only.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0005_LAW-3-xlsx-and-csv-only.md) -->
+<!-- source: records/0005_LAW-3-xlsx-and-csv-only.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0005_LAW-3-xlsx-and-csv-only.md) -->
 
 # SR-LAW-3 — L3, sheetpane supports XLSX and CSV only
 
@@ -4681,7 +4748,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0006_LAW-4-web-component.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0006_LAW-4-web-component.md) -->
+<!-- source: records/0006_LAW-4-web-component.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0006_LAW-4-web-component.md) -->
 
 # SR-LAW-4 — L4, sheetpane is always a web component
 
@@ -4801,7 +4868,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0007_LAW-5-host-font.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0007_LAW-5-host-font.md) -->
+<!-- source: records/0007_LAW-5-host-font.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0007_LAW-5-host-font.md) -->
 
 # SR-LAW-5 — L5, the font is the browser's default unless the host sets one
 
@@ -4920,7 +4987,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0008_LAW-6-edits-in-memory-export-with-changes.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0008_LAW-6-edits-in-memory-export-with-changes.md) -->
+<!-- source: records/0008_LAW-6-edits-in-memory-export-with-changes.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0008_LAW-6-edits-in-memory-export-with-changes.md) -->
 
 # SR-LAW-6 — L6, every change is held in memory and export carries it
 
@@ -5031,7 +5098,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0009_LAW-7-surfaces-always-in-sync.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0009_LAW-7-surfaces-always-in-sync.md) -->
+<!-- source: records/0009_LAW-7-surfaces-always-in-sync.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0009_LAW-7-surfaces-always-in-sync.md) -->
 
 # SR-LAW-7 — L7, the view, edit and error components are always in sync
 
@@ -5140,7 +5207,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0010_LAW-8-npm-package.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0010_LAW-8-npm-package.md) -->
+<!-- source: records/0010_LAW-8-npm-package.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0010_LAW-8-npm-package.md) -->
 
 # SR-LAW-8 — L8, sheetpane is consumed as an npm package
 
@@ -5249,7 +5316,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0011_LAW-9-memory-is-a-javascript-object.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0011_LAW-9-memory-is-a-javascript-object.md) -->
+<!-- source: records/0011_LAW-9-memory-is-a-javascript-object.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0011_LAW-9-memory-is-a-javascript-object.md) -->
 
 # SR-LAW-9 — L9, memory means a JavaScript object, for now
 
@@ -5347,7 +5414,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0101_DOWNLOAD.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0101_DOWNLOAD.md) -->
+<!-- source: records/0101_DOWNLOAD.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0101_DOWNLOAD.md) -->
 
 # SR-DOWNLOAD — download(): export output in, a saved .xlsx or .csv out
 
@@ -5593,7 +5660,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0102_BUILD.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0102_BUILD.md) -->
+<!-- source: records/0102_BUILD.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0102_BUILD.md) -->
 
 # SR-BUILD — the monorepo build
 
@@ -5961,7 +6028,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0103_EXPORT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0103_EXPORT.md) -->
+<!-- source: records/0103_EXPORT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0103_EXPORT.md) -->
 
 # SR-EXPORT — @sheetpane/export
 
@@ -6283,7 +6350,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0104_IMPORT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0104_IMPORT.md) -->
+<!-- source: records/0104_IMPORT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0104_IMPORT.md) -->
 
 # SR-IMPORT — @sheetpane/import
 
@@ -6581,7 +6648,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0105_GRID.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0105_GRID.md) -->
+<!-- source: records/0105_GRID.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0105_GRID.md) -->
 
 # SR-GRID — @sheetpane/grid
 
@@ -7770,7 +7837,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0106_ERRORS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0106_ERRORS.md) -->
+<!-- source: records/0106_ERRORS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0106_ERRORS.md) -->
 
 # SR-ERRORS — <sheetpane-errors>
 
@@ -8090,7 +8157,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0107_IMAGES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0107_IMAGES.md) -->
+<!-- source: records/0107_IMAGES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0107_IMAGES.md) -->
 
 # SR-IMAGES — @sheetpane/images
 
@@ -8218,7 +8285,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0108_VALIDATION.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0108_VALIDATION.md) -->
+<!-- source: records/0108_VALIDATION.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0108_VALIDATION.md) -->
 
 # SR-VALIDATION — @sheetpane/validation
 
@@ -8470,7 +8537,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0109_NUMFMT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0109_NUMFMT.md) -->
+<!-- source: records/0109_NUMFMT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0109_NUMFMT.md) -->
 
 # SR-NUMFMT — @sheetpane/numfmt
 
@@ -8606,7 +8673,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0110_STYLES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0110_STYLES.md) -->
+<!-- source: records/0110_STYLES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0110_STYLES.md) -->
 
 # SR-STYLES — @sheetpane/styles
 
@@ -8772,7 +8839,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0111_FORMULAS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0111_FORMULAS.md) -->
+<!-- source: records/0111_FORMULAS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0111_FORMULAS.md) -->
 
 # SR-FORMULAS — @sheetpane/formulas
 
@@ -8942,7 +9009,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0112_COMMENTS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0112_COMMENTS.md) -->
+<!-- source: records/0112_COMMENTS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0112_COMMENTS.md) -->
 
 # SR-COMMENTS — @sheetpane/comments
 
@@ -9115,7 +9182,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0113_CHARTS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0113_CHARTS.md) -->
+<!-- source: records/0113_CHARTS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0113_CHARTS.md) -->
 
 # SR-CHARTS — @sheetpane/charts
 
@@ -9267,7 +9334,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0114_CONDFMT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0114_CONDFMT.md) -->
+<!-- source: records/0114_CONDFMT.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0114_CONDFMT.md) -->
 
 # SR-CONDFMT — @sheetpane/condfmt
 
@@ -9420,7 +9487,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0115_FIXTURES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0115_FIXTURES.md) -->
+<!-- source: records/0115_FIXTURES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0115_FIXTURES.md) -->
 
 # SR-FIXTURES — @sheetpane/fixtures
 
@@ -9572,7 +9639,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0116_SKILLS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0116_SKILLS.md) -->
+<!-- source: records/0116_SKILLS.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0116_SKILLS.md) -->
 
 # SR-SKILLS — @sheetpane/skills
 
@@ -9766,7 +9833,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0117_CODES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0117_CODES.md) -->
+<!-- source: records/0117_CODES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0117_CODES.md) -->
 
 # SR-CODES — stable error codes
 
@@ -9935,7 +10002,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0118_TESTING.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0118_TESTING.md) -->
+<!-- source: records/0118_TESTING.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0118_TESTING.md) -->
 
 # SR-TESTING — @sheetpane/testing
 
@@ -10037,7 +10104,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0119_MCP.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0119_MCP.md) -->
+<!-- source: records/0119_MCP.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0119_MCP.md) -->
 
 # SR-MCP — @sheetpane/mcp
 
@@ -10218,7 +10285,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0121_VISIBILITY.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0121_VISIBILITY.md) -->
+<!-- source: records/0121_VISIBILITY.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0121_VISIBILITY.md) -->
 
 # SR-VISIBILITY — @sheetpane/visibility
 
@@ -10332,7 +10399,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0122_TABLES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0122_TABLES.md) -->
+<!-- source: records/0122_TABLES.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0122_TABLES.md) -->
 
 # SR-TABLES — @sheetpane/tables
 
@@ -10454,7 +10521,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0123_REVIEW.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0123_REVIEW.md) -->
+<!-- source: records/0123_REVIEW.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0123_REVIEW.md) -->
 
 # SR-REVIEW — @sheetpane/review
 
@@ -10653,7 +10720,7 @@ is never listed here.*
 
 ---
 
-<!-- source: records/0124_COMPARE.md (https://github.com/arpitarya/sheetpane/blob/v0.5.0/records/0124_COMPARE.md) -->
+<!-- source: records/0124_COMPARE.md (https://github.com/arpitarya/sheetpane/blob/v0.5.1/records/0124_COMPARE.md) -->
 
 # SR-COMPARE — @sheetpane/compare
 

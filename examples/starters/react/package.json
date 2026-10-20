@@ -10,14 +10,14 @@
     "test": "npm run build && playwright test"
   },
   "dependencies": {
-    "@sheetpane/grid": "0.5.0",
+    "@sheetpane/grid": "0.5.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
-    "@sheetpane/fixtures": "0.5.0",
-    "@sheetpane/testing": "0.5.0",
+    "@sheetpane/fixtures": "0.5.1",
+    "@sheetpane/testing": "0.5.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",

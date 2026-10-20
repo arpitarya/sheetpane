@@ -17,7 +17,7 @@
     "@angular/compiler": "22.2.3",
     "@angular/core": "22.2.3",
     "@angular/platform-browser": "22.2.3",
-    "@sheetpane/grid": "0.5.0",
+    "@sheetpane/grid": "0.5.1",
     "rxjs": "7.8.2",
     "tslib": "2.8.1"
   },
@@ -26,8 +26,8 @@
     "@angular/cli": "22.2.3",
     "@angular/compiler-cli": "22.2.3",
     "@playwright/test": "1.64.1",
-    "@sheetpane/fixtures": "0.5.0",
-    "@sheetpane/testing": "0.5.0",
+    "@sheetpane/fixtures": "0.5.1",
+    "@sheetpane/testing": "0.5.1",
     "typescript": "6.0.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "sheetpane",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "sheetpane in Claude Code: skills to embed, load, export, rule, theme and test the sheet; the sheetpane-integrator agent; a hook that checks each *.rules.json; the @sheetpane/mcp server.",
   "author": {
     "name": "Arpit Arya",
