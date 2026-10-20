@@ -8,6 +8,17 @@ Newest first. The specs are the records in [`records/`](records/README.md).
 
 ## Unreleased
 
+## 0.5.1 — contributing, security and conduct docs; no change to the packages (2026-10-20)
+
+The package code is the same as 0.5.0. The repository is ready for outside
+contributors.
+
+```bash
+npm i @sheetpane/grid@0.5.1
+```
+
+**Before you upgrade from 0.5.0:** nothing to change.
+
 ### Added
 
 - The repository: `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`. The README gains a plain-words section, who sheetpane is for, a roadmap and an FAQ, and says that 0.5.0 is on npm.
